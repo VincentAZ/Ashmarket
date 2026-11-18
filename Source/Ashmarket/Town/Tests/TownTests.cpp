@@ -29,6 +29,7 @@
 #include "Tests/AutomationCommon.h"
 #include "Tests/GutTestHelpers.h"
 #include "TownGameMode.h"
+#include "Tests/TownTestHelpers.h"
 
 /**
  *  Tests of the street outside the cage. They play in the street's own level, and where they go through a door, in the cage's.
@@ -38,6 +39,7 @@
  *  Ashmarket.Town.Talk     somebody in reach can be spoken to, answered and left; a shut door says so; the game can be stopped.
  *  Ashmarket.Town.Doors    the ways in open the cage as what they say, and the cage's way out opens the street.
  *  Ashmarket.Town.Square   Block Square on a sale night: who stands where, the lender, the clerk, and the walk to Pool Street and back.
+ *  Ashmarket.Town.MainStreet, Ashmarket.Look.MainStreet, Ashmarket.Probe.MainStreet   are in TownMainStreetTests.cpp.
  *  Ashmarket.Look.Square   fixed views of the square saved as pictures. Not part of a test run.
  *  Ashmarket.Film.Sale     the sale filmed: a lot walked off the Block, the rest after it, and all six brought back up.
  *  Ashmarket.Probe.Bet, .Feet, .Square, .Deck   measurements, not tests: the window's card by the keys themselves, what the
@@ -45,149 +47,6 @@
  *  Ashmarket.Look.Street   fixed views of the street saved as pictures, with nothing drawn over them, then three as it is
  *                          played: walking, in reach of somebody, and talking. Not part of a test run.
  */
-namespace TownTests
-{
-	const TCHAR* MapPath = TEXT("/Game/Town/Lvl_PoolStreet");
-
-	ATownGameMode* GetTown()
-	{
-		UWorld* World = AutomationCommon::GetAnyGameWorld();
-
-		return World ? World->GetAuthGameMode<ATownGameMode>() : nullptr;
-	}
-
-	UGutGameInstance* GetRun()
-	{
-		const UWorld* World = AutomationCommon::GetAnyGameWorld();
-
-		return World ? Cast<UGutGameInstance>(World->GetGameInstance()) : nullptr;
-	}
-
-	/** True once the street is open with everybody stood in it */
-	bool IsStreetReady()
-	{
-		const ATownGameMode* Town = GetTown();
-
-		return Town && Town->IsSettled() && Town->GetWalker();
-	}
-
-	/** Stands the player at a place in the level, on the ground it is already on, facing along a yaw */
-	void StandAt(const FVector2D& Where, float Yaw = 0.0f)
-	{
-		if (AGutFighter* Walker = GetTown() ? GetTown()->GetWalker() : nullptr)
-		{
-			Walker->SetActorLocationAndRotation(FVector(Where.X, Where.Y, Walker->GetActorLocation().Z), FRotator(0.0f, Yaw, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
-		}
-	}
-
-	/** Stands the player a little way off something at a place, on the side the street is on */
-	void StandBy(const FVector& Thing, const FVector2D& Off)
-	{
-		StandAt(FVector2D(Thing.X + Off.X, Thing.Y + Off.Y), FVector(-Off.X, -Off.Y, 0.0f).Rotation().Yaw);
-	}
-
-	/**
-	 *  Steps run one after another. Each waits for its own condition (if it has one) and then for its delay, in the game's
-	 *  own time, so the script keeps step with the game however fast the machine is and whichever level is open.
-	 */
-	class FScript : public IAutomationLatentCommand
-	{
-	public:
-
-		struct FStep
-		{
-			float Delay = 0.0f;
-			TFunction<void()> Do;
-
-			/** Waited for before the delay starts. Run every frame until it is true, so it can also do something each frame. */
-			TFunction<bool()> Until;
-		};
-
-		FScript(FAutomationTestBase* InTest, TArray<FStep> InSteps)
-			: Test(InTest), Steps(MoveTemp(InSteps))
-		{
-		}
-
-		virtual bool Update() override
-		{
-			if (!Steps.IsValidIndex(Index))
-			{
-				return true;
-			}
-
-			const UWorld* World = AutomationCommon::GetAnyGameWorld();
-
-			if (!World || !World->HasBegunPlay())
-			{
-				return GiveUpIfLate(TEXT("no level was open"));
-			}
-
-			FStep& Step = Steps[Index];
-
-			if (Step.Until && !bConditionMet)
-			{
-				if (!Step.Until())
-				{
-					return GiveUpIfLate(TEXT("what it was waiting for never happened"));
-				}
-
-				bConditionMet = true;
-			}
-
-			Waited += World->GetDeltaSeconds();
-
-			if (Waited < Step.Delay)
-			{
-				return false;
-			}
-
-			if (Step.Do)
-			{
-				Step.Do();
-			}
-
-			++Index;
-			Waited = 0.0f;
-			bConditionMet = false;
-			StepStarted = FPlatformTime::Seconds();
-
-			return !Steps.IsValidIndex(Index);
-		}
-
-	private:
-
-		/** A step that has not got anywhere in a minute of the clock on the wall fails the test and ends the script */
-		bool GiveUpIfLate(const TCHAR* Why)
-		{
-			if (FPlatformTime::Seconds() - StepStarted < 60.0)
-			{
-				return false;
-			}
-
-			Test->AddError(FString::Printf(TEXT("Step %d of the script was given up on: %s"), Index + 1, Why));
-
-			return true;
-		}
-
-		FAutomationTestBase* Test = nullptr;
-		TArray<FStep> Steps;
-		int32 Index = 0;
-		float Waited = 0.0f;
-		bool bConditionMet = false;
-		double StepStarted = FPlatformTime::Seconds();
-	};
-
-	bool OpenStreet(FAutomationTestBase* Test)
-	{
-		if (!AutomationOpenMap(MapPath, true))
-		{
-			Test->AddError(TEXT("Could not open the street's level"));
-			return false;
-		}
-
-		return true;
-	}
-}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownStreetTest, "Ashmarket.Town.Street", GutTests::Flags)
 
@@ -1637,7 +1496,9 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 			TestTrue(*FString::Printf(TEXT("Going %s across the square, what stops the walker is something standing there (the nearest thing is %.0f cm off)"), WayNames[Way], Nearest),
 				Nearest < Town->GetWalkerRadius() + 12.0f);
 
-			StandAt(FVector2D(Notes->Came.X, Notes->Came.Y));
+			// south from where it stood is Main Street now, and the way is open: the next goes south from further east,
+			// where the square's own south side is
+			StandAt(FVector2D(Notes->Came.X, Notes->Came.Y + (Way + 1 == 2 ? 1500.0f : 0.0f)));
 			Notes->WalkTime = 0.0f;
 			Notes->Still = 0.0f;
 		}, [Notes, Way]()

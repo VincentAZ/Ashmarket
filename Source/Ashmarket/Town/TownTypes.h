@@ -40,7 +40,10 @@ enum class ETownDeed : uint8
 	Borrow,
 
 	/** The lender is paid back as much of what is owed as the borrower holds */
-	Repay
+	Repay,
+
+	/** To the armorers' counter: what they have made for the cage's fighters, to be bought with a fighter's own water */
+	Armor
 };
 
 /** One thing the player can say back */
@@ -77,6 +80,23 @@ struct FTownLine
 	/** The line that follows when there is nothing to answer. Less than nought ends the talk. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
 	int32 Next = -1;
+};
+
+/** One stop on the round somebody walks: where it is, how long they stand there, and which way they look while they do */
+USTRUCT(BlueprintType)
+struct FTownBeatStop
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Beat")
+	FVector Place = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Beat", meta = (ClampMin = 0, Units = "s"))
+	float Wait = 0.0f;
+
+	/** Which way they turn to while they stand there. Less than nought is whichever way they came. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Beat", meta = (Units = "deg"))
+	float Facing = -1.0f;
 };
 
 /** Somebody who stands in a place and can be spoken to */
@@ -124,6 +144,17 @@ struct FTownPerson
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person", meta = (ClampMin = 0))
 	int32 Lot = 0;
 
+	/**
+	 *  The round they walk, if they walk one: from each stop to the next and from the last back to the first, for as long as
+	 *  anybody is there to see it. They begin at the first. With none they stand where they are put.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
+	TArray<FTownBeatStop> Beat;
+
+	/** How fast they walk it, against the pace everybody walks at */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person", meta = (ClampMin = 0.2, ClampMax = 2))
+	float Pace = 0.85f;
+
 	/** What they say. The talk begins at the first. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
 	TArray<FTownLine> Lines;
@@ -163,6 +194,19 @@ struct FTownDoor
 	/** How near an open way has to be come to be gone through: as wide as the gap it is. Nought is the place's own figure. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Door", meta = (ClampMin = 0, Units = "cm"))
 	float Reach = 0.0f;
+
+	/**
+	 *  For an open way that is the whole width of a street: the stretch of ground that is its mouth, in the level
+	 *  (centimetres, X and Y). Whoever walks into it has gone through, wherever across it they are.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Door")
+	FBox2D Mouth = FBox2D(ForceInit);
+
+	/** True if somebody standing there is going through this way, when it is one that is walked through */
+	bool IsEntered(const FVector& Where, float OwnReach) const
+	{
+		return Mouth.bIsValid ? Mouth.IsInside(FVector2D(Where.X, Where.Y)) : FVector::Dist2D(Where, Place) < (Reach > 0.0f ? Reach : OwnReach);
+	}
 };
 
 /** A way into a place from another: where whoever comes that way is stood, and which way they face */
@@ -324,6 +368,22 @@ public:
 	/** How far behind its own mark a lot walks along the line of the others, to get to it or away from it without going through them */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place", meta = (ClampMin = 0, Units = "cm"))
 	float LotAisle = 70.0f;
+
+	/**
+	 *  How high the ground is: level at StreetZ as far north as ClimbFrom (the level's X), and from there climbing
+	 *  northward by ClimbRise for each centimetre. Whoever is walked along a street is kept on it by this, and not by
+	 *  what can be felt under them, which is only there where the place is drawn.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place", meta = (Units = "cm"))
+	float StreetZ = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place", meta = (Units = "cm"))
+	float ClimbFrom = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place")
+	float ClimbRise = 0.0f;
+
+	float GetGroundZ(float X) const { return StreetZ + (FMath::Max(0.0f, X - ClimbFrom) * ClimbRise); }
 
 	/**
 	 *  The ground that can be walked on, as rectangles in the level (centimetres, X and Y). Whoever walks is kept inside

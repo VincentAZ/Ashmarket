@@ -9,8 +9,10 @@
 #include "GameFramework/PlayerController.h"
 #include "GutFighter.h"
 #include "EngineUtils.h"
+#include "GutArmorData.h"
 #include "GutCrowd.h"
 #include "GutGameInstance.h"
+#include "GutLadderData.h"
 #include "GutSound.h"
 #include "Misc/PackageName.h"
 #include "Kismet/GameplayStatics.h"
@@ -56,6 +58,7 @@ ATownGameMode::ATownGameMode()
 
 	Place = TSoftObjectPtr<UTownPlaceData>(FSoftObjectPath(TEXT("/Game/Town/DA_Town_PoolStreet.DA_Town_PoolStreet")));
 	PersonClass = TSoftClassPtr<AGutFighter>(FSoftObjectPath(TEXT("/Game/Gut/Blueprints/BP_GutDummy.BP_GutDummy_C")));
+	FirstLadder = TSoftObjectPtr<UGutLadderData>(FSoftObjectPath(TEXT("/Game/Gut/Ladder/DA_Gut_MeatLadder.DA_Gut_MeatLadder")));
 }
 
 void ATownGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
@@ -76,6 +79,7 @@ void ATownGameMode::InitGame(const FString& MapName, const FString& Options, FSt
 	}
 
 	PlaceData = Place.LoadSynchronous();
+	LadderData = FirstLadder.LoadSynchronous();
 
 	if (!PlaceData)
 	{
@@ -149,6 +153,7 @@ void ATownGameMode::Tick(float DeltaTime)
 
 	UpdateCalls(DeltaTime);
 	UpdateLed(DeltaTime);
+	UpdateBeats(DeltaTime);
 
 	if (AGutFighter* Walker = GetWalker())
 	{
@@ -156,11 +161,11 @@ void ATownGameMode::Tick(float DeltaTime)
 		FindReach(Walker);
 
 		// an open way to another place is gone through by walking up to it
-		if (PlaceData && SettledFor > 1.0f && !IsTalking() && !bStoppedMenu)
+		if (PlaceData && SettledFor > 1.0f && !IsTalking() && !bShopping && !bStoppedMenu)
 		{
 			for (const FTownDoor& Door : PlaceData->Doors)
 			{
-				if (Door.bWalkedThrough && Door.Deed == ETownDeed::Go && FVector::Dist2D(Walker->GetActorLocation(), Door.Place) < (Door.Reach > 0.0f ? Door.Reach : WayReach))
+				if (Door.bWalkedThrough && Door.Deed == ETownDeed::Go && Door.IsEntered(Walker->GetActorLocation(), WayReach))
 				{
 					Do(Door.Deed, &Door);
 					return;
@@ -168,10 +173,13 @@ void ATownGameMode::Tick(float DeltaTime)
 			}
 		}
 
-		// while they talk the camera comes round to look past the player at whoever is speaking, wherever it was before
-		if (AController* Eyes = Walker->GetController(); Eyes && IsTalking() && People.IsValidIndex(TalkingTo) && People[TalkingTo])
+		// while they talk the camera comes round to look past the player at whoever is speaking, wherever it was before,
+		// and stays there while the player is at their counter
+		const int32 Faced = IsTalking() ? TalkingTo : (bShopping ? ShopKeeper : INDEX_NONE);
+
+		if (AController* Eyes = Walker->GetController(); Eyes && People.IsValidIndex(Faced) && People[Faced])
 		{
-			const FVector Toward = People[TalkingTo]->GetActorLocation() - Walker->GetActorLocation();
+			const FVector Toward = People[Faced]->GetActorLocation() - Walker->GetActorLocation();
 
 			if (!Toward.IsNearlyZero())
 			{
@@ -313,6 +321,19 @@ void ATownGameMode::Settle()
 				Body->GetCharacterMovement()->DisableMovement();
 			}
 
+			// somebody with a round to walk is walked along it, from its first stop to its second
+			if (!Person.Beat.IsEmpty())
+			{
+				Body->GetCharacterMovement()->DisableMovement();
+
+				FTownBeat Round;
+				Round.Person = People.Num();
+				Round.Stop = Person.Beat.Num() > 1 ? 1 : 0;
+				Round.Wait = Person.Beat[0].Wait;
+
+				Beats.Add(Round);
+			}
+
 			// their clothes are the clothes everybody has, in their own colour
 			if (const AActor* Seen = Body->GetBodyActor())
 			{
@@ -422,7 +443,7 @@ void ATownGameMode::FindReach(const AGutFighter* Walker)
 
 	for (int32 i = 0; i < PlaceData->People.Num(); ++i)
 	{
-		const float Distance = FVector::Dist2D(Here, PlaceData->People[i].Place);
+		const float Distance = FVector::Dist2D(Here, GetPersonPlace(i));
 
 		// somebody with nothing to say is not offered to be talked to
 		if (Distance < Nearest && People.IsValidIndex(i) && People[i] && !PlaceData->People[i].Lines.IsEmpty())
@@ -458,7 +479,12 @@ void ATownGameMode::Interact()
 		return;
 	}
 
-	if (IsTalking())
+	if (bShopping)
+	{
+		// at a counter the same key takes what the player is on
+		HandleMenuInput(EGutMenuInput::Confirm);
+	}
+	else if (IsTalking())
 	{
 		AdvanceTalk();
 	}
@@ -502,7 +528,7 @@ void ATownGameMode::BeginTalk(int32 Person)
 
 	if (AGutFighter* Walker = GetWalker())
 	{
-		const FVector Toward = PlaceData->People[Person].Place - Walker->GetActorLocation();
+		const FVector Toward = GetPersonPlace(Person) - Walker->GetActorLocation();
 
 		if (!Toward.IsNearlyZero())
 		{
@@ -552,6 +578,15 @@ void ATownGameMode::AdvanceTalk()
 		{
 			// done where they stand, and the talk goes on with what it came to
 			Do(Answer.Deed);
+		}
+		else if (Answer.Deed == ETownDeed::Armor)
+		{
+			// to their counter: whoever was being talked to keeps it
+			const int32 Keeper = TalkingTo;
+
+			EndTalk();
+			OpenShop(Keeper);
+			return;
 		}
 		else if (Answer.Deed != ETownDeed::None)
 		{
@@ -620,6 +655,30 @@ void ATownGameMode::HandleMenuInput(EGutMenuInput Input)
 		return;
 	}
 
+	if (bShopping)
+	{
+		// the pieces, and under them the line that leaves
+		const int32 Pieces = GetShopLines().Num();
+
+		if (Input == EGutMenuInput::Up || Input == EGutMenuInput::Down)
+		{
+			ShopChoice = (ShopChoice + (Input == EGutMenuInput::Up ? Pieces : 1)) % (Pieces + 1);
+		}
+		else if (Input == EGutMenuInput::Confirm)
+		{
+			if (ShopChoice >= Pieces)
+			{
+				CloseShop();
+			}
+			else
+			{
+				BuyAtShop(ShopChoice);
+			}
+		}
+
+		return;
+	}
+
 	if (!IsTalking())
 	{
 		return;
@@ -650,6 +709,12 @@ void ATownGameMode::Do(ETownDeed Deed, const FTownDoor* Door)
 	if (Deed == ETownDeed::Borrow || Deed == ETownDeed::Repay)
 	{
 		Lend(Deed == ETownDeed::Borrow);
+		return;
+	}
+
+	if (Deed == ETownDeed::Armor)
+	{
+		OpenShop(INDEX_NONE);
 		return;
 	}
 
@@ -1058,6 +1123,355 @@ void ATownGameMode::UpdateLed(float DeltaTime)
 	}
 }
 
+FVector ATownGameMode::GetPersonPlace(int32 Person) const
+{
+	if (!PlaceData || !PlaceData->People.IsValidIndex(Person))
+	{
+		return FVector::ZeroVector;
+	}
+
+	// somebody who walks a round is wherever it has taken them
+	if (!PlaceData->People[Person].Beat.IsEmpty() && People.IsValidIndex(Person) && People[Person])
+	{
+		return People[Person]->GetActorLocation();
+	}
+
+	return PlaceData->People[Person].Place;
+}
+
+void ATownGameMode::UpdateBeats(float DeltaTime)
+{
+	if (Beats.IsEmpty() || !PlaceData)
+	{
+		return;
+	}
+
+	const AGutFighter* Walker = GetWalker();
+
+	for (FTownBeat& One : Beats)
+	{
+		AGutFighter* Body = People.IsValidIndex(One.Person) ? People[One.Person].Get() : nullptr;
+
+		if (!Body || !PlaceData->People.IsValidIndex(One.Person) || !PlaceData->People[One.Person].Beat.IsValidIndex(One.Stop))
+		{
+			continue;
+		}
+
+		const FTownPerson& Person = PlaceData->People[One.Person];
+		const int32 Stops = Person.Beat.Num();
+
+		const FRotator Facing = Body->GetActorRotation();
+		const FVector Here = Body->GetActorLocation();
+
+		const auto TurnTo = [this, Body, &Facing, DeltaTime](float Yaw)
+		{
+			Body->SetActorRotation(FMath::RInterpConstantTo(Facing, FRotator(0.0f, Yaw, 0.0f), DeltaTime, LotTurnSpeed));
+		};
+
+		// spoken to, or kept at their counter: they stand and look at whoever it is
+		if (Walker && (TalkingTo == One.Person || (bShopping && ShopKeeper == One.Person)))
+		{
+			Body->SetLedVelocity(FVector::ZeroVector);
+
+			if (const FVector Toward = Walker->GetActorLocation() - Here; !Toward.IsNearlyZero())
+			{
+				TurnTo(Toward.Rotation().Yaw);
+			}
+
+			continue;
+		}
+
+		// standing at a stop, looking at what they stopped for
+		if (One.Wait > 0.0f)
+		{
+			One.Wait -= DeltaTime;
+
+			Body->SetLedVelocity(FVector::ZeroVector);
+
+			if (const float Look = Person.Beat[(One.Stop + Stops - 1) % Stops].Facing; Look >= 0.0f)
+			{
+				TurnTo(Look);
+			}
+
+			continue;
+		}
+
+		const FTownBeatStop& Stop = Person.Beat[One.Stop];
+
+		FVector2D Flat(Here.X, Here.Y);
+
+		const FVector2D To(Stop.Place.X, Stop.Place.Y);
+		const float Distance = FVector2D::Distance(Flat, To);
+		const FVector2D Going = Distance > UE_KINDA_SMALL_NUMBER ? (To - Flat) / Distance : FVector2D::ZeroVector;
+
+		// somebody in their way: they stand until the way is clear, as people do
+		if (Walker)
+		{
+			const FVector2D Off(Walker->GetActorLocation().X - Here.X, Walker->GetActorLocation().Y - Here.Y);
+
+			if (Off.Size() < BeatRoom && FVector2D::DotProduct(Off.GetSafeNormal(), Going) > 0.3f)
+			{
+				Body->SetLedVelocity(FVector::ZeroVector);
+				continue;
+			}
+		}
+
+		const float OwnPace = Body->GetCharacterMovement()->MaxWalkSpeed;
+		const float Pace = (OwnPace > 1.0f ? OwnPace : 150.0f) * Person.Pace;
+		const float Step = Pace * DeltaTime;
+
+		if (Distance <= Step)
+		{
+			// there: they stand as long as the stop says, and then go on to the next
+			Flat = To;
+
+			One.Wait = Stop.Wait;
+			One.Stop = (One.Stop + 1) % Stops;
+		}
+		else
+		{
+			Flat += Going * Step;
+		}
+
+		// on the ground, which the place knows the height of: what can be felt under anybody is only there where it is drawn
+		const float HalfHeight = Body->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+		FRotator Turned = Facing;
+
+		if (!Going.IsNearlyZero())
+		{
+			Turned = FMath::RInterpConstantTo(Facing, FRotator(0.0f, FVector(Going.X, Going.Y, 0.0f).Rotation().Yaw, 0.0f), DeltaTime, LotTurnSpeed);
+		}
+
+		Body->SetActorLocationAndRotation(FVector(Flat.X, Flat.Y, PlaceData->GetGroundZ(Flat.X) + HalfHeight), Turned, false, nullptr, ETeleportType::None);
+		Body->SetLedVelocity(FVector(Going.X, Going.Y, 0.0f) * Pace);
+	}
+}
+
+const UGutLadderData* ATownGameMode::GetFighterRank() const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+	const UGutLadderData* Rank = LadderData;
+
+	// each rank is reached through the one before it
+	for (int32 i = 0; Rank && GameInstance && GameInstance->bLadderStarted && i < GameInstance->Ladder.Rank && Rank->NextLadder; ++i)
+	{
+		Rank = Rank->NextLadder;
+	}
+
+	return Rank;
+}
+
+const UGutLadderData* ATownGameMode::GetShelfRank() const
+{
+	// what is on the counter is what the fighter's rank is sold, or, if that is nothing, what the first rank above it is
+	const UGutLadderData* Rank = GetFighterRank();
+
+	while (Rank && Rank->ArmorShop.IsEmpty())
+	{
+		Rank = Rank->NextLadder;
+	}
+
+	return Rank;
+}
+
+bool ATownGameMode::HasFighter() const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	return GameInstance && GameInstance->bLadderStarted;
+}
+
+float ATownGameMode::GetShopWater() const
+{
+	return HasFighter() ? GetGutGameInstance()->Ladder.Water : 0.0f;
+}
+
+FString ATownGameMode::GetShopKeeper() const
+{
+	return (PlaceData && PlaceData->People.IsValidIndex(ShopKeeper)) ? PlaceData->People[ShopKeeper].Name : FString();
+}
+
+TArray<FTownShopLine> ATownGameMode::GetShopLines() const
+{
+	TArray<FTownShopLine> Lines;
+
+	const UGutLadderData* Shelf = GetShelfRank();
+	const UGutLadderData* Own = GetFighterRank();
+
+	if (!Shelf)
+	{
+		return Lines;
+	}
+
+	const bool bFighter = HasFighter();
+	const float Held = GetShopWater();
+
+	static const TCHAR* Parts[] = { TEXT("body"), TEXT("arms"), TEXT("legs") };
+
+	for (const UGutArmorData* Piece : Shelf->ArmorShop)
+	{
+		if (!Piece)
+		{
+			continue;
+		}
+
+		FTownShopLine Line;
+
+		Line.Name = Piece->DisplayName.ToString();
+		Line.Price = Piece->Price;
+
+		// what it takes off a blow that lands on the part it covers
+		Line.Detail = FString::Printf(TEXT("%s:  %.0f%% off a club, %.0f%% off a blade"), Parts[FMath::Clamp<int32>(static_cast<int32>(Piece->Slot), 0, 2)],
+			(1.0f - Piece->BluntScale) * 100.0f, (1.0f - Piece->BladedScale) * 100.0f);
+
+		Line.bWorn = bFighter && GetGutGameInstance()->Ladder.Armor.Contains(Piece->GetFName());
+
+		if (!bFighter)
+		{
+			Line.Why = TEXT("no fighter");
+		}
+		else if (Own != Shelf)
+		{
+			Line.Why = FString::Printf(TEXT("%s rank"), *Shelf->RankName.ToString());
+		}
+		else if (Line.bWorn)
+		{
+			Line.Why = TEXT("worn");
+		}
+		else if (Held < Piece->Price)
+		{
+			Line.Why = FString::Printf(TEXT("%.0f L short"), Piece->Price - Held);
+		}
+		else
+		{
+			Line.bCanBuy = true;
+		}
+
+		Lines.Add(MoveTemp(Line));
+	}
+
+	return Lines;
+}
+
+void ATownGameMode::OpenShop(int32 Keeper)
+{
+	const UGutLadderData* Shelf = GetShelfRank();
+	const UGutLadderData* Own = GetFighterRank();
+
+	ShopKeeper = Keeper;
+	ShopChoice = 0;
+	bShopping = true;
+
+	// why nothing on it can be bought, if nothing can: said once, at the top
+	if (!Shelf)
+	{
+		ShopSaid = TEXT("There is nothing on the counter.");
+	}
+	else if (!HasFighter())
+	{
+		ShopSaid = TEXT("This is ring armor, cut for the Gut's fighters, and you are not one yet: go in at the fighters' door first.");
+	}
+	else if (Own != Shelf)
+	{
+		ShopSaid = FString::Printf(TEXT("Armor is worn in the Gut from %s rank up, and sold to nobody below it. You are fighting at %s rank."), *Shelf->RankName.ToString(), Own ? *Own->RankName.ToString() : TEXT("no"));
+	}
+	else
+	{
+		ShopSaid.Reset();
+	}
+
+	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		Hands->SetIgnoreMoveInput(true);
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Street: at %s's counter. %s"), *GetShopKeeper(), *ShopSaid);
+}
+
+void ATownGameMode::CloseShop()
+{
+	if (!bShopping)
+	{
+		return;
+	}
+
+	bShopping = false;
+	ShopKeeper = INDEX_NONE;
+	ShopSaid.Reset();
+
+	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		Hands->ResetIgnoreMoveInput();
+	}
+}
+
+bool ATownGameMode::BuyAtShop(int32 Line)
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+	const UGutLadderData* Shelf = GetShelfRank();
+
+	const TArray<FTownShopLine> Lines = GetShopLines();
+
+	if (!GameInstance || !Shelf || !Lines.IsValidIndex(Line) || !Shelf->ArmorShop.IsValidIndex(Line) || !Shelf->ArmorShop[Line])
+	{
+		return false;
+	}
+
+	const UGutArmorData* Piece = Shelf->ArmorShop[Line];
+
+	if (!Lines[Line].bCanBuy)
+	{
+		// worn already, or short: said. Anything else was said when the counter was come to, and still stands.
+		if (Lines[Line].bWorn && Lines[Line].Why == TEXT("worn"))
+		{
+			ShopSaid = FString::Printf(TEXT("You have the %s on already."), *Lines[Line].Name.ToLower());
+		}
+		else if (Lines[Line].Why.EndsWith(TEXT("short")))
+		{
+			ShopSaid = FString::Printf(TEXT("The %s is %.0f L and you hold %.0f. Nothing here goes on a slate."), *Lines[Line].Name.ToLower(), Piece->Price, GetShopWater());
+		}
+
+		return false;
+	}
+
+	// what it goes on in place of, to say so
+	FString Off;
+
+	for (const UGutArmorData* Other : Shelf->ArmorShop)
+	{
+		if (Other && Other != Piece && Other->Slot == Piece->Slot && GameInstance->Ladder.Armor.Contains(Other->GetFName()))
+		{
+			Off = Other->DisplayName.ToString().ToLower();
+		}
+	}
+
+	// with water in hand: the armorers keep no slate
+	if (!GameInstance->BuyArmor(Shelf, Line, 0.0f))
+	{
+		return false;
+	}
+
+	// the fight the fighter is waiting for is come to as it now is, wearing it and without the water
+	GameInstance->LadderAtRungStart.Armor = GameInstance->Ladder.Armor;
+	GameInstance->LadderAtRungStart.Water -= Piece->Price;
+	GameInstance->LadderAtRungStart.ArmorSpend += Piece->Price;
+	GameInstance->SaveRun();
+
+	ShopSaid = Off.IsEmpty()
+		? FString::Printf(TEXT("Bought: the %s, %.0f L. You will have it on in your next fight."), *Lines[Line].Name.ToLower(), Piece->Price)
+		: FString::Printf(TEXT("Bought: the %s, %.0f L, in place of the %s."), *Lines[Line].Name.ToLower(), Piece->Price, *Off);
+
+	if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
+	{
+		Sounds->Play(FName("cash"), FVector::ZeroVector);
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Street: %s"), *ShopSaid);
+
+	return true;
+}
+
 const FTownCall* ATownGameMode::GetCall() const
 {
 	return (bSettled && PlaceData && PlaceData->Calls.IsValidIndex(CallIndex)) ? &PlaceData->Calls[CallIndex] : nullptr;
@@ -1065,7 +1479,7 @@ const FTownCall* ATownGameMode::GetCall() const
 
 FString ATownGameMode::GetPrompt() const
 {
-	if (!bSettled || !PlaceData || IsTalking() || bStoppedMenu)
+	if (!bSettled || !PlaceData || IsTalking() || bShopping || bStoppedMenu)
 	{
 		return FString();
 	}

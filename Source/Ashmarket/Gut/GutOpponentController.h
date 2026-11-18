@@ -190,6 +190,18 @@ struct FGutOpponentTuning
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Finishing", meta = (ClampMin = 0, ClampMax = 1))
 	float SlowFinisherChance = 0.3f;
 
+	/**
+	 *  Chance the opponent lets the cage finish a target that has staggered within a blow's drive of the spikes or the
+	 *  cable while they are live: it gets round to the other side of it and knocks it onto them. Only done to a target
+	 *  that another brain is fighting, never to the player, who is finished by hand as it always was.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Finishing", meta = (ClampMin = 0, ClampMax = 1))
+	float CageFinishChance = 0.5f;
+
+	/** With less than this left of the target's stagger and no blow yet thrown to drive it, the opponent gives the cage up and finishes it by hand */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Finishing", meta = (ClampMin = 0, ClampMax = 10, Units = "s"))
+	float CageFinishGiveUpTime = 1.5f;
+
 	/** Below this much stamina the opponent stops what it is doing and backs off */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Retreat", meta = (ClampMin = 0, ClampMax = 500))
 	float RetreatStamina = 25.0f;
@@ -320,6 +332,15 @@ protected:
 	/** How the opponent means to finish its staggered target */
 	EGutFinisherStyle PlannedFinisher = EGutFinisherStyle::Clean;
 
+	/** The hazard the opponent means to knock its staggered target onto, if it means to let the cage finish it */
+	TWeakObjectPtr<AGutHazard> CageFinish;
+
+	/** If true the blow that is to drive the target onto it has been thrown */
+	bool bCageBlowThrown = false;
+
+	/** Which way round its target the opponent is going to get behind it: 1 or -1, chosen once */
+	float CageRoundSide = 0.0f;
+
 	/** The cage's hazards, found when the fight starts */
 	TArray<TWeakObjectPtr<AGutHazard>> Hazards;
 
@@ -446,6 +467,18 @@ protected:
 
 	/** Returns the distance from a point to the nearest hazard that is live or about to be, the way out of it, and which hazard it is */
 	float GetHazardDistance(const FVector& Point, FVector& OutAwayDirection, const AGutHazard** OutHazard = nullptr) const;
+
+	/**
+	 *  Returns the live hazard a staggered target could be knocked onto from where it stands, or nothing: the nearest
+	 *  one that a blow's drive would carry it to.
+	 */
+	AGutHazard* FindCageFinish(const AGutFighter* Fighter, const AGutFighter* Target) const;
+
+	/**
+	 *  Gets to the far side of the staggered target from the hazard and knocks it on. Returns false when that is no
+	 *  longer worth trying, and the target is to be finished by hand.
+	 */
+	bool TickCageFinish(AGutFighter* Fighter, AGutFighter* Target);
 
 	/** Returns true if a clean hit that knocks the target back the given distance would carry it onto a hazard */
 	bool WouldKnockOntoHazard(const AGutFighter* Fighter, const AGutFighter* Target, float Knockback) const;

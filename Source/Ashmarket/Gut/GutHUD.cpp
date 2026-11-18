@@ -283,7 +283,19 @@ void AGutHUD::DrawHUD()
 			const AGutFighter* Standing = (StableSettlement.bSettled ? StableSettlement.bWon : WindowSettlement.Winner == 0) ? Player : Enemy;
 
 			DrawLabel(FString::Printf(TEXT("%s WALKS OUT"), Standing ? *Standing->GetDisplayName().ToString().ToUpper() : TEXT("ONE")), CenterX, 170.0f, 54, GutHUDColors::Text, true);
-			DrawLabel(TEXT("The cage's verdict is final."), CenterX, 255.0f, 22, GutHUDColors::DimText, true);
+
+			// if it was the cage that ended the other one, whoever watched is told which part of it
+			const AGutFighter* Down = Standing == Player ? Enemy : Player;
+
+			if (const AGutHazard* Took = Down ? Down->GetKillingHazard() : nullptr)
+			{
+				DrawLabel(FString::Printf(TEXT("The %s took %s."), *Took->GetDisplayName().ToString().ToLower(), *Down->GetDisplayName().ToString()), CenterX, 255.0f, 22, GutHUDColors::Warning, true);
+			}
+			else
+			{
+				DrawLabel(TEXT("The cage's verdict is final."), CenterX, 255.0f, 22, GutHUDColors::DimText, true);
+			}
+
 			break;
 		}
 

@@ -241,6 +241,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Stagger", meta = (ClampMin = 0, ClampMax = 1000))
 	float SecondWindStamina = 50.0f;
 
+	/**
+	 *  How far a staggered fighter reels from a blow thrown to drive it (TryDrive), and how long that takes. It is not hurt:
+	 *  it has nothing left to lose. But if the way it reels is onto the spikes or the cable, the cage ends it.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Stagger", meta = (ClampMin = 0, ClampMax = 1000, Units = "cm"))
+	float DriveDistance = 250.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Stagger", meta = (ClampMin = 0.05, ClampMax = 2, Units = "s"))
+	float DriveDuration = 0.6f;
+
 	/** How close a fighter must be to a staggered opponent to finish it, measured like an attack's reach */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Stagger", meta = (ClampMin = 0, ClampMax = 1000, Units = "cm"))
 	float FinisherRange = 170.0f;
@@ -835,6 +845,12 @@ protected:
 	/** Weight of the attack currently being performed */
 	EGutAttackType CurrentAttackType = EGutAttackType::Light;
 
+	/** If true the attack being performed was thrown to drive a staggered fighter across the cage, not to hurt anybody */
+	bool bDriving = false;
+
+	/** How many times this fighter has been driven while staggered, in this fight */
+	int32 TimesDriven = 0;
+
 	/** If true, the current attack turns to face the opponent during its windup */
 	bool bTrackOpponent = false;
 
@@ -957,6 +973,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category="Gut|Actions")
 	bool TryFinisher(EGutFinisherStyle Style);
+
+	/**
+	 *  Throws the heavy attack at a staggered opponent to drive it, not to finish it: a blow that lands sends it reeling
+	 *  the way the blow was going, and the cage ends it if that is onto something live. Returns true if the blow started now.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Gut|Actions")
+	bool TryDrive();
 
 	/** Puts a weapon in the fighter's hand. Empty means bare hands. A fighter whose weapon arm is crippled cannot hold one. */
 	UFUNCTION(BlueprintCallable, Category="Gut|Actions")
@@ -1221,6 +1244,13 @@ public:
 	/** Returns the number of times the cage's hazards have hurt this fighter in this fight */
 	UFUNCTION(BlueprintPure, Category="Gut")
 	int32 GetHazardHits() const { return HazardHits; }
+
+	/** Returns how many times this fighter has been sent reeling by a blow while it was staggered, in this fight */
+	UFUNCTION(BlueprintPure, Category="Gut")
+	int32 GetTimesDriven() const { return TimesDriven; }
+
+	/** Returns how far a blow thrown to drive a staggered fighter sends it */
+	float GetDriveDistance() const { return DriveDistance; }
 
 	/** Returns the hazard that killed this fighter, or nothing if it is alive or something else killed it */
 	UFUNCTION(BlueprintPure, Category="Gut")

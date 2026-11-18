@@ -10,7 +10,7 @@ class ATownGameMode;
 
 /**
  *  What is drawn over the street: what is in reach and the key that uses it, what somebody is saying and what
- *  can be said back, what the player holds and owes, and the menu that stops the game.
+ *  can be said back, what is on a counter, what the player holds and owes, and the menu that stops the game.
  *  It is the cage's HUD for its panels and its type, and draws none of the cage's screens.
  */
 UCLASS()
@@ -32,5 +32,6 @@ protected:
 	static TArray<FString> Wrap(const FString& Words, int32 Length);
 
 	void DrawTalk(const ATownGameMode* Town, float CenterX);
+	void DrawShop(const ATownGameMode* Town, float CenterX);
 	void DrawTownStopped(const ATownGameMode* Town, float CenterX);
 };

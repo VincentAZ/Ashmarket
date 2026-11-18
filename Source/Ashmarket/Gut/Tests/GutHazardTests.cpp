@@ -9,6 +9,7 @@
 #include "GutFlood.h"
 #include "GutHazard.h"
 #include "GutLiveCable.h"
+#include "GutOpponentController.h"
 #include "GutSpikeWall.h"
 #include "Tests/AutomationCommon.h"
 
@@ -19,6 +20,7 @@
  *                                  across; the cage kills outright and credits the fighter who drove the victim in
  *  Ashmarket.Gut.HazardDeath       hazards that are switched off stay off; the cable kills the player and loses the fight
  *  Ashmarket.Gut.HazardAvoidance   the opponent walks round the live cable to reach the player, and never touches it
+ *  Ashmarket.Gut.CageFinish        one of the cage's own, beaten in front of the spikes by another, is knocked onto them
  *  Ashmarket.Gut.Flood             the valve opens before round 4 and the water rises; over the ankles it slows everybody,
  *                                  shortens a dodge and carries the cable's current; switched off, the pool is dry again
  *
@@ -412,6 +414,94 @@ bool FGutHazardDeathTest::RunTest(const FString& Parameters)
 	Steps.Add({ 1.0f, [](const FFight& Fight)
 	{
 		Screenshot(TEXT("21_cable_kills_player"));
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScriptCommand(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGutCageFinishTest, "Ashmarket.Gut.CageFinish", GutTests::Flags)
+
+bool FGutCageFinishTest::RunTest(const FString& Parameters)
+{
+	using namespace GutTests;
+	using namespace GutHazardTests;
+	using FStep = FScriptCommand::FStep;
+
+	if (!OpenCage(this))
+	{
+		return false;
+	}
+
+	TArray<FStep> Steps;
+	TSharedRef<bool> bReady = MakeShared<bool>(false);
+
+	// two of the cage's own, one of them beaten two metres in front of the spikes while they are out
+	Steps.Add({ 0.2f, [this, bReady](const FFight& Fight)
+	{
+		*bReady = HasHazards(this, Fight);
+
+		AGutOpponentController* Brain = Cast<AGutOpponentController>(Fight.Enemy->GetController());
+
+		if (!*bReady || !TestNotNull(TEXT("The enemy has the cage's brain"), Brain))
+		{
+			*bReady = false;
+			return;
+		}
+
+		// the one who is to be beaten is the cage's too, and stands still: the cage is only let finish its own
+		if (AGutBrainController* Still = Cast<AGutBrainController>(GiveBrain(Fight.Player, Brain->GetClass())))
+		{
+			Still->SetBrainEnabled(false);
+		}
+
+		// this one lets the cage do it whenever the cage can
+		FGutOpponentTuning Tuning = Brain->GetTuning();
+
+		Tuning.CageFinishChance = 1.0f;
+		Tuning.MinFinishDelay = 0.1f;
+		Tuning.MaxFinishDelay = 0.1f;
+
+		Brain->SetTuning(Tuning);
+
+		Fight.GameMode->StartFight();
+
+		SetFightTime(Fight, Fight.GameMode->GetRoundStartTime(2) + 1.0f);
+
+		TestEqual(TEXT("The spikes are out"), FindHazard<AGutSpikeWall>(Fight)->GetHazardState(), EGutHazardState::Live);
+
+		// its back to the spikes, two metres off them, and the other in front of it
+		PlaceAt(Fight.Player, 0.0f, SpikeWallY + 245.0f, 90.0f);
+		PlaceAt(Fight.Enemy, 0.0f, SpikeWallY + 420.0f, -90.0f);
+
+		Fight.Player->SetHealth(1.0f);
+
+		// a light blow is all it takes to beat it, and does not carry it far
+		if (const FGutAttackDef* Blow = Fight.Enemy->GetNextLightAttack())
+		{
+			Fight.Player->ReceiveAttack(Fight.Enemy, *Blow);
+		}
+
+		TestTrue(TEXT("It is beaten and still standing"), Fight.Player->IsStaggered());
+		TestFalse(TEXT("And is not on the spikes yet"), FindHazard<AGutSpikeWall>(Fight)->IsTouching(Fight.Player));
+	} });
+
+	Steps.Add({ 4.0f, [this, bReady](const FFight& Fight)
+	{
+		if (!*bReady) { return; }
+
+		TestFalse(TEXT("The beaten fighter is dead"), Fight.Player->IsAlive());
+		TestTrue(TEXT("It was sent reeling by a blow thrown to drive it"), Fight.Player->GetTimesDriven() >= 1);
+		TestTrue(TEXT("The spikes killed it"), Fight.Player->GetKillingHazard() == FindHazard<AGutSpikeWall>(Fight));
+		TestFalse(TEXT("And no finisher did"), Fight.Player->WasFinished());
+		TestTrue(TEXT("Whoever drove it there is credited"), Fight.Player->GetKiller() == Fight.Enemy);
+		TestTrue(TEXT("The one who did it is alive and unhurt by the spikes"), Fight.Enemy->IsAlive() && Fight.Enemy->GetHazardHits() == 0);
+	} });
+
+	Steps.Add({ 0.5f, [](const FFight& Fight)
+	{
+		Screenshot(TEXT("22_driven_onto_the_spikes"));
 	} });
 
 	ADD_LATENT_AUTOMATION_COMMAND(FScriptCommand(this, MoveTemp(Steps)));

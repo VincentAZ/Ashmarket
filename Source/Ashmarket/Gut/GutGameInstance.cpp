@@ -3,6 +3,8 @@
 #include "GutGameInstance.h"
 #include "AudioDevice.h"
 #include "Engine/World.h"
+#include "GutArmorData.h"
+#include "GutLadderData.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/PackageName.h"
 #include "Misc/CommandLine.h"
@@ -19,6 +21,22 @@ void UGutGameInstance::Init()
 	}
 
 	LoadRun();
+
+	// -GutRank=2 -GutWater=60 begins as a fighter who has already climbed that many ranks and holds that much: for trying
+	// what only a Butcher can do without fighting up to it. Only with -GutNoSave, so that nobody's own run is written over.
+	int32 Rank = 0;
+
+	if (FParse::Value(FCommandLine::Get(), TEXT("GutRank="), Rank) && !bSaveEnabled)
+	{
+		float Held = 0.0f;
+		FParse::Value(FCommandLine::Get(), TEXT("GutWater="), Held);
+
+		ResetLadder(Held);
+
+		Ladder.Rank = FMath::Max(Rank, 0);
+		LadderAtRungStart = Ladder;
+		PendingStory = EGutStory::None;
+	}
 
 	// how loud the player left it, which is theirs and not part of any run
 	if (bSaveEnabled)
@@ -44,6 +62,39 @@ void UGutGameInstance::KeepLoudness() const
 	Kept->Loudness = Loudness;
 
 	UGameplayStatics::SaveGameToSlot(Kept, SettingsSlotName, 0);
+}
+
+bool UGutGameInstance::BuyArmor(const UGutLadderData* Rank, int32 ShopIndex, float Credit)
+{
+	if (!bLadderStarted || !Rank || !Rank->ArmorShop.IsValidIndex(ShopIndex) || !Rank->ArmorShop[ShopIndex])
+	{
+		return false;
+	}
+
+	const UGutArmorData* Piece = Rank->ArmorShop[ShopIndex];
+
+	// already on, or it cannot be paid for
+	if (Ladder.Armor.Contains(Piece->GetFName()) || Ladder.Water - Piece->Price < -Credit)
+	{
+		return false;
+	}
+
+	// it goes on in place of whatever was worn on that part of the body
+	for (const UGutArmorData* Other : Rank->ArmorShop)
+	{
+		if (Other && Other->Slot == Piece->Slot)
+		{
+			Ladder.Armor.Remove(Other->GetFName());
+		}
+	}
+
+	Ladder.Armor.Add(Piece->GetFName());
+	Ladder.Water -= Piece->Price;
+	Ladder.ArmorSpend += Piece->Price;
+
+	UE_LOG(LogGut, Log, TEXT("Ladder: bought %s for %.0f L, leaving %.0f L"), *Piece->GetName(), Piece->Price, Ladder.Water);
+
+	return true;
 }
 
 void UGutGameInstance::ResetLadder(float StartingWater)

@@ -52,7 +52,8 @@ BULB_COLOUR = unreal.Color(r=255, g=184, b=107, a=255)    # by name: the colour 
 
 DEEDS = {"": unreal.TownDeed.NONE, "fight": unreal.TownDeed.FIGHT, "fight_afresh": unreal.TownDeed.FIGHT_AFRESH,
          "spar": unreal.TownDeed.SPAR, "bet": unreal.TownDeed.BET, "own": unreal.TownDeed.OWN, "go": unreal.TownDeed.GO,
-         "buy": unreal.TownDeed.BUY, "borrow": unreal.TownDeed.BORROW, "repay": unreal.TownDeed.REPAY}
+         "buy": unreal.TownDeed.BUY, "borrow": unreal.TownDeed.BORROW, "repay": unreal.TownDeed.REPAY,
+         "armor": unreal.TownDeed.ARMOR}
 
 # what the cage's crowd is made of, which a crowd standing anywhere else is made of too: read from the cage's own crowd
 CROWD_MAKINGS = ("spectator_mesh", "idle_animation", "cheer_animation", "idle_animations", "cheer_animations", "tint_parameter",
@@ -433,6 +434,18 @@ def main():
     world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
     world.get_world_settings().set_editor_property("default_game_mode", unreal.TownGameMode)
 
+    # The night sky is a photograph on the inside of a dome, which the cage's level centres on the pool and makes about
+    # 130 m in radius, with the photograph's own ground a metre under the pool's floor. A place further from the pool than
+    # that is outside its own sky: whoever stands near the dome's wall sees the photograph's hills a few metres off, and
+    # nothing beyond them. 'sky' centres the dome on the place, makes it big enough to hold everything that is seen from
+    # it, and puts its ground under the place's lowest.
+    if listed.get("sky"):
+        for actor in actors.get_all_level_actors():
+            if actor.get_actor_label() == "NightSky":
+                actor.set_actor_location(place(listed["sky"]["x"], listed["sky"]["y"], listed["sky"]["z"]), False, False)
+                actor.set_editor_property("Size", float(listed["sky"]["size"]))
+                log("the sky is centred on ({}, {}), its ground at {} m, size {}".format(listed["sky"]["x"], listed["sky"]["y"], listed["sky"]["z"], listed["sky"]["size"]))
+
     cube = unreal.load_asset("/Engine/BasicShapes/Cube")
     counts = {}
 
@@ -451,6 +464,7 @@ def main():
 
         middle = place((west + east) * 0.5, (south + north) * 0.5, 0.0)
         tilt = 0.0
+        lift = 0.0
 
         if slope:
             rise = height(north) - height(south)
@@ -472,7 +486,7 @@ def main():
         label(actor, kind, name)
 
         # a wall that comes down to where people are is walked round
-        if kind == "Wall" and (bottom - street) * 100.0 < HEAD:
+        if kind == "Wall" and (bottom - street - lift) * 100.0 < HEAD:
             blocks.append((middle.x, middle.y, (north - south) * 50.0, (east - west) * 50.0, 0.0))
 
         return actor
@@ -618,6 +632,11 @@ def main():
         x0, x1, y0, y1 = [edge * scale for edge in turned((box.min.x, box.max.x, box.min.y, box.max.y), yaw)]
         low, high = box.min.z * scale, box.max.z * scale
 
+        # on a slope a thing stands on the lowest ground under it, and is sunk into what is higher: nothing hangs in the air
+        if base is None:
+            reach = (x1 - x0) / 200.0
+            base = min(height(y - reach), height(y + reach))
+
         want = place(x, y, base)
         where = unreal.Vector(want.x - (x0 + x1) * 0.5, want.y - (y0 + y1) * 0.5, want.z - low)
         actor = put(name, where, yaw, kind, blocking and want.z - place(x, y).z < HEAD, scale)
@@ -661,7 +680,8 @@ def main():
                 ground = place(middle, entry["face"])
                 where = unreal.Vector(ground.x - (foot_from if far_side else foot_to), (cursor - origin["x"] * 100.0) - begins, 0.0)
             else:
-                ground = place(entry["face"], middle)
+                # along a street that climbs, a stack stands on the ground at its lower end
+                ground = place(entry["face"], middle, min(height(cursor / 100.0), height((cursor + length) / 100.0)))
                 where = unreal.Vector((cursor - origin["y"] * 100.0) - begins, ground.y - (foot_from if far_side else foot_to), 0.0)
 
             box = known(name).get_bounding_box()
@@ -841,6 +861,19 @@ def main():
         person.set_editor_property("collared", bool(entry.get("collared")))
         person.set_editor_property("lot", int(entry.get("lot", 0)))
 
+        # a round they walk: each stop is [x, y], then how long they stand there, then which way they look while they do
+        beat = []
+
+        for at in entry.get("beat", []):
+            stop = unreal.TownBeatStop()
+            stop.set_editor_property("place", place(at[0], at[1]))
+            stop.set_editor_property("wait", float(at[2]) if len(at) > 2 else 0.0)
+            stop.set_editor_property("facing", float(at[3]) if len(at) > 3 else -1.0)
+            beat.append(stop)
+
+        person.set_editor_property("beat", beat)
+        person.set_editor_property("pace", float(entry.get("pace", 0.85)))
+
         ids = {line["id"]: index for index, line in enumerate(entry.get("lines", []))}
         lines = []
 
@@ -876,6 +909,16 @@ def main():
         door.set_editor_property("arrive", entry.get("arrive", ""))
         door.set_editor_property("walked_through", bool(entry.get("walk_through")))
         door.set_editor_property("reach", float(entry.get("reach", 0.0)) * 100.0)
+
+        # a way as wide as a street is gone through anywhere across its mouth
+        if entry.get("mouth"):
+            low, high = place(entry["mouth"]["x"][0], entry["mouth"]["y"][0]), place(entry["mouth"]["x"][1], entry["mouth"]["y"][1])
+
+            mouth = unreal.Box2D()
+            mouth.set_editor_property("min", unreal.Vector2D(min(low.x, high.x), min(low.y, high.y)))
+            mouth.set_editor_property("max", unreal.Vector2D(max(low.x, high.x), max(low.y, high.y)))
+            mouth.set_editor_property("is_valid", True)
+            door.set_editor_property("mouth", mouth)
         doors.append(door)
 
     # the ways in from other places
@@ -938,7 +981,8 @@ def main():
         places = []
 
         for spot in stood:
-            ground = low.z
+            # the ground where they stand, which on a street that climbs is not the same for all of them
+            ground = (height(spot[0] / 100.0 + origin["y"]) - origin["z"]) * 100.0
             yaw = math.degrees(math.atan2(look.y - spot[1], look.x - spot[0])) + dealt.uniform(-18.0, 18.0)
             places.append(unreal.Transform(location=unreal.Vector(spot[0], spot[1], ground), rotation=unreal.Rotator(roll=0.0, pitch=0.0, yaw=yaw), scale=unreal.Vector(1.0, 1.0, 1.0)))
             blocks.append((spot[0], spot[1], 20.0, 20.0, 0.0))
@@ -979,6 +1023,11 @@ def main():
     data.set_editor_property("lot_aisle", float(listed.get("lot_aisle", 0.7)) * 100.0)
     data.set_editor_property("ground", ground)
 
+    # how high the ground is, for whoever is walked along it
+    data.set_editor_property("street_z", (street - origin["z"]) * 100.0)
+    data.set_editor_property("climb_from", (alley["from_y"] - origin["y"]) * 100.0)
+    data.set_editor_property("climb_rise", float(alley["rise_per_metre"]))
+
     standing = []
 
     for middle_x, middle_y, half_x, half_y, yaw in blocks:
@@ -993,10 +1042,19 @@ def main():
 
     # nobody is to be stopped by nothing: wherever the ground ends, something has to stand
     # except at an open way to another place, which is where the ground is meant to go on
-    ways = [place(d["x"], d["y"]) for d in listed["doors"] if d.get("walk_through")]
+    ways = [place(d["x"], d["y"]) for d in listed["doors"] if d.get("walk_through") and not d.get("mouth")]
+    mouths = [(place(d["mouth"]["x"][0], d["mouth"]["y"][0]), place(d["mouth"]["x"][1], d["mouth"]["y"][1])) for d in listed["doors"] if d.get("mouth")]
 
-    bare = [(begin, end) for begin, end in open_edges(patches, blocks)
-            if not any(math.hypot((begin[0] + end[0]) * 0.5 - way.x, (begin[1] + end[1]) * 0.5 - way.y) < 320.0 for way in ways)]
+    def at_a_way(begin, end):
+        middle = ((begin[0] + end[0]) * 0.5, (begin[1] + end[1]) * 0.5)
+
+        if any(math.hypot(middle[0] - way.x, middle[1] - way.y) < 320.0 for way in ways):
+            return True
+
+        # the far edge of a mouth, and a metre round it
+        return any(min(a.x, b.x) - 100.0 <= middle[0] <= max(a.x, b.x) + 100.0 and min(a.y, b.y) - 100.0 <= middle[1] <= max(a.y, b.y) + 100.0 for a, b in mouths)
+
+    bare = [(begin, end) for begin, end in open_edges(patches, blocks) if not at_a_way(begin, end)]
 
     for begin, end in bare:
         log("OPEN EDGE: nothing stands along the ground's edge from ({:.1f}, {:.1f}) to ({:.1f}, {:.1f}) on the map, {:.1f} m".format(

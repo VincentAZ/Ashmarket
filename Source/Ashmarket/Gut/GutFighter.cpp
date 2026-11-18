@@ -585,6 +585,24 @@ bool AGutFighter::TryHeavyAttack()
 	return false;
 }
 
+bool AGutFighter::TryDrive()
+{
+	if (!IsAlive() || !bCombatEnabled || !GetArmament() || (State != EGutFighterState::Idle && State != EGutFighterState::Blocking))
+	{
+		return false;
+	}
+
+	if (!StartAttack(GetHeavyAttack(), EGutAttackType::Heavy))
+	{
+		return false;
+	}
+
+	LastLightAttackEndTime = -100.0f;
+	bDriving = true;
+
+	return true;
+}
+
 void AGutFighter::SetBlocking(bool bBlock)
 {
 	// an animal has no guard to put up
@@ -798,11 +816,43 @@ void AGutFighter::DropWeapon()
 
 EGutHitResult AGutFighter::ReceiveAttack(AGutFighter* Attacker, const FGutAttackDef& Attack)
 {
-	// the dead and the fighters outside a running fight cannot be hurt.
-	// Nor can a staggered fighter: it is already beaten, and only a finisher ends it.
-	if (!IsAlive() || !bCombatEnabled || IsStaggered())
+	// the dead and the fighters outside a running fight cannot be hurt
+	if (!IsAlive() || !bCombatEnabled)
 	{
 		return EGutHitResult::Ignored;
+	}
+
+	// Nor can a staggered fighter: it is already beaten, and only a finisher ends it. But nobody is holding it up. A blow
+	// thrown to drive it sends it reeling the way the blow was going, and if that is onto the spikes or the cable, the
+	// cage ends it there.
+	if (IsStaggered())
+	{
+		if (!Attacker || !Attacker->bDriving || IsBeingFinished())
+		{
+			return EGutHitResult::Ignored;
+		}
+
+		FVector Driven = (GetActorLocation() - Attacker->GetActorLocation()).GetSafeNormal2D();
+
+		if (Driven.IsNearlyZero())
+		{
+			Driven = Attacker->GetActorForwardVector();
+		}
+
+		++TimesDriven;
+
+		// whoever sends it there is who the cage's kill is put down to
+		LastAttacker = Attacker;
+		LastAttackedTime = GetWorld()->GetTimeSeconds();
+		LastHitResult = EGutHitResult::Hit;
+
+		MakeSound(VoiceSound(TEXT("pain")), 0.9f);
+		SpillBlood(Driven, 6.0f);
+		ApplyPush(Driven, DriveDistance, DriveDuration);
+
+		UE_LOG(LogGut, Log, TEXT("%s -> %s: driven %.0f cm while staggered"), *Attacker->GetName(), *GetName(), DriveDistance);
+
+		return EGutHitResult::Hit;
 	}
 
 	// let an AI brain make a reaction that has come due, even if its own turn this frame is still to come
@@ -2476,6 +2526,7 @@ bool AGutFighter::StartAttack(const FGutAttackDef& Attack, EGutAttackType Type)
 	}
 
 	CurrentAttackType = Type;
+	bDriving = false;
 	SwingHitFighters.Reset();
 
 	++AttackSerial;

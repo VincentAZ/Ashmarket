@@ -17,6 +17,7 @@
 #include "GameFramework/HUD.h"
 #include "HAL/IConsoleManager.h"
 #include "GameFramework/PlayerController.h"
+#include "GutOpponentController.h"
 #include "GutBrainController.h"
 #include "GutCrowd.h"
 #include "GutLadderData.h"
@@ -809,6 +810,53 @@ bool FGutLookFightTest::RunTest(const FString& Parameters)
 		}
 
 		Fight.GameMode->StartFight();
+
+		// -GutFilmCage=1 films a fighter let finish by the cage: the fight is taken to where the spikes are out (2 is the
+		// cable), the two are stood in front of them with the one who is to lose nearest, and the other is of a mind to
+		// use them whenever it can. The one who is to lose has stopped fighting back, and the next blow beats it.
+		int32 Cage = 0;
+
+		if (FParse::Value(FCommandLine::Get(), TEXT("GutFilmCage="), Cage) && (Cage == 1 || Cage == 2))
+		{
+			Fight.GameMode->AdvanceFightTime(Fight.GameMode->GetRoundStartTime(Cage == 1 ? 2 : 3) + 1.0f - Fight.GameMode->GetFightTime());
+
+			if (Cage == 1)
+			{
+				// the spikes are in the long wall at Y -500
+				PlaceAt(Fight.Player, 60.0f, -500.0f + 250.0f, 90.0f);
+				PlaceAt(Fight.Enemy, 60.0f, -500.0f + 450.0f, -90.0f);
+			}
+			else
+			{
+				// the cable lies along Y 250, from X -630 to -30
+				PlaceAt(Fight.Player, -330.0f, 250.0f - 235.0f, -90.0f);
+				PlaceAt(Fight.Enemy, -330.0f, 250.0f - 430.0f, 90.0f);
+			}
+
+			if (AGutOpponentController* Brain = Cast<AGutOpponentController>(Fight.Enemy->GetController()))
+			{
+				FGutOpponentTuning Tuning = Brain->GetTuning();
+
+				Tuning.CageFinishChance = 1.0f;
+
+				Brain->SetTuning(Tuning);
+			}
+
+			// the one who is to lose is on its last legs and has stopped fighting back: the next blow beats it where it stands
+			if (AGutBrainController* Spent = Cast<AGutBrainController>(Fight.Player->GetController()))
+			{
+				Spent->SetBrainEnabled(false);
+			}
+
+			Fight.Player->SetHealth(6.0f);
+
+			// nothing is written over it: what is written in a fight is written to whoever is fighting it, and this is one
+			// that is watched
+			if (const APlayerController* Eyes = Fight.GameMode->GetWorld()->GetFirstPlayerController(); Eyes && Eyes->GetHUD())
+			{
+				Eyes->GetHUD()->bShowHUD = false;
+			}
+		}
 
 		FString Wanted;
 

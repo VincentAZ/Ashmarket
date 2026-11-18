@@ -10,6 +10,7 @@
 
 class AGutFighter;
 class UGutGameInstance;
+class UGutLadderData;
 class UIKRetargeter;
 
 /** The lines of the menu that stops the game in the street */
@@ -35,6 +36,37 @@ struct FTownLed
 
 	/** How long before they set off */
 	float Wait = 0.0f;
+};
+
+/** Somebody who walks a round of the place, as the place's list says: where they have got to on it */
+struct FTownBeat
+{
+	/** Who: their place among the place's people */
+	int32 Person = INDEX_NONE;
+
+	/** The stop they are walking to, or standing at */
+	int32 Stop = 0;
+
+	/** How long they still have to stand where they are */
+	float Wait = 0.0f;
+};
+
+/** One thing on a counter, as it is offered to whoever is at it */
+struct FTownShopLine
+{
+	FString Name;
+
+	/** What it is for, in a few words */
+	FString Detail;
+
+	float Price = 0.0f;
+
+	/** The player has it on already */
+	bool bWorn = false;
+
+	/** It can be bought now. If not, Why says why not. */
+	bool bCanBuy = false;
+	FString Why;
 };
 
 /**
@@ -109,6 +141,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 30, ClampMax = 300, Units = "cm"))
 	float LotFileGap = 85.0f;
 
+	/** The first rank of the cage's ladder, from which the rank a fighter has reached is found: what the armorers sell goes by it */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town")
+	TSoftObjectPtr<UGutLadderData> FirstLadder;
+
+	/** Somebody walking their round stops for whoever is in front of them and this near, and walks on when the way is clear */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 30, ClampMax = 400, Units = "cm"))
+	float BeatRoom = 130.0f;
+
 	/** While somebody is talked to the camera turns to look past the player at them: this far to one side, this far down, this fast */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = -90, ClampMax = 90, Units = "deg"))
 	float TalkCameraYaw = -22.0f;
@@ -163,6 +203,21 @@ protected:
 	/** Everybody who is being walked somewhere just now */
 	TArray<FTownLed> Led;
 
+	/** Everybody who walks a round of the place */
+	TArray<FTownBeat> Beats;
+
+	/** Whose counter the player is at, as their place among the people: less than nought is nobody's */
+	int32 ShopKeeper = INDEX_NONE;
+
+	/** True while the player is at a counter, which of its lines it is on, and what the last thing done there came to */
+	bool bShopping = false;
+	int32 ShopChoice = 0;
+	FString ShopSaid;
+
+	/** The cage's ladder, once read */
+	UPROPERTY(Transient)
+	TObjectPtr<UGutLadderData> LadderData;
+
 	/** The lots that have been walked off and are kept, as their places among the people, in the order they went: the first is at the far end of the file */
 	TArray<int32> KeptLots;
 
@@ -207,6 +262,16 @@ protected:
 
 	/** Moves everybody who is being walked somewhere, on whatever is under them */
 	void UpdateLed(float DeltaTime);
+
+	/** Moves everybody who walks a round of the place on along it */
+	void UpdateBeats(float DeltaTime);
+
+	/** Where somebody is: where they stand, or where their round has taken them */
+	FVector GetPersonPlace(int32 Person) const;
+
+	/** The rank of the cage's ladder the player's fighter has reached, or the first if it has none; and the rank whose armor is on the counter */
+	const UGutLadderData* GetFighterRank() const;
+	const UGutLadderData* GetShelfRank() const;
 
 	UGutGameInstance* GetGutGameInstance() const;
 
@@ -258,6 +323,34 @@ public:
 	/** How many of the sale's lots have been walked off and not brought back, and how many people are being walked somewhere now */
 	int32 GetLotsKept() const { return KeptLots.Num(); }
 	int32 GetLedCount() const { return Led.Num(); }
+
+	/** Opens the armorers' counter, kept by whichever of the people it is, and shuts it */
+	void OpenShop(int32 Keeper);
+	void CloseShop();
+
+	bool IsShopping() const { return bShopping; }
+
+	/** Who keeps the counter the player is at */
+	FString GetShopKeeper() const;
+
+	/** What is on the counter, a line to a piece, in the order it is sold in */
+	TArray<FTownShopLine> GetShopLines() const;
+
+	/** Which line the player is on: one past the last piece is the line that leaves */
+	int32 GetShopChoice() const { return ShopChoice; }
+
+	/** What the fighter holds to spend there, and whether there is a fighter at all */
+	float GetShopWater() const;
+	bool HasFighter() const;
+
+	/** What the last thing done at the counter came to, in words */
+	const FString& GetShopSaid() const { return ShopSaid; }
+
+	/** Buys the piece on that line with the fighter's own water. Returns false if it cannot be bought, and says why. */
+	bool BuyAtShop(int32 Line);
+
+	/** For the tests: how many walk a round, and how far along it one of them is */
+	int32 GetBeatCount() const { return Beats.Num(); }
 
 	/** For the tests: has the call before the given one all but run out, so that the given one is called next */
 	void SkipToCall(int32 Index);

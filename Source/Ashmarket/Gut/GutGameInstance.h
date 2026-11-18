@@ -10,6 +10,8 @@
 #include "GutWindowTypes.h"
 #include "GutGameInstance.generated.h"
 
+class UGutLadderData;
+
 /** How far the player has got up the ladder, and what it is carrying */
 USTRUCT(BlueprintType)
 struct FGutLadderState
@@ -265,6 +267,14 @@ public:
 
 	/** Reads the run back from disk, if there is one */
 	virtual void Init() override;
+
+	/**
+	 *  Buys the fighter a piece of armor from what a rank sells, to be worn in place of whatever it had on that part of
+	 *  the body. Credit is how far into the red whoever is selling lets it go. Returns false if the piece is already
+	 *  worn or there is not the water for it. Whoever calls this says where it can be done: the cage at its card, the
+	 *  armorers at their counter.
+	 */
+	bool BuyArmor(const UGutLadderData* Rank, int32 ShopIndex, float Credit);
 
 	/** Puts the player back at the foot of the ladder, whole, with the given water, and forgets the run on disk */
 	UFUNCTION(BlueprintCallable, Category="Gut")

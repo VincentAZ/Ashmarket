@@ -1120,36 +1120,8 @@ bool AGutGameMode::BuyArmor(int32 ShopIndex)
 	UGutGameInstance* GameInstance = GetGutGameInstance();
 	const UGutLadderData* Rank = GetLadder();
 
-	if (Phase != EGutFightPhase::Card || !IsOnLadder() || !Rank->ArmorShop.IsValidIndex(ShopIndex) || !Rank->ArmorShop[ShopIndex])
-	{
-		return false;
-	}
-
-	const UGutArmorData* Piece = Rank->ArmorShop[ShopIndex];
-	FGutLadderState& State = GameInstance->Ladder;
-
-	// already on, or the slate will not stretch to it
-	if (IsArmorWorn(Piece) || State.Water - Piece->Price < -Rank->SlateLimit)
-	{
-		return false;
-	}
-
-	// it goes on in place of whatever was worn on that part of the body
-	for (const UGutArmorData* Other : Rank->ArmorShop)
-	{
-		if (Other && Other->Slot == Piece->Slot)
-		{
-			State.Armor.Remove(Other->GetFName());
-		}
-	}
-
-	State.Armor.Add(Piece->GetFName());
-	State.Water -= Piece->Price;
-	State.ArmorSpend += Piece->Price;
-
-	UE_LOG(LogGut, Log, TEXT("Ladder: bought %s for %.0f L, leaving %.0f L"), *Piece->GetName(), Piece->Price, State.Water);
-
-	return true;
+	// at the card, on the pit boss's slate as far as it stretches
+	return Phase == EGutFightPhase::Card && IsOnLadder() && Rank && GameInstance->BuyArmor(Rank, ShopIndex, Rank->SlateLimit);
 }
 
 bool AGutGameMode::PatchLimb()

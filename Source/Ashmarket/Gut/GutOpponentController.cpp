@@ -7,9 +7,17 @@
 #include "GutFighter.h"
 #include "GutHazard.h"
 #include "GutWeaponData.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 
 namespace GutOpponentConstants
 {
+	/** To knock a staggered target onto a hazard the opponent has to be this nearly straight behind it: the cosine of the angle */
+	const float CageFinishLine = 0.8f;
+
+	/** How many places along the way a blow would send the target are looked at, to see whether it would touch the hazard */
+	const int32 CageFinishLooks = 8;
+
 	/** How far ahead the opponent feels for a wall */
 	const float WallProbeDistance = 120.0f;
 
@@ -159,6 +167,20 @@ void AGutOpponentController::TickBrain(AGutFighter* Fighter, AGutFighter* Target
 
 			FinishStartTime = GetWorld()->GetTimeSeconds() + FMath::FRandRange(Tuning.MinFinishDelay, Tuning.MaxFinishDelay);
 			PlannedFinisher = FMath::FRand() < Tuning.SlowFinisherChance ? EGutFinisherStyle::Slow : EGutFinisherStyle::Clean;
+
+			// now and then, with the spikes or the cable close behind it, the cage is let finish it
+			// (-GutCageFinish=0.3 on the command line is another chance for everybody, and 0 is never)
+			static float AskedChance = -1.0f;
+			static const bool bAsked = FParse::Value(FCommandLine::Get(), TEXT("GutCageFinish="), AskedChance);
+
+			CageFinish = FMath::FRand() < (bAsked ? AskedChance : Tuning.CageFinishChance) ? FindCageFinish(Fighter, Target) : nullptr;
+			bCageBlowThrown = false;
+			CageRoundSide = 0.0f;
+
+			if (CageFinish.IsValid())
+			{
+				UE_LOG(LogGut, Log, TEXT("%s means to put %s on %s"), *Fighter->GetName(), *Target->GetName(), *CageFinish->GetName());
+			}
 
 			SetBrainState(EGutOpponentState::Finish);
 		}
@@ -674,6 +696,19 @@ void AGutOpponentController::TickFinish(AGutFighter* Fighter, AGutFighter* Targe
 		return;
 	}
 
+	// the cage is to do it: round behind the target and knock it on, for as long as that can still be done
+	if (CageFinish.IsValid())
+	{
+		if (TickCageFinish(Fighter, Target))
+		{
+			return;
+		}
+
+		UE_LOG(LogGut, Log, TEXT("%s gives the cage up and finishes %s by hand"), *Fighter->GetName(), *Target->GetName());
+
+		CageFinish = nullptr;
+	}
+
 	// walk in until the target is in reach, then end it
 	if (Fighter->GetGapTo(Target) > Fighter->GetFinisherRange() * Tuning.StrikeReachFraction)
 	{
@@ -942,6 +977,123 @@ float AGutOpponentController::GetHazardDistance(const FVector& Point, FVector& O
 	}
 
 	return Nearest;
+}
+
+AGutHazard* AGutOpponentController::FindCageFinish(const AGutFighter* Fighter, const AGutFighter* Target) const
+{
+	// the player is finished by hand, as it always was: this is between two of the cage's own
+	if (!Cast<AGutBrainController>(Target->GetController()) || Fighter->IsBeast() || Target->IsBeast() || !Fighter->GetArmament())
+	{
+		return nullptr;
+	}
+
+	// what a blow's drive carries it, less a little: the blow is thrown from straight behind it, or not at all
+	const float Carried = (Target->GetDriveDistance() * 0.9f) + Target->GetCapsuleComponent()->GetScaledCapsuleRadius();
+
+	AGutHazard* Found = nullptr;
+	float Nearest = Carried;
+
+	for (const TWeakObjectPtr<AGutHazard>& Hazard : Hazards)
+	{
+		// one that is only about to go live would not hurt it when it got there
+		if (!Hazard.IsValid() || !Hazard->IsLive())
+		{
+			continue;
+		}
+
+		FVector Away;
+		const float Distance = Hazard->GetDangerDistance(Target->GetActorLocation(), Away);
+
+		if (Distance < Nearest && !Away.IsNearlyZero())
+		{
+			Nearest = Distance;
+			Found = Hazard.Get();
+		}
+	}
+
+	return Found;
+}
+
+bool AGutOpponentController::TickCageFinish(AGutFighter* Fighter, AGutFighter* Target)
+{
+	const EGutFighterState FighterState = Fighter->GetFighterState();
+
+	// the blow is on its way, or has been thrown: one is all it gets, and if the target is still standing there after
+	// it, the cage is given up
+	if (FighterState == EGutFighterState::Windup || FighterState == EGutFighterState::Active || FighterState == EGutFighterState::Recovery)
+	{
+		return true;
+	}
+
+	if (bCageBlowThrown || !CageFinish->IsLive())
+	{
+		return false;
+	}
+
+	// not with so little of the stagger left that there would be no time to finish it by hand afterwards
+	if (Target->GetStaggerTimeRemaining() < Tuning.CageFinishGiveUpTime)
+	{
+		return false;
+	}
+
+	FVector Away;
+	const float Distance = CageFinish->GetDangerDistance(Target->GetActorLocation(), Away);
+
+	if (Away.IsNearlyZero() || Distance > Target->GetDriveDistance() + Target->GetCapsuleComponent()->GetScaledCapsuleRadius())
+	{
+		return false;
+	}
+
+	const FGutAttackDef& Blow = Fighter->GetHeavyAttack();
+
+	const FVector Here = Fighter->GetActorLocation();
+	const FVector There = Target->GetActorLocation();
+	const FVector ToTarget = (There - Here).GetSafeNormal2D();
+
+	// behind it is the side away from the hazard: from there a blow sends it straight on
+	const float Behind = FVector::DotProduct(ToTarget, -Away);
+	const float StrikeGap = Blow.Reach * Tuning.StrikeReachFraction;
+
+	// would a blow from here send it onto the hazard? Its body touches when it comes within its own width of it, anywhere
+	// along the way it is sent.
+	bool bCarriesOn = false;
+
+	for (int32 i = 1; i <= GutOpponentConstants::CageFinishLooks && !bCarriesOn; ++i)
+	{
+		FVector Out;
+
+		bCarriesOn = CageFinish->GetDangerDistance(There + (ToTarget * (Target->GetDriveDistance() * 0.9f * i / GutOpponentConstants::CageFinishLooks)), Out) <= Target->GetCapsuleComponent()->GetScaledCapsuleRadius();
+	}
+
+	if (bCarriesOn && Behind >= GutOpponentConstants::CageFinishLine && Fighter->GetGapTo(Target) <= StrikeGap)
+	{
+		Fighter->SetBlocking(false);
+
+		bCageBlowThrown = Fighter->TryDrive();
+
+		return bCageBlowThrown;
+	}
+
+	// to where the blow is thrown from. Straight there if that does not mean walking through the target; otherwise
+	// round it, always the same way.
+	const FVector Stand = There + (Away * (StrikeGap + Target->GetCapsuleComponent()->GetScaledCapsuleRadius() - 10.0f));
+
+	FVector Way = (Stand - Here).GetSafeNormal2D();
+
+	if (Behind < GutOpponentConstants::CageFinishLine && FVector::Dist2D(Here, There) < FVector::Dist2D(Here, Stand) + 40.0f)
+	{
+		if (CageRoundSide == 0.0f)
+		{
+			CageRoundSide = FVector::CrossProduct(ToTarget, Away).Z >= 0.0f ? 1.0f : -1.0f;
+		}
+
+		// across the line to the target, toward the side the hazard is not on, and a little out from it
+		Way = ((FVector::CrossProduct(FVector::UpVector, ToTarget) * CageRoundSide) - (ToTarget * 0.25f)).GetSafeNormal2D();
+	}
+
+	Move(Fighter, Way, Tuning.ApproachSpeedScale);
+
+	return true;
 }
 
 bool AGutOpponentController::WouldKnockOntoHazard(const AGutFighter* Fighter, const AGutFighter* Target, float Knockback) const

@@ -37,7 +37,7 @@ void ATownHUD::DrawHUD()
 	}
 
 	// what the player holds, a line for each of the ways it has come to the cage, the last on the bottom
-	if (const TArray<FString> Purses = Town->GetPurses(); !Purses.IsEmpty() && !Town->IsTalking())
+	if (const TArray<FString> Purses = Town->GetPurses(); !Purses.IsEmpty() && !Town->IsTalking() && !Town->IsShopping())
 	{
 		float Y = 1010.0f - ((Purses.Num() - 1) * 28.0f);
 
@@ -110,6 +110,12 @@ void ATownHUD::DrawHUD()
 	if (Town->IsTalking())
 	{
 		DrawTalk(Town, CenterX);
+		return;
+	}
+
+	if (Town->IsShopping())
+	{
+		DrawShop(Town, CenterX);
 		return;
 	}
 
@@ -191,6 +197,76 @@ void ATownHUD::DrawTalk(const ATownGameMode* Town, float CenterX)
 		? TEXT("W / S or D-pad: choose          E, Enter or A button: say it")
 		: TEXT("E, Enter or A button: go on"),
 		CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);
+}
+
+void ATownHUD::DrawShop(const ATownGameMode* Town, float CenterX)
+{
+	const TArray<FTownShopLine> Lines = Town->GetShopLines();
+	const TArray<FString> Said = Wrap(Town->GetShopSaid(), TalkLineLength);
+
+	const float LineHeight = 40.0f;
+	const float Height = 150.0f + (Said.Num() * 30.0f) + ((Lines.Num() + 1) * LineHeight) + 58.0f;
+	const float Top = 1040.0f - Height;
+	const float Left = CenterX - 540.0f;
+
+	// a counter is a slate with prices on it, like the window's
+	DrawPanel(CenterX, Top, 1180.0f, Height, EGutPanel::Slate);
+
+	const FString Keeper = Town->GetShopKeeper();
+
+	DrawLabel(Keeper.IsEmpty() ? FString(TEXT("THE COUNTER")) : FString::Printf(TEXT("%s'S COUNTER"), *Keeper.ToUpper()), Left, Top + 22.0f, 30, GutHUDColors::Warning);
+
+	// whose water it is: a fighter's own, and nobody else's page
+	if (Town->HasFighter())
+	{
+		const FString Held = FString::Printf(TEXT("Your fighter holds %.0f L"), Town->GetShopWater());
+
+		DrawLabel(Held, CenterX + 540.0f - MeasureLabel(Held, 22), Top + 28.0f, 22, GutHUDColors::Text);
+	}
+
+	float Y = Top + 78.0f;
+
+	for (const FString& Line : Said)
+	{
+		DrawLabel(Line, Left, Y, 21, GutHUDColors::Text);
+
+		Y += 30.0f;
+	}
+
+	Y += 16.0f;
+
+	for (int32 i = 0; i <= Lines.Num(); ++i)
+	{
+		const bool bChosen = i == Town->GetShopChoice();
+		const TCHAR* Mark = bChosen ? TEXT(">  ") : TEXT("    ");
+
+		// under the pieces, the line that leaves
+		if (i == Lines.Num())
+		{
+			DrawLabel(FString(Mark) + TEXT("Nothing more"), Left + 20.0f, Y + 8.0f, 22, bChosen ? GutHUDColors::Warning : GutHUDColors::Text);
+			break;
+		}
+
+		const FTownShopLine& Line = Lines[i];
+		const FLinearColor Ink = bChosen ? GutHUDColors::Warning : (Line.bCanBuy ? GutHUDColors::Text : GutHUDColors::DimText);
+
+		DrawLabel(FString(Mark) + Line.Name, Left + 20.0f, Y, 22, Ink);
+		DrawLabel(Line.Detail, Left + 408.0f, Y + 5.0f, 16, bChosen ? GutHUDColors::Text : GutHUDColors::DimText);
+
+		// the price, and beside it why it cannot be had, if it cannot
+		const FString Price = FString::Printf(TEXT("%.0f L"), Line.Price);
+
+		DrawLabel(Price, Left + 930.0f - MeasureLabel(Price, 22), Y, 22, Ink);
+
+		if (!Line.Why.IsEmpty())
+		{
+			DrawLabel(Line.Why.ToUpper(), Left + 950.0f, Y + 5.0f, 15, Line.bWorn ? GutHUDColors::Stamina : GutHUDColors::DimText);
+		}
+
+		Y += LineHeight;
+	}
+
+	DrawLabel(TEXT("W / S or D-pad: choose          E, Enter or A button: buy it, or leave"), CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);
 }
 
 void ATownHUD::DrawTownStopped(const ATownGameMode* Town, float CenterX)

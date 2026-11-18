@@ -109,9 +109,10 @@ namespace GutWindowBalance
 					GameMode->SetWindowFix(EGutFix::DrugBucket, Favourite);
 				}
 
+				// the way on to the window is the card's first line
 				for (int32 i = 0; i < 8; ++i)
 				{
-					GameMode->MoveCardSelection(1);
+					GameMode->MoveCardSelection(-1);
 				}
 
 				GameMode->ActivateCardSelection();
