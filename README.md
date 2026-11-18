@@ -105,4 +105,6 @@ Unreal Engine 5.9 and MetaHuman for the fighters. Scene models were made in Mixa
 
 ## License
 
-No license has been chosen yet. Until one is added, all rights are reserved.
+The original game code is free and open source under the [MIT License](LICENSE), copyright © 2026 Vincent Serpico. Use it, modify it, redistribute it, or build on it; keep the copyright and permission notice with copies or substantial portions of the code.
+
+The art and content folder is not included in this repository. Unreal Engine, MetaHuman, and the freesound.org recordings keep their own terms; this MIT grant does not relicense them.
