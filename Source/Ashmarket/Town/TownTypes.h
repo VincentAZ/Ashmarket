@@ -120,6 +120,10 @@ struct FTownPerson
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
 	bool bStandsOnWhatIsThere = false;
 
+	/** If more than nought they are a lot in the place's sale, and this is their number: they walk off when it is knocked down */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person", meta = (ClampMin = 0))
+	int32 Lot = 0;
+
 	/** What they say. The talk begins at the first. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
 	TArray<FTownLine> Lines;
@@ -197,6 +201,14 @@ struct FTownCall
 	/** If true the crowd has something to say about it: a lot knocked down */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Call")
 	bool bStirsTheCrowd = false;
+
+	/** The lot this knocks down, which is walked off as it is called. Nought is none. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Call", meta = (ClampMin = 0))
+	int32 Sells = 0;
+
+	/** If true every lot that has been walked off comes back up as it is called: the next of them */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Call")
+	bool bBringsUp = false;
 };
 
 /** Something that stands on the ground of a place and has to be walked round: where it stands, seen from above */
@@ -300,6 +312,18 @@ public:
 	/** What is called out over the place, round and round, for as long as anybody is in it: a sale */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place")
 	TArray<FTownCall> Calls;
+
+	/**
+	 *  The way the lots of a sale come up to where they are sold from, as places in the level gone through in turn: from
+	 *  where they are kept, out of the way, to the head of the deck they stand on. A lot that is sold goes back down it,
+	 *  and those kept wait in a file that runs back from its first place, away from its second.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place")
+	TArray<FVector> LotWay;
+
+	/** How far behind its own mark a lot walks along the line of the others, to get to it or away from it without going through them */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place", meta = (ClampMin = 0, Units = "cm"))
+	float LotAisle = 70.0f;
 
 	/**
 	 *  The ground that can be walked on, as rectangles in the level (centimetres, X and Y). Whoever walks is kept inside

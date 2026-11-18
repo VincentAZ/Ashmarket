@@ -293,10 +293,12 @@
   },
   {
    "model": "square_ramp",
-   "x": 32.85,
+   "x": 33.55,
    "y": 150.1,
    "yaw": 0,
-   "note": "the way up from the Holding Yard, through the fence"
+   "note": "the way up from the Holding Yard, through the fence: a third bigger than it was made, which brings its head level with the deck, and stood on the yard's ground, which is 8 cm under the square's",
+   "z": 4.42,
+   "scale": 1.333
   },
   {
    "model": "square_lectern",
@@ -778,6 +780,22 @@
    ]
   }
  ],
+ "lot_way_about": "The way the lots come up: from the head of the file they are kept in, in the Holding Yard, to the foot of the ramp, to the head of the deck. The file runs back east from its first place. 'lot_aisle' is how far behind its number a lot walks along the line of the others.",
+ "lot_way": [
+  [
+   38.0,
+   150.1
+  ],
+  [
+   36.5,
+   150.1
+  ],
+  [
+   30.3,
+   150.1
+  ]
+ ],
+ "lot_aisle": 0.7,
  "people": [
   {
    "name": "Margin",
@@ -908,7 +926,8 @@
    "idle": "crowd_watch_relaxed",
    "on": true,
    "collared": true,
-   "lines": []
+   "lines": [],
+   "lot": 1
   },
   {
    "name": "Lot 2",
@@ -924,7 +943,8 @@
    "idle": "crowd_watch_hands_behind",
    "on": true,
    "collared": true,
-   "lines": []
+   "lines": [],
+   "lot": 2
   },
   {
    "name": "Lot 3",
@@ -940,7 +960,8 @@
    "idle": "crowd_watch_neck",
    "on": true,
    "collared": true,
-   "lines": []
+   "lines": [],
+   "lot": 3
   },
   {
    "name": "Lot 4",
@@ -956,7 +977,8 @@
    "idle": "crowd_watch_tense",
    "on": true,
    "collared": true,
-   "lines": []
+   "lines": [],
+   "lot": 4
   },
   {
    "name": "Lot 5",
@@ -972,7 +994,8 @@
    "idle": "crowd_watch_relaxed",
    "on": true,
    "collared": true,
-   "lines": []
+   "lines": [],
+   "lot": 5
   },
   {
    "name": "Lot 6",
@@ -988,7 +1011,8 @@
    "idle": "crowd_watch_hands_behind",
    "on": true,
    "collared": true,
-   "lines": []
+   "lines": [],
+   "lot": 6
   }
  ],
  "doors": [
@@ -1009,7 +1033,7 @@
    "shut": "Chain-link backed with road signs, three and a half metres of it. The lots come up from the other side."
   }
  ],
- "calls_about": "What Caller Strand calls from the Block, round and round. Nobody speaks it: there is no voice for it, so it is written up on the screen. 'stirs' is a lot knocked down, which gets something out of the crowd. Prices follow the numbers pass: 18 L and 6 L for each skill, before bidding.",
+ "calls_about": "What Caller Strand calls from the Block, round and round. Nobody speaks it: there is no voice for it, so it is written up on the screen. 'stirs' is a lot knocked down, which gets something out of the crowd. Prices follow the numbers pass: 18 L and 6 L for each skill, before bidding. 'sells' is the lot a call knocks down: it is walked off the Block, down the ramp, to the file kept in the Holding Yard. 'brings_up' walks every lot that is kept back up to its number.",
  "calls": [
   {
    "speaker": "Caller Strand",
@@ -1035,7 +1059,8 @@
    "speaker": "Caller Strand",
    "words": "Sold. Forty-five litres, to Mr Rask of the Gut.",
    "seconds": 4.0,
-   "stirs": true
+   "stirs": true,
+   "sells": 1
   },
   {
    "speaker": "Margin, at the table",
@@ -1061,7 +1086,8 @@
    "speaker": "Caller Strand",
    "words": "Sold. Forty-eight litres, to the Velvet Tin.",
    "seconds": 4.0,
-   "stirs": true
+   "stirs": true,
+   "sells": 2
   },
   {
    "speaker": "Margin, at the table",
@@ -1087,7 +1113,8 @@
    "speaker": "Caller Strand",
    "words": "Sold. Twenty-two litres, to the Scrappers' guild.",
    "seconds": 4.0,
-   "stirs": true
+   "stirs": true,
+   "sells": 3
   },
   {
    "speaker": "Margin, at the table",
@@ -1113,7 +1140,8 @@
    "speaker": "Caller Strand",
    "words": "Sold. Forty-two litres, to the bidder at the rope.",
    "seconds": 4.0,
-   "stirs": true
+   "stirs": true,
+   "sells": 4
   },
   {
    "speaker": "Margin, at the table",
@@ -1139,7 +1167,8 @@
    "speaker": "Caller Strand",
    "words": "Sold. Fifty litres, to Mr Rask of the Gut.",
    "seconds": 4.0,
-   "stirs": true
+   "stirs": true,
+   "sells": 5
   },
   {
    "speaker": "Margin, at the table",
@@ -1165,7 +1194,8 @@
    "speaker": "Caller Strand",
    "words": "Sold. Thirty-eight litres, to the Pump office.",
    "seconds": 4.0,
-   "stirs": true
+   "stirs": true,
+   "sells": 6
   },
   {
    "speaker": "Margin, at the table",
@@ -1176,6 +1206,27 @@
    "speaker": "Caller Strand",
    "words": "That is the six. Hold your water: the next six are at the wash, and they come up when they are clean.",
    "seconds": 7.0
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Six more. Up the ramp and onto your numbers.",
+   "seconds": 6.0,
+   "brings_up": true
+  },
+  {
+   "speaker": "Margin, at the table",
+   "words": "Second six. The book is open, and water is weighed before a hand is shaken.",
+   "seconds": 5.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Look them over while they walk. Backs, hands, teeth. Nothing past the rope.",
+   "seconds": 6.0
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Settle. Settle. Eyes on the Block.",
+   "seconds": 4.5
   }
  ]
 }

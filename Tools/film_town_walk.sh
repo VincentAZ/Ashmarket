@@ -3,6 +3,8 @@
 # Nothing opens on the screen. The film is 30 frames a second of game time however long the machine takes to draw it.
 #
 #   Tools/film_town_walk.sh [name]            for example: Tools/film_town_walk.sh walk_pool_street
+#
+# Set GUT_FILM_TEST to film something else in the town: GUT_FILM_TEST=Ashmarket.Film.Sale Tools/film_town_walk.sh sale_on_the_block
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,7 +21,7 @@ if [[ -z "${GUT_FILM_SILENT:-}" ]]; then
 	export GUT_SOUND=1
 fi
 
-GUT_ARGS="$ARGS ${GUT_ARGS:-}" GUT_TESTS=Ashmarket.Film.Street "$PROJECT_DIR/Tools/run_gut_tests.sh" --render | tail -n 1
+GUT_ARGS="$ARGS ${GUT_ARGS:-}" GUT_TESTS="${GUT_FILM_TEST:-Ashmarket.Film.Street}" "$PROJECT_DIR/Tools/run_gut_tests.sh" --render | tail -n 1
 
 if [[ -f "$FRAMES/sound.wav" ]]; then
 	ffmpeg -y -loglevel error -framerate 30 -i "$FRAMES/frame_%05d.png" -i "$FRAMES/sound.wav" -c:v libx264 -crf 20 -pix_fmt yuv420p -c:a aac -b:a 192k -shortest "$PROJECT_DIR/for-review/$NAME.mp4"

@@ -113,6 +113,42 @@ void AGutPlayerController::OnPossess(APawn* InPawn)
 	SetControlRotation(FRotator(StartingCameraPitch, InPawn->GetActorRotation().Yaw, 0.0f));
 }
 
+void AGutPlayerController::PlayerTick(float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
+
+	// at a betting screen a key that is held runs the stake up or down, a litre at a time, after a moment's wait: the first
+	// litre is the press itself
+	const AGutGameMode* GameMode = GetWorld()->GetAuthGameMode<AGutGameMode>();
+	const bool bBetting = GameMode && GameMode->GetPhase() == EGutFightPhase::Betting && !GameMode->IsStopped();
+
+	const bool bMore = bBetting && (IsInputKeyDown(EKeys::W) || IsInputKeyDown(EKeys::Up) || IsInputKeyDown(EKeys::Gamepad_DPad_Up));
+	const bool bLess = bBetting && (IsInputKeyDown(EKeys::S) || IsInputKeyDown(EKeys::Down) || IsInputKeyDown(EKeys::Gamepad_DPad_Down));
+
+	if (bMore == bLess)
+	{
+		StakeHeldFor = 0.0f;
+		StakeRunFor = 0.0f;
+		return;
+	}
+
+	StakeHeldFor += DeltaTime;
+
+	if (StakeHeldFor < StakeRunDelay)
+	{
+		return;
+	}
+
+	StakeRunFor += DeltaTime;
+
+	while (StakeRunFor >= StakeRunEvery)
+	{
+		StakeRunFor -= StakeRunEvery;
+
+		SendMenuInput(bMore ? EGutMenuInput::Up : EGutMenuInput::Down);
+	}
+}
+
 void AGutPlayerController::RestartPressed()
 {
 	if (AGutGameMode* GameMode = GetWorld()->GetAuthGameMode<AGutGameMode>())
@@ -208,6 +244,11 @@ void AGutPlayerController::StoppedUpPressed()
 	{
 		GameMode->HandleStoppedInput(EGutMenuInput::Up);
 	}
+	else if (GameMode && !bAtRack && GameMode->CanLeaveForStreet())
+	{
+		// a fight that was watched is over: the same keys move between going on and going back down to the street
+		GameMode->HandleMenuInput(EGutMenuInput::Up);
+	}
 	else if (ATownGameMode* Town = GetWorld()->GetAuthGameMode<ATownGameMode>())
 	{
 		// the same keys choose among answers when somebody has been spoken to
@@ -220,6 +261,10 @@ void AGutPlayerController::StoppedDownPressed()
 	if (AGutGameMode* GameMode = GetWorld()->GetAuthGameMode<AGutGameMode>(); GameMode && GameMode->IsStopped())
 	{
 		GameMode->HandleStoppedInput(EGutMenuInput::Down);
+	}
+	else if (GameMode && !bAtRack && GameMode->CanLeaveForStreet())
+	{
+		GameMode->HandleMenuInput(EGutMenuInput::Down);
 	}
 	else if (ATownGameMode* Town = GetWorld()->GetAuthGameMode<ATownGameMode>())
 	{

@@ -516,6 +516,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut", meta = (ClampMin = 0, ClampMax = 30, Units = "s"))
 	float RestartDelay = 1.5f;
 
+	/** What up and down change a stake by at any betting screen, and the least that can be staked */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Ladder", meta = (ClampMin = 1))
+	float StakeStep = 1.0f;
+
 	/** Current stage of the fight */
 	EGutFightPhase Phase = EGutFightPhase::Choosing;
 
@@ -647,6 +651,12 @@ protected:
 
 	/** True if the first corner's fighter is on the right of the picture somebody is watching from the wall */
 	bool bFirstCornerOnRight = false;
+
+	/** The stake the betting screen is set to while it is on nobody: see GetBetWanted */
+	float BetWanted = 0.0f;
+
+	/** If true whoever watched a fight to its end has the arrow on the street: see CanLeaveForStreet */
+	bool bLeaveChosen = false;
 
 public:
 
@@ -1020,6 +1030,21 @@ public:
 
 	/** True if the player came to bet, was caught fixing, and this fight is its own */
 	bool IsGamblersOwnFight() const;
+
+	/**
+	 *  The stake the betting screen is set to, whoever it is on and before it is on anybody: what left and right put down
+	 *  and up and down change, a litre at a time, from one litre to all the window will take.
+	 */
+	float GetBetWanted() const;
+
+	/**
+	 *  True if a fight that was only watched is over and paid and there is another on the bill: whoever watched it can go
+	 *  on to that, or back down the stairs to the street.
+	 */
+	bool CanLeaveForStreet() const;
+
+	/** True if whoever watched has the arrow on the way back down to the street, and not on the next fight */
+	bool IsLeaveChosen() const { return bLeaveChosen && CanLeaveForStreet(); }
 
 	/**
 	 *  True if the first of the two in a fight that is watched stands on the right of the picture, and the second on the left.

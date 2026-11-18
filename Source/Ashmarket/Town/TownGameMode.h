@@ -21,6 +21,22 @@ namespace TownStoppedLines
 	inline constexpr int32 Count = 3;
 }
 
+/** Somebody being walked from where they stand to somewhere else: a lot down off the Block when it is sold, or up onto it */
+struct FTownLed
+{
+	/** Who: their place among the place's people */
+	int32 Person = INDEX_NONE;
+
+	/** The places still to go through, in turn */
+	TArray<FVector> Way;
+
+	/** Which way they turn to face when they are there */
+	float Facing = 0.0f;
+
+	/** How long before they set off */
+	float Wait = 0.0f;
+};
+
 /**
  *  The rules of a place in the town where nobody is fighting: the player walks about it, talks to the people
  *  who stand in it, and leaves by its doors. The cage has its own game mode, which is all fight.
@@ -76,6 +92,23 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 0))
 	float LoanLimit = 105.0f;
 
+	/** A lot is walked at this much of its own walking pace, turns this fast, and waits this long after the hammer before it moves */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 0.1, ClampMax = 2))
+	float LotPace = 0.8f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 30, ClampMax = 1080, Units = "deg"))
+	float LotTurnSpeed = 300.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 0, ClampMax = 10, Units = "s"))
+	float LotSoldWait = 1.4f;
+
+	/** Lots coming up set off this long after one another, and those kept wait this far apart */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 0, ClampMax = 10, Units = "s"))
+	float LotFileTime = 1.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 30, ClampMax = 300, Units = "cm"))
+	float LotFileGap = 85.0f;
+
 	/** While somebody is talked to the camera turns to look past the player at them: this far to one side, this far down, this fast */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = -90, ClampMax = 90, Units = "deg"))
 	float TalkCameraYaw = -22.0f;
@@ -127,6 +160,12 @@ protected:
 	/** What the last dealing with the lender came to, in words, for her to say back */
 	FString Dealt;
 
+	/** Everybody who is being walked somewhere just now */
+	TArray<FTownLed> Led;
+
+	/** The lots that have been walked off and are kept, as their places among the people, in the order they went: the first is at the far end of the file */
+	TArray<int32> KeptLots;
+
 	/** Finds the player's fighter and stands the people in their places, once both can be done */
 	void Settle();
 
@@ -153,6 +192,21 @@ protected:
 
 	/** Moves the place's calls on */
 	void UpdateCalls(float DeltaTime);
+
+	/** Does what a call does as it is called: a lot walked off, the next of them brought up */
+	void BeginCall(const FTownCall& Call);
+
+	/** Walks a lot down off where it is sold from to the file of those kept */
+	void SellLot(int32 Lot);
+
+	/** Walks every lot that is kept back up to its mark, one after another */
+	void BringLotsUp();
+
+	/** Where the lot that is so many back in the file of those kept waits */
+	FVector GetKeptPlace(int32 Back) const;
+
+	/** Moves everybody who is being walked somewhere, on whatever is under them */
+	void UpdateLed(float DeltaTime);
 
 	UGutGameInstance* GetGutGameInstance() const;
 
@@ -200,6 +254,13 @@ public:
 
 	/** Which of the place's calls is up */
 	int32 GetCallIndex() const { return CallIndex; }
+
+	/** How many of the sale's lots have been walked off and not brought back, and how many people are being walked somewhere now */
+	int32 GetLotsKept() const { return KeptLots.Num(); }
+	int32 GetLedCount() const { return Led.Num(); }
+
+	/** For the tests: has the call before the given one all but run out, so that the given one is called next */
+	void SkipToCall(int32 Index);
 
 	/** Stops the game and puts up a menu, or starts it again */
 	void SetStopped(bool bStopped);

@@ -141,7 +141,8 @@ void UGutAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	const UCharacterMovementComponent* Movement = Fighter->GetCharacterMovement();
 	const bool bWalking = Movement && Movement->IsMovingOnGround() && !Movement->HasRootMotionSources();
 
-	const FVector Velocity = bWalking ? Fighter->GetVelocity() : FVector::ZeroVector;
+	// or what it is led at, by whatever is moving it where its own movement cannot go
+	const FVector Velocity = !Fighter->GetLedVelocity().IsNearlyZero() ? Fighter->GetLedVelocity() : (bWalking ? Fighter->GetVelocity() : FVector::ZeroVector);
 	const FVector Local = Fighter->GetActorRotation().UnrotateVector(Velocity);
 
 	Inputs.Speed = Local.Size2D();

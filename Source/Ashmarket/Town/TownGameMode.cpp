@@ -148,6 +148,7 @@ void ATownGameMode::Tick(float DeltaTime)
 	SettledFor += DeltaTime;
 
 	UpdateCalls(DeltaTime);
+	UpdateLed(DeltaTime);
 
 	if (AGutFighter* Walker = GetWalker())
 	{
@@ -790,14 +791,270 @@ void ATownGameMode::UpdateCalls(float DeltaTime)
 		CallIndex = (CallIndex + 1) % PlaceData->Calls.Num();
 		CallTime = 0.0f;
 
-		// a lot knocked down gets something out of whoever is standing there
-		if (PlaceData->Calls[CallIndex].bStirsTheCrowd)
+		BeginCall(PlaceData->Calls[CallIndex]);
+	}
+}
+
+void ATownGameMode::SkipToCall(int32 Index)
+{
+	if (PlaceData && PlaceData->Calls.IsValidIndex(Index))
+	{
+		CallIndex = (Index + PlaceData->Calls.Num() - 1) % PlaceData->Calls.Num();
+		CallTime = PlaceData->Calls[CallIndex].Seconds;
+	}
+}
+
+void ATownGameMode::BeginCall(const FTownCall& Call)
+{
+	// a lot knocked down gets something out of whoever is standing there
+	if (Call.bStirsTheCrowd)
+	{
+		for (TActorIterator<AGutCrowd> It(GetWorld()); It; ++It)
 		{
-			for (TActorIterator<AGutCrowd> It(GetWorld()); It; ++It)
+			It->Cheer(0.12f, 1.2f);
+		}
+	}
+
+	// and is walked off, down the way it came up
+	if (Call.Sells > 0)
+	{
+		SellLot(Call.Sells);
+	}
+
+	if (Call.bBringsUp)
+	{
+		BringLotsUp();
+	}
+}
+
+FVector ATownGameMode::GetKeptPlace(int32 Back) const
+{
+	const TArray<FVector>& Way = PlaceData->LotWay;
+
+	// the file runs back from where the way begins, away from where it goes
+	return Way[0] + ((Way[0] - Way[1]).GetSafeNormal2D() * (LotFileGap * Back));
+}
+
+void ATownGameMode::SellLot(int32 Lot)
+{
+	if (!PlaceData || PlaceData->LotWay.Num() < 2)
+	{
+		return;
+	}
+
+	const int32 Who = PlaceData->People.IndexOfByPredicate([Lot](const FTownPerson& Person) { return Person.Lot == Lot; });
+
+	if (!People.IsValidIndex(Who) || !People[Who] || KeptLots.Contains(Who))
+	{
+		return;
+	}
+
+	const FTownPerson& Person = PlaceData->People[Who];
+	const TArray<FVector>& Way = PlaceData->LotWay;
+
+	FTownLed Walk;
+	Walk.Person = Who;
+	Walk.Wait = LotSoldWait;
+
+	// back off its mark, along behind the others to the head of the deck, down the way and to the end of the file
+	Walk.Way.Add(Person.Place - (FRotator(0.0f, Person.Facing, 0.0f).Vector() * PlaceData->LotAisle));
+
+	for (int32 i = Way.Num() - 1; i >= 0; --i)
+	{
+		Walk.Way.Add(Way[i]);
+	}
+
+	// the first to be sold goes to the far end of the file and the last stops at its head, so nobody walks through anybody
+	const int32 Lots = PlaceData->People.FilterByPredicate([](const FTownPerson& Other) { return Other.Lot > 0; }).Num();
+	const int32 Back = Lots - 1 - KeptLots.Num();
+
+	if (Back > 0)
+	{
+		Walk.Way.Add(GetKeptPlace(Back));
+	}
+
+	// and waits looking the way it will come back
+	Walk.Facing = (Way[1] - Way[0]).Rotation().Yaw;
+
+	Led.RemoveAll([Who](const FTownLed& One) { return One.Person == Who; });
+	Led.Add(MoveTemp(Walk));
+	KeptLots.Add(Who);
+
+	UE_LOG(LogTown, Log, TEXT("Sale: %s is knocked down and walked off, %d kept"), *Person.Name, KeptLots.Num());
+}
+
+void ATownGameMode::BringLotsUp()
+{
+	if (!PlaceData || PlaceData->LotWay.Num() < 2)
+	{
+		return;
+	}
+
+	const TArray<FVector>& Way = PlaceData->LotWay;
+
+	// the head of the file first, which is whoever was walked off last
+	for (int32 Order = 0; Order < KeptLots.Num(); ++Order)
+	{
+		const int32 Who = KeptLots[KeptLots.Num() - 1 - Order];
+
+		if (!People.IsValidIndex(Who) || !People[Who])
+		{
+			continue;
+		}
+
+		const FTownPerson& Person = PlaceData->People[Who];
+		const FVector Here = People[Who]->GetActorLocation();
+
+		// from wherever on the way it has got to: somebody still going down it turns round where they are
+		int32 Nearest = 0;
+
+		for (int32 i = 1; i < Way.Num(); ++i)
+		{
+			if (FVector::DistSquared2D(Way[i], Here) < FVector::DistSquared2D(Way[Nearest], Here))
 			{
-				It->Cheer(0.12f, 1.2f);
+				Nearest = i;
 			}
 		}
+
+		FTownLed Walk;
+		Walk.Person = Who;
+		Walk.Wait = LotFileTime * Order;
+		Walk.Facing = Person.Facing;
+
+		for (int32 i = Nearest; i < Way.Num(); ++i)
+		{
+			Walk.Way.Add(Way[i]);
+		}
+
+		// along behind the marks to its own, and onto it
+		Walk.Way.Add(Person.Place - (FRotator(0.0f, Person.Facing, 0.0f).Vector() * PlaceData->LotAisle));
+		Walk.Way.Add(Person.Place);
+
+		Led.RemoveAll([Who](const FTownLed& One) { return One.Person == Who; });
+		Led.Add(MoveTemp(Walk));
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Sale: %d lots are brought up"), KeptLots.Num());
+
+	KeptLots.Reset();
+}
+
+void ATownGameMode::UpdateLed(float DeltaTime)
+{
+	if (Led.IsEmpty())
+	{
+		return;
+	}
+
+	// what is under each of them is the deck, the ramp or the ground, and never one of the others
+	FCollisionQueryParams Looking(FName("TownLed"), true, GetWalker());
+
+	for (const AGutFighter* Body : People)
+	{
+		if (Body)
+		{
+			Looking.AddIgnoredActor(Body);
+			Looking.AddIgnoredActor(Body->GetBodyActor());
+		}
+	}
+
+	for (int32 i = Led.Num() - 1; i >= 0; --i)
+	{
+		FTownLed& One = Led[i];
+		AGutFighter* Body = People.IsValidIndex(One.Person) ? People[One.Person].Get() : nullptr;
+
+		if (!Body)
+		{
+			Led.RemoveAt(i);
+			continue;
+		}
+
+		if (One.Wait > 0.0f)
+		{
+			One.Wait -= DeltaTime;
+			continue;
+		}
+
+		const FRotator Facing = Body->GetActorRotation();
+
+		// there: it turns to face the way it is to stand, and is done
+		if (One.Way.IsEmpty())
+		{
+			Body->SetLedVelocity(FVector::ZeroVector);
+			Body->SetActorRotation(FMath::RInterpConstantTo(Facing, FRotator(0.0f, One.Facing, 0.0f), DeltaTime, LotTurnSpeed));
+
+			if (FMath::Abs(FRotator::NormalizeAxis(Body->GetActorRotation().Yaw - One.Facing)) < 1.0f)
+			{
+				Led.RemoveAt(i);
+			}
+
+			continue;
+		}
+
+		const float HalfHeight = Body->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+		const float OwnPace = Body->GetCharacterMovement()->MaxWalkSpeed;
+		const float Pace = (OwnPace > 1.0f ? OwnPace : 150.0f) * LotPace;
+
+		FVector Feet = Body->GetActorLocation() - FVector(0.0f, 0.0f, HalfHeight);
+		FVector2D Flat(Feet.X, Feet.Y);
+		FVector2D Going = FVector2D::ZeroVector;
+
+		// as far as a frame's walking goes, through as many of the way's places as that passes
+		float Left = Pace * DeltaTime;
+
+		while (Left > 0.0f && !One.Way.IsEmpty())
+		{
+			const FVector2D To(One.Way[0].X, One.Way[0].Y);
+			const float Distance = FVector2D::Distance(Flat, To);
+
+			if (Distance > UE_KINDA_SMALL_NUMBER)
+			{
+				Going = (To - Flat) / Distance;
+			}
+
+			if (Distance <= Left)
+			{
+				Left -= Distance;
+				Flat = To;
+				One.Way.RemoveAt(0);
+			}
+			else
+			{
+				Flat += Going * Left;
+				Left = 0.0f;
+			}
+		}
+
+		// on whatever is under them there: the deck, the ramp as it falls, the ground. A foot is longer than the gap between
+		// two of a ramp's boards, so it is the highest of what is under the middle of them, a little ahead and a little behind.
+		float Highest = -TNumericLimits<float>::Max();
+
+		for (float Along : { 0.0f, 14.0f, -14.0f })
+		{
+			const FVector2D At = Flat + (Going * Along);
+
+			FHitResult Under;
+
+			if (GetWorld()->LineTraceSingleByChannel(Under, FVector(At.X, At.Y, Feet.Z + 80.0f), FVector(At.X, At.Y, Feet.Z - 120.0f), ECC_Visibility, Looking))
+			{
+				Highest = FMath::Max(Highest, Under.Location.Z);
+			}
+		}
+
+		if (Highest > -TNumericLimits<float>::Max())
+		{
+			Feet.Z = FMath::FInterpTo(Feet.Z, Highest, DeltaTime, 14.0f);
+		}
+
+		FRotator Turned = Facing;
+
+		if (!Going.IsNearlyZero())
+		{
+			Turned = FMath::RInterpConstantTo(Facing, FRotator(0.0f, FVector(Going.X, Going.Y, 0.0f).Rotation().Yaw, 0.0f), DeltaTime, LotTurnSpeed);
+		}
+
+		Body->SetActorLocationAndRotation(FVector(Flat.X, Flat.Y, Feet.Z + HalfHeight), Turned, false, nullptr, ETeleportType::None);
+		Body->SetLedVelocity(FVector(Going.X, Going.Y, 0.0f) * Pace);
 	}
 }
 

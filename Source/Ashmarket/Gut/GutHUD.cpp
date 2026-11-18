@@ -383,6 +383,17 @@ void AGutHUD::DrawHUD()
 			}
 		}
 
+		// whoever only watched chooses: the next fight, or the street
+		if (GameMode->CanLeaveForStreet())
+		{
+			const bool bLeave = GameMode->IsLeaveChosen();
+
+			DrawLabel(FString(bLeave ? TEXT("") : TEXT(">  ")) + TEXT("The next fight on the bill"), CenterX, PromptY, 26, bLeave ? GutHUDColors::Text : GutHUDColors::Warning, true);
+			DrawLabel(FString(bLeave ? TEXT(">  ") : TEXT("")) + TEXT("Back down the stairs to the street"), CenterX, PromptY + 42.0f, 26, bLeave ? GutHUDColors::Warning : GutHUDColors::Text, true);
+			DrawLabel(TEXT("W / S or D-pad: move the arrow          Enter or Start: do it"), CenterX, PromptY + 92.0f, 17, GutHUDColors::Text, true);
+			return;
+		}
+
 		DrawLabel(Prompt, CenterX, PromptY, 26, GutHUDColors::Warning, true);
 	}
 }
@@ -793,15 +804,18 @@ void AGutHUD::DrawBettingWindow(const AGutGameMode* GameMode, float CenterX)
 	const EGutBetSide Side = GameMode->GetBetSide();
 	const float Stake = GameMode->GetBetStake();
 
-	DrawPanel(CenterX, 140.0f, 980.0f, 300.0f, EGutPanel::Slate);
+	// the stake is its own line and its own keys, before a side is chosen and after
+	const float Wanted = GameMode->GetBetWanted();
+
+	DrawPanel(CenterX, 140.0f, 980.0f, 410.0f, EGutPanel::Slate);
 
 	DrawLabel(TEXT("THE WINDOW"), CenterX, 152.0f, 34, GutHUDColors::Text, true);
 
 	DrawLabel(FString::Printf(TEXT("The book gives you %.0f chances in 100."), GameMode->GetBookChance() * 100.0f), CenterX, 208.0f, 18, GutHUDColors::DimText, true);
 
-	// what a litre brings back on each side, with the player's own stake in the pot where it has one
-	const float OnPlayer = GameMode->GetReturnPerLitre(EGutBetSide::Player, Side == EGutBetSide::Player ? Stake : 0.0f);
-	const float OnEnemy = GameMode->GetReturnPerLitre(EGutBetSide::Opponent, Side == EGutBetSide::Opponent ? Stake : 0.0f);
+	// what a litre brings back on each side, with the stake the screen is set to in the pot
+	const float OnPlayer = GameMode->GetReturnPerLitre(EGutBetSide::Player, Wanted);
+	const float OnEnemy = GameMode->GetReturnPerLitre(EGutBetSide::Opponent, Wanted);
 
 	DrawLabel(FString::Printf(TEXT("ON YOU: %.2f back for a litre"), OnPlayer), CenterX - 230.0f, 248.0f, 18,
 		Side == EGutBetSide::Player ? GutHUDColors::Warning : GutHUDColors::Text, true);
@@ -809,8 +823,17 @@ void AGutHUD::DrawBettingWindow(const AGutGameMode* GameMode, float CenterX)
 	DrawLabel(FString::Printf(TEXT("ON %s: %.2f back for a litre"), *EnemyName, OnEnemy), CenterX + 230.0f, 248.0f, 18,
 		Side == EGutBetSide::Opponent ? GutHUDColors::Warning : GutHUDColors::Text, true);
 
+	DrawLabel(TEXT("<  A          WHO ON          D  >"), CenterX, 280.0f, 17, GutHUDColors::Text, true);
+
+	DrawLabel(FString::Printf(TEXT("STAKE  %.0f L"), Wanted), CenterX, 312.0f, 30, GutHUDColors::Warning, true);
+
+	DrawLabel(FString::Printf(TEXT("W: a litre more          S: a litre less          hold either to run          from 1 L to %.0f L"), GameMode->GetMaxStake()), CenterX, 368.0f, 17, GutHUDColors::Text, true);
+
+	DrawLabel(FString::Printf(TEXT("You hold %.0f L. The window takes no more than %.0f L on one fight, the slate covering what you have not got."), State.Water, Ladder->MaxBet),
+		CenterX, 398.0f, 16, GutHUDColors::DimText, true);
+
 	// the bet the player is about to place
-	FString Bet = TEXT("NO BET");
+	FString Bet = TEXT("NO BET YET: A OR D PUTS IT ON ONE OF YOU");
 
 	if (Side != EGutBetSide::None)
 	{
@@ -819,20 +842,17 @@ void AGutHUD::DrawBettingWindow(const AGutGameMode* GameMode, float CenterX)
 		Bet = FString::Printf(TEXT("%.0f L ON %s  \u00B7  BRINGS BACK %.0f L"), Stake, Side == EGutBetSide::Player ? TEXT("YOURSELF") : *EnemyName, Return);
 	}
 
-	DrawLabel(Bet, CenterX, 292.0f, 28, Side == EGutBetSide::None ? GutHUDColors::DimText : GutHUDColors::Warning, true);
+	DrawLabel(Bet, CenterX, 436.0f, Side == EGutBetSide::None ? 20 : 28, Side == EGutBetSide::None ? GutHUDColors::DimText : GutHUDColors::Warning, true);
 
 	// a bet against yourself only pays if you are there to collect
 	const FGutLadderRung* Rung = GameMode->GetRung();
 
 	if (Side == EGutBetSide::Opponent && Rung && !Rung->bSparesPlayer && !GameMode->IsThrowingFight())
 	{
-		DrawLabel(TEXT("If it wins, you will not be there to collect."), CenterX, 334.0f, 16, GutHUDColors::Health, true);
+		DrawLabel(TEXT("If it wins, you will not be there to collect."), CenterX, 478.0f, 16, GutHUDColors::Health, true);
 	}
 
-	DrawLabel(FString::Printf(TEXT("You hold %.0f L. The window will take up to %.0f L from you, the slate covering what you have not got."), State.Water, GameMode->GetMaxStake()),
-		CenterX, 364.0f, 16, GutHUDColors::DimText, true);
-
-	DrawLabel(TEXT("A / D: who on          W / S: how much          Left mouse, Enter or A button: to the cage"), CenterX, 396.0f, 17, GutHUDColors::Text, true);
+	DrawLabel(TEXT("Left mouse, Enter or A button: to the cage"), CenterX, 508.0f, 17, GutHUDColors::Text, true);
 }
 
 void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
@@ -1387,7 +1407,10 @@ void AGutHUD::DrawWindowBetting(const AGutGameMode* GameMode, float CenterX)
 	const EGutBetSide Side = GameMode->GetBetSide();
 	const float Stake = GameMode->GetBetStake();
 
-	DrawPanel(CenterX, 140.0f, 1040.0f, 300.0f, EGutPanel::Slate);
+	// the stake is its own line and its own keys, before anybody is chosen and after
+	const float Wanted = GameMode->GetBetWanted();
+
+	DrawPanel(CenterX, 140.0f, 1040.0f, 386.0f, EGutPanel::Slate);
 
 	DrawLabel(TEXT("THE WINDOW"), CenterX, 152.0f, 34, GutHUDColors::Text, true);
 
@@ -1396,9 +1419,9 @@ void AGutHUD::DrawWindowBetting(const AGutGameMode* GameMode, float CenterX)
 	DrawLabel(FString::Printf(TEXT("The book makes it %s, %.0f chances in 100."), Chance >= 0.5f ? *Corners[0]->GetDisplayName().ToString() : *Corners[1]->GetDisplayName().ToString(),
 		FMath::Max(Chance, 1.0f - Chance) * 100.0f), CenterX, 210.0f, 16, GutHUDColors::DimText, true);
 
-	// what a litre brings back on each of them, with the gambler's own stake in the pot where it has one
-	const float OnFirst = GameMode->GetReturnPerLitre(EGutBetSide::Player, Side == EGutBetSide::Player ? Stake : 0.0f);
-	const float OnSecond = GameMode->GetReturnPerLitre(EGutBetSide::Opponent, Side == EGutBetSide::Opponent ? Stake : 0.0f);
+	// what a litre brings back on each of them, with the stake the screen is set to in the pot
+	const float OnFirst = GameMode->GetReturnPerLitre(EGutBetSide::Player, Wanted);
+	const float OnSecond = GameMode->GetReturnPerLitre(EGutBetSide::Opponent, Wanted);
 
 	// each on the side its fighter stands on, which is the way left and right choose between them
 	const float FirstX = GameMode->IsFirstCornerOnRight() ? 250.0f : -250.0f;
@@ -1408,21 +1431,27 @@ void AGutHUD::DrawWindowBetting(const AGutGameMode* GameMode, float CenterX)
 	DrawLabel(FString::Printf(TEXT("ON %s: %.2f back for a litre"), *Names[1], OnSecond), CenterX - FirstX, 244.0f, 18,
 		Side == EGutBetSide::Opponent ? GutHUDColors::Warning : GutHUDColors::Text, true);
 
-	FString Bet = TEXT("NO BET");
+	DrawLabel(TEXT("<  A          WHO ON          D  >"), CenterX, 276.0f, 17, GutHUDColors::Text, true);
+
+	DrawLabel(FString::Printf(TEXT("STAKE  %.0f L"), Wanted), CenterX, 312.0f, 30, GutHUDColors::Warning, true);
+
+	DrawLabel(FString::Printf(TEXT("W: a litre more          S: a litre less          hold either to run          from 1 L to %.0f L"), GameMode->GetMaxStake()), CenterX, 368.0f, 17, GutHUDColors::Text, true);
+
+	DrawLabel(FString::Printf(TEXT("You hold %.0f L. The window takes no more than %.0f L on one fight, and the odds shorten as you put it on."), Held, GameMode->GetLadder() ? GameMode->GetLadder()->MaxBet : 0.0f),
+		CenterX, 398.0f, 16, GutHUDColors::DimText, true);
+
+	FString Bet = TEXT("NO BET YET: A OR D PUTS IT ON ONE OF THEM");
 
 	if (Side != EGutBetSide::None)
 	{
 		Bet = FString::Printf(TEXT("%.0f L ON %s  \u00B7  BRINGS BACK %.0f L"), Stake, *Names[Side == EGutBetSide::Player ? 0 : 1], Stake * (Side == EGutBetSide::Player ? OnFirst : OnSecond));
 	}
 
-	DrawLabel(Bet, CenterX, 288.0f, 28, Side == EGutBetSide::None ? GutHUDColors::DimText : GutHUDColors::Warning, true);
-
-	DrawLabel(FString::Printf(TEXT("You hold %.0f L. The window will take up to %.0f L from you, and the odds shorten as you put it on."), Held, GameMode->GetMaxStake()),
-		CenterX, 352.0f, 16, GutHUDColors::DimText, true);
+	DrawLabel(Bet, CenterX, 436.0f, Side == EGutBetSide::None ? 20 : 28, Side == EGutBetSide::None ? GutHUDColors::DimText : GutHUDColors::Warning, true);
 
 	DrawLabel(Side == EGutBetSide::None
-		? TEXT("A / D: who on          W / S: how much          Left mouse, Enter or A button: watch it with no bet")
-		: TEXT("A / D: who on          W / S: how much          Left mouse, Enter or A button: place it and watch"), CenterX, 386.0f, 17, GutHUDColors::Text, true);
+		? TEXT("Left mouse, Enter or A button: watch it with no bet")
+		: TEXT("Left mouse, Enter or A button: place it and watch"), CenterX, 484.0f, 17, GutHUDColors::Text, true);
 }
 
 float AGutHUD::DrawWindowResult(const AGutGameMode* GameMode, float CenterX)
@@ -1517,7 +1546,7 @@ void AGutHUD::DrawWindowNight(const AGutGameMode* GameMode, float CenterX)
 {
 	const FGutWindowState& State = GameMode->GetWindowState();
 
-	DrawPanel(CenterX, 150.0f, 760.0f, 380.0f, EGutPanel::Slate);
+	DrawPanel(CenterX, 150.0f, 760.0f, GameMode->CanLeaveForStreet() ? 440.0f : 380.0f, EGutPanel::Slate);
 
 	DrawLabel(FString::Printf(TEXT("NIGHT %d IS OVER"), State.Night), CenterX, 168.0f, 40, GutHUDColors::Text, true);
 
@@ -1545,6 +1574,17 @@ void AGutHUD::DrawWindowNight(const AGutGameMode* GameMode, float CenterX)
 	DrawLabel(FString::Printf(TEXT("You hold %.0f L%s"), State.Water, State.Debt > 0.0f ? *FString::Printf(TEXT(", and owe the lender %.0f L."), State.Debt) : TEXT(".")), CenterX, Y, 22, GutHUDColors::Warning, true);
 
 	Y += 50.0f;
+
+	// on to tomorrow night, or back down to the street
+	if (GameMode->CanLeaveForStreet())
+	{
+		const bool bLeave = GameMode->IsLeaveChosen();
+
+		DrawLabel(FString(bLeave ? TEXT("") : TEXT(">  ")) + TEXT("Tomorrow night's bill"), CenterX, Y - 14.0f, 22, bLeave ? GutHUDColors::Text : GutHUDColors::Warning, true);
+		DrawLabel(FString(bLeave ? TEXT(">  ") : TEXT("")) + TEXT("Back down the stairs to the street"), CenterX, Y + 18.0f, 22, bLeave ? GutHUDColors::Warning : GutHUDColors::Text, true);
+		DrawLabel(TEXT("W / S or D-pad: move the arrow          Left mouse, Enter or A button: do it"), CenterX, Y + 58.0f, 17, GutHUDColors::Text, true);
+		return;
+	}
 
 	DrawLabel(TEXT("Left mouse, Enter or A button: tomorrow night's bill"), CenterX, Y, 17, GutHUDColors::Text, true);
 }

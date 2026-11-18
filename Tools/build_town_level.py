@@ -585,10 +585,14 @@ def main():
 
         return meshes[name]
 
-    def put(name, where, yaw, kind, blocking):
-        """Puts a model at a place in the level, turned. With blocking, the place keeps where it stands."""
+    def put(name, where, yaw, kind, blocking, scale=1.0):
+        """Puts a model at a place in the level, turned, and made bigger or smaller all ways alike. With blocking, the place
+        keeps where it stands."""
         actor = actors.spawn_actor_from_object(known(name), where, unreal.Rotator(roll=0.0, pitch=0.0, yaw=yaw))
         part = actor.get_editor_property("static_mesh_component")
+
+        if scale != 1.0:
+            actor.set_actor_scale3d(unreal.Vector(scale, scale, scale))
 
         # whoever walks is kept out of it by the place's own list of what stands where, and what is painted on the pool
         # stays on the pool
@@ -598,7 +602,7 @@ def main():
         label(actor, kind, name)
 
         if blocking:
-            x0, x1, y0, y1 = feet[name]
+            x0, x1, y0, y1 = [edge * scale for edge in feet[name]]
             turn = math.radians(yaw)
             middle_x, middle_y = (x0 + x1) * 0.5, (y0 + y1) * 0.5
 
@@ -607,17 +611,18 @@ def main():
 
         return actor
 
-    def stand(name, x, y, yaw, base=None, kind="Thing", blocking=True):
+    def stand(name, x, y, yaw, base=None, kind="Thing", blocking=True, scale=1.0):
         """Stands a model with the middle of what it covers at a place on the map and its lowest point on the ground there
-        (or on `base`). Returns the actor, how high it then reaches, and half its size."""
+        (or on `base`), `scale` times its own size. Returns the actor, how high it then reaches, and half its size."""
         box = known(name).get_bounding_box()
-        x0, x1, y0, y1 = turned((box.min.x, box.max.x, box.min.y, box.max.y), yaw)
+        x0, x1, y0, y1 = [edge * scale for edge in turned((box.min.x, box.max.x, box.min.y, box.max.y), yaw)]
+        low, high = box.min.z * scale, box.max.z * scale
 
         want = place(x, y, base)
-        where = unreal.Vector(want.x - (x0 + x1) * 0.5, want.y - (y0 + y1) * 0.5, want.z - box.min.z)
-        actor = put(name, where, yaw, kind, blocking and want.z - place(x, y).z < HEAD)
+        where = unreal.Vector(want.x - (x0 + x1) * 0.5, want.y - (y0 + y1) * 0.5, want.z - low)
+        actor = put(name, where, yaw, kind, blocking and want.z - place(x, y).z < HEAD, scale)
 
-        return actor, (want.z + box.max.z - box.min.z) / 100.0 + origin["z"], unreal.Vector((x1 - x0) * 0.5, (y1 - y0) * 0.5, (box.max.z - box.min.z) * 0.5)
+        return actor, (want.z + high - low) / 100.0 + origin["z"], unreal.Vector((x1 - x0) * 0.5, (y1 - y0) * 0.5, (high - low) * 0.5)
 
     # rows of containers end to end along a line, stacked: each stack one kind of container, the kinds taking turns along
     # the row. The row is given by the line its near faces stand on and the side of that line it lies on, so that the
@@ -696,7 +701,9 @@ def main():
     lamps = []
 
     for entry in listed["things"]:
-        actor, top, _ = stand(entry["model"], entry["x"], entry["y"], entry.get("yaw", (entry["x"] * 37.0 + entry["y"] * 91.0) % 360.0))
+        # 'z' is the ground it stands on where that is not the street's, and 'scale' how much bigger than itself it is made
+        actor, top, _ = stand(entry["model"], entry["x"], entry["y"], entry.get("yaw", (entry["x"] * 37.0 + entry["y"] * 91.0) % 360.0),
+                              base=entry.get("z"), scale=float(entry.get("scale", 1.0)))
 
         # somebody stands inside it (the window's stall): the model's own solid shape, which stops the camera at everything
         # else, would push them out of it
@@ -832,6 +839,7 @@ def main():
         person.set_editor_property("idle", unreal.load_asset("{}/{}".format(MOTION, entry["idle"])))
         person.set_editor_property("stands_on_what_is_there", bool(entry.get("on")))
         person.set_editor_property("collared", bool(entry.get("collared")))
+        person.set_editor_property("lot", int(entry.get("lot", 0)))
 
         ids = {line["id"]: index for index, line in enumerate(entry.get("lines", []))}
         lines = []
@@ -889,6 +897,8 @@ def main():
         call.set_editor_property("words", entry["words"])
         call.set_editor_property("seconds", float(entry.get("seconds", 3.5)))
         call.set_editor_property("stirs_the_crowd", bool(entry.get("stirs")))
+        call.set_editor_property("sells", int(entry.get("sells", 0)))
+        call.set_editor_property("brings_up", bool(entry.get("brings_up")))
         calls.append(call)
 
     # people standing about: so many of them in a stretch of ground, no two nearer than a walker needs to get between them,
@@ -963,6 +973,10 @@ def main():
     data.set_editor_property("doors", doors)
     data.set_editor_property("arrivals", arrivals)
     data.set_editor_property("calls", calls)
+
+    # the way a sale's lots come up and go down, and how far behind their marks they walk
+    data.set_editor_property("lot_way", [place(x, y) for x, y in listed.get("lot_way", [])])
+    data.set_editor_property("lot_aisle", float(listed.get("lot_aisle", 0.7)) * 100.0)
     data.set_editor_property("ground", ground)
 
     standing = []

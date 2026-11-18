@@ -39,8 +39,9 @@
  *  Ashmarket.Town.Doors    the ways in open the cage as what they say, and the cage's way out opens the street.
  *  Ashmarket.Town.Square   Block Square on a sale night: who stands where, the lender, the clerk, and the walk to Pool Street and back.
  *  Ashmarket.Look.Square   fixed views of the square saved as pictures. Not part of a test run.
- *  Ashmarket.Probe.Bet, .Feet, .Square   measurements, not tests: the window's card by the keys themselves, what the feet do,
- *                          the square's frame rate. Not part of a test run.
+ *  Ashmarket.Film.Sale     the sale filmed: a lot walked off the Block, the rest after it, and all six brought back up.
+ *  Ashmarket.Probe.Bet, .Feet, .Square, .Deck   measurements, not tests: the window's card by the keys themselves, what the
+ *                          feet do, the square's frame rate, how high what stands in the square is along a line. Not part of a test run.
  *  Ashmarket.Look.Street   fixed views of the street saved as pictures, with nothing drawn over them, then three as it is
  *                          played: walking, in reach of somebody, and talking. Not part of a test run.
  */
@@ -640,12 +641,48 @@ bool FTownDoorsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Putting water on the card opens the cage at the window"), Run->bWindow && !Run->bSandbox && !Run->bStable);
 		TestTrue(TEXT("Where the player watches and does not fight"), Fight.GameMode->IsAtWindow());
 
-		Fight.GameMode->GoToDoor();
+		// the fight is watched with no bet, and is over as soon as it begins
+		for (int32 i = 0; i < 10 && Fight.GameMode->IsTellingStory(); ++i)
+		{
+			Fight.GameMode->HandleMenuInput(EGutMenuInput::Confirm);
+		}
+
+		for (int32 i = 0; i < 8; ++i)
+		{
+			Fight.GameMode->MoveCardSelection(-1);
+		}
+
+		Fight.GameMode->ActivateCardSelection();
+		Fight.GameMode->ConfirmBet();
+		Fight.GameMode->StartFight();
+
+		TestEqual(TEXT("They fight"), Fight.GameMode->GetPhase(), EGutFightPhase::Fighting);
+
+		Fight.Enemy->Kill(Fight.Player, FVector(1.0f, 0.0f, 0.0f));
 	}, InCage });
 
-	// as an owner
-	Steps.Add({ 0.5f, [Say]()
+	// and from the end of a fight that was watched, the street is one of the two ways on
+	Steps.Add({ 0.4f, [this]()
 	{
+		const GutTests::FFight Fight = GutTests::GetFight();
+
+		TestFalse(TEXT("The arrow begins on the next fight"), Fight.GameMode->IsLeaveChosen());
+
+		Fight.GameMode->HandleMenuInput(EGutMenuInput::Down);
+
+		TestTrue(TEXT("Down moves it to the street"), Fight.GameMode->IsLeaveChosen());
+
+		GutTests::Screenshot(TEXT("45_window_next_or_the_street"));
+	}, [InCage]() { return InCage() && GutTests::GetFight().GameMode->CanLeaveForStreet(); } });
+
+	Steps.Add({ 0.4f, []() { GutTests::GetFight().GameMode->RequestRestart(); } });
+
+	// as an owner
+	Steps.Add({ 0.5f, [this, Say]()
+	{
+		TestNotNull(TEXT("Enter with the arrow on the street goes back down to it"), GetTown());
+		TestEqual(TEXT("And the bill is one fight further on for the next time"), GetRun()->Window.Fight, 1);
+
 		Say(ETownDeed::Own);
 	}, []() { return IsStreetReady(); } });
 
@@ -675,6 +712,10 @@ bool FTownDoorsTest::RunTest(const FString& Parameters)
 				Town->Tick(0.0f);
 
 				TestTrue(TEXT("The fighters' door is in reach"), Place->Doors.IsValidIndex(Town->GetDoorInReach()) && Place->Doors[Town->GetDoorInReach()].Deed == ETownDeed::Fight);
+
+				// whatever ran before this in the same sitting may have climbed the ladder: this is somebody at its foot
+				GetRun()->Ladder = FGutLadderState();
+				GetRun()->LadderAtRungStart = GetRun()->Ladder;
 
 				Town->Interact();
 				return;
@@ -1075,6 +1116,229 @@ bool FTownFilmStreetTest::RunTest(const FString& Parameters)
 }
 
 /**
+ *  Films the sale from fixed places, as somebody standing in the square sees it: a lot knocked down and walked off, the
+ *  rest after it, the file in the Holding Yard, and the six brought back up. A frame is saved for every second frame of
+ *  the game, and the sound with it when asked.
+ */
+namespace TownTests
+{
+	class FFilmSaleCommand : public IAutomationLatentCommand
+	{
+	public:
+
+		/** Where the camera stands from a moment on, in the map's own metres, and what it looks at */
+		struct FShot
+		{
+			float From = 0.0f;
+			FVector Stand = FVector::ZeroVector;
+			FVector At = FVector::ZeroVector;
+			float FieldOfView = 60.0f;
+		};
+
+		/** A moment at which a lot is knocked down. Nought brings them up. */
+		struct FHammer
+		{
+			float When = 0.0f;
+			int32 Lot = 0;
+		};
+
+		FFilmSaleCommand(TArray<FShot> InShots, TArray<FHammer> InHammers, float InLength, bool bInSound)
+			: Shots(MoveTemp(InShots)), Hammers(MoveTemp(InHammers)), Length(InLength), bSound(bInSound)
+		{
+		}
+
+		virtual bool Update() override
+		{
+			if (!IsStreetReady())
+			{
+				return false;
+			}
+
+			ATownGameMode* Town = GetTown();
+			UWorld* World = Town->GetWorld();
+			APlayerController* Viewer = World->GetFirstPlayerController();
+			const UTownPlaceData* Place = Town->GetPlace();
+			const float Step = World->GetDeltaSeconds();
+
+			if (!Viewer || !Place)
+			{
+				return true;
+			}
+
+			// the bidders are fetched in the background, and the pictures on everything take a moment to come sharp
+			if ((Settling += Step) < 14.0f)
+			{
+				return false;
+			}
+
+			if (!Camera.IsValid())
+			{
+				Camera = World->SpawnActor<ACameraActor>();
+
+				if (!Camera.IsValid())
+				{
+					return true;
+				}
+
+				Camera->GetCameraComponent()->SetConstraintAspectRatio(false);
+				Viewer->SetViewTarget(Camera.Get());
+
+				// what is heard is kept from the same moment as what is seen, a frame's worth for each frame, as for a fight
+				if (bSound && World->GetAudioDeviceRaw())
+				{
+					if (IConsoleVariable* Itself = IConsoleManager::Get().FindConsoleVariable(TEXT("au.nrt.RenderEveryTick")))
+					{
+						Itself->Set(0);
+					}
+
+					UAudioMixerBlueprintLibrary::StartRecordingOutput(World, 300.0f);
+
+					bRecording = true;
+				}
+			}
+
+			if (bRecording)
+			{
+				Audio::FMixerDevice* Mixer = static_cast<Audio::FMixerDevice*>(World->GetAudioDeviceRaw());
+				Audio::IAudioMixerPlatformInterface* Platform = Mixer ? Mixer->GetAudioMixerPlatform() : nullptr;
+
+				if (Platform && Platform->IsNonRealtime())
+				{
+					static_cast<Audio::FMixerPlatformNonRealtime*>(Platform)->RenderAudio(Step);
+				}
+			}
+
+			Time += Step;
+
+			while (Shots.IsValidIndex(Shot) && Time >= Shots[Shot].From)
+			{
+				// the level's X is the map's north and its Y the map's east, from the cage's own middle
+				const auto InLevel = [](const FVector& OnMap) { return FVector((OnMap.Y - 208.0f) * 100.0f, (OnMap.X - 95.0f) * 100.0f, (OnMap.Z - 3.0f) * 100.0f); };
+
+				const FVector Stand = InLevel(Shots[Shot].Stand);
+
+				Camera->SetActorLocationAndRotation(Stand, (InLevel(Shots[Shot].At) - Stand).Rotation());
+				Camera->GetCameraComponent()->SetFieldOfView(Shots[Shot].FieldOfView);
+
+				++Shot;
+			}
+
+			while (Hammers.IsValidIndex(Hammer) && Time >= Hammers[Hammer].When)
+			{
+				const int32 Lot = Hammers[Hammer].Lot;
+				const int32 Call = Place->Calls.IndexOfByPredicate([Lot](const FTownCall& One) { return Lot > 0 ? One.Sells == Lot : One.bBringsUp; });
+
+				Town->SkipToCall(Call);
+
+				++Hammer;
+			}
+
+			if (Frame++ % 2 == 0)
+			{
+				// read straight from the game's picture, as the fight films are
+				FScreenshotRequest::RequestScreenshot(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("GutFilm") / FString::Printf(TEXT("frame_%05d.png"), Saved++)), false, false);
+			}
+
+			const bool bDone = Time > Length;
+
+			if (bDone && bRecording)
+			{
+				bRecording = false;
+
+				UAudioMixerBlueprintLibrary::StopRecordingOutputToAnyPath(World, EAudioRecordingExportType::WavFile, TEXT("sound"),
+					FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("GutFilm")));
+			}
+
+			if (bDone)
+			{
+				UE_LOG(LogTemp, Display, TEXT("[film] the sale: %d shots, %d frames, %.0f seconds, %d lots kept at the end"), Shot, Saved, Time, Town->GetLotsKept());
+			}
+
+			return bDone;
+		}
+
+	private:
+
+		TArray<FShot> Shots;
+		TArray<FHammer> Hammers;
+		float Length = 60.0f;
+		bool bSound = false;
+
+		TWeakObjectPtr<ACameraActor> Camera;
+		float Settling = 0.0f;
+		float Time = 0.0f;
+		int32 Shot = 0;
+		int32 Hammer = 0;
+		int32 Frame = 0;
+		int32 Saved = 0;
+		bool bRecording = false;
+	};
+}
+
+/**
+ *  Ashmarket.Film.Sale     the sale on the Block, from the crowd and from over the Holding Yard's fence. Not part of a test
+ *                          run. GUT_FILM_TEST=Ashmarket.Film.Sale Tools/film_town_walk.sh sale_on_the_block
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownFilmSaleTest, "Ashmarket.Film.Sale", GutTests::Flags)
+
+bool FTownFilmSaleTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using FShot = FFilmSaleCommand::FShot;
+	using FHammer = FFilmSaleCommand::FHammer;
+
+	if (!FApp::CanEverRender())
+	{
+		return true;
+	}
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_BlockSquare"), true))
+	{
+		AddError(TEXT("Could not open Block Square's level"));
+		return false;
+	}
+
+	const FVector Crowd(21.5f, 143.0f, 6.5f);
+	// from over the clerk's end of the square, high enough to see the ramp and the yard over the fence and the truck beds
+	const FVector Above(27.0f, 141.0f, 11.5f);
+	const FVector Front(14.5f, 150.0f, 6.4f);
+
+	TArray<FShot> Shots;
+
+	// lot one is knocked down and walks behind the others to the head of the deck
+	Shots.Add({ 0.0f, Crowd, FVector(30.0f, 148.6f, 6.9f), 50.0f });
+
+	// down the ramp into the Holding Yard
+	Shots.Add({ 7.5f, Above, FVector(34.0f, 150.1f, 5.0f), 42.0f });
+
+	// the other five after it, from where the bidders stand
+	Shots.Add({ 15.0f, Front, FVector(29.6f, 150.0f, 6.6f), 62.0f });
+
+	// the file, kept
+	Shots.Add({ 31.0f, Above, FVector(38.0f, 150.1f, 4.8f), 38.0f });
+
+	// and brought back up
+	Shots.Add({ 44.0f, Above, FVector(34.5f, 150.1f, 5.0f), 42.0f });
+	Shots.Add({ 52.0f, Front, FVector(29.6f, 150.0f, 6.6f), 62.0f });
+
+	TArray<FHammer> Hammers;
+
+	Hammers.Add({ 1.0f, 1 });
+
+	for (int32 Lot = 2; Lot <= 6; ++Lot)
+	{
+		Hammers.Add({ 15.0f + ((Lot - 2) * 2.2f), Lot });
+	}
+
+	// when the last of them is in the file
+	Hammers.Add({ 36.5f, 0 });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FFilmSaleCommand(MoveTemp(Shots), MoveTemp(Hammers), 66.0f, FParse::Param(FCommandLine::Get(), TEXT("GutFilmSound"))));
+
+	return true;
+}
+
+/**
  *  Not a test: a measurement. Goes in to bet from the street by the keys themselves, as somebody playing does, with the run
  *  that is on disk if the game was started without -GutNoSave, and says in the log what each key did at the window's card.
  */
@@ -1392,6 +1656,84 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		} });
 	}
 
+	// a lot that is knocked down is walked off the Block, down the ramp, to where the sold are kept
+	Steps.Add({ 0.2f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+		const UTownPlaceData* Place = Town->GetPlace();
+
+		Town->GetWalker()->SetJogging(false);
+
+		TestTrue(TEXT("The sale has moved on while the player walked about"), Town->GetCallIndex() != Notes->Call);
+		TestTrue(TEXT("The square has a way for its lots to come up by"), Place->LotWay.Num() >= 2);
+
+		const int32 Sold = Place->Calls.IndexOfByPredicate([](const FTownCall& Call) { return Call.Sells == 1; });
+
+		if (TestTrue(TEXT("A call knocks down lot one"), Sold != INDEX_NONE))
+		{
+			Town->SkipToCall(Sold);
+		}
+	} });
+
+	Steps.Add({ 0.2f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		const UTownPlaceData* Place = Town->GetPlace();
+		const int32 Who = Place->People.IndexOfByPredicate([](const FTownPerson& Person) { return Person.Lot == 1; });
+
+		if (!TestTrue(TEXT("Somebody is lot one"), Town->GetPeople().IsValidIndex(Who) && Town->GetPeople()[Who]) || Place->LotWay.Num() < 2)
+		{
+			return;
+		}
+
+		const AGutFighter* Body = Town->GetPeople()[Who];
+		const int32 Lots = Place->People.FilterByPredicate([](const FTownPerson& Person) { return Person.Lot > 0; }).Num();
+
+		// the first to go stands at the far end of the file, which runs back from where the way begins
+		const FVector Wanted = Place->LotWay[0] + ((Place->LotWay[0] - Place->LotWay[1]).GetSafeNormal2D() * (85.0f * (Lots - 1)));
+		const float Feet = Body->GetActorLocation().Z - Body->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+		TestEqual(TEXT("One lot is kept"), Town->GetLotsKept(), 1);
+		TestTrue(*FString::Printf(TEXT("Lot one has been walked to the end of the file (%.0f cm from it)"), FVector::Dist2D(Body->GetActorLocation(), Wanted)), FVector::Dist2D(Body->GetActorLocation(), Wanted) < 20.0f);
+		TestTrue(TEXT("And has stopped walking"), Body->GetLedVelocity().IsNearlyZero());
+
+		// what is under them is only there where it is drawn
+		if (FApp::CanEverRender())
+		{
+			TestTrue(*FString::Printf(TEXT("Lot one is down off the Block (%.0f cm over the square)"), Feet - Place->People[Who].Place.Z), Feet - Place->People[Who].Place.Z < 20.0f);
+		}
+
+		const int32 Up = Place->Calls.IndexOfByPredicate([](const FTownCall& Call) { return Call.bBringsUp; });
+
+		if (TestTrue(TEXT("A call brings the lots up"), Up != INDEX_NONE))
+		{
+			Town->SkipToCall(Up);
+		}
+	}, []() { return GetTown()->GetLotsKept() == 1 && GetTown()->GetLedCount() == 0; } });
+
+	Steps.Add({ 0.2f, [this]()
+	{
+		const ATownGameMode* Town = GetTown();
+		const UTownPlaceData* Place = Town->GetPlace();
+		const int32 Who = Place->People.IndexOfByPredicate([](const FTownPerson& Person) { return Person.Lot == 1; });
+
+		if (!Town->GetPeople().IsValidIndex(Who) || !Town->GetPeople()[Who])
+		{
+			return;
+		}
+
+		const AGutFighter* Body = Town->GetPeople()[Who];
+		const float Feet = Body->GetActorLocation().Z - Body->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+		TestTrue(*FString::Printf(TEXT("Lot one is back on its number (%.0f cm from it)"), FVector::Dist2D(Body->GetActorLocation(), Place->People[Who].Place)), FVector::Dist2D(Body->GetActorLocation(), Place->People[Who].Place) < 5.0f);
+		TestTrue(TEXT("Facing the square again"), FMath::Abs(FRotator::NormalizeAxis(Body->GetActorRotation().Yaw - Place->People[Who].Facing)) < 3.0f);
+
+		if (FApp::CanEverRender())
+		{
+			TestTrue(*FString::Printf(TEXT("And up on the Block (%.0f cm over the square)"), Feet - Place->People[Who].Place.Z), Feet - Place->People[Who].Place.Z > 130.0f && Feet - Place->People[Who].Place.Z < 175.0f);
+		}
+	}, []() { return GetTown()->GetLotsKept() == 0 && GetTown()->GetLedCount() == 0; } });
+
 	// the lender, with a page to write on: ten litres in hand and nothing owed
 	Steps.Add({ 0.3f, [this, Notes, StandWith]()
 	{
@@ -1399,8 +1741,6 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		UGutGameInstance* Run = GetRun();
 
 		Town->GetWalker()->SetJogging(false);
-
-		TestTrue(TEXT("The sale has moved on while the player walked about"), Town->GetCallIndex() != Notes->Call);
 
 		Run->Window = FGutWindowState();
 		Run->Window.bStarted = true;
@@ -1698,6 +2038,90 @@ bool FTownLookSquareTest::RunTest(const FString& Parameters)
 
 		GetRun()->Window = FGutWindowState();
 	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownProbeDeckTest, "Ashmarket.Probe.Deck", GutTests::Flags)
+
+/**
+ *  How high whatever stands in Block Square is along a line, to lay a way over it: -TownProbeLine=x0,y0,x1,y1 in the map's
+ *  own metres, every 20 cm. The models are only there to be measured where they are drawn, so it wants a rendered run.
+ */
+bool FTownProbeDeckTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_BlockSquare"), true))
+	{
+		AddError(TEXT("Could not open Block Square's level"));
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 3.0f, []()
+	{
+		const ATownGameMode* Town = GetTown();
+		UWorld* World = Town->GetWorld();
+
+		// the same lines every time unless others are asked for: the way up the ramp, and four along the deck
+		TArray<FString> Lines = { TEXT("27.5,150.1,44,150.1"), TEXT("29.0,144,29.0,156"), TEXT("29.6,144,29.6,156"), TEXT("30.3,144,30.3,156"), TEXT("27.5,149.5,44,149.5"), TEXT("27.5,150.7,44,150.7") };
+
+		FString Asked;
+
+		if (FParse::Value(FCommandLine::Get(), TEXT("TownProbeLine="), Asked, false))
+		{
+			Lines = { Asked };
+		}
+
+		FCollisionQueryParams Looking(FName("TownProbe"), true, Town->GetWalker());
+
+		for (const AGutFighter* Body : Town->GetPeople())
+		{
+			if (Body)
+			{
+				Looking.AddIgnoredActor(Body);
+				Looking.AddIgnoredActor(Body->GetBodyActor());
+			}
+		}
+
+		// the square's ground, and the map's own corner, as Tools/town_block_square.json has them
+		const float Ground = 150.0f;
+
+		for (const FString& Line : Lines)
+		{
+			TArray<FString> Numbers;
+			Line.ParseIntoArray(Numbers, TEXT(","));
+
+			if (Numbers.Num() != 4)
+			{
+				continue;
+			}
+
+			const FVector2D From(FCString::Atof(*Numbers[0]), FCString::Atof(*Numbers[1]));
+			const FVector2D To(FCString::Atof(*Numbers[2]), FCString::Atof(*Numbers[3]));
+			const int32 Count = FMath::CeilToInt32(FVector2D::Distance(From, To) / 0.2f);
+
+			FString Heights;
+
+			for (int32 i = 0; i <= Count; ++i)
+			{
+				const FVector2D Map = FMath::Lerp(From, To, static_cast<float>(i) / FMath::Max(Count, 1));
+				const FVector Top((Map.Y - 208.0f) * 100.0f, (Map.X - 95.0f) * 100.0f, Ground + 260.0f);
+
+				FHitResult Under;
+
+				Heights += World->LineTraceSingleByChannel(Under, Top, Top - FVector(0.0f, 0.0f, 330.0f), ECC_Visibility, Looking)
+					? FString::Printf(TEXT(" %.0f"), Under.Location.Z - Ground)
+					: FString(TEXT(" -"));
+			}
+
+			UE_LOG(LogGut, Log, TEXT("Deck: from %s to %s, every 20 cm, cm over the square:%s"), *From.ToString(), *To.ToString(), *Heights);
+		}
+	}, &IsStreetReady });
 
 	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
 

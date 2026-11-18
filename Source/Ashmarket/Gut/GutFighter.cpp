@@ -4277,7 +4277,7 @@ void AGutFighter::ListenToFeet()
 	// a foot on the ground under a body that is walking somewhere slides a little, the faster the body the more, and the foot
 	// in the air goes about twice as fast as the body: so for somebody at ease what counts as moving and as come to rest goes
 	// up with the body's speed. In a fight the feet are listened to as they always were.
-	const float Going = GetVelocity().Size2D();
+	const float Going = FMath::Max(GetVelocity().Size2D(), LedVelocity.Size2D());
 	const float FastEnough = bAtEase ? FMath::Max(110.0f, Going * 1.3f) : 110.0f;
 	const float SlowEnough = bAtEase ? FMath::Max(40.0f, Going * 0.5f) : 40.0f;
 

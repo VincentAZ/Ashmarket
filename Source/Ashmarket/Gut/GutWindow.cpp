@@ -645,6 +645,15 @@ void AGutGameMode::LeaveWindowNight()
 		State.DeadBeforeTonight = 0;
 	}
 
+	// the new night waits for whoever has had enough of this one and goes back down to the street
+	if (bLeaveChosen && GameInstance->IsStreetOpen())
+	{
+		UE_LOG(LogGut, Log, TEXT("Window: back down to the street after the night's reckoning"));
+
+		GameInstance->GoToStreet(this);
+		return;
+	}
+
 	UGameplayStatics::OpenLevel(this, FName(*UGameplayStatics::GetCurrentLevelName(this)), true);
 }
 

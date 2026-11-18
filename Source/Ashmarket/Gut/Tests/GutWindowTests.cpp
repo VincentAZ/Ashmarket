@@ -156,18 +156,48 @@ bool FGutWindowTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("A bigger stake brings back less for each litre"), GameMode->GetReturnPerLitre(EGutBetSide::Player, Step * 4.0f) < GameMode->GetReturnPerLitre(EGutBetSide::Player, Step));
 		TestTrue(TEXT("The window takes no more than the gambler holds"), GameMode->GetMaxStake() <= State.Water);
 
+		// how much is the gambler's to say, to the litre, before it is on anybody and after
+		TestEqual(TEXT("The window takes all the gambler holds, to the litre"), GameMode->GetMaxStake(), FMath::Min(GameMode->GetLadder()->MaxBet, FMath::FloorToFloat(State.Water)));
+		TestEqual(TEXT("The stake begins at the usual bet"), GameMode->GetBetWanted(), Step);
+
+		GameMode->HandleMenuInput(EGutMenuInput::Up);
+		GameMode->HandleMenuInput(EGutMenuInput::Up);
+
+		TestEqual(TEXT("Up twice is two litres more, with nobody chosen yet"), GameMode->GetBetWanted(), Step + 2.0f);
+		TestEqual(TEXT("And nothing is on anybody"), GameMode->GetBetSide(), EGutBetSide::None);
+
 		// right is the one standing on the right, left the one on the left, and no bet is between them
 		const EGutBetSide OnRight = GameMode->IsFirstCornerOnRight() ? EGutBetSide::Player : EGutBetSide::Opponent;
 		const EGutBetSide OnLeft = GameMode->IsFirstCornerOnRight() ? EGutBetSide::Opponent : EGutBetSide::Player;
 
 		GameMode->HandleMenuInput(EGutMenuInput::Right);
 		TestEqual(TEXT("Right bets on the one on the right"), GameMode->GetBetSide(), OnRight);
+		TestEqual(TEXT("With the stake that was set"), GameMode->GetBetStake(), Step + 2.0f);
+
+		GameMode->HandleMenuInput(EGutMenuInput::Down);
+		TestEqual(TEXT("Down is a litre less"), GameMode->GetBetStake(), Step + 1.0f);
 
 		GameMode->HandleMenuInput(EGutMenuInput::Left);
 		TestEqual(TEXT("Left from there is no bet"), GameMode->GetBetSide(), EGutBetSide::None);
+		TestEqual(TEXT("And the stake is kept for whoever is chosen next"), GameMode->GetBetWanted(), Step + 1.0f);
 
 		GameMode->HandleMenuInput(EGutMenuInput::Left);
 		TestEqual(TEXT("And left again is the one on the left"), GameMode->GetBetSide(), OnLeft);
+		TestEqual(TEXT("With that stake"), GameMode->GetBetStake(), Step + 1.0f);
+
+		for (int32 i = 0; i < 200; ++i)
+		{
+			GameMode->HandleMenuInput(EGutMenuInput::Up);
+		}
+
+		TestEqual(TEXT("Up stops at everything the window will take"), GameMode->GetBetStake(), GameMode->GetMaxStake());
+
+		for (int32 i = 0; i < 200; ++i)
+		{
+			GameMode->HandleMenuInput(EGutMenuInput::Down);
+		}
+
+		TestEqual(TEXT("And down at a litre"), GameMode->GetBetStake(), 1.0f);
 
 		GameMode->SetBet(EGutBetSide::Player, Step * 2.0f);
 
@@ -460,6 +490,35 @@ bool FGutWindowTest::RunTest(const FString& Parameters)
 		Notes->Water = State.Water;
 	} });
 
+	// where there is a street to go back down to, the reckoning offers it beside tomorrow night's bill
+	Steps.Add({ 0.3f, [this](const FFight& Fight)
+	{
+		UGutGameInstance* Run = Cast<UGutGameInstance>(Fight.GameMode->GetGameInstance());
+
+		TestFalse(TEXT("With no street there is only tomorrow night"), Fight.GameMode->CanLeaveForStreet());
+
+		Run->bStreetForced = true;
+
+		TestTrue(TEXT("With one, it is offered"), Fight.GameMode->CanLeaveForStreet());
+
+		Fight.GameMode->HandleMenuInput(EGutMenuInput::Down);
+
+		TestTrue(TEXT("Down moves the arrow to the street"), Fight.GameMode->IsLeaveChosen());
+
+		Screenshot(TEXT("44_window_night_or_the_street"));
+	} });
+
+	Steps.Add({ 0.3f, [this](const FFight& Fight)
+	{
+		UGutGameInstance* Run = Cast<UGutGameInstance>(Fight.GameMode->GetGameInstance());
+
+		Fight.GameMode->HandleMenuInput(EGutMenuInput::Up);
+
+		TestFalse(TEXT("And up moves it back"), Fight.GameMode->IsLeaveChosen());
+
+		Run->bStreetForced.Reset();
+	} });
+
 	Steps.Add({ 0.3f, [](const FFight& Fight)
 	{
 		Fight.GameMode->HandleMenuInput(EGutMenuInput::Confirm);
@@ -545,6 +604,10 @@ bool FGutWindowKeysTest::RunTest(const FString& Parameters)
 	Press(EKeys::D);
 
 	Until([](const FFight& Fight) { return Fight.GameMode->GetBetSide() != EGutBetSide::None; }, TEXT("The D key did not choose a side to bet on"));
+
+	Press(EKeys::W);
+
+	Until([](const FFight& Fight) { return Fight.GameMode->GetBetStake() > Fight.GameMode->GetLadder()->BetStep; }, TEXT("The W key did not raise the stake"));
 
 	Press(EKeys::LeftMouseButton);
 

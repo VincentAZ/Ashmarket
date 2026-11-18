@@ -183,7 +183,10 @@ bool FGutLadderTest::RunTest(const FString& Parameters)
 	{
 		const UGutLadderData* Ladder = GetLadder(Fight);
 
-		TestEqual(TEXT("W raises the stake a step"), Fight.GameMode->GetBetStake(), Ladder->BetStep * 2.0f);
+		TestEqual(TEXT("W raises the stake a litre"), Fight.GameMode->GetBetStake(), Ladder->BetStep + 1.0f);
+
+		// and twice the usual bet goes on, for what follows
+		Fight.GameMode->SetBet(EGutBetSide::Player, Ladder->BetStep * 2.0f);
 
 		TestTrue(TEXT("The odds move with the money: a bigger stake brings back less for each litre"),
 			Fight.GameMode->GetReturnPerLitre(EGutBetSide::Player, Ladder->BetStep * 2.0f) < Fight.GameMode->GetReturnPerLitre(EGutBetSide::Player, Ladder->BetStep));

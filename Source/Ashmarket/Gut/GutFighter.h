@@ -601,6 +601,9 @@ protected:
 
 	bool bJogging = false;
 
+	/** How fast it is being moved by something other than its own movement, for its legs to keep up with: see SetLedVelocity */
+	FVector LedVelocity = FVector::ZeroVector;
+
 	/** Counts the attacks this fighter has started, so others can tell one swing from the next */
 	int32 AttackSerial = 0;
 
@@ -1162,6 +1165,14 @@ public:
 
 	/** At ease: stands in this clip, not the one every fighter has. For the people of the street, who do not all stand alike. */
 	void SetAtEaseIdle(UAnimSequenceBase* Idle) { AtEaseStance.Idle = Idle; }
+
+	/**
+	 *  Has the fighter's legs walk at the speed something else is moving it at: somebody led across a deck that is no
+	 *  ground to its own movement. Nought is standing where it was put.
+	 */
+	void SetLedVelocity(const FVector& Velocity) { LedVelocity = Velocity; }
+
+	const FVector& GetLedVelocity() const { return LedVelocity; }
 
 	/** The body that is seen, where the fighter has been given one */
 	AActor* GetBodyActor() const { return BodyActor; }

@@ -347,28 +347,28 @@ void AGutGameMode::HandleMenuInput(EGutMenuInput Input)
 
 	case EGutFightPhase::Betting:
 	{
-		// left and right move between no bet, a bet on the player and a bet against it. Up and down move the stake.
+		// left and right move between no bet, a bet on the player and a bet against it. Up and down move the stake, a litre
+		// at a time, whether or not it is on anybody yet: how much is the bettor's to say, down to the litre.
 		const int32 Side = static_cast<int32>(BetSide);
-		const float Step = GetLadder() ? GetLadder()->BetStep : 0.0f;
+		const float Stake = GetBetWanted();
 
 		// somebody watching has each name on the side its fighter stands on, with no bet between them: left is the one on the left
 		const bool bTurned = (IsAtWindow() || IsAtStable()) && !bFirstCornerOnRight;
 
 		if (Input == EGutMenuInput::Left)
 		{
-			SetBet(static_cast<EGutBetSide>((Side + (bTurned ? 1 : 2)) % 3), BetStake);
+			BetWanted = Stake;
+			SetBet(static_cast<EGutBetSide>((Side + (bTurned ? 1 : 2)) % 3), Stake);
 		}
 		else if (Input == EGutMenuInput::Right)
 		{
-			SetBet(static_cast<EGutBetSide>((Side + (bTurned ? 2 : 1)) % 3), BetStake);
+			BetWanted = Stake;
+			SetBet(static_cast<EGutBetSide>((Side + (bTurned ? 2 : 1)) % 3), Stake);
 		}
-		else if (Input == EGutMenuInput::Up)
+		else if (Input == EGutMenuInput::Up || Input == EGutMenuInput::Down)
 		{
-			SetBet(BetSide, BetStake + Step);
-		}
-		else if (Input == EGutMenuInput::Down)
-		{
-			SetBet(BetSide, BetStake - Step);
+			BetWanted = FMath::Clamp(Stake + (Input == EGutMenuInput::Up ? StakeStep : -StakeStep), FMath::Min(StakeStep, GetMaxStake()), GetMaxStake());
+			SetBet(BetSide, BetWanted);
 		}
 		else if (Input == EGutMenuInput::Confirm)
 		{
@@ -377,7 +377,23 @@ void AGutGameMode::HandleMenuInput(EGutMenuInput Input)
 		break;
 	}
 
+	case EGutFightPhase::PlayerWon:
+	case EGutFightPhase::PlayerLost:
+
+		// whoever only watched has two ways on from here: the next fight, or the street
+		if (CanLeaveForStreet() && (Input == EGutMenuInput::Up || Input == EGutMenuInput::Down))
+		{
+			bLeaveChosen = !bLeaveChosen;
+		}
+		break;
+
 	case EGutFightPhase::Gate:
+
+		// a gambler's night is over: tomorrow night's bill, or the street
+		if (CanLeaveForStreet() && (Input == EGutMenuInput::Up || Input == EGutMenuInput::Down))
+		{
+			bLeaveChosen = !bLeaveChosen;
+		}
 
 		if (Input == EGutMenuInput::Confirm)
 		{
@@ -1179,12 +1195,40 @@ float AGutGameMode::GetPatchPrice() const
 	return IsOnLadder() ? GetLadder()->PatchPrice : 0.0f;
 }
 
+float AGutGameMode::GetBetWanted() const
+{
+	// what is down already, or failing that what the screen was last set to, which begins at the window's usual bet
+	const float Most = GetMaxStake();
+	const float Usual = GetLadder() ? GetLadder()->BetStep : 0.0f;
+
+	return BetSide != EGutBetSide::None ? BetStake : FMath::Clamp(BetWanted > 0.0f ? BetWanted : Usual, FMath::Min(StakeStep, Most), Most);
+}
+
+bool AGutGameMode::CanLeaveForStreet() const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance || !GameInstance->IsStreetOpen())
+	{
+		return false;
+	}
+
+	// from the night's reckoning, once its sums are on the slate
+	if (Phase == EGutFightPhase::Gate)
+	{
+		return IsAtWindow();
+	}
+
+	// not somebody who was caught, who goes into the cage, and not at the end of a night, which has its reckoning first
+	return CanRestart() && WindowSettlement.bSettled && !WindowSettlement.bOwnFight && !WindowSettlement.bCaught && !IsWindowNightOver();
+}
+
 float AGutGameMode::GetMaxStake() const
 {
 	// a gambler, or an owner, stakes what it holds: the window gives neither a slate
 	if ((IsAtWindow() || IsAtStable()) && Ladder)
 	{
-		const float WindowStep = FMath::Max(Ladder->BetStep, 1.0f);
+		const float WindowStep = FMath::Max(StakeStep, 1.0f);
 		const float Held = IsAtStable() ? GetStableState().Water : GetWindowState().Water;
 
 		return FMath::Max(0.0f, FMath::FloorToFloat(FMath::Min(Ladder->MaxBet, Held) / WindowStep) * WindowStep);
@@ -1197,7 +1241,7 @@ float AGutGameMode::GetMaxStake() const
 
 	// what the player holds and what the slate allows, in whole steps, up to the window's limit
 	const float Available = FMath::Min(GetLadder()->MaxBet, GetLadderState().Water + GetLadder()->SlateLimit);
-	const float Step = FMath::Max(GetLadder()->BetStep, 1.0f);
+	const float Step = FMath::Max(StakeStep, 1.0f);
 
 	return FMath::Max(0.0f, FMath::FloorToFloat(Available / Step) * Step);
 }
@@ -1656,6 +1700,15 @@ void AGutGameMode::RequestRestart()
 {
 	if (!CanRestart())
 	{
+		return;
+	}
+
+	// whoever watched and has had enough goes back down to the street: what the fight came to is already written down
+	if (IsLeaveChosen())
+	{
+		UE_LOG(LogGut, Log, TEXT("Window: back down to the street after the fight"));
+
+		GetGutGameInstance()->GoToStreet(this);
 		return;
 	}
 

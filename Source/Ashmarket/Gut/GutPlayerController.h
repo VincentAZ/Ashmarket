@@ -74,6 +74,18 @@ protected:
 	/** Pawn initialization */
 	virtual void OnPossess(APawn* InPawn) override;
 
+	virtual void PlayerTick(float DeltaTime) override;
+
+	/** At a betting screen: how long a key is held before the stake starts to run, and how long each litre takes once it does */
+	UPROPERTY(EditAnywhere, Category="Input", meta = (ClampMin = 0.05, ClampMax = 2, Units = "s"))
+	float StakeRunDelay = 0.4f;
+
+	UPROPERTY(EditAnywhere, Category="Input", meta = (ClampMin = 0.01, ClampMax = 1, Units = "s"))
+	float StakeRunEvery = 0.06f;
+
+	float StakeHeldFor = 0.0f;
+	float StakeRunFor = 0.0f;
+
 	/** Called for restart input */
 	void RestartPressed();
 
