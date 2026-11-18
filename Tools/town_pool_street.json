@@ -1,0 +1,184 @@
+{
+ "about": "Pool Street and the mouth of Cold Alley: what stands where, who is there and what they say. Read by Tools/build_town_level.py. Places are in the map's own metres (x east, y north), from for-review/design/map-of-ashmarket.md; 'yaw' and 'facing' are compass bearings (0 north, 90 east, 180 south, 270 west). Change the words freely and run Tools/build_town_level.sh again.",
+
+ "name": "Pool Street",
+ "level": "/Game/Town/Lvl_PoolStreet",
+ "data": "/Game/Town/DA_Town_PoolStreet",
+ "origin": {"x": 95.0, "y": 208.0, "z": 3.0},
+
+ "street_height": 5.25,
+ "alley": {"from_y": 178.0, "rise_per_metre": 0.0337},
+
+ "start": {"x": 91.0, "y": 175.6, "facing": 270},
+
+ "arrivals": [
+  {"name": "from_square", "x": 5.6, "y": 176.4, "facing": 90}
+ ],
+
+ "errand": [
+  "TONIGHT",
+  "There are three ways into the Gut.",
+  "To fight: the fighters' door, in the Lockers' front.",
+  "To bet: Chalk's window, up Cold Alley.",
+  "To own: the yard hand, at the top of Cold Alley.",
+  "The Block is selling tonight: west, past the Warden."
+ ],
+
+ "surfaces": {
+  "Road": {"from": "road_damaged", "size": 320},
+  "Yard": {"from": "dirty_concrete", "size": 300},
+  "Blockwork": {"from": "concrete_block_wall", "size": 200},
+  "Sheet": {"from": "rusty_corrugated_iron", "size": 200},
+  "Plate": {"existing": "MI_Gut_Plate"}
+ },
+
+ "ground": [
+  {"label": "Beyond", "x": [-40, 160], "y": [130, 250], "z": 5.17, "surface": "Yard"},
+  {"label": "Street", "x": [2, 118], "y": [171.4, 180.2], "z": 5.25, "surface": "Road"},
+  {"label": "Alley", "x": [75.6, 82.2], "y": [178.0, 206.0], "slope": true, "surface": "Yard"}
+ ],
+
+ "walk_about": "The ground that can be walked on. Each patch runs on into whatever stands along its edge (a wall, a row of containers, a fence), and that is what stops whoever walks: the builder measures every model and refuses a place where a patch ends at nothing.",
+ "walk": [
+  {"x": [2.0, 112.0], "y": [171.75, 178.2]},
+  {"x": [83.0, 107.0], "y": [178.0, 180.0]},
+  {"x": [75.6, 80.2], "y": [178.0, 203.2]},
+  {"x": [80.0, 82.0], "y": [199.2, 203.2]}
+ ],
+
+ "walls": [
+  {"label": "Lockers", "x": [83.0, 107.0], "y": [180.0, 189.0], "height": 4.0, "surface": "Blockwork", "stained": ["south"]},
+  {"label": "Lockers_roof", "x": [82.6, 107.4], "y": [179.6, 189.4], "height": 0.12, "raise": 4.0, "surface": "Sheet"},
+  {"label": "Alley_east", "x": [80.2, 83.0], "y": [178.2, 196.6], "height": 4.0, "surface": "Blockwork", "stained": ["west", "south", "east"]},
+  {"label": "Window_back", "x": [82.5, 83.0], "y": [196.6, 199.2], "height": 3.2, "surface": "Sheet", "slope": true},
+  {"label": "East_stub", "x": [107.0, 112.6], "y": [178.2, 183.0], "height": 3.2, "surface": "Sheet", "stained": ["south", "west"]},
+  {"label": "Scrappers_pier", "x": [112.0, 112.6], "y": [171.0, 174.0], "height": 3.2, "surface": "Blockwork", "stained": ["west"]}
+ ],
+
+ "rows_about": "Containers end to end, stacked. 'face' is the line their near sides stand on, 'side' the side of it they lie on, and they are spread between 'from' and 'to'. The blue one's awning is on its own left, so 'yaw' is chosen to turn it to the street.",
+ "rows": [
+  {"label": "ChainRow", "model": ["town_container_red", "town_container_blue"], "yaw": 90, "high": 2,
+   "along": "x", "from": 2.0, "to": 75.5, "face": 178.2, "side": "north"},
+  {"label": "AlleyWest", "model": ["town_container_blue", "town_container_red"], "yaw": 0, "high": 2,
+   "along": "y", "from": 182.0, "to": 205.2, "face": 75.6, "side": "west"},
+  {"label": "CountingHouse", "model": ["town_container_blue"], "yaw": 270, "high": 2,
+   "along": "x", "from": 38.5, "to": 47.0, "face": 171.75, "side": "south"},
+  {"label": "ChainRowSouth", "model": ["town_container_blue", "town_container_red"], "yaw": 270, "high": 2,
+   "along": "x", "from": 49.0, "to": 116.0, "face": 169.5, "side": "south"},
+  {"label": "SquareCorner", "model": ["town_container_red"], "yaw": 90, "high": 1,
+   "along": "x", "from": 9.9, "to": 35.1, "face": 168.8, "side": "south"},
+  {"label": "MainStreetFar", "model": ["town_container_blue", "town_container_red"], "yaw": 0, "high": 2,
+   "along": "y", "from": 162.4, "to": 185.4, "face": 1.7, "side": "west"},
+  {"label": "ScrappersFar", "model": ["town_container_blue", "town_container_red"], "yaw": 180, "high": 2,
+   "along": "y", "from": 163.0, "to": 186.0, "face": 119.8, "side": "east"}
+ ],
+
+ "runs": [
+  {"label": "HoardingLine", "model": "street_hoarding", "from": [47.0, 171.4], "to": [112.0, 171.4], "turn": 180},
+  {"label": "SquareFence", "model": "modular_chainlink_fence", "from": [8.6, 171.75], "to": [38.5, 171.75]},
+  {"label": "ScrappersGate", "model": "street_gate", "from": [112.0, 174.0], "to": [112.0, 178.2], "turn": 180},
+  {"label": "PublicGate", "model": "street_gate", "from": [82.0, 199.2], "to": [82.0, 203.2], "turn": 180},
+  {"label": "AlleyEnd", "model": "modular_chainlink_fence", "from": [75.6, 203.2], "to": [82.0, 203.2]}
+ ],
+
+ "things": [
+  {"model": "street_kiosk", "x": 81.35, "y": 198.15, "yaw": 180, "hollow": true, "note": "the window: Chalk stands in it, behind the counter"},
+  {"model": "street_slate", "x": 79.92, "y": 195.3, "yaw": 180, "note": "the odds slate, against the wall beside the window"},
+  {"model": "street_door", "x": 95.0, "y": 180.05, "yaw": 90, "note": "the fighters' door, in the Lockers' front"},
+  {"model": "worn_metal_rack", "x": 99.6, "y": 179.72, "yaw": 90},
+  {"model": "Barrel_01", "x": 85.2, "y": 179.6}, {"model": "barrel_03", "x": 86.0, "y": 179.55}, {"model": "old_tyre", "x": 86.9, "y": 179.5},
+  {"model": "wooden_crate_02", "x": 104.6, "y": 179.5}, {"model": "propane_tank", "x": 105.5, "y": 179.6},
+  {"model": "Barrel_01", "x": 51.5, "y": 172.7}, {"model": "old_tyre", "x": 52.5, "y": 172.7}, {"model": "wooden_crate_02", "x": 66.0, "y": 172.7},
+  {"model": "barrel_03", "x": 26.0, "y": 177.75}, {"model": "metal_jerrycan", "x": 26.8, "y": 177.7}, {"model": "old_tyre", "x": 38.5, "y": 177.7},
+  {"model": "portable_generator", "x": 63.5, "y": 177.6, "yaw": 90}, {"model": "propane_tank", "x": 64.9, "y": 177.7},
+  {"model": "Barrel_01", "x": 76.15, "y": 181.6}, {"model": "old_tyre", "x": 76.1, "y": 190.0}, {"model": "wooden_crate_02", "x": 79.95, "y": 186.0},
+  {"model": "barrel_03", "x": 79.85, "y": 190.6}, {"model": "metal_jerrycan", "x": 79.95, "y": 189.9},
+  {"model": "old_tyre", "x": 110.4, "y": 177.6}, {"model": "Barrel_01", "x": 109.4, "y": 177.7},
+  {"model": "street_lamp_01", "x": 31.0, "y": 172.15, "lamp": true}, {"model": "street_lamp_01", "x": 101.0, "y": 172.45, "lamp": true}
+ ],
+
+ "pictures_about": "Bills and painted words, made in Mixar (ArtSource/mixar/street). 'faces' is the way the surface they are on looks; 'out' is how far that surface stands toward the looker from the place given; 'up' is the height of the picture's middle and 'tall' its height, in metres. 'pasted' sticks bills one after another along a line, which and how crooked from a fixed deal.",
+ "pictures": [
+  {"picture": "window_rules", "x": 80.2, "y": 192.9, "faces": "west", "up": 1.85, "tall": 1.5, "rough": 0.6},
+  {"picture": "slate_face", "x": 79.89, "y": 195.3, "faces": "west", "up": 1.075, "tall": 1.56, "deep": 0.05, "note": "what is chalked on the slate: the model's own lettering came out garbled"}
+ ],
+ "pasted": [
+  {"label": "Hoarding", "from": [47.4, 171.83], "to": [111.6, 171.83], "faces": "north", "deep": 0.15, "up": [1.4, 2.2], "tall": [0.8, 1.1], "every": [1.2, 3.6], "lean": 5,
+   "pictures": ["bill_champion", "bill_butcher", "bill_saltlick", "bill_kennel_master", "bill_gasket_rustjaw", "bill_tally_coldwater"]},
+  {"label": "Lockers", "from": [88.2, 180.0], "to": [93.9, 180.0], "faces": "south", "up": [1.35, 1.8], "tall": [0.65, 0.85], "every": [1.3, 2.4], "lean": 4,
+   "pictures": ["bill_gasket_rustjaw", "bill_tally_coldwater", "bill_kennel_master"]},
+  {"label": "Alley", "from": [80.2, 182.5], "to": [80.2, 191.5], "faces": "west", "up": [1.35, 1.8], "tall": [0.65, 0.85], "every": [2.0, 3.6], "lean": 4,
+   "pictures": ["bill_champion", "bill_butcher", "bill_saltlick"]},
+  {"label": "Corner", "from": [2.6, 178.2], "to": [8.4, 178.2], "faces": "south", "deep": 0.2, "up": [1.4, 1.9], "tall": [0.8, 1.05], "every": [1.4, 2.4], "lean": 4, "pictures": ["bill_sale", "bill_ledger"]}
+ ],
+
+ "bulbs_about": "Candelas. The camera is set for the floodlit cage (see NightExposure in Tools/build_gut_content.py), so a bulb that is to light a wall three metres off wants some thousands.",
+ "bulbs": [
+  {"x": 95.0, "y": 178.8, "up": 2.9, "candela": 4200, "reach": 15, "shadows": true, "note": "over the fighters' door"},
+  {"x": 78.3, "y": 197.0, "up": 3.1, "candela": 3000, "reach": 14, "shadows": true, "note": "over the window"},
+  {"x": 80.95, "y": 198.15, "up": 1.85, "candela": 800, "reach": 5, "shadows": true, "note": "under the window's roof"},
+  {"x": 78.0, "y": 186.5, "up": 3.4, "candela": 2600, "reach": 17},
+  {"x": 80.8, "y": 201.2, "up": 3.0, "candela": 2200, "reach": 14, "note": "at the public gate"},
+  {"x": 20.0, "y": 177.6, "up": 3.6, "candela": 2900, "reach": 18}, {"x": 46.0, "y": 177.6, "up": 3.6, "candela": 2900, "reach": 18},
+  {"x": 68.0, "y": 177.6, "up": 3.6, "candela": 3200, "reach": 18}, {"x": 108.0, "y": 177.4, "up": 3.2, "candela": 2600, "reach": 17},
+  {"x": 43.0, "y": 172.2, "up": 3.4, "candela": 2400, "reach": 17, "note": "the counting house"},
+  {"x": 52.0, "y": 173.3, "up": 3.3, "candela": 1800, "reach": 12, "note": "along the Hoarding"}, {"x": 60.0, "y": 173.3, "up": 3.2, "candela": 2200, "reach": 17},
+  {"x": 71.0, "y": 173.3, "up": 3.3, "candela": 1500, "reach": 12}, {"x": 86.0, "y": 173.3, "up": 3.2, "candela": 2200, "reach": 17},
+  {"x": 94.5, "y": 173.3, "up": 3.3, "candela": 1600, "reach": 12}, {"x": 107.0, "y": 173.3, "up": 3.3, "candela": 1800, "reach": 12},
+  {"x": 6.4, "y": 175.0, "up": 3.0, "candela": 3200, "reach": 16, "shadows": true, "note": "the Main Street corner"}
+ ],
+
+ "people": [
+  {
+   "name": "Chalk", "prompt": "Talk to Chalk, at the window", "body": "Zuri", "cloth": [0.06, 0.065, 0.075],
+   "x": 81.5, "y": 198.15, "facing": 270, "idle": "crowd_watch_hands_behind",
+   "lines": [
+    {"id": "slate", "words": "Slate's up. Four fights tonight. The house keeps a tenth of the pot, you bet in fives, fifty at most a fight. I write the odds. I don't sell results.",
+     "answers": [
+      {"words": "Put water on tonight's card.", "deed": "bet"},
+      {"words": "Which way is the money moving?", "next": "money"},
+      {"words": "Not tonight."}
+     ]},
+    {"id": "money", "words": "That's three litres, and what it buys you is what the crowd thinks, which is not the same as what happens. Come back when you are holding some."}
+   ]
+  },
+  {
+   "name": "Hasp", "prompt": "Talk to Hasp, who keeps the rack", "body": "Omari", "cloth": [0.07, 0.05, 0.035],
+   "x": 98.6, "y": 179.25, "facing": 180, "idle": "crowd_watch_hands_on_hips",
+   "lines": [
+    {"id": "rack", "words": "Rack's inside. The club for most of them. The blade for anybody wearing rubber. And nobody ever thanked me for handing them a chain against a shield. That's free. Are you going in?",
+     "answers": [
+      {"words": "I'm fighting. Let me in.", "deed": "fight"},
+      {"words": "A spar. One fight, nothing on it.", "deed": "spar"},
+      {"words": "Start me again from the first fight.", "deed": "fight_afresh"},
+      {"words": "Not yet."}
+     ]}
+   ]
+  },
+  {
+   "name": "Yard hand", "prompt": "Talk to the yard hand", "body": "Jorge", "cloth": [0.045, 0.055, 0.04],
+   "x": 78.3, "y": 201.6, "facing": 180, "idle": "crowd_watch_relaxed",
+   "lines": [
+    {"id": "yard", "words": "Alley's shut past the fence. Owners go round to the yard gate, and I walk them. You an owner?",
+     "answers": [
+      {"words": "I have fighters to see to.", "deed": "own"},
+      {"words": "No."}
+     ]}
+   ]
+  },
+  {
+   "name": "Warden", "prompt": "Talk to the Warden", "body": "Lorenzo", "cloth": [0.035, 0.04, 0.055],
+   "x": 3.2, "y": 177.3, "facing": 120, "idle": "crowd_watch_arms_crossed",
+   "lines": [
+    {"id": "sale", "words": "Sale night. The square is open until the last lot is down: south, down the lane. Keep your hands where the Chainmen can see them."}
+   ]
+  }
+ ],
+
+ "doors": [
+  {"prompt": "Go in at the fighters' door", "x": 95.0, "y": 179.4, "deed": "fight"},
+  {"prompt": "Try the public gate", "x": 81.2, "y": 201.2, "shut": "Chained. It opens to the public on fight nights."},
+  {"prompt": "Try the Scrappers' gate", "x": 110.9, "y": 176.1, "shut": "Shut for the night. The yard beyond is dark."},
+  {"prompt": "Down the lane to Block Square", "x": 5.3, "y": 171.75, "deed": "go", "to": "/Game/Town/Lvl_BlockSquare", "arrive": "from_pool_street", "walk_through": true, "reach": 3.4}
+ ]
+}

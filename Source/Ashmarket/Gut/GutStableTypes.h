@@ -1,0 +1,290 @@
+// Ashmarket prototype: the Gut.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GutTypes.h"
+#include "GutStableTypes.generated.h"
+
+class UGutWeaponData;
+
+/** The three things a fighter can be trained in */
+UENUM(BlueprintType)
+enum class EGutTraining : uint8
+{
+	/** Hits harder and takes more */
+	Strength,
+
+	/** Covers the floor faster and gets its wind back sooner */
+	Speed,
+
+	/** Sees it coming: guards, answers and punishes like somebody who has done this before */
+	Nerve
+};
+
+/** Somebody the player owns, or pays, to fight in the cage for it */
+USTRUCT(BlueprintType)
+struct FGutStableFighter
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	FText FighterName;
+
+	/** One line on who this is, read out at the Block */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	FText Billing;
+
+	/** The character that is seen */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	TSoftClassPtr<AActor> Body;
+
+	/** What it fights with. Empty for bare hands. */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	TObjectPtr<UGutWeaponData> Weapon;
+
+	/** The three things it can be trained in, each from 0 to the most a fighter can be taught */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 Strength = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 Speed = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 Nerve = 0;
+
+	/** If true it was bought at the Block and wears a collar. If false it signed for a wage and a share of its purses, and can walk away. */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	bool bOwned = true;
+
+	/** What was paid for it at the Block, or what it is paid each day */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	float Price = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	float Wage = 0.0f;
+
+	/** How its limbs are, carried from fight to fight. Negative for a fighter that has not been hurt yet. */
+	UPROPERTY()
+	float LimbHealth[GutNumLimbs] = { -1.0f, -1.0f, -1.0f, -1.0f };
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 Wins = 0;
+
+	/** If true it has been promised its tag, and how many wins it had when it was */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	bool bPromisedTag = false;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 WinsAtPromise = 0;
+
+	/** If true the promise was broken. It does not forget. */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	bool bBetrayed = false;
+
+	/**
+	 *  What it thinks of the hand that feeds it, from 0 to 100. Food, medicine and promises kept lower it. Dope, being sent in hurt,
+	 *  seeing somebody sold and promises broken raise it. High, it fights badly, then lies down, then is gone in the night.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	float Resentment = 0.0f;
+
+	/** If true it is doped for its next fight */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	bool bDoped = false;
+
+	/** How far gone it is on what it has been given, from 0 to 1. Past a half it is no good without it. */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	float Habit = 0.0f;
+
+	bool IsCrippled() const
+	{
+		for (const float Limb : LimbHealth)
+		{
+			if (Limb == 0.0f)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+};
+
+/** Where somebody who runs a stable of fighters stands */
+USTRUCT(BlueprintType)
+struct FGutStableState
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	bool bStarted = false;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	float Water = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	float Debt = 0.0f;
+
+	/** Which day it is, from one. Training, a fight and waiting each take one. */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 Day = 1;
+
+	/** What the Block and the bill are drawn from */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 Seed = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	TArray<FGutStableFighter> Fighters;
+
+	/** The stable's name with the crowd: a win raises it, and the purses offered follow it */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 Name = 0;
+
+	/** The fighters who have died against this stable, each as rank times 100 plus place on its ladder */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	TArray<int32> Dead;
+
+	/** Who was bought at the Block today, so that the same body is not for sale twice: places on today's list */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	TArray<int32> BoughtToday;
+
+	/** The fight that has been made: which of the stable's fighters, and against whom (rank times 100 plus place). Negative for none. */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 Matched = -1;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 MatchedAgainst = -1;
+
+	/** Sums over the whole run */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	float Purses = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	float Spent = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 FightsWon = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 FightersLost = 0;
+
+	/** If true one of the stable's collared fighters is lying dead in the pit boss's cold room, and is the owner's to see to */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	bool bBodyWaiting = false;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	FText BodyOf;
+
+	/** If true it lost a limb before it died, and Doc Stitch pays for what is still good */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	bool bBodyBroken = false;
+
+	/** How many of its dead the stable has put in the ground, and how many it has sold */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 Buried = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 BodiesSold = 0;
+};
+
+/** What a stable's fight came to, for the HUD to read out */
+struct FGutStableSettlement
+{
+	bool bSettled = false;
+	bool bWon = false;
+
+	FText FighterName;
+
+	float Purse = 0.0f;
+
+	/** What a signed fighter kept of it */
+	float FightersShare = 0.0f;
+
+	/** The bet, as at the window */
+	int32 Backed = -1;
+	float Stake = 0.0f;
+	float Return = 0.0f;
+
+	/** True if the fighter went down on purpose, out of what it thinks of its owner */
+	bool bLayDown = false;
+
+	/** True if it has now won enough to ask for the tag it was promised */
+	bool bTagDue = false;
+
+	/** What was kept out of the purse and the window's payment against what the owner owes */
+	float DebtPaid = 0.0f;
+};
+
+/** The pages of the owner's card */
+enum class EGutStablePage : uint8
+{
+	/** The yard: the fighters, and the ways out of it */
+	Yard,
+
+	/** One fighter, and what can be done with it */
+	Fighter,
+
+	/** Who is for sale or will sign today */
+	Block,
+
+	/** The fights on offer today */
+	Bill,
+
+	/** Which of the stable's fighters takes the fight that was picked */
+	Pick,
+
+	/** One of the stable's own is dead, and nothing else is done until it is seen to */
+	Body
+};
+
+/** What is done with a collared fighter that died in the cage (design document, chapter 7: after the bell) */
+enum class EGutBodyGoesTo : uint8
+{
+	/** Doc Stitch, for parts */
+	Parts,
+
+	/** The grill carts */
+	Grill,
+
+	/** The ground, at the owner's cost, with the yard standing by */
+	Ground
+};
+
+/** What a line on the owner's card does, kept in the line's index. A line about one of several things adds which one. */
+namespace GutStableLines
+{
+	enum
+	{
+		Back = 0,
+		ToBlock = 1,
+		ToBill = 2,
+		Wait = 3,
+
+		TrainStrength = 10,
+		TrainSpeed = 11,
+		TrainNerve = 12,
+		Patch = 13,
+		Dope = 14,
+		Promise = 15,
+		HandOverTag = 16,
+		DenyTag = 17,
+		Sell = 18,
+
+		BodyToParts = 20,
+		BodyToGrill = 21,
+		BodyToGround = 22,
+
+		/** Plus the fighter's place in the stable */
+		OpenFighter = 100,
+
+		/** Plus the place on today's list at the Block */
+		Buy = 200,
+
+		/** Plus the place on today's bill */
+		TakeFight = 300,
+
+		/** Plus the fighter's place in the stable */
+		SendFighter = 400
+	};
+}

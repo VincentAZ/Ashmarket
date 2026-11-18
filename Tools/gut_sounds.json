@@ -1,0 +1,1865 @@
+{
+ "always": [
+  "night",
+  "room"
+ ],
+ "reverb": {
+  "volume": 0.55,
+  "density": 1.0,
+  "diffusion": 0.85,
+  "gain": 0.32,
+  "gain_hf": 0.7,
+  "decay_time": 1.25,
+  "decay_hf_ratio": 0.75,
+  "reflections_gain": 0.25,
+  "reflections_delay": 0.012,
+  "late_gain": 0.9,
+  "late_delay": 0.02,
+  "air_absorption_gain_hf": 0.994
+ },
+ "kinds": {
+  "swing_fists": {
+   "volume": 0.5,
+   "pitch": [
+    0.95,
+    1.15
+   ],
+   "from": [
+    {
+     "file": "whoosh/rope_whoosh_light.flac"
+    },
+    {
+     "file": "whoosh/cable_swoosh_clean_fast.flac"
+    },
+    {
+     "file": "whoosh/air_swooshes.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 0.8
+    }
+   ]
+  },
+  "swing_club": {
+   "volume": 0.8,
+   "pitch": [
+    0.85,
+    1.0
+   ],
+   "from": [
+    {
+     "file": "whoosh/wooden_stick_swoosh.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 0.9
+    },
+    {
+     "file": "whoosh/metal_rod_swing.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.9
+    },
+    {
+     "file": "whoosh/hollow_rod_swing.flac",
+     "longest": 1.0
+    },
+    {
+     "file": "whoosh/rods_whooshes_various.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.9
+    }
+   ]
+  },
+  "swing_blade": {
+   "volume": 0.8,
+   "pitch": [
+    1.0,
+    1.2
+   ],
+   "from": [
+    {
+     "file": "whoosh/bamboo_whoosh_fast.flac",
+     "cut": "events",
+     "most": 5,
+     "longest": 0.8
+    },
+    {
+     "file": "whoosh/bamboo_staff_whoosh_strong.flac"
+    },
+    {
+     "file": "blade/sword_whooshes_vintage.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 0.9
+    }
+   ]
+  },
+  "swing_chain": {
+   "volume": 0.9,
+   "pitch": [
+    0.9,
+    1.05
+   ],
+   "from": [
+    {
+     "file": "whoosh/rope_swinging.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.0
+    },
+    {
+     "file": "whoosh/jump_rope_swishing.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.8
+    },
+    {
+     "file": "whoosh/cable_whoosh.flac",
+     "longest": 1.2
+    }
+   ]
+  },
+  "swing_shield": {
+   "volume": 0.7,
+   "pitch": [
+    0.8,
+    0.95
+   ],
+   "from": [
+    {
+     "file": "whoosh/frying_pan_swing.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.0
+    },
+    {
+     "file": "whoosh/plastic_pipe_low_swooshes.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.0
+    }
+   ]
+  },
+  "hit_fists": {
+   "volume": 0.85,
+   "pitch": [
+    0.92,
+    1.08
+   ],
+   "from": [
+    {
+     "file": "punch/fist_hitting_hand_series.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 0.5
+    },
+    {
+     "file": "punch/punch_impact_single.flac",
+     "longest": 0.7
+    },
+    {
+     "file": "punch/fist_on_chest_heavy_single.flac"
+    },
+    {
+     "file": "punch/boxing_body_hits_various.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 0.6
+    },
+    {
+     "file": "punch/fist_into_hand_series.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.5
+    }
+   ]
+  },
+  "hit_club": {
+   "volume": 0.94,
+   "pitch": [
+    0.9,
+    1.05
+   ],
+   "from": [
+    {
+     "file": "blunt/wooden_stick_hits_pillow.flac",
+     "longest": 0.8
+    },
+    {
+     "file": "blunt/boom_pole_hits_cushion.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.7
+    },
+    {
+     "file": "blunt/punching_bag_thud.flac",
+     "longest": 1.0
+    },
+    {
+     "file": "blunt/heavybag_bag_work.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.7
+    },
+    {
+     "file": "blunt/melon_head_hits_bathtub.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 0.9
+    },
+    {
+     "file": "blunt/spade_hitting_head.flac",
+     "longest": 1.2
+    }
+   ]
+  },
+  "hit_blade": {
+   "volume": 0.85,
+   "pitch": [
+    0.92,
+    1.08
+   ],
+   "from": [
+    {
+     "file": "blade/knife_stab_melon_single.flac"
+    },
+    {
+     "file": "blade/knife_stabs.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.8
+    },
+    {
+     "file": "blade/chopping_meat_market.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 0.8
+    },
+    {
+     "file": "blade/melon_chop_take_1.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.9
+    },
+    {
+     "file": "blade/large_swede_stab_with_whoosh.flac"
+    },
+    {
+     "file": "blade/melon_stabs_clean_series.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.9
+    }
+   ]
+  },
+  "hit_chain": {
+   "volume": 0.94,
+   "pitch": [
+    0.9,
+    1.05
+   ],
+   "from": [
+    {
+     "file": "blunt/punching_bag_hits_with_chains.flac",
+     "cut": "events",
+     "most": 5,
+     "longest": 0.9
+    },
+    {
+     "file": "chain/chain_slap.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.9
+    }
+   ]
+  },
+  "hit_shield": {
+   "volume": 0.94,
+   "pitch": [
+    0.9,
+    1.05
+   ],
+   "from": [
+    {
+     "file": "metal/metal_plate_impact.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.0
+    },
+    {
+     "file": "metal/metal_lid_hit.flac",
+     "longest": 1.2
+    },
+    {
+     "file": "metal/metal_pipe_or_sign_sheet_hit.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.0
+    }
+   ]
+  },
+  "block_fists": {
+   "volume": 0.64,
+   "pitch": [
+    0.9,
+    1.1
+   ],
+   "from": [
+    {
+     "file": "punch/boxing_mitt_punches.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 0.5
+    },
+    {
+     "file": "punch/damp_sock_body_hits.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.6
+    },
+    {
+     "file": "punch/smack_on_skin_series.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.5
+    }
+   ]
+  },
+  "block_club": {
+   "volume": 0.8,
+   "pitch": [
+    0.9,
+    1.1
+   ],
+   "from": [
+    {
+     "file": "metal/metal_bar_hit_single.flac"
+    },
+    {
+     "file": "metal/metal_bar_impact_01.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.0
+    },
+    {
+     "file": "metal/crowbar_hits_with_zing.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.2
+    },
+    {
+     "file": "metal/big_crowbar.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 1.2
+    }
+   ]
+  },
+  "block_blade": {
+   "volume": 0.8,
+   "pitch": [
+    0.95,
+    1.15
+   ],
+   "from": [
+    {
+     "file": "blade/machetes_hit_1.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.9
+    },
+    {
+     "file": "blade/machetes_hit_2.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.9
+    },
+    {
+     "file": "blade/machetes_hit_close.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 0.9
+    }
+   ]
+  },
+  "block_chain": {
+   "volume": 0.8,
+   "pitch": [
+    0.9,
+    1.1
+   ],
+   "from": [
+    {
+     "file": "chain/heavy_chain_links_hit_each_other.flac",
+     "longest": 1.2
+    },
+    {
+     "file": "chain/chain_slap.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 0.9
+    },
+    {
+     "file": "metal/metal_bar_impact_03.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.0
+    }
+   ]
+  },
+  "block_shield": {
+   "volume": 0.88,
+   "pitch": [
+    0.9,
+    1.1
+   ],
+   "from": [
+    {
+     "file": "metal/metal_panel_clangs.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 1.2
+    },
+    {
+     "file": "metal/metal_sheet_hit.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.2
+    },
+    {
+     "file": "metal/sheet_metal_knocking.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.8
+    },
+    {
+     "file": "metal/machete_vs_frying_pan_2.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.0
+    }
+   ]
+  },
+  "guard_break": {
+   "volume": 0.8,
+   "pitch": [
+    0.9,
+    1.05
+   ],
+   "from": [
+    {
+     "file": "blunt/heavybag_bag_work.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 0.9
+    },
+    {
+     "file": "blunt/single_thumps_whacks_vintage.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 0.8
+    }
+   ]
+  },
+  "bone_break": {
+   "volume": 1.0,
+   "pitch": [
+    0.9,
+    1.05
+   ],
+   "from": [
+    {
+     "file": "blunt/bone_crack_pig_bone_a.flac"
+    },
+    {
+     "file": "blunt/bone_crack_pig_bone_b.flac"
+    },
+    {
+     "file": "blunt/bone_crack_single.flac"
+    },
+    {
+     "file": "blunt/celery_snap_1.flac",
+     "longest": 0.8
+    },
+    {
+     "file": "blunt/celery_snap_7.flac",
+     "longest": 0.8
+    },
+    {
+     "file": "blunt/bone_break_celery_snaps.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.8
+    }
+   ]
+  },
+  "equip_club": {
+   "volume": 0.6,
+   "from": [
+    {
+     "file": "metal/crowbar_pickup_hit_scrape.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 1.5
+    },
+    {
+     "file": "machinery/crowbar_drag_on_concrete.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.2
+    }
+   ]
+  },
+  "equip_blade": {
+   "volume": 0.6,
+   "from": [
+    {
+     "file": "blade/machete_unsheathe.flac",
+     "longest": 1.5
+    },
+    {
+     "file": "blade/machete_pulled_out_of_sheath.flac"
+    },
+    {
+     "file": "blade/dagger_unsheathe.flac"
+    }
+   ]
+  },
+  "equip_chain": {
+   "volume": 0.7,
+   "from": [
+    {
+     "file": "chain/chain_handling_f4.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.5
+    },
+    {
+     "file": "chain/chain_shaking.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.2
+    }
+   ]
+  },
+  "equip_shield": {
+   "volume": 0.6,
+   "from": [
+    {
+     "file": "metal/metal_sheet_handling.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.5
+    },
+    {
+     "file": "metal/metal_sign_shake_warble.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 1.2
+    }
+   ]
+  },
+  "drop_club": {
+   "volume": 0.9,
+   "from": [
+    {
+     "file": "drop/rebar_dropped_on_concrete.flac",
+     "longest": 2.5
+    },
+    {
+     "file": "drop/crowbar_falls_on_concrete_ring_1.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 2.5
+    },
+    {
+     "file": "drop/metal_stick_dropped_on_factory_floor.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 2.5
+    }
+   ]
+  },
+  "drop_blade": {
+   "volume": 0.9,
+   "from": [
+    {
+     "file": "drop/knife_falling_close.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.5
+    },
+    {
+     "file": "drop/kitchen_knife_falling_on_floor.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.5
+    },
+    {
+     "file": "blade/machete_on_table_clank.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.5
+    }
+   ]
+  },
+  "drop_chain": {
+   "volume": 0.9,
+   "from": [
+    {
+     "file": "chain/large_chain_set_down_hard_floor_a.flac",
+     "longest": 2.5
+    },
+    {
+     "file": "chain/large_chain_set_down_hard_floor_b.flac"
+    },
+    {
+     "file": "chain/large_chain_set_down_hard_floor_c.flac"
+    },
+    {
+     "file": "chain/heavy_chain_drag_drop_rattle.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 2.0
+    }
+   ]
+  },
+  "drop_shield": {
+   "volume": 0.9,
+   "from": [
+    {
+     "file": "drop/metal_street_sign_dropped_on_concrete_1.flac",
+     "longest": 2.5
+    },
+    {
+     "file": "drop/metal_street_sign_dropped_on_concrete_2.flac",
+     "longest": 2.5
+    },
+    {
+     "file": "drop/sheet_metal_dropped_on_concrete_3x.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 2.5
+    }
+   ]
+  },
+  "chain_rattle": {
+   "volume": 0.55,
+   "pitch": [
+    0.9,
+    1.1
+   ],
+   "gap": 0.14,
+   "from": [
+    {
+     "file": "chain/chain_rattling.flac",
+     "cut": "events",
+     "most": 6,
+     "longest": 0.6
+    },
+    {
+     "file": "chain/chain_shaking.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 0.6
+    },
+    {
+     "file": "chain/chain_handling_kette.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 0.6
+    }
+   ]
+  },
+  "chain_floor": {
+   "volume": 0.6,
+   "pitch": [
+    0.9,
+    1.1
+   ],
+   "gap": 0.2,
+   "from": [
+    {
+     "file": "chain/small_chain_on_concrete.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 0.7
+    },
+    {
+     "file": "chain/chain_dragging.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 0.8
+    }
+   ]
+  },
+  "step": {
+   "volume": 0.3,
+   "pitch": [
+    0.9,
+    1.12
+   ],
+   "gap": 0.05,
+   "from": [
+    {
+     "file": "footstep/barefoot_tile_steps_separated.flac",
+     "cut": "events",
+     "most": 8,
+     "longest": 0.45
+    }
+   ]
+  },
+  "step_street": {
+   "volume": 0.75,
+   "pitch": [
+    0.9,
+    1.12
+   ],
+   "gap": 0.05,
+   "from": [
+    {
+     "file": "footstep/barefoot_concrete_walk.flac",
+     "cut": "events",
+     "most": 8,
+     "longest": 0.45,
+     "single": true
+    }
+   ]
+  },
+  "bodyfall": {
+   "volume": 1.0,
+   "pitch": [
+    0.9,
+    1.05
+   ],
+   "from": [
+    {
+     "file": "bodyfall/body_fall_01.flac"
+    },
+    {
+     "file": "bodyfall/body_fall_02.flac"
+    },
+    {
+     "file": "bodyfall/body_fall_03.flac"
+    },
+    {
+     "file": "bodyfall/body_fall_04.flac"
+    },
+    {
+     "file": "bodyfall/bodyfall_heavy_thud.flac"
+    },
+    {
+     "file": "bodyfall/body_thump.flac"
+    }
+   ]
+  },
+  "gore_splat": {
+   "volume": 0.6,
+   "pitch": [
+    0.9,
+    1.15
+   ],
+   "gap": 0.12,
+   "from": [
+    {
+     "file": "gore/splat_squish_wet_towel_1.flac"
+    },
+    {
+     "file": "gore/splat_squish_wet_towel_2.flac"
+    },
+    {
+     "file": "gore/splat_squish_wet_towel_3.flac"
+    },
+    {
+     "file": "gore/splat_cabbage_leaves.flac"
+    },
+    {
+     "file": "gore/wet_impact_a.flac"
+    },
+    {
+     "file": "gore/wet_impact_b.flac"
+    },
+    {
+     "file": "gore/squish_impact_fruit.flac",
+     "longest": 1.2
+    },
+    {
+     "file": "gore/wet_rag_impacts.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.8
+    }
+   ]
+  },
+  "gore_sever": {
+   "volume": 1.0,
+   "pitch": [
+    0.9,
+    1.05
+   ],
+   "from": [
+    {
+     "file": "gore/gore_rend_chicken_bones.flac"
+    },
+    {
+     "file": "gore/gushing_flesh_squeezed_eggs.flac"
+    },
+    {
+     "file": "gore/flesh_slashing_guts_long_take.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.5
+    },
+    {
+     "file": "gore/pumpkin_ripping_guts_a.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.5
+    }
+   ]
+  },
+  "effort_man": {
+   "volume": 0.8,
+   "pitch": [
+    0.94,
+    1.06
+   ],
+   "gap": 0.25,
+   "from": [
+    {
+     "file": "voice_male/effort_grunt_dry_1.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 1.2
+    },
+    {
+     "file": "voice_male/effort_grunt_dry_2.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 1.2
+    },
+    {
+     "file": "voice_male/effort_grunt_dry_3.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 1.2
+    },
+    {
+     "file": "voice_male/effort_grunt_dry_4.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 1.2
+    },
+    {
+     "file": "voice_male/effort_grunt_dry_5.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 1.2
+    },
+    {
+     "file": "voice_male/effort_grunt_dry_6.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 1.2
+    },
+    {
+     "file": "voice_male/fight_grunts_series.flac",
+     "cut": "events",
+     "most": 5,
+     "longest": 1.0
+    },
+    {
+     "file": "voice_male/grunts_series.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 1.0
+    }
+   ]
+  },
+  "pain_man": {
+   "volume": 0.9,
+   "pitch": [
+    0.94,
+    1.06
+   ],
+   "gap": 0.25,
+   "from": [
+    {
+     "file": "voice_male/pain_grunt_01.flac"
+    },
+    {
+     "file": "voice_male/pain_grunt_02.flac"
+    },
+    {
+     "file": "voice_male/pain_grunt_07.flac"
+    },
+    {
+     "file": "voice_male/pain_grunt_08.flac"
+    },
+    {
+     "file": "voice_male/pain_grunt_09.flac"
+    },
+    {
+     "file": "voice_male/pain_grunt_10.flac"
+    },
+    {
+     "file": "voice_male/pain_grunts_short_series.flac",
+     "cut": "events",
+     "most": 5,
+     "longest": 1.0
+    },
+    {
+     "file": "voice_male/oof_winded_series.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.0
+    },
+    {
+     "file": "voice_male/pain_grunts_medium_series.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.2
+    }
+   ]
+  },
+  "death_man": {
+   "volume": 1.0,
+   "pitch": [
+    0.95,
+    1.03
+   ],
+   "from": [
+    {
+     "file": "voice_male/death_2.flac",
+     "longest": 3.0
+    },
+    {
+     "file": "voice_male/death_rattle_shout.flac",
+     "longest": 3.0
+    },
+    {
+     "file": "voice_male/death_sound_short.flac"
+    },
+    {
+     "file": "voice_male/throat_cut_gurgle.flac",
+     "longest": 3.5
+    }
+   ]
+  },
+  "effort_woman": {
+   "volume": 0.8,
+   "pitch": [
+    0.96,
+    1.05
+   ],
+   "gap": 0.25,
+   "from": [
+    {
+     "file": "voice_female/effort_grunt_exerting.flac"
+    },
+    {
+     "file": "voice_female/heavy_grunt.flac"
+    },
+    {
+     "file": "voice_female/long_grunt_strained.flac"
+    },
+    {
+     "file": "voice_female/short_ah_yell.flac"
+    },
+    {
+     "file": "voice_female/fight_grunts_and_breaths_series.flac",
+     "cut": "events",
+     "most": 5,
+     "longest": 1.0
+    },
+    {
+     "file": "voice_female/tough_girl_battle_sounds.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 1.0
+    }
+   ]
+  },
+  "pain_woman": {
+   "volume": 0.9,
+   "pitch": [
+    0.96,
+    1.05
+   ],
+   "gap": 0.25,
+   "from": [
+    {
+     "file": "voice_female/hurt_1.flac"
+    },
+    {
+     "file": "voice_female/hurt_2.flac",
+     "longest": 1.5
+    },
+    {
+     "file": "voice_female/oof.flac",
+     "longest": 1.2
+    },
+    {
+     "file": "voice_female/low_scream.flac"
+    },
+    {
+     "file": "voice_female/cracky_ah_yell.flac"
+    },
+    {
+     "file": "voice_female/short_burst_screams.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.2
+    }
+   ]
+  },
+  "death_woman": {
+   "volume": 1.0,
+   "pitch": [
+    0.97,
+    1.03
+   ],
+   "from": [
+    {
+     "file": "voice_female/dying_groan.flac",
+     "longest": 3.0
+    },
+    {
+     "file": "voice_female/long_low_groan.flac",
+     "longest": 3.5
+    },
+    {
+     "file": "voice_female/agony.flac",
+     "longest": 3.5
+    }
+   ]
+  },
+  "crowd_bed": {
+   "volume": 0.5,
+   "everywhere": true,
+   "loop": true,
+   "from": [
+    {
+     "file": "crowd/loop_medium_outdoor_busy_active_stereo_preview.mp3",
+     "seconds": 45
+    },
+    {
+     "file": "crowd/loop_bar_pub_walla_medium_stereo_preview.mp3",
+     "seconds": 45
+    }
+   ]
+  },
+  "crowd_react": {
+   "volume": 0.5,
+   "everywhere": true,
+   "pitch": [
+    0.96,
+    1.04
+   ],
+   "gap": 0.6,
+   "from": [
+    {
+     "file": "crowd/gasp_small_crowd_20_people.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 3.0,
+     "apart": 0.5
+    },
+    {
+     "file": "crowd/gasp_crowd_shocked_short.flac",
+     "longest": 3.0
+    },
+    {
+     "file": "crowd/gasp_shock_group.flac"
+    },
+    {
+     "file": "crowd/gasp_crowd_oooh_three_times.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 4.0,
+     "apart": 0.5
+    },
+    {
+     "file": "crowd/shout_male_heckle.flac"
+    }
+   ]
+  },
+  "crowd_cheer": {
+   "volume": 0.7,
+   "everywhere": true,
+   "pitch": [
+    0.96,
+    1.04
+   ],
+   "gap": 1.0,
+   "from": [
+    {
+     "file": "crowd/cheer_rowdy_group_hype_yell_dry_1.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 5.0,
+     "apart": 0.6
+    },
+    {
+     "file": "crowd/cheer_rowdy_group_hype_yell_dry_2.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 5.0,
+     "apart": 0.6
+    },
+    {
+     "file": "crowd/cheer_crowd_yahoo_indoor.flac",
+     "fade": 1.5,
+     "longest": 6.0
+    }
+   ]
+  },
+  "crowd_roar": {
+   "volume": 0.95,
+   "everywhere": true,
+   "pitch": [
+    0.97,
+    1.03
+   ],
+   "from": [
+    {
+     "file": "crowd/cheer_applause_medium_crowd_outdoor.flac",
+     "span": [
+      0,
+      9
+     ],
+     "fade": 2.5
+    },
+    {
+     "file": "crowd/large_excited_crowd_vintage.flac",
+     "span": [
+      2,
+      11
+     ],
+     "fade": 2.5
+    },
+    {
+     "file": "crowd/cheer_men_shouting_as_fight_audience_vintage.flac",
+     "span": [
+      5,
+      14
+     ],
+     "fade": 2.5
+    }
+   ]
+  },
+  "bell": {
+   "volume": 0.9,
+   "pitch": [
+    1.0,
+    1.0
+   ],
+   "from": [
+    {
+     "file": "bell/boxing_fight_bell_single_clang_vintage.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 5.0,
+     "apart": 1.0,
+     "fade": 0.6
+    },
+    {
+     "file": "bell/fight_bell_single_and_multiple_clangs_vintage.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 5.0,
+     "apart": 1.0,
+     "fade": 0.6
+    }
+   ]
+  },
+  "generator": {
+   "volume": 0.45,
+   "loop": true,
+   "from": [
+    {
+     "file": "generator/generator_small.flac",
+     "seconds": 12
+    }
+   ]
+  },
+  "arc_warn": {
+   "volume": 0.6,
+   "loop": true,
+   "from": [
+    {
+     "file": "electric/sparks_broken_lamp.flac",
+     "seconds": 10
+    }
+   ]
+  },
+  "arc_loop": {
+   "volume": 0.8,
+   "loop": true,
+   "from": [
+    {
+     "file": "electric/high_voltage_line_crackle_loop.flac",
+     "seconds": 12
+    },
+    {
+     "file": "electric/electricity_arcs_sparks_long.flac",
+     "seconds": 12
+    }
+   ]
+  },
+  "arc_start": {
+   "volume": 1.0,
+   "from": [
+    {
+     "file": "electric/main_breaker_on_4000_amps.flac",
+     "longest": 2.5
+    }
+   ]
+  },
+  "zap": {
+   "volume": 1.1,
+   "pitch": [
+    0.95,
+    1.08
+   ],
+   "from": [
+    {
+     "file": "electric/electric_zap.flac"
+    },
+    {
+     "file": "electric/taser.flac",
+     "longest": 0.9
+    },
+    {
+     "file": "electric/spark_discharge_several_kv.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.8
+    },
+    {
+     "file": "electric/high_voltage_sparks_arcs_3x.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.0
+    }
+   ]
+  },
+  "spikes_rattle": {
+   "volume": 0.7,
+   "loop": true,
+   "from": [
+    {
+     "file": "metal/metal_sheet_shaking.flac",
+     "seconds": 6
+    }
+   ]
+  },
+  "spikes_out": {
+   "volume": 1.0,
+   "from": [
+    {
+     "file": "machinery/very_large_sliding_door_vintage.flac",
+     "fade": 0.3,
+     "longest": 3.5
+    },
+    {
+     "file": "machinery/garage_roller_door_slammed.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 3.5,
+     "fade": 0.3
+    },
+    {
+     "file": "machinery/metal_drag.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 3.0,
+     "fade": 0.3
+    }
+   ]
+  },
+  "spikes_hit": {
+   "volume": 1.0,
+   "from": [
+    {
+     "file": "blade/knife_stab_melon_and_pull_out.flac",
+     "longest": 1.5
+    },
+    {
+     "file": "blade/melon_blunt_force_trauma_clean_and_juicy.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.0
+    },
+    {
+     "file": "blade/stabbing_cutting_spurting.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.2
+    }
+   ]
+  },
+  "night": {
+   "volume": 0.35,
+   "everywhere": true,
+   "loop": true,
+   "from": [
+    {
+     "file": "ambience/city_night_quiet_distant_traffic_stereo_preview.mp3",
+     "seconds": 50
+    }
+   ]
+  },
+  "room": {
+   "volume": 0.3,
+   "everywhere": true,
+   "loop": true,
+   "from": [
+    {
+     "file": "ambience/quarry_tunnel_echoey_wet_droplets_stereo_preview.mp3",
+     "seconds": 40
+    }
+   ]
+  },
+  "card": {
+   "volume": 0.6,
+   "everywhere": true,
+   "from": [
+    {
+     "file": "cash/playing_card_deal_1.flac"
+    },
+    {
+     "file": "cash/playing_card_deal_2.flac"
+    }
+   ]
+  },
+  "cash": {
+   "volume": 0.6,
+   "everywhere": true,
+   "from": [
+    {
+     "file": "cash/counting_us_dollar_bills_in_hands.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.5
+    },
+    {
+     "file": "cash/coins_thrown_on_wooden_desk.flac",
+     "longest": 2.0
+    }
+   ]
+  },
+  "scuff": {
+   "volume": 0.3,
+   "pitch": [
+    0.9,
+    1.1
+   ],
+   "gap": 0.2,
+   "from": [
+    {
+     "file": "footstep/barefoot_tile_scuffs.flac",
+     "cut": "events",
+     "most": 5,
+     "longest": 0.6
+    }
+   ]
+  },
+  "wade": {
+   "volume": 0.6,
+   "pitch": [
+    0.9,
+    1.1
+   ],
+   "gap": 0.05,
+   "from": [
+    {
+     "file": "water/wading_steady_steps_vintage.flac",
+     "cut": "events",
+     "most": 8,
+     "longest": 0.6
+    },
+    {
+     "file": "water/puddle_footsteps_walk.flac",
+     "cut": "events",
+     "most": 6,
+     "longest": 0.6
+    },
+    {
+     "file": "water/puddle_splash_then_footsteps.flac",
+     "cut": "events",
+     "most": 5,
+     "longest": 0.6
+    },
+    {
+     "file": "water/boots_puddle_steps_dirt_gravel.flac",
+     "cut": "events",
+     "most": 5,
+     "longest": 0.6
+    }
+   ]
+  },
+  "wade_fast": {
+   "volume": 0.8,
+   "pitch": [
+    0.9,
+    1.1
+   ],
+   "gap": 0.2,
+   "from": [
+    {
+     "file": "water/running_through_puddle_street.flac",
+     "longest": 1.6
+    },
+    {
+     "file": "water/running_in_water_loud_splashes_vintage.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.4,
+     "apart": 0.5
+    },
+    {
+     "file": "water/walking_and_running_in_water_foley.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.2,
+     "shortest": 0.4
+    }
+   ]
+  },
+  "splash": {
+   "volume": 1.0,
+   "pitch": [
+    0.9,
+    1.05
+   ],
+   "from": [
+    {
+     "file": "water/big_splash_falling_in_water.flac"
+    },
+    {
+     "file": "water/heavy_single_splashes_jump_or_drop_vintage.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.6,
+     "apart": 0.4
+    },
+    {
+     "file": "water/jump_into_pool_splash.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 2.2,
+     "apart": 0.6
+    }
+   ]
+  },
+  "flood_pour": {
+   "volume": 0.8,
+   "loop": true,
+   "from": [
+    {
+     "file": "water/hose_cleaning_floor.flac",
+     "seconds": 14
+    },
+    {
+     "file": "water/downpipe_water_gushing.flac",
+     "seconds": 10
+    }
+   ]
+  },
+  "flood_lap": {
+   "volume": 0.35,
+   "loop": true,
+   "from": [
+    {
+     "file": "water/pool_water_sloshing.flac",
+     "seconds": 25
+    }
+   ]
+  },
+  "effort_dog": {
+   "volume": 0.9,
+   "pitch": [
+    0.92,
+    1.08
+   ],
+   "from": [
+    {
+     "file": "dog/attack_angry_dog.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 1.2,
+     "apart": 0.3
+    },
+    {
+     "file": "dog/attack_snarl_bark_lunge_paws_on_floor_vintage.flac",
+     "cut": "events",
+     "most": 5,
+     "longest": 1.2,
+     "apart": 0.25
+    },
+    {
+     "file": "dog/bark_aggressive_mad_dog_growls.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 1.1,
+     "apart": 0.3
+    },
+    {
+     "file": "dog/attack_jump_growl_leash_chain_clink.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 1.2,
+     "apart": 0.3
+    }
+   ]
+  },
+  "pain_dog": {
+   "volume": 1.0,
+   "pitch": [
+    0.85,
+    1.0
+   ],
+   "from": [
+    {
+     "file": "dog/yelp_dog_yelping_and_walking.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.9,
+     "apart": 0.2
+    },
+    {
+     "file": "dog/yelp_dog_crying_out.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.9,
+     "apart": 0.2
+    },
+    {
+     "file": "dog/yelp_medium_dog_yelping_series.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 0.9,
+     "apart": 0.2
+    }
+   ]
+  },
+  "death_dog": {
+   "volume": 1.0,
+   "pitch": [
+    0.85,
+    0.95
+   ],
+   "from": [
+    {
+     "file": "dog/whine_german_shepherd_mix.flac",
+     "span": [
+      5.8,
+      7.4
+     ],
+     "fade": 0.3
+    },
+    {
+     "file": "dog/whine_dog_close_long.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 2.0,
+     "apart": 0.4,
+     "fade": 0.4
+    },
+    {
+     "file": "dog/yelp_dog_crying_out.flac",
+     "span": [
+      0.0,
+      2.2
+     ],
+     "fade": 0.5
+    }
+   ]
+  },
+  "dog_growl": {
+   "volume": 0.7,
+   "pitch": [
+    0.9,
+    1.05
+   ],
+   "gap": 1.0,
+   "from": [
+    {
+     "file": "dog/growl_german_shepherd_short_barks_at_end.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 2.2,
+     "apart": 0.25,
+     "fade": 0.3
+    },
+    {
+     "file": "dog/growl_angry_dog_close_sustained.flac",
+     "span": [
+      2.3,
+      7.7
+     ],
+     "cut": "events",
+     "most": 2,
+     "longest": 2.5,
+     "fade": 0.4
+    },
+    {
+     "file": "dog/growl_vicious_big_dog_close_with_barks_vintage.flac",
+     "span": [
+      9.8,
+      20.5
+     ],
+     "cut": "events",
+     "most": 3,
+     "longest": 2.5,
+     "fade": 0.4
+    },
+    {
+     "file": "dog/growl_bernese_mountain_dog_tug.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 2.2,
+     "fade": 0.3
+    }
+   ]
+  },
+  "dog_kennel": {
+   "volume": 0.6,
+   "loop": true,
+   "from": [
+    {
+     "file": "dog/bark_ferocious_with_growls_large_dog_vintage.flac",
+     "seconds": 10
+    },
+    {
+     "file": "dog/bark_and_growl_shepherd_sized_dog_fence.flac",
+     "seconds": 12
+    }
+   ]
+  },
+  "dog_gate": {
+   "volume": 1.0,
+   "from": [
+    {
+     "file": "machinery/garage_roller_door_slammed.flac",
+     "cut": "events",
+     "most": 1,
+     "longest": 3.5,
+     "fade": 0.3
+    }
+   ]
+  },
+  "hit_teeth": {
+   "volume": 0.8,
+   "pitch": [
+    0.92,
+    1.08
+   ],
+   "from": [
+    {
+     "file": "blade/knife_stab_melon_single.flac"
+    },
+    {
+     "file": "blade/knife_stabs.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.8
+    },
+    {
+     "file": "blade/chopping_meat_market.flac",
+     "cut": "events",
+     "most": 2,
+     "longest": 0.8
+    },
+    {
+     "file": "blade/melon_chop_take_1.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.9
+    },
+    {
+     "file": "blade/large_swede_stab_with_whoosh.flac"
+    },
+    {
+     "file": "blade/melon_stabs_clean_series.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.9
+    }
+   ]
+  },
+  "block_teeth": {
+   "volume": 0.64,
+   "pitch": [
+    0.9,
+    1.1
+   ],
+   "from": [
+    {
+     "file": "punch/boxing_mitt_punches.flac",
+     "cut": "events",
+     "most": 4,
+     "longest": 0.5
+    },
+    {
+     "file": "punch/damp_sock_body_hits.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.6
+    },
+    {
+     "file": "punch/smack_on_skin_series.flac",
+     "cut": "events",
+     "most": 3,
+     "longest": 0.5
+    }
+   ]
+  },
+  "dog_paws": {
+   "volume": 0.5,
+   "pitch": [
+    0.9,
+    1.15
+   ],
+   "from": [
+    {
+     "file": "dog/paws_running_stone_tiles_1.flac",
+     "cut": "events",
+     "most": 5,
+     "longest": 0.3,
+     "apart": 0.05
+    },
+    {
+     "file": "dog/paws_running_stone_tiles_2.flac",
+     "cut": "events",
+     "most": 5,
+     "longest": 0.3,
+     "apart": 0.05
+    }
+   ]
+  },
+  "crowd_shout": {
+   "about": "One voice out of the crowd, or a few together, with words in it: heard from where somebody on the deck stands. Each is a recording of a person shouting; what is said in each is in ArtSource/sound/manifest.json (words_heard).",
+   "volume": 0.5,
+   "pitch": [
+    0.93,
+    1.07
+   ],
+   "gap": 0.25,
+   "from": [
+    {
+     "file": "crowd/shout_word_go_fuck_yourself_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_you_bastards_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_fuck_you_four_takes_preview.mp3",
+     "cut": "events",
+     "most": 4,
+     "longest": 1.6
+    },
+    {
+     "file": "crowd/shout_word_go_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_hell_yeah_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_die_you_motherfucker_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_i_will_kill_that_motherfucker_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_we_will_destroy_him_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_lets_go_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_you_look_like_a_coward_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_men_hey_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_woman_die_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_woman_shit_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_woman_for_shame_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_word_woman_what_the_fuck_takes_preview.mp3",
+     "cut": "events",
+     "most": 3,
+     "longest": 3.0
+    },
+    {
+     "file": "crowd/shout_boo_voice_two_preview.mp3",
+     "cut": "events",
+     "most": 1,
+     "longest": 3.0
+    },
+    {
+     "file": "crowd/shout_boo_voice_three_preview.mp3"
+    },
+    {
+     "file": "crowd/shout_male_heckle.flac"
+    }
+   ]
+  },
+  "crowd_fight": {
+   "about": "A crowd at a fight, yelling: laid under a fight for as long as it lasts, on top of the crowd standing about.",
+   "volume": 0.25,
+   "everywhere": true,
+   "loop": true,
+   "from": [
+    {
+     "file": "crowd/fight_lynch_mob_get_him_preview.mp3",
+     "seconds": 14.0
+    },
+    {
+     "file": "crowd/fight_medium_crowd_yelling_at_fight_preview.mp3",
+     "seconds": 12.0
+    },
+    {
+     "file": "crowd/fight_medium_crowd_yelling_at_street_fight_preview.mp3",
+     "seconds": 12.0
+    },
+    {
+     "file": "crowd/fight_fifty_people_cheering_at_fight_preview.mp3",
+     "span": [
+      3.0,
+      43.0
+     ],
+     "seconds": 14.0
+    },
+    {
+     "file": "crowd/fight_men_yell_riot_preview.mp3",
+     "span": [
+      3.0,
+      33.0
+     ],
+     "seconds": 14.0
+    },
+    {
+     "file": "crowd/fight_angry_crowd_preview.mp3",
+     "span": [
+      2.0,
+      26.0
+     ],
+     "seconds": 12.0
+    },
+    {
+     "file": "crowd/fight_angry_crowd_fight_preview.mp3",
+     "seconds": 8.0
+    }
+   ]
+  }
+ }
+}

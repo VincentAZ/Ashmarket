@@ -1,0 +1,284 @@
+// Ashmarket prototype: the Gut.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Engine/GameInstance.h"
+#include "GameFramework/SaveGame.h"
+#include "GutTypes.h"
+#include "GutStableTypes.h"
+#include "GutWindowTypes.h"
+#include "GutGameInstance.generated.h"
+
+/** How far the player has got up the ladder, and what it is carrying */
+USTRUCT(BlueprintType)
+struct FGutLadderState
+{
+	GENERATED_BODY()
+
+	/** The rank the player is fighting at, from zero: each rank is a ladder of its own, reached through the one before */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	int32 Rank = 0;
+
+	/** The fight of this rank the player is on, from zero */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	int32 Rung = 0;
+
+	/** Water in hand. Below zero it is owed to the pit boss on the slate. */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	float Water = 0.0f;
+
+	/** What the player owes the pit boss from the bill at the gate. Paid down out of later purses. */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	float Debt = 0.0f;
+
+	/** Cage fame. Goes up with every win, and faster for giving the crowd the finish it called for. */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	int32 Name = 0;
+
+	/** If true the limb health below was carried out of an earlier fight. If false the player is whole. */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	bool bInjuriesCarried = false;
+
+	/** Damage each limb can still take, indexed by EGutLimb. Zero means crippled. */
+	UPROPERTY()
+	float LimbHealth[GutNumLimbs] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+	/** The armor the player owns and wears, by the name of each piece's asset */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	TArray<FName> Armor;
+
+	/** Purses won in this rank so far */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	float Purses = 0.0f;
+
+	/** What the betting window has paid out in this rank, less what was staked there */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	float BettingNet = 0.0f;
+
+	/** Paid in this rank on top of purses: by the crowd for the finish it called for, by sponsors, and from the gate */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	float Extras = 0.0f;
+
+	/** Water spent in this rank on the cutter and on armor */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	float PatchSpend = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	float ArmorSpend = 0.0f;
+
+	/** Taken out of this rank's purses against the debt */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	float DebtPaid = 0.0f;
+
+	/** If true the last fight of this rank is over and the player is at the gate */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	bool bFinished = false;
+
+	/** How far gone the player is on each of the two things it can take before a fight, from 0 to 1, by EGutDrug */
+	UPROPERTY()
+	float Habit[2] = { 0.0f, 0.0f };
+
+	/** Which of them it has taken for the fight it is on */
+	UPROPERTY()
+	bool bDustTaken = false;
+
+	UPROPERTY()
+	bool bHushTaken = false;
+
+	bool IsTaken(int32 Which) const { return Which == 0 ? bDustTaken : bHushTaken; }
+
+	void SetTaken(int32 Which, bool bTaken) { (Which == 0 ? bDustTaken : bHushTaken) = bTaken; }
+
+	/** Health lost for good to Dust taken on top of a full habit */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	float HeartDamage = 0.0f;
+
+	/** If true the last opponent spared the player */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	bool bSpared = false;
+};
+
+/** What the player has set that belongs to no run, as it is written to disk */
+UCLASS()
+class UGutSettingsSave : public USaveGame
+{
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY()
+	int32 Loudness = 3;
+};
+
+/** A run up the ladder, as it is written to disk */
+UCLASS()
+class UGutSaveGame : public USaveGame
+{
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY()
+	FGutLadderState Ladder;
+
+	/** Whether there is a ladder run at all, and the gambler's and the owner's runs, each kept whether or not it is the one being played */
+	UPROPERTY()
+	bool bLadderStarted = true;
+
+	UPROPERTY()
+	FGutWindowState Window;
+
+	UPROPERTY()
+	FGutStableState Stable;
+};
+
+/**
+ *  Remembers what has to outlast a single fight: the cage level is loaded afresh for each one.
+ *  That is how far up the ladder the player is, its water and its injuries, or that there is no ladder at all
+ *  and the cage is being used for single fights.
+ *
+ *  It also keeps the run on disk, so that closing the game does not lose it. The run is written at the card before each fight
+ *  and after each fight is paid out, and read back when the game starts. -GutNoSave on the command line switches that off,
+ *  which every automated run does so that it cannot touch the player's own run.
+ */
+UCLASS()
+class UGutGameInstance : public UGameInstance
+{
+	GENERATED_BODY()
+
+public:
+
+	/**
+	 *  If true the cage runs single fights with no ladder, no water and nothing carried over.
+	 *  For trying things out, and for every test that is not about the ladder.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category="Gut")
+	bool bSandbox = false;
+
+	/** If true the ladder has been started, and the state below is the player's. If false it is still blank. */
+	UPROPERTY(BlueprintReadOnly, Category="Gut")
+	bool bLadderStarted = false;
+
+	/** A part of the story that is to be told when the next card comes up: set when a run is begun, and told once */
+	EGutStory PendingStory = EGutStory::None;
+
+	/** Where the player stands on the ladder now */
+	UPROPERTY(BlueprintReadOnly, Category="Gut")
+	FGutLadderState Ladder;
+
+	/** Where the player stood when it came to the fight it is on, before the cutter and the betting window. A fight lost is fought again from here. */
+	UPROPERTY(BlueprintReadOnly, Category="Gut")
+	FGutLadderState LadderAtRungStart;
+
+	/**
+	 *  If true the player has come to the cage to bet, not to fight: it watches the fights on the night's bill from the wall,
+	 *  with water on them, and whatever it has done to help one fighter lose.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category="Gut")
+	bool bWindow = false;
+
+	/** Where the gambler stands */
+	UPROPERTY(BlueprintReadOnly, Category="Gut")
+	FGutWindowState Window;
+
+	/** If true the player has come to the cage as an owner: it buys or signs fighters, trains them, and sends them in */
+	UPROPERTY(BlueprintReadWrite, Category="Gut")
+	bool bStable = false;
+
+	/** Where the owner stands */
+	UPROPERTY(BlueprintReadOnly, Category="Gut")
+	FGutStableState Stable;
+
+	/**
+	 *  If true the player is standing outside, choosing how to come in: to fight, to own or to bet.
+	 *  And if it came in that way, the cards have a way back out to here.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category="Gut")
+	bool bAtDoor = false;
+
+	UPROPERTY(BlueprintReadWrite, Category="Gut")
+	bool bCameByDoor = false;
+
+	/**
+	 *  The street outside the cage, as a place to walk in: the level that "out to the street" opens. With none, or where
+	 *  IsStreetOpen() says no, the street is the card with the ways in on it that it was before there was a place.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category="Gut")
+	FName StreetLevel = FName("/Game/Town/Lvl_PoolStreet");
+
+	/** The place in the town where the lender sits at her table. Where it has been built, nobody is lent to at the window. */
+	UPROPERTY(BlueprintReadWrite, Category="Gut")
+	FName LenderLevel = FName("/Game/Town/Lvl_BlockSquare");
+
+	/** Set by a test to have the street as a place, or as the card, whatever it would otherwise be */
+	TOptional<bool> bStreetForced;
+
+	/**
+	 *  The place in the town the player was last in, which is where the cage's way out leads: its level, and where in it the
+	 *  player was standing and looking when it left. With none, the cage's way out leads to StreetLevel.
+	 */
+	FName TownLevel;
+	TOptional<FTransform> TownStood;
+
+	/** Which of the next place's ways in the player is arriving by, when it has walked there from another place */
+	FName TownArrive;
+
+	/** If true the owner has come to the cage by the Block's clerk, and the first thing it is shown is who is for sale */
+	bool bStableAtBlock = false;
+
+	/** How loud the game is, in thirds: 3 is as it was mixed, 0 is silent. Set from the menu that stops the game, and kept between sittings. */
+	UPROPERTY(BlueprintReadWrite, Category="Gut")
+	int32 Loudness = 3;
+
+	/** If true the run is kept on disk */
+	UPROPERTY(BlueprintReadWrite, Category="Gut")
+	bool bSaveEnabled = true;
+
+	/** Name of the save the run is kept in */
+	UPROPERTY(BlueprintReadWrite, Category="Gut")
+	FString SaveSlotName = TEXT("GutRun");
+
+	/** Name of the save the player's own settings are kept in */
+	UPROPERTY(BlueprintReadWrite, Category="Gut")
+	FString SettingsSlotName = TEXT("GutSettings");
+
+public:
+
+	/** Writes how loud the game is where it is found the next time the game is opened */
+	void KeepLoudness() const;
+
+	/**
+	 *  True if leaving the cage for the street goes to the street's own level. Not while the automated tests and the
+	 *  simulations are running, which were written for a cage that only ever opens itself again, unless one of them asks.
+	 */
+	bool IsStreetOpen() const;
+
+	/** Returns true if the lender is somebody the player can walk to: then she lends at her table, and not unasked at the window */
+	bool IsLenderInTown() const;
+
+	/** Leaves for the street's own level. The run is written down first. */
+	void GoToStreet(const UObject* WorldContext);
+
+	/** Applies how loud the game is to whatever world this is */
+	void ApplyLoudness(const UObject* WorldContext) const;
+
+	/** Reads the run back from disk, if there is one */
+	virtual void Init() override;
+
+	/** Puts the player back at the foot of the ladder, whole, with the given water, and forgets the run on disk */
+	UFUNCTION(BlueprintCallable, Category="Gut")
+	void ResetLadder(float StartingWater);
+
+	/** Writes the run to disk as the player came to the fight it is on. Returns false if saving is off or failed. */
+	UFUNCTION(BlueprintCallable, Category="Gut")
+	bool SaveRun();
+
+	/** Reads the run from disk. Returns false if saving is off or there is nothing there. */
+	UFUNCTION(BlueprintCallable, Category="Gut")
+	bool LoadRun();
+
+	/** Returns true if there is a run on disk */
+	UFUNCTION(BlueprintPure, Category="Gut")
+	bool HasSavedRun() const;
+};

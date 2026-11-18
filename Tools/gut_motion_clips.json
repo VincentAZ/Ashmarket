@@ -1,0 +1,2404 @@
+[
+ {
+  "name": "x_guard_b",
+  "prompt": "A tired street fighter stands in a fighting stance with the left foot forward and fists up, breathing heavily, swaying slightly, ready to fight.",
+  "seconds": 6,
+  "samples": 6,
+  "seed": 121
+ },
+ {
+  "name": "x_armed",
+  "prompt": "A person in a fighting stance with the left foot forward holds a club in the right hand raised beside the head, ready to swing it, with the left hand held open out in front as a guard.",
+  "seconds": 4,
+  "samples": 6,
+  "seed": 134,
+  "feet": "guard"
+ },
+ {
+  "name": "x_shield",
+  "prompt": "A person in a fighting stance with the left foot forward holds a shield on the left forearm raised in front of the chest, with the right fist cocked back beside the chin.",
+  "seconds": 4,
+  "samples": 6,
+  "seed": 136,
+  "feet": "guard"
+ },
+ {
+  "name": "x_block_fists",
+  "prompt": "A boxer covers up, raising both forearms tight in front of the face to block incoming punches, bracing.",
+  "seconds": 3,
+  "samples": 6,
+  "seed": 1001,
+  "feet": "guard"
+ },
+ {
+  "name": "x_block_armed",
+  "prompt": "A person in a fighting stance raises a club held in the right hand across in front of the head to block an incoming blow, bracing behind it.",
+  "seconds": 3,
+  "samples": 6,
+  "seed": 1002,
+  "feet": "guard"
+ },
+ {
+  "name": "x_block_chain",
+  "prompt": "A person in a fighting stance raises the left forearm in front of the face to block an incoming blow, keeping the right hand low by the hip, bracing.",
+  "seconds": 3,
+  "samples": 6,
+  "seed": 1003,
+  "feet": "guard"
+ },
+ {
+  "name": "x_block_shield",
+  "prompt": "A person braces behind a shield held up on the left arm in front of the face and chest to block an incoming blow.",
+  "seconds": 3,
+  "samples": 6,
+  "seed": 1004,
+  "feet": "guard"
+ },
+ {
+  "name": "fists_idle",
+  "prompt": "A tired street fighter in a fighting stance with the left foot forward and fists up rocks forward and back, shifting weight from the front foot to the back foot, bobbing and weaving slightly, rolls the neck and shoulders, shakes out one hand and raises it again.",
+  "seconds": 9,
+  "samples": 6,
+  "seed": 5001,
+  "start": "guard",
+  "path": "stay",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 14,
+  "role": "idle",
+  "pick": 4
+ },
+ {
+  "name": "fists_stun",
+  "prompt": "A person in a fighting stance is hit hard in the face, the head snaps back and the body flinches and reels, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 1006,
+  "start": "guard",
+  "path": "own",
+  "role": "stun",
+  "pick": 1
+ },
+ {
+  "name": "fists_stagger",
+  "prompt": "A badly beaten person is dazed and out on their feet, bent over, swaying and stumbling on the spot, arms hanging, barely able to stand.",
+  "seconds": 7,
+  "samples": 4,
+  "seed": 1007,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   2.5,
+   5.0
+  ],
+  "blend": 12,
+  "face": true,
+  "role": "stagger",
+  "pick": 3
+ },
+ {
+  "name": "fists_dodge",
+  "prompt": "A fighter in a fighting stance explodes forward in a fast low dash of two driving steps, keeping the stance and the guard, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6001,
+  "start": "guard",
+  "end": "guard",
+  "dash": [
+   0.0,
+   2.6,
+   0.8
+  ],
+  "role": "dodge",
+  "pick": 4
+ },
+ {
+  "name": "fists_backstep",
+  "prompt": "A fighter in a fighting stance springs straight backward with two fast shuffling steps, still facing forward with the guard up, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6002,
+  "start": "guard",
+  "end": "guard",
+  "dash": [
+   0.0,
+   -2.6,
+   0.8
+  ],
+  "role": "backstep",
+  "pick": 6
+ },
+ {
+  "name": "armed_idle",
+  "prompt": "A tired street fighter in a fighting stance with the left foot forward, a club held in the right hand cocked back over the right shoulder ready to swing and the left hand out in front, rocks forward and back, shifting weight from the front foot to the back foot, bobbing and weaving slightly, rolling the shoulders, the left hand feinting.",
+  "seconds": 9,
+  "samples": 6,
+  "seed": 5002,
+  "start": "armed",
+  "path": "stay",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 14,
+  "role": "idle",
+  "pick": 1
+ },
+ {
+  "name": "armed_stun",
+  "prompt": "A person in a fighting stance is hit hard in the face, the head snaps back and the body flinches and reels, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 1011,
+  "start": "armed",
+  "path": "own",
+  "role": "stun",
+  "pick": 0
+ },
+ {
+  "name": "armed_stagger",
+  "prompt": "A badly beaten person is dazed and out on their feet, bent over, swaying and stumbling on the spot, arms hanging, barely able to stand.",
+  "seconds": 7,
+  "samples": 4,
+  "seed": 1012,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   2.5,
+   5.0
+  ],
+  "blend": 12,
+  "face": true,
+  "role": "stagger",
+  "pick": 1
+ },
+ {
+  "name": "armed_dodge",
+  "prompt": "A fighter in a fighting stance explodes forward in a fast low dash of two driving steps, keeping the stance and the guard, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6005,
+  "start": "armed",
+  "end": "armed",
+  "dash": [
+   0.0,
+   2.6,
+   0.8
+  ],
+  "role": "dodge",
+  "pick": 7
+ },
+ {
+  "name": "armed_backstep",
+  "prompt": "A fighter in a fighting stance springs straight backward with two fast shuffling steps, still facing forward with the guard up, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6006,
+  "start": "armed",
+  "end": "armed",
+  "dash": [
+   0.0,
+   -2.6,
+   0.8
+  ],
+  "role": "backstep",
+  "pick": 6
+ },
+ {
+  "name": "chain_idle",
+  "prompt": "A tired street fighter in a fighting stance with the left foot forward, the right hand held low by the hip and the left hand out in front, rocks forward and back and from side to side, shifting weight from foot to foot, bobbing and weaving, rolling the neck and shoulders, the left hand feinting and the right hand swinging at the side.",
+  "seconds": 9,
+  "samples": 10,
+  "seed": 5103,
+  "start": "chain",
+  "path": "stay",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 14,
+  "role": "idle",
+  "pick": 7
+ },
+ {
+  "name": "chain_stun",
+  "prompt": "A person in a fighting stance is hit hard in the face, the head snaps back and the body flinches and reels, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 1016,
+  "start": "chain",
+  "path": "own",
+  "role": "stun",
+  "pick": 1
+ },
+ {
+  "name": "chain_stagger",
+  "prompt": "A badly beaten person is dazed and out on their feet, bent over, swaying and stumbling on the spot, arms hanging, barely able to stand.",
+  "seconds": 7,
+  "samples": 4,
+  "seed": 1017,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   2.5,
+   5.0
+  ],
+  "blend": 12,
+  "face": true,
+  "role": "stagger",
+  "pick": 2
+ },
+ {
+  "name": "chain_dodge",
+  "prompt": "A fighter in a fighting stance explodes forward in a fast low dash of two driving steps, keeping the stance and the guard, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6009,
+  "start": "chain",
+  "end": "chain",
+  "dash": [
+   0.0,
+   2.6,
+   0.8
+  ],
+  "role": "dodge",
+  "pick": 7
+ },
+ {
+  "name": "chain_backstep",
+  "prompt": "A fighter in a fighting stance springs straight backward with two fast shuffling steps, still facing forward with the guard up, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6010,
+  "start": "chain",
+  "end": "chain",
+  "dash": [
+   0.0,
+   -2.6,
+   0.8
+  ],
+  "role": "backstep",
+  "pick": 6
+ },
+ {
+  "name": "shield_idle",
+  "prompt": "A tired street fighter in a fighting stance with the left foot forward, the left forearm held across in front of the chest and the right fist low, rocks forward and back and from side to side, shifting weight from foot to foot, bobbing and weaving behind the raised forearm, rolling the neck and shoulders, the right fist feinting.",
+  "seconds": 9,
+  "samples": 10,
+  "seed": 5104,
+  "start": "shield",
+  "path": "stay",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 14,
+  "role": "idle",
+  "pick": 0
+ },
+ {
+  "name": "shield_stun",
+  "prompt": "A person in a fighting stance is hit hard in the face, the head snaps back and the body flinches and reels, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 1021,
+  "start": "shield",
+  "path": "own",
+  "role": "stun",
+  "pick": 1
+ },
+ {
+  "name": "shield_stagger",
+  "prompt": "A badly beaten person is dazed and out on their feet, bent over, swaying and stumbling on the spot, arms hanging, barely able to stand.",
+  "seconds": 7,
+  "samples": 4,
+  "seed": 1022,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   2.5,
+   5.0
+  ],
+  "blend": 12,
+  "face": true,
+  "role": "stagger",
+  "pick": 3
+ },
+ {
+  "name": "shield_dodge",
+  "prompt": "A fighter in a fighting stance explodes forward in a fast low dash of two driving steps, keeping the stance and the guard, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6013,
+  "start": "shield",
+  "end": "shield",
+  "dash": [
+   0.0,
+   2.6,
+   0.8
+  ],
+  "role": "dodge",
+  "pick": 6
+ },
+ {
+  "name": "shield_backstep",
+  "prompt": "A fighter in a fighting stance springs straight backward with two fast shuffling steps, still facing forward with the guard up, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6014,
+  "start": "shield",
+  "end": "shield",
+  "dash": [
+   0.0,
+   -2.6,
+   0.8
+  ],
+  "role": "backstep",
+  "pick": 5
+ },
+ {
+  "name": "fists_jab",
+  "prompt": "A boxer in a fighting stance steps forward and throws a quick left jab, then returns to the fighting stance.",
+  "seconds": 1.5,
+  "samples": 6,
+  "seed": 1025,
+  "start": "guard",
+  "end": "guard",
+  "travel": 0.35,
+  "hand": "LeftHand",
+  "role": "attack",
+  "pick": 4,
+  "windup": 0.22,
+  "strikes": "front"
+ },
+ {
+  "name": "fists_cross",
+  "prompt": "A boxer in a fighting stance steps forward and throws a hard right cross punch, then returns to the fighting stance.",
+  "seconds": 1.6,
+  "samples": 6,
+  "seed": 1026,
+  "start": "guard",
+  "end": "guard",
+  "travel": 0.35,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 2,
+  "windup": 0.22,
+  "strikes": "left"
+ },
+ {
+  "name": "fists_kick",
+  "prompt": "A kickboxer in a fighting stance steps forward and throws a hard low roundhouse kick with the right leg, then returns to the fighting stance.",
+  "seconds": 1.8,
+  "samples": 6,
+  "seed": 1027,
+  "start": "guard",
+  "end": "guard",
+  "travel": 0.35,
+  "hand": "RightFoot",
+  "role": "attack",
+  "pick": 4,
+  "windup": 0.28,
+  "strikes": "body"
+ },
+ {
+  "name": "fists_haymaker",
+  "prompt": "A brawler in a fighting stance winds up and lunges forward throwing a huge wild overhand right haymaker punch, then returns to the fighting stance.",
+  "seconds": 2.2,
+  "samples": 6,
+  "seed": 1028,
+  "start": "guard",
+  "end": "guard",
+  "travel": 0.9,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 4,
+  "windup": 0.65,
+  "strikes": "left"
+ },
+ {
+  "name": "fists_neck_snap",
+  "prompt": "A person in a fighting stance lunges forward, grabs with both hands at head height, then wrenches both arms violently to the right with a hard twist of the whole body, and returns to the fighting stance.",
+  "seconds": 2.2,
+  "samples": 8,
+  "seed": 1529,
+  "start": "guard",
+  "end": "guard",
+  "travel": 0.0,
+  "hand": "RightHand",
+  "role": "attack",
+  "windup": 0.6,
+  "pick": 6,
+  "impact": 17
+ },
+ {
+  "name": "fists_beatdown",
+  "prompt": "A brawler steps in and throws four heavy looping punches in a row, right, left, right, left, hammering downward at someone bent over in front.",
+  "seconds": 3.4,
+  "samples": 8,
+  "seed": 1530,
+  "start": "guard",
+  "end": "guard",
+  "travel": 0.0,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 2,
+  "windup": 1.6,
+  "impact": 38
+ },
+ {
+  "name": "club_swing",
+  "prompt": "A person in a fighting stance steps forward and swings a club hard horizontally from right to left with the right hand, then returns to the fighting stance.",
+  "seconds": 1.6,
+  "samples": 6,
+  "seed": 1031,
+  "start": "armed",
+  "end": "armed",
+  "travel": 0.35,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 0,
+  "windup": 0.28,
+  "strikes": "left"
+ },
+ {
+  "name": "club_backswing",
+  "prompt": "A person in a fighting stance steps forward and swings a club hard in a backhand from left to right with the right hand, then returns to the fighting stance.",
+  "seconds": 1.6,
+  "samples": 6,
+  "seed": 1032,
+  "start": "armed",
+  "end": "armed",
+  "travel": 0.35,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 4,
+  "windup": 0.28,
+  "strikes": "right"
+ },
+ {
+  "name": "club_leg_sweep",
+  "prompt": "A person in a fighting stance crouches and swings a club low with the right hand at an opponent's legs, then returns to the fighting stance.",
+  "seconds": 1.7,
+  "samples": 6,
+  "seed": 1033,
+  "start": "armed",
+  "end": "armed",
+  "travel": 0.35,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 2,
+  "windup": 0.32,
+  "strikes": "body"
+ },
+ {
+  "name": "club_overhead",
+  "prompt": "A person in a fighting stance raises a club high overhead with the right hand, steps forward and smashes it straight down with full force, then returns to the fighting stance.",
+  "seconds": 2.3,
+  "samples": 6,
+  "seed": 1034,
+  "start": "armed",
+  "end": "armed",
+  "travel": 0.8,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 0,
+  "windup": 0.72,
+  "strikes": "above"
+ },
+ {
+  "name": "club_skull_crack",
+  "prompt": "A person in a fighting stance raises a club with the right hand and smashes it straight down hard onto the head of someone bent over in front, then returns to the fighting stance.",
+  "seconds": 2.2,
+  "samples": 6,
+  "seed": 1035,
+  "start": "armed",
+  "end": "armed",
+  "travel": 0.0,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 2,
+  "windup": 0.7
+ },
+ {
+  "name": "club_execution",
+  "prompt": "A person slowly raises a club high above the head with both hands, holds it there for a moment, then smashes it down with full force onto someone bent over in front.",
+  "seconds": 3.6,
+  "samples": 6,
+  "seed": 1036,
+  "start": "armed",
+  "end": "armed",
+  "travel": 0.0,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 2,
+  "windup": 1.8,
+  "impact": 57
+ },
+ {
+  "name": "machete_cut",
+  "prompt": "A person in a fighting stance steps forward and slashes diagonally downward from the right shoulder with a machete in the right hand, then returns to the fighting stance.",
+  "seconds": 1.5,
+  "samples": 6,
+  "seed": 1037,
+  "start": "armed",
+  "end": "armed",
+  "travel": 0.35,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 0,
+  "windup": 0.22,
+  "strikes": "left"
+ },
+ {
+  "name": "machete_backcut",
+  "prompt": "A person in a fighting stance steps forward and slashes backhand upward from the left hip with a machete in the right hand, then returns to the fighting stance.",
+  "seconds": 1.5,
+  "samples": 6,
+  "seed": 1038,
+  "start": "armed",
+  "end": "armed",
+  "travel": 0.35,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 0,
+  "windup": 0.22,
+  "strikes": "right"
+ },
+ {
+  "name": "machete_thrust",
+  "prompt": "A person in a fighting stance lunges forward and stabs straight ahead with a blade in the right hand, then returns to the fighting stance.",
+  "seconds": 1.6,
+  "samples": 6,
+  "seed": 1039,
+  "start": "armed",
+  "end": "armed",
+  "travel": 0.45,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 4,
+  "windup": 0.26,
+  "strikes": "body"
+ },
+ {
+  "name": "machete_hack",
+  "prompt": "A person in a fighting stance steps forward and chops down hard with a machete in the right hand like chopping wood, then returns to the fighting stance.",
+  "seconds": 2.0,
+  "samples": 6,
+  "seed": 1040,
+  "start": "armed",
+  "end": "armed",
+  "travel": 0.8,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 4,
+  "windup": 0.55,
+  "strikes": "above"
+ },
+ {
+  "name": "machete_throat_cut",
+  "prompt": "A person in a fighting stance steps in and slashes a blade held in the right hand hard and wide across horizontally at neck height, from left to right, then returns to the fighting stance.",
+  "seconds": 2.2,
+  "samples": 8,
+  "seed": 1541,
+  "start": "armed",
+  "end": "armed",
+  "travel": 0.0,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 3,
+  "windup": 0.6
+ },
+ {
+  "name": "machete_butchery",
+  "prompt": "A person hacks down hard with a machete in the right hand three times in a row at someone bent over in front, chopping with full force.",
+  "seconds": 3.6,
+  "samples": 6,
+  "seed": 1042,
+  "start": "armed",
+  "end": "armed",
+  "travel": 0.0,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 3,
+  "windup": 1.9,
+  "impact": 52
+ },
+ {
+  "name": "chain_lash",
+  "prompt": "A person in a fighting stance whips a heavy chain held in the right hand low and sideways from right to left at an opponent's legs, then returns to the fighting stance.",
+  "seconds": 1.7,
+  "samples": 6,
+  "seed": 1043,
+  "start": "chain",
+  "end": "chain",
+  "travel": 0.2,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 5,
+  "windup": 0.36,
+  "strikes": "left"
+ },
+ {
+  "name": "chain_backlash",
+  "prompt": "A person in a fighting stance whips a heavy chain held in the right hand low in a backhand from left to right at an opponent's legs, then returns to the fighting stance.",
+  "seconds": 1.7,
+  "samples": 6,
+  "seed": 1044,
+  "start": "chain",
+  "end": "chain",
+  "travel": 0.2,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 0,
+  "windup": 0.36,
+  "strikes": "right"
+ },
+ {
+  "name": "chain_whip_round",
+  "prompt": "A person in a fighting stance swings a heavy chain in a big circle above the head with the right hand, then whips it around hard and low, and returns to the fighting stance.",
+  "seconds": 2.8,
+  "samples": 6,
+  "seed": 1045,
+  "start": "chain",
+  "end": "chain",
+  "travel": 0.3,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 1,
+  "windup": 0.85,
+  "strikes": "left"
+ },
+ {
+  "name": "chain_neck_break",
+  "prompt": "A person in a fighting stance throws both hands forward at head height as if looping a rope over something, then wrenches both hands down hard to the right with a twist of the whole body, and returns to the fighting stance.",
+  "seconds": 2.4,
+  "samples": 8,
+  "seed": 1546,
+  "start": "chain",
+  "end": "chain",
+  "travel": 0.0,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 2,
+  "windup": 0.8
+ },
+ {
+  "name": "chain_strangle",
+  "prompt": "A person grips a rope with both hands at chest height and hauls it backward with all their strength, leaning back and straining hard for several seconds, as in a tug of war.",
+  "seconds": 4.0,
+  "samples": 8,
+  "seed": 1547,
+  "start": "chain",
+  "end": "chain",
+  "travel": 0.0,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 4,
+  "impact": 78,
+  "windup": 2.2
+ },
+ {
+  "name": "shield_jab",
+  "prompt": "A fighter holding a shield on the left arm steps forward and throws a quick straight punch with the right fist, then returns to the fighting stance.",
+  "seconds": 1.5,
+  "samples": 6,
+  "seed": 1048,
+  "start": "shield",
+  "end": "shield",
+  "travel": 0.35,
+  "hand": "RightHand",
+  "role": "attack",
+  "pick": 4,
+  "windup": 0.22,
+  "strikes": "front"
+ },
+ {
+  "name": "shield_bash",
+  "prompt": "A fighter holding a shield on the left arm steps forward and slams the shield hard into an opponent with the left arm, then returns to the fighting stance.",
+  "seconds": 1.7,
+  "samples": 6,
+  "seed": 1049,
+  "start": "shield",
+  "end": "shield",
+  "travel": 0.45,
+  "hand": "LeftHand",
+  "role": "attack",
+  "pick": 4,
+  "windup": 0.3,
+  "strikes": "body"
+ },
+ {
+  "name": "shield_charge",
+  "prompt": "A fighter holding a shield on the left arm in front of the body charges forward at a run and rams into an opponent shoulder first, then recovers into a fighting stance.",
+  "seconds": 2.3,
+  "samples": 6,
+  "seed": 1050,
+  "start": "shield",
+  "end": "shield",
+  "travel": 2.2,
+  "hand": "LeftHand",
+  "role": "attack",
+  "pick": 4,
+  "windup": 0.6,
+  "strikes": "body"
+ },
+ {
+  "name": "shield_rim_strike",
+  "prompt": "A fighter in a fighting stance swings the edge of a shield on the left arm hard and horizontally at the neck of an opponent in front, then returns to the fighting stance.",
+  "seconds": 2.2,
+  "samples": 6,
+  "seed": 1051,
+  "start": "shield",
+  "end": "shield",
+  "travel": 0.0,
+  "hand": "LeftHand",
+  "role": "attack",
+  "pick": 5,
+  "windup": 0.7
+ },
+ {
+  "name": "shield_crush",
+  "prompt": "A person raises a heavy shield high above the head with both hands, holds it there for a moment, then slams its edge down with full force onto someone bent over in front.",
+  "seconds": 3.6,
+  "samples": 6,
+  "seed": 1052,
+  "start": "shield",
+  "end": "shield",
+  "travel": 0.0,
+  "hand": "LeftHand",
+  "role": "attack",
+  "pick": 5,
+  "windup": 1.8,
+  "impact": 39
+ },
+ {
+  "name": "move_walk_forward",
+  "prompt": "A boxer in a fighting stance with fists raised advances forward with steady steps, keeping the guard up.",
+  "seconds": 4.5,
+  "samples": 4,
+  "seed": 1053,
+  "start": "guard",
+  "path": "line",
+  "velocity": [
+   0,
+   1.5
+  ],
+  "loop": true,
+  "cycle": [
+   0.6,
+   1.5
+  ],
+  "blend": 6,
+  "role": "move",
+  "pick": 0
+ },
+ {
+  "name": "move_walk_back",
+  "prompt": "A boxer in a fighting stance with fists raised retreats backward with steady steps, keeping the guard up and still facing forward.",
+  "seconds": 4.5,
+  "samples": 4,
+  "seed": 1054,
+  "start": "guard",
+  "path": "line",
+  "velocity": [
+   0,
+   -1.5
+  ],
+  "loop": true,
+  "cycle": [
+   0.6,
+   1.5
+  ],
+  "blend": 6,
+  "role": "move",
+  "pick": 0
+ },
+ {
+  "name": "move_walk_left",
+  "prompt": "A boxer in a fighting stance with fists raised sidesteps to the left with steady steps, circling, keeping the guard up and facing forward.",
+  "seconds": 4.5,
+  "samples": 4,
+  "seed": 1055,
+  "start": "guard",
+  "path": "line",
+  "velocity": [
+   1.5,
+   0
+  ],
+  "loop": true,
+  "cycle": [
+   0.6,
+   1.5
+  ],
+  "blend": 6,
+  "role": "move",
+  "pick": 1
+ },
+ {
+  "name": "move_walk_right",
+  "prompt": "A boxer in a fighting stance with fists raised sidesteps to the right with steady steps, circling, keeping the guard up and facing forward.",
+  "seconds": 4.5,
+  "samples": 4,
+  "seed": 1056,
+  "start": "guard",
+  "path": "line",
+  "velocity": [
+   -1.5,
+   0
+  ],
+  "loop": true,
+  "cycle": [
+   0.6,
+   1.5
+  ],
+  "blend": 6,
+  "role": "move",
+  "pick": 2
+ },
+ {
+  "name": "move_run_forward",
+  "prompt": "A fighter with fists raised runs forward fast, charging at an opponent.",
+  "seconds": 4.5,
+  "samples": 4,
+  "seed": 1057,
+  "start": "guard",
+  "path": "line",
+  "velocity": [
+   0,
+   3.8
+  ],
+  "loop": true,
+  "cycle": [
+   0.45,
+   1.0
+  ],
+  "blend": 6,
+  "role": "move",
+  "pick": 0
+ },
+ {
+  "name": "move_run_back",
+  "prompt": "A boxer with fists raised backpedals quickly, retreating fast while still facing forward.",
+  "seconds": 4.5,
+  "samples": 4,
+  "seed": 1058,
+  "start": "guard",
+  "path": "line",
+  "velocity": [
+   0,
+   -3.0
+  ],
+  "loop": true,
+  "cycle": [
+   0.45,
+   1.0
+  ],
+  "blend": 6,
+  "role": "move",
+  "pick": 2
+ },
+ {
+  "name": "move_run_left",
+  "prompt": "A boxer with fists raised shuffles quickly sideways to the left, facing forward.",
+  "seconds": 4.5,
+  "samples": 4,
+  "seed": 1059,
+  "start": "guard",
+  "path": "line",
+  "velocity": [
+   3.0,
+   0
+  ],
+  "loop": true,
+  "cycle": [
+   0.45,
+   1.0
+  ],
+  "blend": 6,
+  "role": "move",
+  "pick": 2
+ },
+ {
+  "name": "move_run_right",
+  "prompt": "A boxer with fists raised shuffles quickly sideways to the right, facing forward.",
+  "seconds": 4.5,
+  "samples": 4,
+  "seed": 1060,
+  "start": "guard",
+  "path": "line",
+  "velocity": [
+   -3.0,
+   0
+  ],
+  "loop": true,
+  "cycle": [
+   0.45,
+   1.0
+  ],
+  "blend": 6,
+  "role": "move",
+  "pick": 0
+ },
+ {
+  "name": "fists_block",
+  "prompt": "A boxer covers up with both forearms raised tight in front of the face, braced behind the guard, breathing hard and shifting slightly, holding the guard up the whole time.",
+  "seconds": 4,
+  "samples": 6,
+  "seed": 5005,
+  "start": "block_fists",
+  "end": "block_fists",
+  "loop": true,
+  "cycle": [
+   1.6,
+   3.2
+  ],
+  "blend": 10,
+  "role": "block",
+  "pick": 4
+ },
+ {
+  "name": "armed_block",
+  "prompt": "A person in a fighting stance holds a club in the right hand raised across in front of the head as a guard, braced behind it, breathing hard and shifting slightly, holding the guard up the whole time.",
+  "seconds": 4,
+  "samples": 6,
+  "seed": 5006,
+  "start": "block_armed",
+  "end": "block_armed",
+  "loop": true,
+  "cycle": [
+   1.6,
+   3.2
+  ],
+  "blend": 10,
+  "role": "block",
+  "pick": 2
+ },
+ {
+  "name": "chain_block",
+  "prompt": "A person in a fighting stance holds the left forearm raised in front of the face as a guard with the right hand low by the hip, braced, breathing hard and shifting slightly, holding the guard up the whole time.",
+  "seconds": 4,
+  "samples": 6,
+  "seed": 5007,
+  "start": "block_chain",
+  "end": "block_chain",
+  "loop": true,
+  "cycle": [
+   1.6,
+   3.2
+  ],
+  "blend": 10,
+  "role": "block",
+  "pick": 4
+ },
+ {
+  "name": "shield_block",
+  "prompt": "A person braces behind a shield held up on the left arm in front of the face and chest, breathing hard and shifting slightly, holding the shield up the whole time.",
+  "seconds": 4,
+  "samples": 6,
+  "seed": 5008,
+  "start": "block_shield",
+  "end": "block_shield",
+  "loop": true,
+  "cycle": [
+   1.6,
+   3.2
+  ],
+  "blend": 10,
+  "role": "block",
+  "pick": 3
+ },
+ {
+  "name": "crowd_watch_arms_crossed",
+  "prompt": "A spectator stands with arms crossed watching a fight below, shifting weight from one foot to the other.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 3001,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "watch",
+  "pick": 3
+ },
+ {
+  "name": "crowd_watch_hands_on_hips",
+  "prompt": "A spectator stands with hands on hips watching a fight below, leaning forward a little to see better and shifting weight.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 3002,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "watch",
+  "pick": 3
+ },
+ {
+  "name": "crowd_watch_restless",
+  "prompt": "A restless spectator stands watching a fight below, arms hanging, turning the head to follow the action and shifting weight.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 3003,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "watch",
+  "pick": 1
+ },
+ {
+  "name": "crowd_watch_leaning",
+  "prompt": "A spectator stands watching a fight below with one hand rubbing the chin, looking down, shifting weight now and then.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 3004,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "watch",
+  "pick": 2
+ },
+ {
+  "name": "crowd_cheer_fists",
+  "prompt": "An excited spectator cheers wildly, pumping both fists in the air and shouting.",
+  "seconds": 3.5,
+  "samples": 6,
+  "seed": 3005,
+  "path": "own",
+  "face": true,
+  "role": "cheer",
+  "pick": 1
+ },
+ {
+  "name": "crowd_cheer_jump",
+  "prompt": "An excited spectator jumps up and down on the spot cheering with both arms raised.",
+  "seconds": 3.5,
+  "samples": 6,
+  "seed": 3006,
+  "path": "own",
+  "face": true,
+  "role": "cheer",
+  "pick": 4
+ },
+ {
+  "name": "crowd_cheer_shout",
+  "prompt": "An angry spectator shouts and shakes a fist at fighters below, then points down at them.",
+  "seconds": 3.5,
+  "samples": 6,
+  "seed": 3007,
+  "path": "own",
+  "face": true,
+  "role": "cheer",
+  "pick": 0
+ },
+ {
+  "name": "crowd_cheer_clap",
+  "prompt": "A spectator claps hands loudly above the head and shouts.",
+  "seconds": 3.5,
+  "samples": 6,
+  "seed": 3008,
+  "path": "own",
+  "face": true,
+  "role": "cheer",
+  "pick": 2
+ },
+ {
+  "name": "crowd_cheer_point",
+  "prompt": "A spectator laughs, points down at the fight below and waves an arm, urging the fighters on.",
+  "seconds": 3.5,
+  "samples": 6,
+  "seed": 3009,
+  "path": "own",
+  "face": true,
+  "role": "cheer",
+  "pick": 5
+ },
+ {
+  "name": "crowd_watch_hands_behind",
+  "prompt": "A spectator stands with hands clasped behind the back, looking down at a fight below and rocking slightly on the heels.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 3101,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "watch",
+  "pick": 2
+ },
+ {
+  "name": "crowd_watch_relaxed",
+  "prompt": "A bored spectator stands relaxed with arms hanging at the sides, looking down at a fight below, shifting weight from foot to foot.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 3102,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "watch",
+  "pick": 2
+ },
+ {
+  "name": "crowd_watch_neck",
+  "prompt": "A spectator stands looking down at a fight below, rubbing the back of the neck with one hand and then letting the arm drop.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 3103,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "watch",
+  "pick": 2
+ },
+ {
+  "name": "crowd_watch_tense",
+  "prompt": "A tense spectator stands with fists clenched at the sides, looking down at a fight below, flinching and leaning as the blows land.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 3104,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "watch",
+  "pick": 1
+ },
+ {
+  "name": "x_armed2_torch",
+  "prompt": "A person in a fighting stance with the left foot forward holds a burning torch upright in the right hand, raised out to the right side at shoulder height well away from the head, with the left hand held open out in front as a guard.",
+  "seconds": 4,
+  "samples": 6,
+  "seed": 4001,
+  "feet": "guard"
+ },
+ {
+  "name": "x_armed2_bat",
+  "prompt": "A person in a fighting stance with the left foot forward holds a baseball bat upright in the right hand, cocked beside the right shoulder with the elbow out to the side, ready to swing, with the left hand held out in front as a guard.",
+  "seconds": 4,
+  "samples": 6,
+  "seed": 4002,
+  "feet": "guard"
+ },
+ {
+  "name": "x_armed2_axe",
+  "prompt": "A person in a fighting stance with the left foot forward holds a hatchet raised in the right hand, the hand up beside the right ear and the elbow pointing out to the side, ready to chop down, with the left hand out in front as a guard.",
+  "seconds": 4,
+  "samples": 6,
+  "seed": 4003,
+  "feet": "guard"
+ },
+ {
+  "name": "x_armed2_low",
+  "prompt": "A person in a fighting stance with the left foot forward holds a machete in the right hand low at the right side beside the hip, the blade pointing forward and down, with the left hand out in front as a guard.",
+  "seconds": 4,
+  "samples": 6,
+  "seed": 4004,
+  "feet": "guard"
+ },
+ {
+  "name": "x_armed2_umbrella",
+  "prompt": "A person in a fighting stance with the left foot forward holds an open umbrella upright in the right hand at shoulder height, the right elbow bent and the fist in front of the right shoulder, with the left hand held open out in front as a guard.",
+  "seconds": 4,
+  "samples": 6,
+  "seed": 4005,
+  "feet": "guard"
+ },
+ {
+  "name": "x_idle_bounce",
+  "prompt": "A boxer in a fighting stance with the left foot forward and fists up bounces lightly on the balls of the feet, shifting weight from foot to foot, bobbing the head and shoulders, staying on the spot, ready to fight.",
+  "seconds": 8,
+  "samples": 4,
+  "seed": 4011,
+  "start": "guard",
+  "path": "stay"
+ },
+ {
+  "name": "x_idle_weave",
+  "prompt": "A boxer in a fighting stance with the left foot forward and fists up bobs and weaves slightly, rolling the shoulders and feinting with small twitches of the hands, staying on the spot.",
+  "seconds": 8,
+  "samples": 4,
+  "seed": 4012,
+  "start": "guard",
+  "path": "stay"
+ },
+ {
+  "name": "x_idle_shift",
+  "prompt": "A tired street fighter in a fighting stance with the left foot forward and fists up rocks forward and back, shifting weight from the front foot to the back foot, rolls the neck and shoulders, shakes out one hand and raises it again.",
+  "seconds": 8,
+  "samples": 4,
+  "seed": 4013,
+  "start": "guard",
+  "path": "stay"
+ },
+ {
+  "name": "x_idle_free",
+  "prompt": "A boxer in a fighting stance with the left foot forward and fists up bounces on the spot, shifting weight from foot to foot, bobbing the head, twitching the shoulders, restless and ready to fight.",
+  "seconds": 8,
+  "samples": 4,
+  "seed": 4014,
+  "start": "guard"
+ },
+ {
+  "name": "x_turn_left_90",
+  "prompt": "A boxer in a fighting stance with fists up pivots on the spot to the left, turning to face ninety degrees to the left with a quick shuffle of the feet, keeping the guard up and staying in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 6,
+  "seed": 4021,
+  "start": "guard",
+  "end": "guard",
+  "turn": 90
+ },
+ {
+  "name": "x_turn_right_90",
+  "prompt": "A boxer in a fighting stance with fists up pivots on the spot to the right, turning to face ninety degrees to the right with a quick shuffle of the feet, keeping the guard up and staying in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 6,
+  "seed": 4022,
+  "start": "guard",
+  "end": "guard",
+  "turn": -90
+ },
+ {
+  "name": "x_turn_left_45",
+  "prompt": "A boxer in a fighting stance with fists up pivots on the spot to the left, turning to face forty-five degrees to the left with a quick shuffle of the feet, keeping the guard up and staying in the fighting stance.",
+  "seconds": 1.0,
+  "samples": 6,
+  "seed": 4023,
+  "start": "guard",
+  "end": "guard",
+  "turn": 45
+ },
+ {
+  "name": "x_turn_right_45",
+  "prompt": "A boxer in a fighting stance with fists up pivots on the spot to the right, turning to face forty-five degrees to the right with a quick shuffle of the feet, keeping the guard up and staying in the fighting stance.",
+  "seconds": 1.0,
+  "samples": 6,
+  "seed": 4024,
+  "start": "guard",
+  "end": "guard",
+  "turn": -45
+ },
+ {
+  "name": "x_hit_left",
+  "prompt": "A person in a fighting stance is punched hard on the left side of the head by a hook, the head whips round to the right and the body reels to the right, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 4101,
+  "start": "guard",
+  "path": "own"
+ },
+ {
+  "name": "x_hit_right",
+  "prompt": "A person in a fighting stance is punched hard on the right side of the head by a hook, the head whips round to the left and the body reels to the left, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 4102,
+  "start": "guard",
+  "path": "own"
+ },
+ {
+  "name": "x_hit_gut",
+  "prompt": "A person in a fighting stance is hit hard in the stomach, doubles over forward winded with the arms pulled in to the belly, then straightens up.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 4103,
+  "start": "guard",
+  "path": "own"
+ },
+ {
+  "name": "x_hit_top",
+  "prompt": "A person in a fighting stance is struck hard on top of the head from above, the knees buckle and the body is driven down into a crouch, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 4104,
+  "start": "guard",
+  "path": "own"
+ },
+ {
+  "name": "x_hit_back",
+  "prompt": "A person in a fighting stance is hit hard in the back from behind, the back arches and the person stumbles a step forward, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 4105,
+  "start": "guard",
+  "path": "own"
+ },
+ {
+  "name": "x_hit_arm_l",
+  "prompt": "A person in a fighting stance is hit hard on the left upper arm, the left arm is knocked aside and the body flinches away to the right, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 4106,
+  "start": "guard",
+  "path": "own"
+ },
+ {
+  "name": "x_hit_arm_r",
+  "prompt": "A person in a fighting stance is hit hard on the right upper arm, the right arm is knocked aside and the body flinches away to the left, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 4107,
+  "start": "guard",
+  "path": "own"
+ },
+ {
+  "name": "x_hit_leg_l",
+  "prompt": "A person in a fighting stance is kicked hard in the left thigh, the left leg buckles and the person nearly drops to the left knee, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 4108,
+  "start": "guard",
+  "path": "own"
+ },
+ {
+  "name": "x_hit_leg_r",
+  "prompt": "A person in a fighting stance is kicked hard in the right thigh, the right leg buckles and the person nearly drops to the right knee, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 4109,
+  "start": "guard",
+  "path": "own"
+ },
+ {
+  "name": "turn_left_45",
+  "prompt": "A boxer in a fighting stance with fists up pivots on the spot to the left, turning to face forty-five degrees to the left with one quick shuffle of the feet, keeping the guard up and staying in the fighting stance.",
+  "seconds": 0.75,
+  "samples": 10,
+  "seed": 5009,
+  "start": "guard",
+  "end": "guard",
+  "turn": 45,
+  "role": "turn",
+  "pick": 6
+ },
+ {
+  "name": "turn_left_90",
+  "prompt": "A boxer in a fighting stance with fists up pivots on the spot to the left, turning to face ninety degrees to the left with one quick shuffle of the feet, keeping the guard up and staying in the fighting stance.",
+  "seconds": 1.0,
+  "samples": 10,
+  "seed": 5010,
+  "start": "guard",
+  "end": "guard",
+  "turn": 90,
+  "role": "turn",
+  "pick": 0
+ },
+ {
+  "name": "turn_right_45",
+  "prompt": "A boxer in a fighting stance with fists up pivots on the spot to the right, turning to face forty-five degrees to the right with one quick shuffle of the feet, keeping the guard up and staying in the fighting stance.",
+  "seconds": 0.75,
+  "samples": 10,
+  "seed": 5011,
+  "start": "guard",
+  "end": "guard",
+  "turn": -45,
+  "role": "turn",
+  "pick": 2
+ },
+ {
+  "name": "turn_right_90",
+  "prompt": "A boxer in a fighting stance with fists up pivots on the spot to the right, turning to face ninety degrees to the right with one quick shuffle of the feet, keeping the guard up and staying in the fighting stance.",
+  "seconds": 1.0,
+  "samples": 10,
+  "seed": 5012,
+  "start": "guard",
+  "end": "guard",
+  "turn": -90,
+  "role": "turn",
+  "pick": 1
+ },
+ {
+  "name": "fists_hit_left",
+  "prompt": "A person in a fighting stance is punched hard on the left side of the head by a hook, the head whips round to the right and the body reels to the right, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5013,
+  "start": "guard",
+  "path": "own",
+  "role": "hit",
+  "strike": "left",
+  "pick": 0
+ },
+ {
+  "name": "fists_hit_right",
+  "prompt": "A person in a fighting stance is punched hard on the right side of the head by a hook, the head whips round to the left and the body reels to the left, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5014,
+  "start": "guard",
+  "path": "own",
+  "role": "hit",
+  "strike": "right",
+  "pick": 3
+ },
+ {
+  "name": "fists_hit_gut",
+  "prompt": "A person in a fighting stance is hit hard in the stomach, doubles over forward winded with the arms pulled in to the belly, then straightens up.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5015,
+  "start": "guard",
+  "path": "own",
+  "role": "hit",
+  "strike": "gut",
+  "pick": 3
+ },
+ {
+  "name": "fists_hit_top",
+  "prompt": "A person in a fighting stance is struck hard on top of the head from above, the knees buckle and the body is driven down into a crouch, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5016,
+  "start": "guard",
+  "path": "own",
+  "role": "hit",
+  "strike": "top",
+  "pick": 2
+ },
+ {
+  "name": "fists_hit_back",
+  "prompt": "A person in a fighting stance is hit hard in the back from behind, the back arches and the person stumbles a step forward, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5017,
+  "start": "guard",
+  "path": "own",
+  "role": "hit",
+  "strike": "back",
+  "pick": 5
+ },
+ {
+  "name": "fists_hit_arm_l",
+  "prompt": "A person in a fighting stance is hit hard on the left upper arm, the left arm is knocked aside and the body flinches away to the right, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5018,
+  "start": "guard",
+  "path": "own",
+  "role": "hit",
+  "strike": "arm_l",
+  "pick": 4
+ },
+ {
+  "name": "fists_hit_arm_r",
+  "prompt": "A person in a fighting stance is hit hard on the right upper arm, the right arm is knocked aside and the body flinches away to the left, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5019,
+  "start": "guard",
+  "path": "own",
+  "role": "hit",
+  "strike": "arm_r",
+  "pick": 1
+ },
+ {
+  "name": "fists_hit_leg_l",
+  "prompt": "A person in a fighting stance is hit hard on the left thigh, the left knee buckles inward and the person sags down on that leg, hopping to stay up, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5020,
+  "start": "guard",
+  "path": "own",
+  "role": "hit",
+  "strike": "leg_l",
+  "pick": 2
+ },
+ {
+  "name": "fists_hit_leg_r",
+  "prompt": "A person in a fighting stance is hit hard on the right thigh, the right knee buckles inward and the person sags down on that leg, hopping to stay up, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5021,
+  "start": "guard",
+  "path": "own",
+  "role": "hit",
+  "strike": "leg_r",
+  "pick": 4
+ },
+ {
+  "name": "armed_hit_left",
+  "prompt": "A person in a fighting stance is punched hard on the left side of the head by a hook, the head whips round to the right and the body reels to the right, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5022,
+  "start": "armed",
+  "path": "own",
+  "role": "hit",
+  "strike": "left",
+  "pick": 1
+ },
+ {
+  "name": "armed_hit_right",
+  "prompt": "A person in a fighting stance is punched hard on the right side of the head by a hook, the head whips round to the left and the body reels to the left, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5023,
+  "start": "armed",
+  "path": "own",
+  "role": "hit",
+  "strike": "right",
+  "pick": 2
+ },
+ {
+  "name": "armed_hit_gut",
+  "prompt": "A person in a fighting stance is hit hard in the stomach, doubles over forward winded with the arms pulled in to the belly, then straightens up.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5024,
+  "start": "armed",
+  "path": "own",
+  "role": "hit",
+  "strike": "gut",
+  "pick": 4
+ },
+ {
+  "name": "armed_hit_top",
+  "prompt": "A person in a fighting stance is struck hard on top of the head from above, the knees buckle and the body is driven down into a crouch, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5025,
+  "start": "armed",
+  "path": "own",
+  "role": "hit",
+  "strike": "top",
+  "pick": 3
+ },
+ {
+  "name": "armed_hit_back",
+  "prompt": "A person in a fighting stance is hit hard in the back from behind, the back arches and the person stumbles a step forward, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5026,
+  "start": "armed",
+  "path": "own",
+  "role": "hit",
+  "strike": "back",
+  "pick": 2
+ },
+ {
+  "name": "armed_hit_arm_l",
+  "prompt": "A person in a fighting stance is hit hard on the left upper arm, the left arm is knocked aside and the body flinches away to the right, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5027,
+  "start": "armed",
+  "path": "own",
+  "role": "hit",
+  "strike": "arm_l",
+  "pick": 1
+ },
+ {
+  "name": "armed_hit_arm_r",
+  "prompt": "A person in a fighting stance is hit hard on the right upper arm, the right arm is knocked aside and the body flinches away to the left, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5028,
+  "start": "armed",
+  "path": "own",
+  "role": "hit",
+  "strike": "arm_r",
+  "pick": 3
+ },
+ {
+  "name": "armed_hit_leg_l",
+  "prompt": "A person in a fighting stance is hit hard on the left thigh, the left knee buckles inward and the person sags down on that leg, hopping to stay up, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5029,
+  "start": "armed",
+  "path": "own",
+  "role": "hit",
+  "strike": "leg_l",
+  "pick": 3
+ },
+ {
+  "name": "armed_hit_leg_r",
+  "prompt": "A person in a fighting stance is hit hard on the right thigh, the right knee buckles inward and the person sags down on that leg, hopping to stay up, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5030,
+  "start": "armed",
+  "path": "own",
+  "role": "hit",
+  "strike": "leg_r",
+  "pick": 0
+ },
+ {
+  "name": "chain_hit_left",
+  "prompt": "A person in a fighting stance is punched hard on the left side of the head by a hook, the head whips round to the right and the body reels to the right, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5031,
+  "start": "chain",
+  "path": "own",
+  "role": "hit",
+  "strike": "left",
+  "pick": 1
+ },
+ {
+  "name": "chain_hit_right",
+  "prompt": "A person in a fighting stance is punched hard on the right side of the head by a hook, the head whips round to the left and the body reels to the left, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5032,
+  "start": "chain",
+  "path": "own",
+  "role": "hit",
+  "strike": "right",
+  "pick": 2
+ },
+ {
+  "name": "chain_hit_gut",
+  "prompt": "A person in a fighting stance is hit hard in the stomach, doubles over forward winded with the arms pulled in to the belly, then straightens up.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5033,
+  "start": "chain",
+  "path": "own",
+  "role": "hit",
+  "strike": "gut",
+  "pick": 5
+ },
+ {
+  "name": "chain_hit_top",
+  "prompt": "A person in a fighting stance is struck hard on top of the head from above, the knees buckle and the body is driven down into a crouch, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5034,
+  "start": "chain",
+  "path": "own",
+  "role": "hit",
+  "strike": "top",
+  "pick": 1
+ },
+ {
+  "name": "chain_hit_back",
+  "prompt": "A person in a fighting stance is hit hard in the back from behind, the back arches and the person stumbles a step forward, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5035,
+  "start": "chain",
+  "path": "own",
+  "role": "hit",
+  "strike": "back",
+  "pick": 0
+ },
+ {
+  "name": "chain_hit_arm_l",
+  "prompt": "A person in a fighting stance is hit hard on the left upper arm, the left arm is knocked aside and the body flinches away to the right, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5036,
+  "start": "chain",
+  "path": "own",
+  "role": "hit",
+  "strike": "arm_l",
+  "pick": 0
+ },
+ {
+  "name": "chain_hit_arm_r",
+  "prompt": "A person in a fighting stance is hit hard on the right upper arm, the right arm is knocked aside and the body flinches away to the left, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5037,
+  "start": "chain",
+  "path": "own",
+  "role": "hit",
+  "strike": "arm_r",
+  "pick": 5
+ },
+ {
+  "name": "chain_hit_leg_l",
+  "prompt": "A person in a fighting stance is hit hard on the left thigh, the left knee buckles inward and the person sags down on that leg, hopping to stay up, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5038,
+  "start": "chain",
+  "path": "own",
+  "role": "hit",
+  "strike": "leg_l",
+  "pick": 1
+ },
+ {
+  "name": "chain_hit_leg_r",
+  "prompt": "A person in a fighting stance is hit hard on the right thigh, the right knee buckles inward and the person sags down on that leg, hopping to stay up, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5039,
+  "start": "chain",
+  "path": "own",
+  "role": "hit",
+  "strike": "leg_r",
+  "pick": 2
+ },
+ {
+  "name": "shield_hit_left",
+  "prompt": "A person in a fighting stance is punched hard on the left side of the head by a hook, the head whips round to the right and the body reels to the right, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5040,
+  "start": "shield",
+  "path": "own",
+  "role": "hit",
+  "strike": "left",
+  "pick": 4
+ },
+ {
+  "name": "shield_hit_right",
+  "prompt": "A person in a fighting stance is punched hard on the right side of the head by a hook, the head whips round to the left and the body reels to the left, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5041,
+  "start": "shield",
+  "path": "own",
+  "role": "hit",
+  "strike": "right",
+  "pick": 1
+ },
+ {
+  "name": "shield_hit_gut",
+  "prompt": "A person in a fighting stance is hit hard in the stomach, doubles over forward winded with the arms pulled in to the belly, then straightens up.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5042,
+  "start": "shield",
+  "path": "own",
+  "role": "hit",
+  "strike": "gut",
+  "pick": 2
+ },
+ {
+  "name": "shield_hit_top",
+  "prompt": "A person in a fighting stance is struck hard on top of the head from above, the knees buckle and the body is driven down into a crouch, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5043,
+  "start": "shield",
+  "path": "own",
+  "role": "hit",
+  "strike": "top",
+  "pick": 2
+ },
+ {
+  "name": "shield_hit_back",
+  "prompt": "A person in a fighting stance is hit hard in the back from behind, the back arches and the person stumbles a step forward, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5044,
+  "start": "shield",
+  "path": "own",
+  "role": "hit",
+  "strike": "back",
+  "pick": 4
+ },
+ {
+  "name": "shield_hit_arm_l",
+  "prompt": "A person in a fighting stance is hit hard on the left upper arm, the left arm is knocked aside and the body flinches away to the right, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5045,
+  "start": "shield",
+  "path": "own",
+  "role": "hit",
+  "strike": "arm_l",
+  "pick": 5
+ },
+ {
+  "name": "shield_hit_arm_r",
+  "prompt": "A person in a fighting stance is hit hard on the right upper arm, the right arm is knocked aside and the body flinches away to the left, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5046,
+  "start": "shield",
+  "path": "own",
+  "role": "hit",
+  "strike": "arm_r",
+  "pick": 4
+ },
+ {
+  "name": "shield_hit_leg_l",
+  "prompt": "A person in a fighting stance is hit hard on the left thigh, the left knee buckles inward and the person sags down on that leg, hopping to stay up, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5047,
+  "start": "shield",
+  "path": "own",
+  "role": "hit",
+  "strike": "leg_l",
+  "pick": 5
+ },
+ {
+  "name": "shield_hit_leg_r",
+  "prompt": "A person in a fighting stance is hit hard on the right thigh, the right knee buckles inward and the person sags down on that leg, hopping to stay up, then recovers.",
+  "seconds": 1.4,
+  "samples": 6,
+  "seed": 5048,
+  "start": "shield",
+  "path": "own",
+  "role": "hit",
+  "strike": "leg_r",
+  "pick": 2
+ },
+ {
+  "name": "fists_dodge_left",
+  "prompt": "A fighter in a fighting stance leaps sideways to the left in a fast skipping sidestep, still facing forward with the guard up, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6003,
+  "start": "guard",
+  "end": "guard",
+  "dash": [
+   2.6,
+   0.0,
+   0.8
+  ],
+  "role": "dodge",
+  "pick": 6
+ },
+ {
+  "name": "fists_dodge_right",
+  "prompt": "A fighter in a fighting stance leaps sideways to the right in a fast skipping sidestep, still facing forward with the guard up, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6004,
+  "start": "guard",
+  "end": "guard",
+  "dash": [
+   -2.6,
+   0.0,
+   0.8
+  ],
+  "role": "dodge",
+  "pick": 3
+ },
+ {
+  "name": "armed_dodge_left",
+  "prompt": "A fighter in a fighting stance leaps sideways to the left in a fast skipping sidestep, still facing forward with the guard up, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6007,
+  "start": "armed",
+  "end": "armed",
+  "dash": [
+   2.6,
+   0.0,
+   0.8
+  ],
+  "role": "dodge",
+  "pick": 0
+ },
+ {
+  "name": "armed_dodge_right",
+  "prompt": "A fighter in a fighting stance leaps sideways to the right in a fast skipping sidestep, still facing forward with the guard up, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6008,
+  "start": "armed",
+  "end": "armed",
+  "dash": [
+   -2.6,
+   0.0,
+   0.8
+  ],
+  "role": "dodge",
+  "pick": 3
+ },
+ {
+  "name": "chain_dodge_left",
+  "prompt": "A fighter in a fighting stance leaps sideways to the left in a fast skipping sidestep, still facing forward with the guard up, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6011,
+  "start": "chain",
+  "end": "chain",
+  "dash": [
+   2.6,
+   0.0,
+   0.8
+  ],
+  "role": "dodge",
+  "pick": 2
+ },
+ {
+  "name": "chain_dodge_right",
+  "prompt": "A fighter in a fighting stance leaps sideways to the right in a fast skipping sidestep, still facing forward with the guard up, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6012,
+  "start": "chain",
+  "end": "chain",
+  "dash": [
+   -2.6,
+   0.0,
+   0.8
+  ],
+  "role": "dodge",
+  "pick": 6
+ },
+ {
+  "name": "shield_dodge_left",
+  "prompt": "A fighter in a fighting stance leaps sideways to the left in a fast skipping sidestep, still facing forward with the guard up, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6015,
+  "start": "shield",
+  "end": "shield",
+  "dash": [
+   2.6,
+   0.0,
+   0.8
+  ],
+  "role": "dodge",
+  "pick": 6
+ },
+ {
+  "name": "shield_dodge_right",
+  "prompt": "A fighter in a fighting stance leaps sideways to the right in a fast skipping sidestep, still facing forward with the guard up, and stops in the fighting stance.",
+  "seconds": 1.3,
+  "samples": 8,
+  "seed": 6016,
+  "start": "shield",
+  "end": "shield",
+  "dash": [
+   -2.6,
+   0.0,
+   0.8
+  ],
+  "role": "dodge",
+  "pick": 2
+ },
+ {
+  "name": "fists_block_hit",
+  "prompt": "A boxer covering up behind both forearms takes a heavy blow on the guard, is jolted and rocked back on the heels, absorbs it and holds the guard up.",
+  "seconds": 1.0,
+  "samples": 8,
+  "seed": 7001,
+  "start": "block_fists",
+  "end": "block_fists",
+  "path": "own",
+  "role": "blockhit",
+  "pick": 1
+ },
+ {
+  "name": "armed_block_hit",
+  "prompt": "A person holding a club raised across in front of the head as a guard takes a heavy blow on it, is jolted and rocked back on the heels, absorbs it and holds the guard up.",
+  "seconds": 1.0,
+  "samples": 8,
+  "seed": 7002,
+  "start": "block_armed",
+  "end": "block_armed",
+  "path": "own",
+  "role": "blockhit",
+  "pick": 7
+ },
+ {
+  "name": "chain_block_hit",
+  "prompt": "A person with the left forearm raised in front of the face as a guard takes a heavy blow on it, is jolted and rocked back on the heels, absorbs it and holds the guard up.",
+  "seconds": 1.0,
+  "samples": 8,
+  "seed": 7003,
+  "start": "block_chain",
+  "end": "block_chain",
+  "path": "own",
+  "role": "blockhit",
+  "pick": 7
+ },
+ {
+  "name": "shield_block_hit",
+  "prompt": "A person braced behind a shield held up on the left arm takes a heavy blow on the shield, is jolted and rocked back on the heels, absorbs it and holds the shield up.",
+  "seconds": 1.0,
+  "samples": 8,
+  "seed": 7004,
+  "start": "block_shield",
+  "end": "block_shield",
+  "path": "own",
+  "role": "blockhit",
+  "pick": 3
+ },
+ {
+  "name": "taken_strangle",
+  "prompt": "A person is dragged forward by a rope pulled tight around the neck, bent forward, both hands clawing at the throat, feet scrabbling, choking and struggling hard, then the arms drop and the legs give way.",
+  "seconds": 3.2,
+  "samples": 8,
+  "seed": 8001,
+  "start": "stagger",
+  "role": "taken",
+  "pick": 4,
+  "lands": 2.2
+ },
+ {
+  "name": "taken_cower",
+  "prompt": "A badly beaten person bent over throws both arms up over the head to cover it and cowers under a rain of heavy blows from in front, flinching and jolting with each one, sinking lower.",
+  "seconds": 2.4,
+  "samples": 8,
+  "seed": 8002,
+  "start": "stagger",
+  "role": "taken",
+  "pick": 7,
+  "lands": 1.6
+ },
+ {
+  "name": "taken_kneel",
+  "prompt": "A badly beaten person sinks down onto both knees, swaying, head hanging, then slowly lifts the head to look up and raises one arm weakly above it to ward off a blow.",
+  "seconds": 2.6,
+  "samples": 8,
+  "seed": 8003,
+  "start": "stagger",
+  "role": "taken",
+  "pick": 1,
+  "lands": 1.8
+ },
+ {
+  "name": "taken_hacked",
+  "prompt": "A badly hurt person bent over is chopped in the shoulder from above three times, jolting downward with each blow, dropping to one knee and then to both, arms raised to shield the head.",
+  "seconds": 2.8,
+  "samples": 8,
+  "seed": 8004,
+  "start": "stagger",
+  "role": "taken",
+  "pick": 0,
+  "lands": 1.9
+ },
+ {
+  "name": "death_throat",
+  "prompt": "A person standing bent over suddenly clutches the throat with both hands, sways, sinks down onto the knees, then topples forward onto the face and lies still on the floor.",
+  "seconds": 4.0,
+  "samples": 8,
+  "seed": 8005,
+  "start": "stagger",
+  "role": "death",
+  "pick": 3,
+  "limp": 2.4
+ },
+ {
+  "name": "death_shock",
+  "prompt": "A person is electrocuted: the whole body goes rigid, back arched and arms locked, shaking violently on the spot, then collapses to the floor and lies still.",
+  "seconds": 3.0,
+  "samples": 8,
+  "seed": 8006,
+  "face": true,
+  "role": "death",
+  "pick": 2,
+  "limp": 1.1
+ },
+ {
+  "name": "death_neck",
+  "prompt": "A person standing bent over has the head wrenched violently to one side, the whole body goes slack at once, the knees buckle and the body crumples straight down in a heap and lies still on the floor.",
+  "seconds": 3.0,
+  "samples": 8,
+  "seed": 8007,
+  "start": "stagger",
+  "role": "death",
+  "pick": 4,
+  "trim": [
+   18,
+   89
+  ],
+  "limp": 0.9
+ },
+ {
+  "name": "death_skull",
+  "prompt": "A person standing bent over is struck very hard on the top of the head, the head and shoulders are driven down, the legs give way and the body pitches forward onto the face and lies still on the floor.",
+  "seconds": 3.0,
+  "samples": 8,
+  "seed": 8008,
+  "start": "stagger",
+  "role": "death",
+  "pick": 6,
+  "trim": [
+   3,
+   89
+  ],
+  "limp": 1.3
+ },
+ {
+  "name": "death_rim",
+  "prompt": "A person standing is struck very hard across the throat, the head snaps back and the body staggers backward with both hands going to the throat, then falls backward flat onto the back and lies still on the floor.",
+  "seconds": 3.2,
+  "samples": 8,
+  "seed": 8009,
+  "start": "stagger",
+  "role": "death",
+  "pick": 5,
+  "trim": [
+   10,
+   95
+  ],
+  "limp": 1.15
+ },
+ {
+  "name": "victory_arms",
+  "prompt": "A fighter who has just won raises both arms high above the head in triumph, fists clenched, turning the upper body from side to side to show the crowd, then lowers the arms and stands breathing hard.",
+  "seconds": 5.0,
+  "samples": 8,
+  "seed": 9001,
+  "start": "armed",
+  "path": "own",
+  "role": "victory",
+  "pick": 0
+ },
+ {
+  "name": "victory_roar",
+  "prompt": "A fighter who has just won leans forward and roars with the arms spread wide and tensed, then beats the chest once with the left fist and stands tall, breathing hard.",
+  "seconds": 4.5,
+  "samples": 8,
+  "seed": 9002,
+  "start": "armed",
+  "path": "own",
+  "role": "victory",
+  "pick": 3
+ },
+ {
+  "name": "victory_spit",
+  "prompt": "An exhausted fighter stands looking down at a body on the floor in front, shoulders heaving, spits to the side, wipes the mouth with the back of the left hand, and takes one slow step back.",
+  "seconds": 5.0,
+  "samples": 8,
+  "seed": 9003,
+  "start": "armed",
+  "path": "own",
+  "role": "victory",
+  "pick": 2
+ },
+ {
+  "name": "victory_fists",
+  "prompt": "A boxer who has just won raises both fists high above the head in triumph and shakes them, turning the upper body from side to side to show the crowd, then lowers the arms and stands breathing hard.",
+  "seconds": 5.0,
+  "samples": 8,
+  "seed": 9004,
+  "start": "guard",
+  "path": "own",
+  "role": "victory",
+  "pick": 1
+ },
+ {
+  "name": "x_mauled_a",
+  "prompt": "A badly beaten person standing bent over is knocked over backward by a large dog leaping at the chest, lands on the back on the floor, throws both forearms up in front of the face and throat and thrashes and kicks on the ground, then the arms drop and the body lies still.",
+  "seconds": 5.5,
+  "samples": 8,
+  "seed": 8101,
+  "start": "stagger"
+ },
+ {
+  "name": "x_mauled_b",
+  "prompt": "A person standing bent over is dragged down to the floor by one arm, falls onto the back, struggles on the ground holding both arms up over the face and kicking the legs, then goes limp and lies still.",
+  "seconds": 5.5,
+  "samples": 8,
+  "seed": 8102,
+  "start": "stagger"
+ },
+ {
+  "name": "taken_mauled",
+  "prompt": "A person standing bent over is dragged down to the floor by one arm, falls onto the back, struggles on the ground holding both arms up over the face and kicking the legs, then goes limp and lies still.",
+  "source": "x_mauled_b",
+  "role": "taken",
+  "pick": 1,
+  "trim": [
+   0,
+   56
+  ],
+  "lands": 1.87
+ },
+ {
+  "name": "death_mauled",
+  "prompt": "A person standing bent over is dragged down to the floor by one arm, falls onto the back, struggles on the ground holding both arms up over the face and kicking the legs, then goes limp and lies still.",
+  "source": "x_mauled_b",
+  "role": "death",
+  "pick": 1,
+  "trim": [
+   56,
+   112
+  ],
+  "origin": 0,
+  "limp": 0.75
+ },
+ {
+  "name": "death_yank",
+  "prompt": "A person standing bent over is yanked violently forward by a chain round the neck, the head and shoulders are jerked forward and down, the body is pulled off its feet, lands face down on the floor and lies still.",
+  "seconds": 3.0,
+  "samples": 8,
+  "seed": 8103,
+  "start": "stagger",
+  "role": "death",
+  "pick": 5,
+  "trim": [
+   14,
+   80
+  ],
+  "limp": 1.2
+ },
+ {
+  "name": "x_yield",
+  "prompt": "A badly beaten person standing bent over sinks slowly down onto both knees and sits back on the heels, then stays kneeling there with the head hanging and the hands resting on the thighs, shoulders heaving, breathing hard, swaying slightly.",
+  "seconds": 8.0,
+  "samples": 8,
+  "seed": 8201,
+  "start": "stagger"
+ },
+ {
+  "name": "x_spare2",
+  "prompt": "A tired fighter stands upright and relaxed with both arms hanging loose at the sides, breathing hard, looking down at someone kneeling on the floor in front, slowly shakes the head, then turns the head aside and wipes the mouth with the back of the left hand and lets the arm drop again.",
+  "seconds": 7.0,
+  "samples": 8,
+  "seed": 8203,
+  "path": "own",
+  "face": true
+ },
+ {
+  "name": "yield_down",
+  "prompt": "A badly beaten person standing bent over sinks slowly down onto both knees and sits back on the heels, then stays kneeling there with the head hanging and the hands resting on the thighs, shoulders heaving, breathing hard, swaying slightly.",
+  "source": "x_yield",
+  "role": "yield",
+  "pick": 5,
+  "trim": [
+   0,
+   78
+  ]
+ },
+ {
+  "name": "yield_kneel",
+  "prompt": "A badly beaten person standing bent over sinks slowly down onto both knees and sits back on the heels, then stays kneeling there with the head hanging and the hands resting on the thighs, shoulders heaving, breathing hard, swaying slightly.",
+  "source": "x_yield",
+  "role": "yield",
+  "pick": 5,
+  "trim": [
+   78,
+   239
+  ],
+  "origin": 0,
+  "loop": true,
+  "cycle": [
+   2.5,
+   5.0
+  ],
+  "blend": 15
+ },
+ {
+  "name": "spare_lower",
+  "prompt": "A tired fighter stands upright and relaxed with both arms hanging loose at the sides, breathing hard, looking down at someone kneeling on the floor in front, slowly shakes the head, then turns the head aside and wipes the mouth with the back of the left hand and lets the arm drop again.",
+  "source": "x_spare2",
+  "role": "spare",
+  "pick": 0,
+  "trim": [
+   72,
+   130
+  ],
+  "path": "own"
+ },
+ {
+  "name": "spare_stand",
+  "prompt": "A tired fighter stands upright and relaxed with both arms hanging loose at the sides, breathing hard, looking down at someone kneeling on the floor in front, slowly shakes the head, then turns the head aside and wipes the mouth with the back of the left hand and lets the arm drop again.",
+  "source": "x_spare2",
+  "role": "spare",
+  "pick": 0,
+  "trim": [
+   130,
+   209
+  ],
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   1.5,
+   2.6
+  ],
+  "blend": 12
+ },
+ {
+  "name": "civil_idle",
+  "prompt": "A person stands at ease and upright with both arms hanging loosely at the sides, looking straight ahead, shifting weight slowly from one foot to the other and glancing to one side now and then.",
+  "seconds": 9,
+  "samples": 6,
+  "seed": 9101,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "civil",
+  "pick": 2
+ },
+ {
+  "name": "civil_walk",
+  "prompt": "A person walks forward at a relaxed, unhurried pace, upright, with the arms swinging naturally at the sides.",
+  "seconds": 4.5,
+  "samples": 6,
+  "seed": 9102,
+  "path": "line",
+  "velocity": [
+   0,
+   1.5
+  ],
+  "loop": true,
+  "cycle": [
+   0.8,
+   1.4
+  ],
+  "blend": 6,
+  "role": "civil",
+  "pick": 1
+ },
+ {
+  "name": "civil_jog",
+  "prompt": "A person jogs forward at a steady, easy pace, upright, with bent arms pumping at the sides.",
+  "seconds": 4.5,
+  "samples": 6,
+  "seed": 9103,
+  "path": "line",
+  "velocity": [
+   0,
+   3.4
+  ],
+  "loop": true,
+  "cycle": [
+   0.5,
+   0.95
+  ],
+  "blend": 6,
+  "role": "civil",
+  "pick": 3
+ }
+]

@@ -1,0 +1,1181 @@
+{
+ "about": "Block Square on a sale night: what stands where, who is there, what they say and what is called from the Block. Read by Tools/build_town_level.py (GUT_TOWN_LIST=Tools/town_block_square.json Tools/build_town_level.sh). Places are in the map's own metres (x east, y north), from for-review/design/map-of-ashmarket.md; 'yaw' and 'facing' are compass bearings (0 north, 90 east, 180 south, 270 west). STAGE 2: the Block's trailer, its lamps, the ramp, the tables, the scale, the rope, the Holding Yard's truck beds and the counting house are models made in Mixar for it (ArtSource/mixar/square_*), and its board, bills and marks are pictures made there.",
+ "name": "Block Square",
+ "level": "/Game/Town/Lvl_BlockSquare",
+ "data": "/Game/Town/DA_Town_BlockSquare",
+ "origin": {
+  "x": 95.0,
+  "y": 208.0,
+  "z": 3.0
+ },
+ "street_height": 4.5,
+ "alley": {
+  "from_y": 1000.0,
+  "rise_per_metre": 0.0
+ },
+ "start": {
+  "x": 5.2,
+  "y": 165.4,
+  "facing": 180
+ },
+ "arrivals": [
+  {
+   "name": "from_pool_street",
+   "x": 5.2,
+   "y": 165.4,
+   "facing": 180
+  }
+ ],
+ "errand": [
+  "SALE NIGHT",
+  "The Block is selling. The way in is the gap in the rope.",
+  "To buy a fighter: Margin, at the table.",
+  "To borrow or pay: Mother Ledger.",
+  "Back to the Gut: north, up the lane."
+ ],
+ "surfaces": {
+  "Road": {
+   "from": "road_damaged",
+   "size": 320
+  },
+  "Yard": {
+   "from": "dirty_concrete",
+   "size": 300
+  },
+  "Blockwork": {
+   "from": "concrete_block_wall",
+   "size": 200
+  },
+  "Sheet": {
+   "from": "rusty_corrugated_iron",
+   "size": 200
+  },
+  "Plate": {
+   "existing": "MI_Gut_Plate"
+  }
+ },
+ "ground": [
+  {
+   "label": "Beyond",
+   "x": [
+    -70,
+    100
+   ],
+   "y": [
+    80,
+    200
+   ],
+   "z": 4.42,
+   "surface": "Yard"
+  },
+  {
+   "label": "Square",
+   "x": [
+    -10,
+    34
+   ],
+   "y": [
+    128,
+    172
+   ],
+   "z": 4.5,
+   "surface": "Road"
+  }
+ ],
+ "walk_about": "The ground that can be walked on. Each patch runs on into whatever stands along its edge (a wall, a row of containers, a fence), and that is what stops whoever walks: the builder measures every model and refuses a place where a patch ends at nothing.",
+ "walk": [
+  {
+   "x": [
+    -7.5,
+    30.7
+   ],
+   "y": [
+    130.6,
+    166.3
+   ]
+  },
+  {
+   "x": [
+    2.0,
+    8.2
+   ],
+   "y": [
+    166.1,
+    170.6
+   ]
+  }
+ ],
+ "walls": [],
+ "rows_about": "Containers end to end, stacked. 'face' is the line their near sides stand on, 'side' the side of it they lie on, and they are spread between 'from' and 'to'. The blue one's awning is on its own left, so 'yaw' is chosen to turn it to the street.",
+ "rows": [
+  {
+   "label": "NorthRow",
+   "model": [
+    "town_container_red"
+   ],
+   "yaw": 90,
+   "high": 1,
+   "along": "x",
+   "from": 9.3,
+   "to": 35.1,
+   "face": 168.8,
+   "side": "south"
+  },
+  {
+   "label": "NorthWest",
+   "model": [
+    "town_container_red"
+   ],
+   "yaw": 90,
+   "high": 2,
+   "along": "x",
+   "from": -14.6,
+   "to": -2.3,
+   "face": 166.4,
+   "side": "north"
+  },
+  {
+   "label": "MainStreetFar",
+   "model": [
+    "town_container_blue",
+    "town_container_red"
+   ],
+   "yaw": 0,
+   "high": 2,
+   "along": "y",
+   "from": 166.4,
+   "to": 180.9,
+   "face": 1.7,
+   "side": "west"
+  },
+  {
+   "label": "WestBuses",
+   "model": [
+    "town_bus"
+   ],
+   "yaw": 0,
+   "high": 1,
+   "along": "y",
+   "from": 129.0,
+   "to": 151.2,
+   "face": -7.7,
+   "side": "west"
+  },
+  {
+   "label": "WestStacks",
+   "model": [
+    "town_container_red",
+    "town_container_blue"
+   ],
+   "yaw": 0,
+   "high": 2,
+   "along": "y",
+   "from": 151.5,
+   "to": 166.3,
+   "face": -7.7,
+   "side": "west"
+  },
+  {
+   "label": "PoolStreetFar",
+   "model": [
+    "town_container_red",
+    "town_container_blue"
+   ],
+   "yaw": 90,
+   "high": 2,
+   "along": "x",
+   "from": 2.0,
+   "to": 75.5,
+   "face": 178.2,
+   "side": "north"
+  }
+ ],
+ "runs": [
+  {
+   "label": "MainStreetShut",
+   "model": "concrete_road_barrier",
+   "from": [
+    -7.7,
+    130.3
+   ],
+   "to": [
+    30.9,
+    130.3
+   ]
+  },
+  {
+   "label": "LaneFence",
+   "model": "modular_chainlink_fence",
+   "from": [
+    8.5,
+    166.3
+   ],
+   "to": [
+    8.5,
+    171.2
+   ]
+  },
+  {
+   "label": "PoolStreetFence",
+   "model": "modular_chainlink_fence",
+   "from": [
+    8.6,
+    171.75
+   ],
+   "to": [
+    38.5,
+    171.75
+   ]
+  },
+  {
+   "label": "HoldingYardFence",
+   "model": "modular_chainlink_fence",
+   "from": [
+    31.0,
+    130.3
+   ],
+   "to": [
+    31.0,
+    149.0
+   ]
+  },
+  {
+   "label": "HoldingYardFenceNorth",
+   "model": "modular_chainlink_fence",
+   "from": [
+    31.0,
+    151.2
+   ],
+   "to": [
+    31.0,
+    166.3
+   ]
+  },
+  {
+   "label": "RopeSouth",
+   "model": "square_rope_posts",
+   "from": [
+    19.0,
+    136.4
+   ],
+   "to": [
+    19.0,
+    149.4
+   ]
+  },
+  {
+   "label": "RopeNorth",
+   "model": "square_rope_posts",
+   "from": [
+    19.0,
+    151.9
+   ],
+   "to": [
+    19.0,
+    164.9
+   ]
+  }
+ ],
+ "things": [
+  {
+   "model": "square_trailer",
+   "x": 29.6,
+   "y": 150.1,
+   "yaw": 270,
+   "note": "the Block: a flatbed trailer on its legs, headboard to the north"
+  },
+  {
+   "model": "square_goalpost",
+   "x": 29.6,
+   "y": 150.1,
+   "yaw": 0,
+   "note": "the lamps over the Block"
+  },
+  {
+   "model": "square_ramp",
+   "x": 32.85,
+   "y": 150.1,
+   "yaw": 0,
+   "note": "the way up from the Holding Yard, through the fence"
+  },
+  {
+   "model": "square_lectern",
+   "x": 26.55,
+   "y": 146.3,
+   "yaw": 90,
+   "note": "the caller's drum"
+  },
+  {
+   "model": "square_table",
+   "x": 26.6,
+   "y": 143.6,
+   "yaw": 0,
+   "note": "the clerk's table"
+  },
+  {
+   "model": "square_scale",
+   "x": 26.5,
+   "y": 141.6,
+   "yaw": 90,
+   "note": "the scale water is paid over"
+  },
+  {
+   "model": "square_water_cart",
+   "x": 28.9,
+   "y": 141.4,
+   "yaw": 90,
+   "note": "the water taken in payment"
+  },
+  {
+   "model": "square_card_table",
+   "x": 26.9,
+   "y": 156.6,
+   "yaw": 270,
+   "note": "Mother Ledger's card table"
+  },
+  {
+   "model": "square_truck_bed",
+   "x": 36.2,
+   "y": 141.0,
+   "yaw": 0,
+   "note": "the Holding Yard's truck line, seen through the fence"
+  },
+  {
+   "model": "square_truck_bed",
+   "x": 36.2,
+   "y": 146.2,
+   "yaw": 0
+  },
+  {
+   "model": "square_truck_bed",
+   "x": 36.6,
+   "y": 155.0,
+   "yaw": 0
+  },
+  {
+   "model": "square_counting_house",
+   "x": 38.4,
+   "y": 164.6,
+   "yaw": 180,
+   "note": "the counting house: the drowned bank's strongroom with the book room over it"
+  },
+  {
+   "model": "floodlight_truck",
+   "x": 25.4,
+   "y": 163.6,
+   "yaw": 300,
+   "note": "the north-east floodlight truck"
+  },
+  {
+   "model": "floodlight_van",
+   "x": 25.4,
+   "y": 133.4,
+   "yaw": 240,
+   "note": "the south-east floodlight truck"
+  },
+  {
+   "model": "barrel_03",
+   "x": 28.6,
+   "y": 162.3
+  },
+  {
+   "model": "metal_jerrycan",
+   "x": 28.0,
+   "y": 162.4
+  },
+  {
+   "model": "street_lamp_01",
+   "x": -6.6,
+   "y": 149.0,
+   "lamp": true
+  },
+  {
+   "model": "street_lamp_01",
+   "x": 14.0,
+   "y": 165.5,
+   "lamp": true
+  },
+  {
+   "model": "old_tyre",
+   "x": -6.4,
+   "y": 160.0
+  },
+  {
+   "model": "Barrel_01",
+   "x": -6.5,
+   "y": 139.0
+  },
+  {
+   "model": "barrel_03",
+   "x": -6.4,
+   "y": 139.9
+  },
+  {
+   "model": "propane_tank",
+   "x": 2.9,
+   "y": 166.0
+  },
+  {
+   "model": "old_tyre",
+   "x": 7.6,
+   "y": 169.4
+  },
+  {
+   "model": "portable_generator",
+   "x": 23.6,
+   "y": 164.9,
+   "yaw": 0
+  },
+  {
+   "model": "portable_generator",
+   "x": 23.8,
+   "y": 132.0,
+   "yaw": 0
+  }
+ ],
+ "pictures": [
+  {
+   "picture": "lot_board",
+   "x": 29.6,
+   "y": 154.33,
+   "faces": "south",
+   "up": 1.89,
+   "tall": 0.7,
+   "deep": 0.07,
+   "note": "the lot board, on the trailer's headboard, which is 74 cm high over the deck: it faces down the deck and is read from the clerk's side"
+  },
+  {
+   "picture": "sign_counting_house",
+   "x": 36.75,
+   "y": 166.33,
+   "faces": "west",
+   "up": 4.55,
+   "tall": 1.0,
+   "deep": 0.9,
+   "note": "painted on the book room's side of the container, south of its window"
+  },
+  {
+   "picture": "deck_mark_1",
+   "x": 28.98,
+   "y": 146.5,
+   "faces": "up",
+   "up": 1.52,
+   "tall": 0.6,
+   "deep": 0.08,
+   "note": "in front of where lot 1 stands"
+  },
+  {
+   "picture": "deck_mark_2",
+   "x": 28.98,
+   "y": 147.75,
+   "faces": "up",
+   "up": 1.52,
+   "tall": 0.6,
+   "deep": 0.08,
+   "note": "in front of where lot 2 stands"
+  },
+  {
+   "picture": "deck_mark_3",
+   "x": 28.98,
+   "y": 149.0,
+   "faces": "up",
+   "up": 1.52,
+   "tall": 0.6,
+   "deep": 0.08,
+   "note": "in front of where lot 3 stands"
+  },
+  {
+   "picture": "deck_mark_4",
+   "x": 28.98,
+   "y": 150.25,
+   "faces": "up",
+   "up": 1.52,
+   "tall": 0.6,
+   "deep": 0.08,
+   "note": "in front of where lot 4 stands"
+  },
+  {
+   "picture": "deck_mark_5",
+   "x": 28.98,
+   "y": 151.5,
+   "faces": "up",
+   "up": 1.52,
+   "tall": 0.6,
+   "deep": 0.08,
+   "note": "in front of where lot 5 stands"
+  },
+  {
+   "picture": "deck_mark_6",
+   "x": 28.98,
+   "y": 152.75,
+   "faces": "up",
+   "up": 1.52,
+   "tall": 0.6,
+   "deep": 0.08,
+   "note": "in front of where lot 6 stands"
+  }
+ ],
+ "pasted": [
+  {
+   "label": "NorthRow",
+   "from": [
+    9.8,
+    166.3
+   ],
+   "to": [
+    34.6,
+    166.3
+   ],
+   "faces": "south",
+   "deep": 0.2,
+   "up": [
+    1.3,
+    1.9
+   ],
+   "tall": [
+    0.75,
+    1.05
+   ],
+   "every": [
+    1.4,
+    3.6
+   ],
+   "lean": 5,
+   "pictures": [
+    "bill_sale",
+    "bill_ledger",
+    "bill_sale",
+    "bill_champion",
+    "bill_kennel_master"
+   ]
+  },
+  {
+   "label": "WestStacks",
+   "from": [
+    -7.75,
+    152.0
+   ],
+   "to": [
+    -7.75,
+    165.8
+   ],
+   "faces": "east",
+   "deep": 0.2,
+   "up": [
+    1.3,
+    1.9
+   ],
+   "tall": [
+    0.75,
+    1.05
+   ],
+   "every": [
+    1.6,
+    3.8
+   ],
+   "lean": 5,
+   "pictures": [
+    "bill_ledger",
+    "bill_sale",
+    "bill_butcher"
+   ]
+  }
+ ],
+ "bulbs_about": "Candelas. The camera is set for the floodlit cage (see NightExposure in Tools/build_gut_content.py), so a bulb that is to light a wall three metres off wants some thousands.",
+ "bulbs": [
+  {
+   "x": 23.6,
+   "y": 162.4,
+   "up": 3.6,
+   "candela": 11000,
+   "reach": 30,
+   "note": "the north-east floodlight truck",
+   "shadows": true
+  },
+  {
+   "x": 23.6,
+   "y": 134.6,
+   "up": 3.4,
+   "candela": 11000,
+   "reach": 30,
+   "note": "the south-east floodlight truck",
+   "shadows": true
+  },
+  {
+   "x": 25.4,
+   "y": 143.6,
+   "up": 2.6,
+   "candela": 1400,
+   "reach": 7,
+   "note": "over the clerk's table"
+  },
+  {
+   "x": 25.7,
+   "y": 157.2,
+   "up": 2.6,
+   "candela": 1400,
+   "reach": 7,
+   "note": "the lender's lamp"
+  },
+  {
+   "x": 4.0,
+   "y": 150.0,
+   "up": 5.0,
+   "candela": 5200,
+   "reach": 30
+  },
+  {
+   "x": 13.0,
+   "y": 138.0,
+   "up": 5.0,
+   "candela": 4200,
+   "reach": 28
+  },
+  {
+   "x": 5.2,
+   "y": 168.6,
+   "up": 3.2,
+   "candela": 2600,
+   "reach": 12,
+   "note": "the lane"
+  },
+  {
+   "x": 9.0,
+   "y": 132.6,
+   "up": 3.2,
+   "candela": 3000,
+   "reach": 14,
+   "note": "the Square Post"
+  },
+  {
+   "x": 29.6,
+   "y": 145.6,
+   "up": 4.55,
+   "candela": 3200,
+   "reach": 15,
+   "shadows": false,
+   "note": "the Block's lamps, 1"
+  },
+  {
+   "x": 29.6,
+   "y": 147.4,
+   "up": 4.55,
+   "candela": 3200,
+   "reach": 15,
+   "shadows": false,
+   "note": "the Block's lamps, 2"
+  },
+  {
+   "x": 29.6,
+   "y": 149.2,
+   "up": 4.55,
+   "candela": 3200,
+   "reach": 15,
+   "shadows": false,
+   "note": "the Block's lamps, 3"
+  },
+  {
+   "x": 29.6,
+   "y": 151.0,
+   "up": 4.55,
+   "candela": 3200,
+   "reach": 15,
+   "shadows": true,
+   "note": "the Block's lamps, 4"
+  },
+  {
+   "x": 29.6,
+   "y": 152.79999999999998,
+   "up": 4.55,
+   "candela": 3200,
+   "reach": 15,
+   "shadows": false,
+   "note": "the Block's lamps, 5"
+  },
+  {
+   "x": 29.6,
+   "y": 154.6,
+   "up": 4.55,
+   "candela": 3200,
+   "reach": 15,
+   "shadows": false,
+   "note": "the Block's lamps, 6"
+  },
+  {
+   "x": 36.4,
+   "y": 150.2,
+   "up": 3.4,
+   "candela": 4200,
+   "reach": 16,
+   "note": "the Holding Yard"
+  },
+  {
+   "x": 19.0,
+   "y": 150.6,
+   "up": 3.0,
+   "candela": 1800,
+   "reach": 8,
+   "note": "the way through the rope"
+  },
+  {
+   "x": 33.6,
+   "y": 164.4,
+   "up": 3.6,
+   "candela": 3800,
+   "reach": 14,
+   "note": "the counting house's front"
+  }
+ ],
+ "bystanders": [
+  {
+   "label": "Bidders",
+   "count": 56,
+   "x": [
+    8.0,
+    26.0
+   ],
+   "y": [
+    135.0,
+    164.0
+   ],
+   "apart": 1.3,
+   "toward": 0.5,
+   "look": [
+    30.0,
+    150.0
+   ],
+   "clear": [
+    {
+     "x": [
+      2.0,
+      12.0
+     ],
+     "y": [
+      161.5,
+      166.3
+     ]
+    },
+    {
+     "x": [
+      17.0,
+      21.0
+     ],
+     "y": [
+      149.0,
+      152.4
+     ]
+    },
+    {
+     "x": [
+      24.6,
+      28.6
+     ],
+     "y": [
+      139.5,
+      158.5
+     ]
+    }
+   ]
+  }
+ ],
+ "people": [
+  {
+   "name": "Margin",
+   "prompt": "Talk to Margin, the Block's clerk",
+   "body": "Vivian",
+   "cloth": [
+    0.05,
+    0.05,
+    0.055
+   ],
+   "x": 27.75,
+   "y": 143.6,
+   "facing": 270,
+   "idle": "crowd_watch_hands_behind",
+   "lines": [
+    {
+     "id": "table",
+     "words": "Lot list is on the board. If you are buying, I write your name against theirs, and they sleep in your yard tonight. The Chainmen's fifth is in the price already. Are you buying?",
+     "answers": [
+      {
+       "words": "Show me who is for sale.",
+       "deed": "buy"
+      },
+      {
+       "words": "What does a person cost?",
+       "next": "price"
+      },
+      {
+       "words": "Not tonight."
+      }
+     ]
+    },
+    {
+     "id": "price",
+     "words": "Eighteen litres, and six more for each thing they know how to do, before anybody bids. A fighter with a name costs what the Gut says they cost."
+    }
+   ]
+  },
+  {
+   "name": "Mother Ledger",
+   "prompt": "Talk to Mother Ledger",
+   "body": "Lani",
+   "cloth": [
+    0.13,
+    0.13,
+    0.13
+   ],
+   "x": 27.75,
+   "y": 157.6,
+   "facing": 250,
+   "idle": "crowd_watch_hands_behind",
+   "lines": [
+    {
+     "id": "book",
+     "words": "{dealt} Your page says {owed} litres owed, and you are holding {held}. I lend twenty-five and I write thirty-five. I like to begin with the figures.",
+     "answers": [
+      {
+       "words": "Lend me twenty-five.",
+       "deed": "borrow",
+       "next": "book"
+      },
+      {
+       "words": "Take what I owe out of what I hold.",
+       "deed": "repay",
+       "next": "book"
+      },
+      {
+       "words": "Who is being sold tonight?",
+       "next": "signed"
+      },
+      {
+       "words": "Nothing tonight."
+      }
+     ]
+    },
+    {
+     "id": "signed",
+     "words": "People who signed. I have never collared anybody. People sign. I only remember it for them."
+    }
+   ]
+  },
+  {
+   "name": "Caller Strand",
+   "prompt": "Talk to Caller Strand",
+   "body": "Orlando",
+   "cloth": [
+    0.16,
+    0.05,
+    0.04
+   ],
+   "x": 27.45,
+   "y": 146.3,
+   "facing": 270,
+   "idle": "crowd_watch_hands_on_hips",
+   "lines": []
+  },
+  {
+   "name": "Warden",
+   "prompt": "Talk to the Warden",
+   "body": "Bo",
+   "cloth": [
+    0.035,
+    0.04,
+    0.055
+   ],
+   "x": 12.0,
+   "y": 131.7,
+   "facing": 0,
+   "idle": "crowd_watch_arms_crossed",
+   "lines": [
+    {
+     "id": "shut",
+     "words": "Main Street is shut below the square until the last lot is down. You want the gate, you wait like everybody else."
+    }
+   ]
+  },
+  {
+   "name": "Lot 1",
+   "body": "Mix05",
+   "cloth": [
+    0.09,
+    0.085,
+    0.075
+   ],
+   "x": 29.6,
+   "y": 146.5,
+   "facing": 270,
+   "idle": "crowd_watch_relaxed",
+   "on": true,
+   "collared": true,
+   "lines": []
+  },
+  {
+   "name": "Lot 2",
+   "body": "Asha",
+   "cloth": [
+    0.09,
+    0.085,
+    0.075
+   ],
+   "x": 29.6,
+   "y": 147.75,
+   "facing": 270,
+   "idle": "crowd_watch_hands_behind",
+   "on": true,
+   "collared": true,
+   "lines": []
+  },
+  {
+   "name": "Lot 3",
+   "body": "Mix09",
+   "cloth": [
+    0.09,
+    0.085,
+    0.075
+   ],
+   "x": 29.6,
+   "y": 149.0,
+   "facing": 270,
+   "idle": "crowd_watch_neck",
+   "on": true,
+   "collared": true,
+   "lines": []
+  },
+  {
+   "name": "Lot 4",
+   "body": "Aera",
+   "cloth": [
+    0.09,
+    0.085,
+    0.075
+   ],
+   "x": 29.6,
+   "y": 150.25,
+   "facing": 270,
+   "idle": "crowd_watch_tense",
+   "on": true,
+   "collared": true,
+   "lines": []
+  },
+  {
+   "name": "Lot 5",
+   "body": "Mix06",
+   "cloth": [
+    0.09,
+    0.085,
+    0.075
+   ],
+   "x": 29.6,
+   "y": 151.5,
+   "facing": 270,
+   "idle": "crowd_watch_relaxed",
+   "on": true,
+   "collared": true,
+   "lines": []
+  },
+  {
+   "name": "Lot 6",
+   "body": "Sunita",
+   "cloth": [
+    0.09,
+    0.085,
+    0.075
+   ],
+   "x": 29.6,
+   "y": 152.75,
+   "facing": 270,
+   "idle": "crowd_watch_hands_behind",
+   "on": true,
+   "collared": true,
+   "lines": []
+  }
+ ],
+ "doors": [
+  {
+   "prompt": "Up the lane to Pool Street",
+   "x": 5.2,
+   "y": 170.6,
+   "deed": "go",
+   "to": "/Game/Town/Lvl_PoolStreet",
+   "arrive": "from_square",
+   "walk_through": true,
+   "reach": 3.3
+  },
+  {
+   "prompt": "Look through the Holding Yard's fence",
+   "x": 30.3,
+   "y": 134.6,
+   "shut": "Chain-link backed with road signs, three and a half metres of it. The lots come up from the other side."
+  }
+ ],
+ "calls_about": "What Caller Strand calls from the Block, round and round. Nobody speaks it: there is no voice for it, so it is written up on the screen. 'stirs' is a lot knocked down, which gets something out of the crowd. Prices follow the numbers pass: 18 L and 6 L for each skill, before bidding.",
+ "calls": [
+  {
+   "speaker": "Caller Strand",
+   "words": "Lot one. A man, twenty-six, sound in wind and limb. Digs, hauls, and has swung a club for money.",
+   "seconds": 5.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Thirty litres opens. Thirty. Who starts me?",
+   "seconds": 3.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Thirty at the rope. Thirty-five, the Gut's man. Forty, at the back.",
+   "seconds": 4.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Forty-five? Forty-five, Mr Rask. Going at forty-five.",
+   "seconds": 4.0
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Sold. Forty-five litres, to Mr Rask of the Gut.",
+   "seconds": 4.0,
+   "stirs": true
+  },
+  {
+   "speaker": "Margin, at the table",
+   "words": "Lot one, forty-five litres, to H. Rask. Nine to the book.",
+   "seconds": 3.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Lot two. A woman, thirty-one. Reads, figures, and sews a straight seam. Three things on the card.",
+   "seconds": 5.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Thirty-six opens, and cheap at it. Thirty-six, the Tin. Forty.",
+   "seconds": 4.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Forty-four, the Pump office. Forty-eight, the Tin again. Any more?",
+   "seconds": 4.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Sold. Forty-eight litres, to the Velvet Tin.",
+   "seconds": 4.0,
+   "stirs": true
+  },
+  {
+   "speaker": "Margin, at the table",
+   "words": "Lot two, forty-eight litres, to the Tin. Nine and a half to the book.",
+   "seconds": 3.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Lot three. A man, nineteen. Strong as he looks and knows nothing yet. Somebody will teach him.",
+   "seconds": 5.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Eighteen opens. Eighteen, the Scrappers. Twenty.",
+   "seconds": 4.0
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Twenty-two. Twenty-two once. Nobody? He eats less than a dog.",
+   "seconds": 4.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Sold. Twenty-two litres, to the Scrappers' guild.",
+   "seconds": 4.0,
+   "stirs": true
+  },
+  {
+   "speaker": "Margin, at the table",
+   "words": "Lot three, twenty-two litres, to the guild. Four and a half to the book.",
+   "seconds": 3.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Lot four. A woman, twenty-four. Cooks, and can strip a pump and put it back. Two on the card.",
+   "seconds": 5.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Thirty opens. Thirty, the Pump office. Thirty-four, at the rope.",
+   "seconds": 4.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Thirty-eight, the Pump. Forty-two. Forty-two, and the Pump shakes its head.",
+   "seconds": 4.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Sold. Forty-two litres, to the bidder at the rope.",
+   "seconds": 4.0,
+   "stirs": true
+  },
+  {
+   "speaker": "Margin, at the table",
+   "words": "Lot four, forty-two litres. Name, please. Eight and a half to the book.",
+   "seconds": 3.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Lot five. A man, thirty-five, heavy. Hauls for two and has stood in a ring and walked out of it.",
+   "seconds": 5.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Thirty opens. Thirty-five, Mr Rask. Forty, the Scrappers.",
+   "seconds": 4.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Forty-five, Mr Rask. Fifty. Fifty, Mr Rask, and that is the Gut's water talking.",
+   "seconds": 4.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Sold. Fifty litres, to Mr Rask of the Gut.",
+   "seconds": 4.0,
+   "stirs": true
+  },
+  {
+   "speaker": "Margin, at the table",
+   "words": "Lot five, fifty litres, to H. Rask. Ten to the book.",
+   "seconds": 3.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Lot six. A woman, twenty-eight. Reads, and keeps a count. Signed for her brother's water and here she stands.",
+   "seconds": 6.0
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Thirty opens. Thirty, the Tin. Thirty-four, the Pump office.",
+   "seconds": 4.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Thirty-eight? Thirty-eight, the Pump. Going at thirty-eight.",
+   "seconds": 4.0
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "Sold. Thirty-eight litres, to the Pump office.",
+   "seconds": 4.0,
+   "stirs": true
+  },
+  {
+   "speaker": "Margin, at the table",
+   "words": "Lot six, thirty-eight litres, to the Pump. Seven and a half to the book.",
+   "seconds": 3.5
+  },
+  {
+   "speaker": "Caller Strand",
+   "words": "That is the six. Hold your water: the next six are at the wash, and they come up when they are clean.",
+   "seconds": 7.0
+  }
+ ]
+}

@@ -1,0 +1,55 @@
+# This repository holds the project's text: code, tools, settings and notes.
+# Everything binary, generated or fetched stays out: it is large, it cannot be merged, and the tools can make most of it again.
+/Content/
+/ArtSource/
+/Saved/
+/Intermediate/
+/DerivedDataCache/
+/Binaries/
+
+# another project's data that happens to live here, and this machine's own tool settings
+/dataset/
+/.claude/
+/.mcp.json
+
+# films, pictures, sounds and models wherever they turn up (for-review is mostly these)
+*.mp4
+*.jpg
+*.png
+*.wav
+*.fbx
+*.glb
+*.blend
+*.uasset
+*.umap
+
+# except the README's own pictures
+!/docs/media/*.jpg
+
+# planning, review and personal: never in git
+/for-review/
+/notes/
+/planning/
+/plans/
+/review/
+/reviews/
+/private/
+/personal/
+/scratch/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+*.local.md
+*.private.*
+NEXT.md
+LOG.md
+TODO.md
+NOTES.md
+*PROPOSAL*.md
+WHEN_YOU_ARE_BACK.md
+RESUME-PROMPT.md
+plan-*.md
+# this machine's own editor settings, and Python's leftovers
+/Config/DefaultEditorPerProjectUserSettings.ini
+__pycache__/
+*.pyc
