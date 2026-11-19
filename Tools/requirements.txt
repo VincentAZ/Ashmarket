@@ -1,0 +1,4 @@
+# What the project's own tools need beyond Python itself. The engine's scripts run inside the editor and need nothing here.
+# Tools/make_town_voices.sh keeps these in an environment of its own, outside the project (~/.cache/ashmarket-sim/voices-venv).
+elevenlabs
+python-dotenv

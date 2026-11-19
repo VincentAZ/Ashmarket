@@ -10,6 +10,7 @@
 
 class ACameraActor;
 class AGutFighter;
+class UAudioComponent;
 class AGutGameMode;
 class ULightComponent;
 class UGutGameInstance;
@@ -23,8 +24,9 @@ namespace TownStoppedLines
 {
 	inline constexpr int32 GoOn = 0;
 	inline constexpr int32 Sound = 1;
-	inline constexpr int32 Leave = 2;
-	inline constexpr int32 Count = 3;
+	inline constexpr int32 Speech = 2;
+	inline constexpr int32 Leave = 3;
+	inline constexpr int32 Count = 4;
 }
 
 /** Somebody being walked from where they stand to somewhere else: a lot down off the Block when it is sold, or up onto it */
@@ -265,6 +267,20 @@ protected:
 	/** True while the town's map is up */
 	bool bMapUp = false;
 
+	/** Whoever is being heard just now: somebody talked to, and whoever is calling over the place */
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> TalkVoice;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> CallVoice;
+
+	/** The line whose voice was last begun, so that a line is said once when it is come to: who, and which of their lines */
+	int32 SaidPerson = INDEX_NONE;
+	int32 SaidLine = INDEX_NONE;
+
+	/** How long the call that is up takes to say, if it is spoken: it is not taken down before it has been said */
+	float CallSpoken = 0.0f;
+
 	/** What somebody who owns nobody yet would have their days at the Block drawn from, once they buy */
 	int32 BookSeed = 0;
 
@@ -289,6 +305,9 @@ protected:
 
 	/** Moves the talk on from the line it is at: by the answer chosen, or to the line that follows */
 	void AdvanceTalk();
+
+	/** Says the line the talk is at, if it has a voice and has not been said since it was come to; stops whoever was speaking before */
+	void SayTalkLine();
 
 	/**
 	 *  The line whose answers the player has in front of them: the one being said, or, when that was said in answer to
@@ -406,6 +425,9 @@ public:
 	/** Who is speaking, what they are saying, what can be said back, and which answer the player is on */
 	FString GetSpeaker() const;
 	FString GetWords() const;
+
+	/** True if what is being said is heard and the player has chosen to hear and not read: then only the answers are written */
+	bool IsWordsUnwritten() const;
 	TArray<FString> GetAnswers() const;
 	int32 GetTalkChoice() const { return TalkChoice; }
 

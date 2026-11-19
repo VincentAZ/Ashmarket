@@ -1,0 +1,32 @@
+{
+ "about": "Who speaks with which voice. Read by Tools/make_town_voices.py, which has ElevenLabs say every line the three places' lists give their people, and the calls from the Block. A speaker is 'Place/Name'; where a place has two people of one name the second is 'Place/Name#2', in the order the place's list has them. 'voice' is the name of one of the account's voices as far as its first ' - '. Change a voice here and run the tool again: only that speaker's lines are made again.",
+
+ "model": "eleven_v4",
+ "format": "mp3_44100_128",
+ "settings": {"stability": 0.4, "similarity_boost": 0.75},
+
+ "speakers": {
+  "Pool Street/Chalk": {"voice": "Laura", "note": "keeps the window's slate: quick, dry, has heard every excuse"},
+  "Pool Street/Hasp": {"voice": "Callum", "note": "racks the weapons: husky, in no hurry"},
+  "Pool Street/Yard hand": {"voice": "Chris", "note": "lets owners in at the yard gate"},
+  "Pool Street/Warden": {"voice": "Adam", "note": "the corner post"},
+
+  "Block Square/Margin": {"voice": "Matilda", "note": "the Block's clerk: exact, reads figures back"},
+  "Block Square/Mother Ledger": {"voice": "Lily", "note": "the lender: soft, unhurried, never raises it"},
+  "Block Square/Warden": {"voice": "Daniel", "note": "the square post"},
+  "Block Square/Caller Strand": {"voice": "River", "settings": {"stability": 0.3, "similarity_boost": 0.75}, "note": "the auctioneer, they/them: patter"},
+  "Block Square/Margin, at the table": {"same_as": "Block Square/Margin"},
+
+  "Main Street/Needle": {"voice": "Sarah", "note": "Hide & Plate's counter: sizes you up"},
+  "Main Street/Thread": {"voice": "Bella", "note": "Needle's twin, at the machine"},
+  "Main Street/Brass": {"voice": "Alice", "note": "Tooth & Trigger: clipped, sells nothing twice"},
+  "Main Street/Gate Warden": {"voice": "Brian", "note": "at the barrier"},
+  "Main Street/Stallholder": {"voice": "Jessica", "note": "bread"},
+  "Main Street/Scrap seller": {"voice": "Laura", "note": "scrap"},
+  "Main Street/Tea seller": {"voice": "Lily", "note": "tea, and the joke everybody sees"},
+  "Main Street/Dealer": {"voice": "Roger", "note": "dice: laid back"},
+  "Main Street/Carrier": {"voice": "Matilda", "note": "water, sealed at the window"},
+  "Main Street/Warden": {"voice": "Eric", "note": "walks the Market Loop"},
+  "Main Street/Warden#2": {"voice": "Harry", "note": "walks it beside the first, counting"}
+ }
+}

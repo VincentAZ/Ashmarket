@@ -7,6 +7,7 @@
 #include "TownTypes.generated.h"
 
 class UAnimSequenceBase;
+class USoundBase;
 
 /** What using a door does, or giving somebody one of the answers they wait for */
 UENUM(BlueprintType)
@@ -76,6 +77,10 @@ struct FTownLine
 	/** What can be said back. With none, the talk goes on to Next when the player is ready. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
 	TArray<FTownAnswer> Answers;
+
+	/** The line as it is spoken, if it has been recorded (Tools/make_town_voices.sh). With none it is words only. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
+	TObjectPtr<USoundBase> Voice;
 
 	/** The line that follows when there is nothing to answer. Less than nought ends the talk. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
@@ -237,6 +242,10 @@ struct FTownCall
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Call")
 	FString Words;
+
+	/** The call as it is spoken, if it has been recorded. The call stays up at least as long as it takes to say. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Call")
+	TObjectPtr<USoundBase> Voice;
 
 	/** How long it stays up before the next */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Call", meta = (ClampMin = 0.5, ClampMax = 60, Units = "s"))

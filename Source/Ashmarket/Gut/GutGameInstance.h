@@ -111,6 +111,9 @@ public:
 
 	UPROPERTY()
 	int32 Loudness = 3;
+
+	UPROPERTY()
+	int32 Speech = 0;
 };
 
 /** A run up the ladder, as it is written to disk */
@@ -232,6 +235,17 @@ public:
 	/** How loud the game is, in thirds: 3 is as it was mixed, 0 is silent. Set from the menu that stops the game, and kept between sittings. */
 	UPROPERTY(BlueprintReadWrite, Category="Gut")
 	int32 Loudness = 3;
+
+	/**
+	 *  How what people say reaches the player: 0 is heard and written, 1 is written only, 2 is heard, with only what the
+	 *  player can say back written. Set from the menu that stops the game, and kept between sittings with the loudness.
+	 *  Somebody whose line has no recording is always written.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category="Gut")
+	int32 Speech = 0;
+
+	bool HearsSpeech() const { return Speech != 1; }
+	bool ReadsSpeech() const { return Speech != 2; }
 
 	/** If true the run is kept on disk */
 	UPROPERTY(BlueprintReadWrite, Category="Gut")

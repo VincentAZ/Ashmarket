@@ -4,6 +4,7 @@
 #include "Engine/Engine.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/LightComponent.h"
 #include "Engine/Light.h"
@@ -24,6 +25,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Sound/SoundBase.h"
+#include "Sound/SoundWave.h"
 #include "TownHUD.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -69,6 +72,11 @@ namespace TownConstants
 	const FName FireTag = FName("TownFire");
 	const float FireBreath = 1.3f;
 	const float FireFlutter = 7.0f;
+
+	/** How loud somebody talked to is, and whoever calls over the place; and how loud the caller is while somebody else is being talked to */
+	const float TalkVoiceVolume = 1.0f;
+	const float CallVoiceVolume = 0.8f;
+	const float CallVoiceUnderTalk = 0.25f;
 
 	/** A fire's light at least this bright (candelas) is a fire that is heard */
 	const float FireHeardFrom = 1500.0f;
@@ -649,6 +657,57 @@ void ATownGameMode::BeginTalk(int32 Person)
 	}
 
 	UE_LOG(LogTown, Log, TEXT("Street: talking to %s"), *PlaceData->People[Person].Name);
+
+	SaidPerson = INDEX_NONE;
+	SaidLine = INDEX_NONE;
+
+	SayTalkLine();
+}
+
+void ATownGameMode::SayTalkLine()
+{
+	if (!IsTalking() || (TalkingTo == SaidPerson && TalkLine == SaidLine))
+	{
+		return;
+	}
+
+	SaidPerson = TalkingTo;
+	SaidLine = TalkLine;
+
+	// whoever was speaking stops when the next thing is said
+	if (TalkVoice)
+	{
+		TalkVoice->FadeOut(0.15f, 0.0f);
+		TalkVoice = nullptr;
+	}
+
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+	const TArray<FTownLine>& Lines = PlaceData->People[TalkingTo].Lines;
+
+	if (GameInstance && GameInstance->HearsSpeech() && Lines.IsValidIndex(TalkLine) && Lines[TalkLine].Voice)
+	{
+		TalkVoice = UGameplayStatics::SpawnSound2D(this, Lines[TalkLine].Voice, TownConstants::TalkVoiceVolume);
+	}
+
+	// the caller is not shouted over
+	if (CallVoice)
+	{
+		CallVoice->SetVolumeMultiplier(TownConstants::CallVoiceUnderTalk);
+	}
+}
+
+bool ATownGameMode::IsWordsUnwritten() const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!IsTalking() || !GameInstance || GameInstance->ReadsSpeech())
+	{
+		return false;
+	}
+
+	const TArray<FTownLine>& Lines = PlaceData->People[TalkingTo].Lines;
+
+	return Lines.IsValidIndex(TalkLine) && Lines[TalkLine].Voice != nullptr;
 }
 
 void ATownGameMode::EndTalk()
@@ -658,6 +717,18 @@ void ATownGameMode::EndTalk()
 	TalkChoice = 0;
 	TalkHub = INDEX_NONE;
 	TalkAsked.Reset();
+
+	// whoever was speaking is left in the middle of it, and the caller is heard again
+	if (TalkVoice)
+	{
+		TalkVoice->FadeOut(0.25f, 0.0f);
+		TalkVoice = nullptr;
+	}
+
+	if (CallVoice)
+	{
+		CallVoice->SetVolumeMultiplier(TownConstants::CallVoiceVolume);
+	}
 
 	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
 	{
@@ -773,6 +844,12 @@ void ATownGameMode::AdvanceTalk()
 		return;
 	}
 
+	// the same thing asked again is said again
+	if (Next == TalkLine)
+	{
+		SaidLine = INDEX_NONE;
+	}
+
 	TalkLine = Next;
 
 	// a line with answers of its own starts the choosing again; one without keeps the arrow where it was, under what was just asked
@@ -785,6 +862,8 @@ void ATownGameMode::AdvanceTalk()
 
 		TalkHub = Next;
 	}
+
+	SayTalkLine();
 }
 
 void ATownGameMode::HandleBack()
@@ -903,6 +982,16 @@ void ATownGameMode::HandleMenuInput(EGutMenuInput Input)
 				GameInstance->Loudness = (GameInstance->Loudness + 3) % 4;
 				GameInstance->KeepLoudness();
 				GameInstance->ApplyLoudness(this);
+			}
+			break;
+
+		case TownStoppedLines::Speech:
+
+			// heard and written, written only, heard only: round and round
+			if (GameInstance)
+			{
+				GameInstance->Speech = (GameInstance->Speech + 1) % 3;
+				GameInstance->KeepLoudness();
 			}
 			break;
 
@@ -1127,7 +1216,8 @@ void ATownGameMode::UpdateCalls(float DeltaTime)
 
 	CallTime += DeltaTime;
 
-	if (!PlaceData->Calls.IsValidIndex(CallIndex) || CallTime >= PlaceData->Calls[CallIndex].Seconds)
+	// a call that is spoken stays up until it has been said, and a moment more
+	if (!PlaceData->Calls.IsValidIndex(CallIndex) || CallTime >= FMath::Max(PlaceData->Calls[CallIndex].Seconds, CallSpoken))
 	{
 		CallIndex = (CallIndex + 1) % PlaceData->Calls.Num();
 		CallTime = 0.0f;
@@ -1147,6 +1237,23 @@ void ATownGameMode::SkipToCall(int32 Index)
 
 void ATownGameMode::BeginCall(const FTownCall& Call)
 {
+	// said out over the place, if it has been recorded and the player has not chosen to read only
+	CallSpoken = 0.0f;
+
+	if (const UGutGameInstance* GameInstance = GetGutGameInstance(); GameInstance && GameInstance->HearsSpeech() && Call.Voice)
+	{
+		if (CallVoice)
+		{
+			CallVoice->FadeOut(0.2f, 0.0f);
+		}
+
+		CallVoice = UGameplayStatics::SpawnSound2D(this, Call.Voice, IsTalking() ? TownConstants::CallVoiceUnderTalk : TownConstants::CallVoiceVolume);
+
+		const USoundWave* Wave = Cast<USoundWave>(Call.Voice);
+
+		CallSpoken = (Wave ? Wave->Duration : Call.Voice->GetDuration()) + 0.4f;
+	}
+
 	// a lot knocked down gets something out of whoever is standing there
 	if (Call.bStirsTheCrowd)
 	{
@@ -2307,5 +2414,8 @@ TArray<FString> ATownGameMode::GetStoppedLines() const
 
 	static const TCHAR* Loud[] = { TEXT("off"), TEXT("a third"), TEXT("two thirds"), TEXT("full") };
 
-	return { TEXT("Go on"), FString::Printf(TEXT("Sound: %s"), Loud[FMath::Clamp(GameInstance ? GameInstance->Loudness : 3, 0, 3)]), TEXT("Leave the game") };
+	static const TCHAR* Said[] = { TEXT("heard and written"), TEXT("written only"), TEXT("heard, with only your answers written") };
+
+	return { TEXT("Go on"), FString::Printf(TEXT("Sound: %s"), Loud[FMath::Clamp(GameInstance ? GameInstance->Loudness : 3, 0, 3)]),
+		FString::Printf(TEXT("What people say: %s"), Said[FMath::Clamp(GameInstance ? GameInstance->Speech : 0, 0, 2)]), TEXT("Leave the game") };
 }

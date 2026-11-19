@@ -182,7 +182,8 @@ TArray<FString> ATownHUD::Wrap(const FString& Words, int32 Length)
 
 void ATownHUD::DrawTalk(const ATownGameMode* Town, float CenterX)
 {
-	const TArray<FString> Said = Wrap(Town->GetWords(), TalkLineLength);
+	// heard and not read, if the player has chosen that and the line is spoken: then only what can be said back is written
+	const TArray<FString> Said = Town->IsWordsUnwritten() ? TArray<FString>() : Wrap(Town->GetWords(), TalkLineLength);
 	const TArray<FString> Answers = Town->GetAnswers();
 	const TArray<bool> Asked = Town->GetAnswersAsked();
 

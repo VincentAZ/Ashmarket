@@ -16,6 +16,7 @@ Places in the list are in the map's metres (x east, y north; for-review/design/m
 import json
 import math
 import os
+import re
 import struct
 import random
 import traceback
@@ -32,6 +33,9 @@ MIXAR = os.path.join(PROJECT, "ArtSource", "mixar")
 
 # bills and painted words: pictures made in Mixar with nothing behind them, laid on as decals the way the pool's markings are
 PICTURES = "/Game/Town/Pictures"
+
+# what the town's people say, spoken: brought in by Tools/import_town_voices.sh
+VOICES = "/Game/Town/Voices"
 PICTURE_SOURCE = os.path.join(MIXAR, "street")
 DECAL = "/Game/Gut/Art/Blood/M_Gut_Decal"
 MOTION = "/Game/Gut/Art/Motion"
@@ -1001,7 +1005,31 @@ def main():
 
     people = []
 
+    # What is said aloud: a recording for a line or a call, if Tools/make_town_voices.sh has made one and
+    # Tools/import_town_voices.sh has brought it in. The names are that tool's: the speaker's name, a number for the
+    # second of two people of one name, and the line's own name.
+    def worded(text):
+        return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+
+    spoken = [0]
+    named = {}
+
+    def voice(name):
+        path = "{}/{}/{}".format(VOICES, worded(listed["name"]), name)
+
+        if not eal.does_asset_exist(path):
+            return None
+
+        spoken[0] += 1
+
+        return unreal.load_asset(path)
+
     for entry in listed["people"]:
+        if entry.get("lines"):
+            named[entry["name"]] = named.get(entry["name"], 0) + 1
+
+        nth = named.get(entry["name"], 1)
+
         person = unreal.TownPerson()
         person.set_editor_property("name", entry["name"])
         person.set_editor_property("prompt", entry.get("prompt", ""))
@@ -1034,6 +1062,7 @@ def main():
             line = unreal.TownLine()
             line.set_editor_property("words", said["words"])
             line.set_editor_property("next", ids.get(said.get("next"), -1))
+            line.set_editor_property("voice", voice("{}{}_{}".format(worded(entry["name"]), "" if nth == 1 else str(nth), worded(str(said.get("id", len(lines)))))))
 
             answers = []
 
@@ -1091,6 +1120,7 @@ def main():
         call = unreal.TownCall()
         call.set_editor_property("speaker", entry["speaker"])
         call.set_editor_property("words", entry["words"])
+        call.set_editor_property("voice", voice("call_{:02d}".format(len(calls))))
         call.set_editor_property("seconds", float(entry.get("seconds", 3.5)))
         call.set_editor_property("stirs_the_crowd", bool(entry.get("stirs")))
         call.set_editor_property("sells", int(entry.get("sells", 0)))
@@ -1167,6 +1197,9 @@ def main():
     data.set_editor_property("name", listed["name"])
     data.set_editor_property("errand", listed.get("errand", []))
     data.set_editor_property("beds", [unreal.Name(bed) for bed in listed.get("beds", [])])
+
+    if spoken[0]:
+        log("{} of the place's lines and calls are spoken".format(spoken[0]))
     data.set_editor_property("people", people)
     data.set_editor_property("doors", doors)
     data.set_editor_property("arrivals", arrivals)

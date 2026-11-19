@@ -44,6 +44,7 @@ void UGutGameInstance::Init()
 		if (const UGutSettingsSave* Kept = Cast<UGutSettingsSave>(UGameplayStatics::LoadGameFromSlot(SettingsSlotName, 0)))
 		{
 			Loudness = FMath::Clamp(Kept->Loudness, 0, 3);
+			Speech = FMath::Clamp(Kept->Speech, 0, 2);
 
 			UE_LOG(LogTemp, Log, TEXT("[gut] as loud as it was left: %d of 3"), Loudness);
 		}
@@ -60,6 +61,7 @@ void UGutGameInstance::KeepLoudness() const
 	UGutSettingsSave* Kept = Cast<UGutSettingsSave>(UGameplayStatics::CreateSaveGameObject(UGutSettingsSave::StaticClass()));
 
 	Kept->Loudness = Loudness;
+	Kept->Speech = Speech;
 
 	UGameplayStatics::SaveGameToSlot(Kept, SettingsSlotName, 0);
 }
