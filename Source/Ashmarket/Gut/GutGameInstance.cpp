@@ -124,6 +124,29 @@ void UGutGameInstance::ResetLadder(float StartingWater)
 	}
 }
 
+int32 UGutGameInstance::GetBagCount(FName Good) const
+{
+	const FGutBagItem* Item = Bag.FindByPredicate([Good](const FGutBagItem& One) { return One.Good == Good; });
+
+	return Item ? Item->Count : 0;
+}
+
+void UGutGameInstance::AddToBag(FName Good, int32 Count)
+{
+	FGutBagItem* Item = Bag.FindByPredicate([Good](const FGutBagItem& One) { return One.Good == Good; });
+
+	if (!Item)
+	{
+		Item = &Bag.AddDefaulted_GetRef();
+		Item->Good = Good;
+	}
+
+	Item->Count += Count;
+
+	// nothing is carried in noughts
+	Bag.RemoveAll([](const FGutBagItem& One) { return One.Count <= 0; });
+}
+
 bool UGutGameInstance::SaveRun()
 {
 	if (!bSaveEnabled || !(bLadderStarted || Window.bStarted || Stable.bStarted))
@@ -140,6 +163,7 @@ bool UGutGameInstance::SaveRun()
 	// the gambler's nights and the owner's yard are kept beside it, as they stand
 	Save->Window = Window;
 	Save->Stable = Stable;
+	Save->Bag = Bag;
 
 	return UGameplayStatics::SaveGameToSlot(Save, SaveSlotName, 0);
 }
@@ -165,6 +189,7 @@ bool UGutGameInstance::LoadRun()
 
 	Window = Save->Window;
 	Stable = Save->Stable;
+	Bag = Save->Bag;
 
 	return true;
 }

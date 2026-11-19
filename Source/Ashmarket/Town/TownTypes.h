@@ -44,7 +44,10 @@ enum class ETownDeed : uint8
 	Repay,
 
 	/** To the armorers' counter: what they have made for the cage's fighters, to be bought with a fighter's own water */
-	Armor
+	Armor,
+
+	/** To whatever they sell from their stall: bought with water in hand, and carried away in the player's bag */
+	Trade
 };
 
 /** One thing the player can say back */
@@ -159,6 +162,10 @@ struct FTownPerson
 	/** How fast they walk it, against the pace everybody walks at */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person", meta = (ClampMin = 0.2, ClampMax = 2))
 	float Pace = 0.85f;
+
+	/** What they sell from where they stand, by the names the town's goods go under (bread, tea, splint). With none they sell nothing. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
+	TArray<FName> Sells;
 
 	/** What they say. The talk begins at the first. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")

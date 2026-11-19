@@ -543,7 +543,7 @@ void AGutFighter::Tick(float DeltaTime)
 	// stamina comes back after a short rest, and slowly behind the guard
 	const bool bExerting = IsAttacking() || State == EGutFighterState::Dodging;
 
-	if (!bExerting && Stamina < MaxStamina && Now - LastStaminaUseTime >= StaminaRegenDelay)
+	if (!bExerting && Stamina < MaxStamina && Now - LastStaminaUseTime >= StaminaRegenDelay * StaminaRegenDelayScale)
 	{
 		const float RegenScale = (State == EGutFighterState::Blocking) ? BlockingRegenScale : 1.0f;
 

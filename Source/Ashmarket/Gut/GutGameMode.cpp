@@ -738,6 +738,10 @@ void AGutGameMode::ConfirmCard()
 		PlayerFighter->SetStunScale(IsDrugTaken(EGutDrug::Hush) ? HushStunScale : 1.0f);
 	}
 
+	// bread and tea from the market, taken since the last fight: wind that comes back faster, and sooner
+	PlayerFighter->SetStaminaRegenScale(State.bFed ? FedStaminaRegenScale : 1.0f);
+	PlayerFighter->SetStaminaRegenDelayScale(State.bSteadied ? SteadiedRegenDelayScale : 1.0f);
+
 	// the player comes to the fight in the state the last one left it. Empty its hands first:
 	// an arm that arrives crippled has nothing to drop.
 
@@ -1484,6 +1488,10 @@ void AGutGameMode::SettleLadderFight(bool bPlayerWon, bool bSpared, bool bThrown
 			State.SetTaken(i, false);
 		}
 	}
+
+	// what was eaten and drunk for this fight has been used in it
+	State.bFed = false;
+	State.bSteadied = false;
 
 	// a player that walks out, or is left alive, carries its limbs to whatever comes next
 	if (bPlayerWon || bSpared || bThrown)

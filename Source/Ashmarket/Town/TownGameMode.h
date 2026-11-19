@@ -299,6 +299,10 @@ protected:
 	/** True if the counter is the Block's book, where what is bought is people, and not the armorers' */
 	bool bAtBook = false;
 
+	/** True if it is a stall, where what is bought goes into the bag; and true if it is no counter at all but the player's own bag, open */
+	bool bAtStall = false;
+	bool bAtBag = false;
+
 	/** What looks at whoever the book's line is about, while the book is open, and which line it was last turned to */
 	UPROPERTY(Transient)
 	TObjectPtr<ACameraActor> BookCamera;
@@ -408,6 +412,19 @@ protected:
 
 	/** Moves everybody who walks a round of the place on along it */
 	void UpdateBeats(float DeltaTime);
+
+	/** What a stall has for sale, and what is in the bag, as lines of the same panel a counter has */
+	TArray<FTownShopLine> GetStallLines() const;
+	TArray<FTownShopLine> GetBagLines() const;
+
+	bool BuyAtStall(int32 Line);
+	bool UseFromBag(int32 Line);
+
+	/**
+	 *  The water the market is paid in: the fighter's if the player has one, or an owner's, or a gambler's, in that order.
+	 *  Nothing if the player has come to the cage as none of them yet. Whose says which, in words.
+	 */
+	float* GetMarketWater(FString* Whose = nullptr) const;
 
 	/** Dyes what somebody is wearing */
 	static void Dye(const AGutFighter* Body, const FLinearColor& Cloth);
@@ -522,6 +539,17 @@ public:
 
 	/** Opens the Block's book at its clerk's table: who is for sale today, to be bought there with an owner's water */
 	void OpenBook(int32 Keeper);
+
+	/** Opens the stall of whoever keeps it: what they sell, bought with water in hand, into the bag */
+	void OpenStall(int32 Keeper);
+
+	/** Opens the player's bag, or shuts it: what is carried, and the using of it. Not while anything else is up. */
+	void ToggleBag();
+
+	bool IsBagOpen() const { return bShopping && bAtBag; }
+
+	/** What the key that says yes does at the counter the player is at, in a word or two: "buy it", "use it" */
+	FString GetShopVerb() const;
 
 	/** What is written over the counter the player is at, and whose water is spent there, in words */
 	FString GetShopTitle() const;

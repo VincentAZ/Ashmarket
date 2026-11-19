@@ -64,6 +64,7 @@ void ATownHUD::DrawHUD()
 			{ TEXT("Jog (hold)"), TEXT("Shift / LB") },
 			{ TEXT("Talk, use"), TEXT("E / X") },
 			{ TEXT("Map"), TEXT("M / Y") },
+			{ TEXT("Bag"), TEXT("I / D-pad right") },
 			{ TEXT("Back out"), TEXT("Backspace / B") },
 			{ TEXT("Stop"), TEXT("Esc / Back") },
 		};
@@ -311,7 +312,7 @@ void ATownHUD::DrawShop(const ATownGameMode* Town, float CenterX)
 		}
 	}
 
-	DrawLabel(TEXT("W / S or D-pad: choose          E, Enter or A button: buy it          Backspace or B button: leave"), CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);
+	DrawLabel(FString::Printf(TEXT("W / S or D-pad: choose          E, Enter or A button: %s          Backspace or B button: leave"), *Town->GetShopVerb()), CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);
 }
 
 void ATownHUD::DrawMap(const ATownGameMode* Town, float CenterX)

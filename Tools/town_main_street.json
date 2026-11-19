@@ -249,22 +249,37 @@
   {
    "name": "Stallholder", "prompt": "Talk to the stallholder", "body": "Mix07", "cloth": [0.09, 0.06, 0.04],
    "x": -6.5, "y": 72.0, "facing": 90, "idle": "crowd_watch_hands_on_hips",
+   "sells": ["bread"],
    "lines": [
-    {"id": "bread", "words": "Bread's hot. Water first, then bread. That is the order everything goes in here."}
+    {"id": "bread", "words": "Bread's hot. Water first, then bread. That is the order everything goes in here.",
+     "answers": [
+      {"words": "Bread, then.", "deed": "trade"},
+      {"words": "Not now."}
+     ]}
    ]
   },
   {
    "name": "Scrap seller", "prompt": "Talk to the scrap seller", "body": "Sookja", "cloth": [0.06, 0.06, 0.05],
    "x": 6.5, "y": 84.0, "facing": 270, "idle": "crowd_watch_relaxed",
+   "sells": ["splint"],
    "lines": [
-    {"id": "table", "words": "If it is on the table it is for sale. If it is under the table it is sold. If it is yours, you should have kept hold of it."}
+    {"id": "table", "words": "If it is on the table it is for sale. If it is under the table it is sold. If it is yours, you should have kept hold of it.",
+     "answers": [
+      {"words": "What is on the table?", "deed": "trade"},
+      {"words": "Only looking."}
+     ]}
    ]
   },
   {
    "name": "Tea seller", "prompt": "Talk to the tea seller", "body": "Jelena", "cloth": [0.08, 0.05, 0.05],
    "x": 6.7, "y": 108.0, "facing": 270, "idle": "crowd_watch_relaxed",
+   "sells": ["tea"],
    "lines": [
-    {"id": "tea", "words": "Tea. It is leaves and it is hot, and that is all I will say about the leaves. A cup is a tenth of a litre. Yes, I see the joke. Everybody sees the joke."}
+    {"id": "tea", "words": "Tea. It is leaves and it is hot, and that is all I will say about the leaves. A cup is a tenth of a litre. Yes, I see the joke. Everybody sees the joke.",
+     "answers": [
+      {"words": "A cup.", "deed": "trade"},
+      {"words": "Not now."}
+     ]}
    ]
   },
   {

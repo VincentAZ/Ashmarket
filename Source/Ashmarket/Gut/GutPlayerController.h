@@ -108,6 +108,9 @@ protected:
 
 	/** Puts the town's map up, or takes it down */
 	void MapPressed();
+
+	/** I, or right on the D-pad: the bag, in the street */
+	void BagPressed();
 	void StoppedDownPressed();
 	void StoppedConfirmPressed();
 

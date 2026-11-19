@@ -1,10 +1,11 @@
 {
  "about": "Who speaks with which voice. Read by Tools/make_town_voices.py, which has ElevenLabs say every line the three places' lists give their people, and the calls from the Block. A speaker is 'Place/Name'; where a place has two people of one name the second is 'Place/Name#2', in the order the place's list has them. Vincent, 2026-11-19, after hearing seven ways of making them: the designed voice. So each speaker has 'design', a description of who is talking, from which ElevenLabs makes a voice for them alone; the voice it made is remembered in Tools/town_voices_designed.json. 'design_text' is what the voice is first heard saying, where the speaker's own lines come to under a hundred characters. Change a description here and run the tool again: that speaker gets a new voice and all their lines are made again. A speaker with 'voice' instead speaks with one of the account's own voices, by its name as far as the first ' - '.",
 
- "model": "eleven_v3",
+ "model_about": "Vincent, 2026-11-19, of the same saved voice through two speech models: this one, which keeps the pauses the voice had when it was first heard. The other (eleven_v3) is nearer it in tone and talks straight through.",
+ "model": "eleven_v4",
  "design_model": "eleven_ttv_v3",
  "format": "mp3_44100_128",
- "settings": {"stability": 0.5, "similarity_boost": 0.75},
+ "settings": {"stability": 0.4, "similarity_boost": 0.75},
 
  "keep": ["Block Square/Caller Strand", "Block Square/Margin", "Pool Street/Chalk"],
  "keep_about": "The account holds three voices at a time, so a voice is saved, speaks its lines and is let go for the next. These three are made last and so are the ones left saved: the people likeliest to be given more to say.",

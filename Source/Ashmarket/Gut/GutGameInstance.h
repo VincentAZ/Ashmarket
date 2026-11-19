@@ -38,6 +38,14 @@ struct FGutLadderState
 	UPROPERTY(BlueprintReadOnly, Category="Ladder")
 	int32 Name = 0;
 
+	/** If true the player has eaten since its last fight: its wind comes back faster in the next. Gone when that fight is over. */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	bool bFed = false;
+
+	/** If true the player has had tea since its last fight: its wind starts coming back sooner in the next. Gone when that fight is over. */
+	UPROPERTY(BlueprintReadOnly, Category="Ladder")
+	bool bSteadied = false;
+
 	/** If true the limb health below was carried out of an earlier fight. If false the player is whole. */
 	UPROPERTY(BlueprintReadOnly, Category="Ladder")
 	bool bInjuriesCarried = false;
@@ -116,6 +124,20 @@ public:
 	int32 Speech = 0;
 };
 
+/** So many of one thing, carried in the player's bag: bought at a stall, and used when the player chooses */
+USTRUCT(BlueprintType)
+struct FGutBagItem
+{
+	GENERATED_BODY()
+
+	/** What it is, by the name the town's goods have it under */
+	UPROPERTY(BlueprintReadOnly, Category="Bag")
+	FName Good;
+
+	UPROPERTY(BlueprintReadOnly, Category="Bag")
+	int32 Count = 0;
+};
+
 /** A run up the ladder, as it is written to disk */
 UCLASS()
 class UGutSaveGame : public USaveGame
@@ -136,6 +158,10 @@ public:
 
 	UPROPERTY()
 	FGutStableState Stable;
+
+	/** What the player carries, whichever of those it is being */
+	UPROPERTY()
+	TArray<FGutBagItem> Bag;
 };
 
 /**
@@ -194,6 +220,14 @@ public:
 	/** Where the owner stands */
 	UPROPERTY(BlueprintReadOnly, Category="Gut")
 	FGutStableState Stable;
+
+	/** What the player carries about the town: bought at its stalls, kept with the run */
+	UPROPERTY(BlueprintReadOnly, Category="Gut")
+	TArray<FGutBagItem> Bag;
+
+	/** How many of something are in the bag, and puts so many more in it, or takes them out */
+	int32 GetBagCount(FName Good) const;
+	void AddToBag(FName Good, int32 Count);
 
 	/**
 	 *  If true the player is standing outside, choosing how to come in: to fight, to own or to bet.

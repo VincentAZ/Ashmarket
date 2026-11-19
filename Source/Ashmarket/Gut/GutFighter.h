@@ -691,6 +691,7 @@ protected:
 
 	/** Where each joint of the chain is, from the handle outward, and where it was a moment before */
 	float StaminaRegenScale = 1.0f;
+	float StaminaRegenDelayScale = 1.0f;
 
 	float DamageScale = 1.0f;
 
@@ -1084,6 +1085,9 @@ public:
 
 	/** Makes the fighter get its stamina back faster or slower than its own rate: 1 is its own. For a fighter whose water has been seen to. */
 	void SetStaminaRegenScale(float Scale) { StaminaRegenScale = FMath::Max(Scale, 0.0f); }
+
+	/** How long after an effort its wind waits before it starts coming back, against how long it waits by nature */
+	void SetStaminaRegenDelayScale(float Scale) { StaminaRegenDelayScale = FMath::Max(Scale, 0.0f); }
 
 	/** Makes every blow the fighter lands do more or less than the attack says: 1 is as it says. For a fighter that has been trained, or doped. */
 	void SetDamageScale(float Scale) { DamageScale = FMath::Max(Scale, 0.0f); }

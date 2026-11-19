@@ -84,6 +84,12 @@ void AGutPlayerController::SetupInputComponent()
 			Bind(Key, &AGutPlayerController::MapPressed);
 		}
 
+		// the bag opens and shuts on I, or right on the gamepad's D-pad: only the street has one
+		for (const FKey& Key : { EKeys::I, EKeys::Gamepad_DPad_Right })
+		{
+			Bind(Key, &AGutPlayerController::BagPressed);
+		}
+
 		// Enter says yes on every screen there is, and it is not a key anybody fights with, so it also goes on from a fight that is over
 		Bind(EKeys::Enter, &AGutPlayerController::EnterPressed);
 
@@ -259,6 +265,14 @@ void AGutPlayerController::BackPressed()
 	else if (ATownGameMode* Town = GetWorld()->GetAuthGameMode<ATownGameMode>())
 	{
 		Town->HandleBack();
+	}
+}
+
+void AGutPlayerController::BagPressed()
+{
+	if (ATownGameMode* Town = GetWorld()->GetAuthGameMode<ATownGameMode>())
+	{
+		Town->ToggleBag();
 	}
 }
 

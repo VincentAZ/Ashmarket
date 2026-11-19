@@ -81,6 +81,50 @@ namespace TownConstants
 	/** A fire's light at least this bright (candelas) is a fire that is heard */
 	const float FireHeardFrom = 1500.0f;
 
+	/**
+	 *  What the market sells. Each is one plain thing with one plain use, bought at a stall and used from the bag.
+	 *  Who sells which is the place's own business (FTownPerson::Sells).
+	 */
+	struct FGood
+	{
+		const TCHAR* Id;
+		const TCHAR* Name;
+
+		/** What it is for, in a few words, beside its name */
+		const TCHAR* Detail;
+
+		/** More about it, under the list */
+		const TCHAR* About;
+
+		float Price;
+	};
+
+	const FGood Goods[] =
+	{
+		{ TEXT("bread"), TEXT("Flat bread"), TEXT("wind, in your next fight"), TEXT("Hot, and heavy as a hand. Eaten before a fight, your wind comes back a quarter faster all through it. One fight's worth."), 2.0f },
+		{ TEXT("tea"), TEXT("A cup of tea"), TEXT("steadies you, in your next fight"), TEXT("Leaves, and hot. Drunk before a fight, your wind starts coming back sooner after every effort in it. One fight's worth."), 0.1f },
+		{ TEXT("splint"), TEXT("Splint and binding"), TEXT("mends a hurt limb"), TEXT("Two slats and a strip of inner tube. Bound on, it gives your worst-hurt limb back half of what it has lost. It does nothing for a limb that is broken through: that is the cutter's work."), 6.0f },
+	};
+
+	const FGood* FindGood(const FName& Id)
+	{
+		for (const FGood& Good : Goods)
+		{
+			if (Id == Good.Id)
+			{
+				return &Good;
+			}
+		}
+
+		return nullptr;
+	}
+
+	/** A price in words: tenths of a litre are said as tenths */
+	FString Litres(float Water)
+	{
+		return FMath::IsNearlyEqual(Water, FMath::RoundToFloat(Water), 0.01f) ? FString::Printf(TEXT("%.0f L"), Water) : FString::Printf(TEXT("%.1f L"), Water);
+	}
+
 	/** The colours of a built person's clothes, as their materials name them */
 	const FName ClothParameters[] = { FName("diffuse_color_1"), FName("diffuse_color_2") };
 
@@ -1129,17 +1173,21 @@ void ATownGameMode::AdvanceTalk()
 			// done where they stand, and the talk goes on with what it came to
 			Do(Answer.Deed);
 		}
-		else if (Answer.Deed == ETownDeed::Armor || Answer.Deed == ETownDeed::Buy)
+		else if (Answer.Deed == ETownDeed::Armor || Answer.Deed == ETownDeed::Buy || Answer.Deed == ETownDeed::Trade)
 		{
-			// to their counter, or their book: whoever was being talked to keeps it
+			// to their counter, their book or their stall: whoever was being talked to keeps it
 			const int32 Keeper = TalkingTo;
-			const bool bBook = Answer.Deed == ETownDeed::Buy;
+			const ETownDeed To = Answer.Deed;
 
 			EndTalk();
 
-			if (bBook)
+			if (To == ETownDeed::Buy)
 			{
 				OpenBook(Keeper);
+			}
+			else if (To == ETownDeed::Trade)
+			{
+				OpenStall(Keeper);
 			}
 			else
 			{
@@ -1423,6 +1471,12 @@ void ATownGameMode::Do(ETownDeed Deed, const FTownDoor* Door)
 	if (Deed == ETownDeed::Armor)
 	{
 		OpenShop(INDEX_NONE);
+		return;
+	}
+
+	// a stall is somebody's: with nobody keeping it there is nothing to open
+	if (Deed == ETownDeed::Trade)
+	{
 		return;
 	}
 
@@ -2045,6 +2099,16 @@ TArray<FTownShopLine> ATownGameMode::GetShopLines() const
 		return GetBookLines();
 	}
 
+	if (bAtBag)
+	{
+		return GetBagLines();
+	}
+
+	if (bAtStall)
+	{
+		return GetStallLines();
+	}
+
 	TArray<FTownShopLine> Lines;
 
 	const UGutLadderData* Shelf = GetShelfRank();
@@ -2114,6 +2178,8 @@ void ATownGameMode::OpenShop(int32 Keeper)
 	ShopChoice = 0;
 	bShopping = true;
 	bAtBook = false;
+	bAtStall = false;
+	bAtBag = false;
 
 	// why nothing on it can be bought, if nothing can: said once, at the top
 	if (!Shelf)
@@ -2155,6 +2221,8 @@ void ATownGameMode::CloseShop()
 
 	bShopping = false;
 	bAtBook = false;
+	bAtStall = false;
+	bAtBag = false;
 	ShopKeeper = INDEX_NONE;
 	ShopSaid.Reset();
 
@@ -2169,6 +2237,16 @@ bool ATownGameMode::BuyAtShop(int32 Line)
 	if (bAtBook)
 	{
 		return BuyAtBook(Line);
+	}
+
+	if (bAtBag)
+	{
+		return UseFromBag(Line);
+	}
+
+	if (bAtStall)
+	{
+		return BuyAtStall(Line);
 	}
 
 	UGutGameInstance* GameInstance = GetGutGameInstance();
@@ -2380,6 +2458,8 @@ void ATownGameMode::OpenBook(int32 Keeper)
 	ShopChoice = 0;
 	bShopping = true;
 	bAtBook = true;
+	bAtStall = false;
+	bAtBag = false;
 
 	// whoever has no stable yet has the same people read out to them however often they ask, until they buy
 	if (BookSeed == 0)
@@ -2704,11 +2784,406 @@ bool ATownGameMode::BuyAtBook(int32 Line)
 	return true;
 }
 
+float* ATownGameMode::GetMarketWater(FString* Whose) const
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	const auto Is = [Whose](const TCHAR* Words)
+	{
+		if (Whose)
+		{
+			*Whose = Words;
+		}
+	};
+
+	if (GameInstance && GameInstance->bLadderStarted)
+	{
+		Is(TEXT("your fighter's"));
+		return &GameInstance->Ladder.Water;
+	}
+
+	if (GameInstance && GameInstance->Stable.bStarted)
+	{
+		Is(TEXT("an owner's"));
+		return &GameInstance->Stable.Water;
+	}
+
+	if (GameInstance && GameInstance->Window.bStarted)
+	{
+		Is(TEXT("what you bet from"));
+		return &GameInstance->Window.Water;
+	}
+
+	return nullptr;
+}
+
+void ATownGameMode::OpenStall(int32 Keeper)
+{
+	if (!PlaceData || !PlaceData->People.IsValidIndex(Keeper) || PlaceData->People[Keeper].Sells.IsEmpty())
+	{
+		return;
+	}
+
+	ShopKeeper = Keeper;
+	ShopChoice = 0;
+	bShopping = true;
+	bAtBook = false;
+	bAtStall = true;
+	bAtBag = false;
+
+	ShopSaid = GetMarketWater() ? FString(TEXT("Water in hand. What you buy goes in your bag: open it with I, or right on the D-pad."))
+		: FString(TEXT("You are holding no water of any kind. Fight, bet or own at the Gut first: the market does not give."));
+
+	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		Hands->SetIgnoreMoveInput(true);
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Street: at %s's stall, %d things on it"), *GetShopKeeper(), GetStallLines().Num());
+}
+
+TArray<FTownShopLine> ATownGameMode::GetStallLines() const
+{
+	TArray<FTownShopLine> Lines;
+
+	if (!PlaceData || !PlaceData->People.IsValidIndex(ShopKeeper))
+	{
+		return Lines;
+	}
+
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+	const float* Held = GetMarketWater();
+
+	for (const FName& Id : PlaceData->People[ShopKeeper].Sells)
+	{
+		const TownConstants::FGood* Good = TownConstants::FindGood(Id);
+
+		if (!Good)
+		{
+			continue;
+		}
+
+		FTownShopLine Line;
+
+		Line.Name = Good->Name;
+		Line.Detail = Good->Detail;
+		Line.About = Good->About;
+		Line.Price = Good->Price;
+		Line.PriceText = TownConstants::Litres(Good->Price);
+
+		if (!Held)
+		{
+			Line.Why = TEXT("no water");
+		}
+		else if (*Held < Good->Price)
+		{
+			Line.Why = FString::Printf(TEXT("%s short"), *TownConstants::Litres(Good->Price - *Held));
+		}
+		else
+		{
+			Line.bCanBuy = true;
+
+			// how many are carried already
+			if (const int32 Carried = GameInstance ? GameInstance->GetBagCount(Id) : 0; Carried > 0)
+			{
+				Line.Why = FString::Printf(TEXT("%d in your bag"), Carried);
+				Line.bWorn = true;
+			}
+		}
+
+		Lines.Add(MoveTemp(Line));
+	}
+
+	return Lines;
+}
+
+bool ATownGameMode::BuyAtStall(int32 Line)
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance || !PlaceData || !PlaceData->People.IsValidIndex(ShopKeeper))
+	{
+		return false;
+	}
+
+	// the lines are the keeper's goods that the town knows, in the keeper's order
+	TArray<const TownConstants::FGood*> Sold;
+
+	for (const FName& Id : PlaceData->People[ShopKeeper].Sells)
+	{
+		if (const TownConstants::FGood* Good = TownConstants::FindGood(Id))
+		{
+			Sold.Add(Good);
+		}
+	}
+
+	if (!Sold.IsValidIndex(Line))
+	{
+		return false;
+	}
+
+	const TownConstants::FGood& Good = *Sold[Line];
+
+	float* Held = GetMarketWater();
+
+	if (!Held)
+	{
+		ShopSaid = TEXT("With what? You are holding no water of any kind.");
+		return false;
+	}
+
+	if (*Held < Good.Price)
+	{
+		ShopSaid = FString::Printf(TEXT("%s is %s and you hold %s. Nothing here goes on a slate."), Good.Name, *TownConstants::Litres(Good.Price), *TownConstants::Litres(*Held));
+		return false;
+	}
+
+	*Held -= Good.Price;
+
+	// a fighter's water is also kept as it stood before its next fight, which is what is written down
+	if (Held == &GameInstance->Ladder.Water)
+	{
+		GameInstance->LadderAtRungStart.Water -= Good.Price;
+	}
+
+	GameInstance->AddToBag(FName(Good.Id), 1);
+	GameInstance->SaveRun();
+
+	ShopSaid = FString::Printf(TEXT("Bought: %s, %s. It is in your bag, with %d of them now."), *FString(Good.Name).ToLower(), *TownConstants::Litres(Good.Price), GameInstance->GetBagCount(FName(Good.Id)));
+
+	if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
+	{
+		Sounds->Play(FName("cash"), FVector::ZeroVector);
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Street: %s"), *ShopSaid);
+
+	return true;
+}
+
+void ATownGameMode::ToggleBag()
+{
+	if (bShopping && bAtBag)
+	{
+		CloseShop();
+		return;
+	}
+
+	if (!bSettled || bStoppedMenu || IsTalking() || bShopping || bMapUp)
+	{
+		return;
+	}
+
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	ShopKeeper = INDEX_NONE;
+	ShopChoice = 0;
+	bShopping = true;
+	bAtBook = false;
+	bAtStall = false;
+	bAtBag = true;
+
+	ShopSaid = (GameInstance && !GameInstance->Bag.IsEmpty()) ? FString()
+		: FString(TEXT("Nothing in it. On Main Street the bread stall, the tea kiosk and the scrap table sell what goes in a bag."));
+
+	// whoever looks in a bag stands still to do it
+	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		Hands->SetIgnoreMoveInput(true);
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Street: the bag is open, %d kinds of thing in it"), GameInstance ? GameInstance->Bag.Num() : 0);
+}
+
+TArray<FTownShopLine> ATownGameMode::GetBagLines() const
+{
+	TArray<FTownShopLine> Lines;
+
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+	const AGutFighter* Walker = GetWalker();
+
+	if (!GameInstance)
+	{
+		return Lines;
+	}
+
+	const FGutLadderState& Fighter = GameInstance->Ladder;
+	const bool bFights = GameInstance->bLadderStarted;
+
+	for (const FGutBagItem& Item : GameInstance->Bag)
+	{
+		const TownConstants::FGood* Good = TownConstants::FindGood(Item.Good);
+
+		if (!Good || Item.Count <= 0)
+		{
+			continue;
+		}
+
+		FTownShopLine Line;
+
+		Line.Name = Good->Name;
+		Line.Detail = Good->Detail;
+		Line.About = Good->About;
+		Line.PriceText = FString::Printf(TEXT("x %d"), Item.Count);
+
+		// whether it can be used now, and if not, why not
+		if (!bFights)
+		{
+			Line.Why = TEXT("no fight ahead");
+		}
+		else if (Item.Good == FName("bread"))
+		{
+			Line.bCanBuy = !Fighter.bFed;
+			Line.Why = Fighter.bFed ? TEXT("eaten already") : TEXT("");
+		}
+		else if (Item.Good == FName("tea"))
+		{
+			Line.bCanBuy = !Fighter.bSteadied;
+			Line.Why = Fighter.bSteadied ? TEXT("drunk already") : TEXT("");
+		}
+		else if (Item.Good == FName("splint"))
+		{
+			// a limb that is hurt and not broken through
+			bool bHurt = false;
+
+			for (int32 i = 0; Walker && Fighter.bInjuriesCarried && i < GutNumLimbs; ++i)
+			{
+				bHurt |= Fighter.LimbHealth[i] > 0.0f && Fighter.LimbHealth[i] < Walker->GetMaxLimbHealth() - 0.5f;
+			}
+
+			Line.bCanBuy = bHurt;
+			Line.Why = bHurt ? TEXT("") : TEXT("nothing to bind");
+		}
+
+		Lines.Add(MoveTemp(Line));
+	}
+
+	return Lines;
+}
+
+bool ATownGameMode::UseFromBag(int32 Line)
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+	const AGutFighter* Walker = GetWalker();
+
+	if (!GameInstance)
+	{
+		return false;
+	}
+
+	// the lines are the bag's own things that the town knows, in the bag's order
+	TArray<FName> Carried;
+
+	for (const FGutBagItem& Item : GameInstance->Bag)
+	{
+		if (TownConstants::FindGood(Item.Good) && Item.Count > 0)
+		{
+			Carried.Add(Item.Good);
+		}
+	}
+
+	const TArray<FTownShopLine> Lines = GetBagLines();
+
+	if (!Carried.IsValidIndex(Line) || !Lines.IsValidIndex(Line))
+	{
+		return false;
+	}
+
+	const FName Good = Carried[Line];
+
+	if (!Lines[Line].bCanBuy)
+	{
+		ShopSaid = !GameInstance->bLadderStarted ? FString(TEXT("It would be wasted: you have no fight ahead of you. It keeps."))
+			: Good == FName("splint") ? FString(TEXT("There is nothing to bind: no limb of yours is hurt that a splint would help."))
+			: FString(TEXT("You have had one since your last fight. A second does nothing: it keeps."));
+
+		return false;
+	}
+
+	FGutLadderState& Fighter = GameInstance->Ladder;
+
+	if (Good == FName("bread"))
+	{
+		Fighter.bFed = true;
+		ShopSaid = TEXT("Eaten. Your wind will come back faster in your next fight.");
+	}
+	else if (Good == FName("tea"))
+	{
+		Fighter.bSteadied = true;
+		ShopSaid = TEXT("Drunk. Your wind will start coming back sooner in your next fight.");
+	}
+	else if (Good == FName("splint") && Walker)
+	{
+		// the worst of the limbs that are hurt and not broken through: half of what it has lost
+		const float Whole = Walker->GetMaxLimbHealth();
+
+		int32 Worst = INDEX_NONE;
+
+		for (int32 i = 0; i < GutNumLimbs; ++i)
+		{
+			if (Fighter.LimbHealth[i] > 0.0f && Fighter.LimbHealth[i] < Whole - 0.5f && (Worst == INDEX_NONE || Fighter.LimbHealth[i] < Fighter.LimbHealth[Worst]))
+			{
+				Worst = i;
+			}
+		}
+
+		if (Worst == INDEX_NONE)
+		{
+			return false;
+		}
+
+		static const TCHAR* Limbs[] = { TEXT("left arm"), TEXT("right arm"), TEXT("left leg"), TEXT("right leg") };
+
+		Fighter.LimbHealth[Worst] += (Whole - Fighter.LimbHealth[Worst]) * 0.5f;
+
+		ShopSaid = FString::Printf(TEXT("Bound on. Your %s is better than it was."), Limbs[FMath::Clamp(Worst, 0, 3)]);
+	}
+	else
+	{
+		return false;
+	}
+
+	GameInstance->AddToBag(Good, -1);
+
+	// what is written down is the fighter as it stood before its next fight: this is part of that
+	GameInstance->LadderAtRungStart.bFed = Fighter.bFed;
+	GameInstance->LadderAtRungStart.bSteadied = Fighter.bSteadied;
+
+	for (int32 i = 0; i < GutNumLimbs; ++i)
+	{
+		GameInstance->LadderAtRungStart.LimbHealth[i] = Fighter.LimbHealth[i];
+	}
+
+	GameInstance->SaveRun();
+
+	// the line the player was on may be gone
+	ShopChoice = FMath::Min(ShopChoice, GetBagLines().Num());
+
+	UE_LOG(LogTown, Log, TEXT("Street: from the bag: %s"), *ShopSaid);
+
+	return true;
+}
+
+FString ATownGameMode::GetShopVerb() const
+{
+	return bAtBag ? TEXT("use it") : TEXT("buy it");
+}
+
 FString ATownGameMode::GetShopTitle() const
 {
 	if (bAtBook)
 	{
 		return TEXT("THE BLOCK'S BOOK");
+	}
+
+	if (bAtBag)
+	{
+		return TEXT("YOUR BAG");
+	}
+
+	if (bAtStall)
+	{
+		return FString::Printf(TEXT("%s'S STALL"), *GetShopKeeper().ToUpper());
 	}
 
 	const FString Keeper = GetShopKeeper();
@@ -2723,6 +3198,25 @@ FString ATownGameMode::GetShopPurse() const
 		const FGutStableState State = GetOwnerState();
 
 		return FString::Printf(TEXT("As an owner you hold %.0f L  \u00B7  yard: %d of %d"), State.Water, State.Fighters.Num(), GetCageRules() ? GetCageRules()->GetStableMostFighters() : 0);
+	}
+
+	if (bAtBag)
+	{
+		const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+		// what the fighter has in it already, for the fight ahead
+		return (GameInstance && GameInstance->bLadderStarted && (GameInstance->Ladder.bFed || GameInstance->Ladder.bSteadied))
+			? FString::Printf(TEXT("For your next fight: %s"), GameInstance->Ladder.bFed && GameInstance->Ladder.bSteadied ? TEXT("fed, and steadied") : (GameInstance->Ladder.bFed ? TEXT("fed") : TEXT("steadied")))
+			: FString();
+	}
+
+	if (bAtStall)
+	{
+		FString Whose;
+
+		const float* Held = GetMarketWater(&Whose);
+
+		return Held ? FString::Printf(TEXT("You hold %s (%s)"), *TownConstants::Litres(*Held), *Whose) : FString();
 	}
 
 	return HasFighter() ? FString::Printf(TEXT("Your fighter holds %.0f L"), GetShopWater()) : FString();

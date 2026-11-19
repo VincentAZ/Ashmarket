@@ -167,6 +167,14 @@ class AGutGameMode : public AGameModeBase
 
 protected:
 
+	/** A fighter who has eaten since the last fight gets its wind back this much faster in the next */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Ladder", meta = (ClampMin = 1, ClampMax = 3))
+	float FedStaminaRegenScale = 1.25f;
+
+	/** A fighter who has had tea since the last fight waits this much of the usual time after an effort before its wind starts back */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Ladder", meta = (ClampMin = 0.1, ClampMax = 1))
+	float SteadiedRegenDelayScale = 0.6f;
+
 	/**
 	 *  The weapons on the rack. Each fighter draws one before the bell.
 	 *  Leave empty for a fight with no rack: the fighters then keep the weapons they start with.
