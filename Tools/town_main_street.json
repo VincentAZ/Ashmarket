@@ -1,5 +1,5 @@
 {
- "about": "Main Street south, from Block Square down to the Gate Yard: what stands where, who is there, who walks it and what they say. Read by Tools/build_town_level.py (GUT_TOWN_LIST=$PWD/Tools/town_main_street.json Tools/build_town_level.sh). Places are in the map's own metres (x east, y north), from for-review/design/map-of-ashmarket.md; 'yaw' and 'facing' are compass bearings (0 north, 90 east, 180 south, 270 west). STAGE 1: everything here is a model the project already had. The armored truck is a floodlight truck, Hide & Plate is a container with an awning, the stalls are the window's kiosk and the Block's tables. Change the words freely and build again.",
+ "about": "Main Street south, from Block Square down to the Gate Yard: what stands where, who is there, who walks it and what they say. Read by Tools/build_town_level.py (GUT_TOWN_LIST=$PWD/Tools/town_main_street.json Tools/build_town_level.sh). Places are in the map's own metres (x east, y north), from for-review/design/map-of-ashmarket.md; 'yaw' and 'facing' are compass bearings (0 north, 90 east, 180 south, 270 west). STAGE 2: the armored truck, the shopfront, the stalls, the blue water line on its trestles, the gantry, the lamp masts, the fire drums, the lanterns and the bulbs were made in Mixar for this street (ArtSource/mixar/main_*), and so were the Five Laws and the two signs (ArtSource/mixar/street). Nothing lights the street that is not seen to burn. Change the words freely and build again.",
 
  "name": "Main Street",
  "level": "/Game/Town/Lvl_MainStreet",
@@ -29,7 +29,7 @@
  "surfaces": {
   "Road": {"from": "road_damaged", "size": 320},
   "Yard": {"from": "dirty_concrete", "size": 300},
-  "Dam": {"from": "dirty_concrete", "size": 900},
+  "Dam": {"from": "dirty_concrete", "size": 2600},
   "Blockwork": {"from": "concrete_block_wall", "size": 200},
   "Sheet": {"from": "rusty_corrugated_iron", "size": 200},
   "Plate": {"existing": "MI_Gut_Plate"}
@@ -54,7 +54,6 @@
   {"label": "Dam_east", "x": [2.5, 120.0], "y": [-19.5, 0.0], "height": 25.2, "raise": -1.2, "surface": "Dam", "stained": ["north"]},
   {"label": "Dam_over_the_gate", "x": [-2.5, 2.5], "y": [-19.5, 0.0], "height": 19.7, "raise": 4.3, "surface": "Dam"},
   {"label": "Tunnel_end", "x": [-2.5, 2.5], "y": [-20.0, -19.0], "height": 6.7, "raise": -1.2, "surface": "Plate"},
-  {"label": "TriggerYard", "x": [8.0, 8.25], "y": [53.35, 66.25], "height": 3.0, "surface": "Sheet", "slope": true, "stained": ["west"]},
   {"label": "PenLane_pier", "x": [8.0, 8.5], "y": [114.2, 114.95], "height": 3.2, "surface": "Blockwork", "slope": true},
   {"label": "Corner_pier", "x": [8.0, 8.6], "y": [127.7, 128.4], "height": 3.2, "surface": "Blockwork", "slope": true}
  ],
@@ -65,10 +64,8 @@
    "along": "y", "from": 41.0, "to": 57.77, "face": -8.0, "side": "west"},
   {"label": "WestStacksB", "model": ["town_container_red", "town_container_blue", "town_container_red", "town_container_blue"], "yaw": 0, "high": 2,
    "along": "y", "from": 61.75, "to": 90.77, "face": -8.0, "side": "west"},
-  {"label": "HidePlate", "model": ["town_container_blue"], "yaw": 0, "high": 2,
-   "along": "y", "from": 90.85, "to": 99.2, "face": -8.0, "side": "west"},
-  {"label": "WestStacksC", "model": ["town_container_red", "town_container_blue", "town_container_red", "town_container_blue"], "yaw": 0, "high": 2,
-   "along": "y", "from": 99.3, "to": 128.32, "face": -8.0, "side": "west"},
+  {"label": "WestStacksC", "model": ["town_container_red", "town_container_red", "town_container_blue", "town_container_red"], "yaw": 0, "high": 2,
+   "along": "y", "from": 101.55, "to": 128.32, "face": -8.0, "side": "west", "note": "Hide & Plate stands between this row and the one before it, y 90.86 to 101.46"},
   {"label": "EastStacksA", "model": ["town_container_red", "town_container_red"], "yaw": 180, "high": 2,
    "along": "y", "from": 41.0, "to": 53.27, "face": 8.0, "side": "east"},
   {"label": "EastBuses", "model": ["town_bus", "town_bus", "town_bus", "town_container_blue", "town_container_red"], "yaw": 180, "high": 1,
@@ -88,86 +85,96 @@
    "along": "x", "from": 9.3, "to": 35.1, "face": 168.8, "side": "south"}
  ],
 
+ "runs_about": "Pieces end to end along a line. 'posts' are where a piece that is carried on legs stands on the ground, along it from its middle, and 'post' half a leg's size along and across: it is walked under between them. 'slope' lies each piece along the climbing ground.",
  "runs": [
   {"label": "GateYardShut", "model": "concrete_road_barrier", "from": [-7.9, 40.8], "to": [7.9, 40.8]},
   {"label": "StackAlley", "model": "modular_chainlink_fence", "from": [-8.0, 57.8], "to": [-8.0, 61.7]},
-  {"label": "PenLaneGate", "model": "street_gate", "from": [8.0, 115.0], "to": [8.0, 119.2], "turn": 180}
+  {"label": "PenLaneGate", "model": "street_gate", "from": [8.0, 115.0], "to": [8.0, 119.2], "turn": 180},
+  {"label": "TriggerYard", "model": "main_barrier_wall", "from": [8.43, 53.35], "to": [8.43, 66.25], "turn": 180, "note": "Tooth & Trigger's yard wall: road barriers and sign plate, three pieces of 4.3 m"},
+  {"label": "WaterLine", "model": "main_pipe_trestle", "from": [-5.2, 41.2], "to": [-5.2, 127.0], "slope": true, "hollow": true, "posts": [-3.25, 3.15], "post": [0.4, 1.35],
+   "note": "the Pump's trunk, on the west kerb: ten pieces of 8.58 m, each on two trestles, the pipe 2.5 m clear of the ground"},
+  {"label": "WaterLineGateYard", "model": "main_pipe_trestle", "from": [-5.2, 41.2], "to": [-5.2, -1.7], "hollow": true, "posts": [-3.25, 3.15], "post": [0.4, 1.35], "note": "and down the Gate Yard into the dam"},
+  {"label": "WaterLineSquare", "model": "main_pipe_trestle", "from": [-5.2, 127.0], "to": [-5.2, 152.74], "slope": true, "hollow": true, "posts": [-3.25, 3.15], "post": [0.4, 1.35], "note": "and on up the square's west side, seen from here"}
  ],
 
+ "things_about": "'block' is what of a thing stops a walker, where that is not all of it (a shop is walked up to under its awnings). 'light' is what a thing burns with: the light is put where the model itself glows. A street lamp with 'lamp' burns; without, it is one of the old town's, and dead: the old line is down, and what light there is here comes off somebody's generator or out of a drum.",
  "things": [
-  {"model": "square_table", "x": -6.5, "y": 95.0, "yaw": 0, "note": "Hide & Plate's counter, under the awning: the Block's table until the shopfront is made"},
-  {"model": "worn_metal_rack", "x": -7.5, "y": 92.2, "yaw": 0},
-  {"model": "worn_metal_rack", "x": -7.55, "y": 100.7, "yaw": 0},
-  {"model": "wooden_crate_02", "x": -6.3, "y": 97.4, "yaw": 0}, {"model": "rubber_vest", "x": -6.3, "y": 97.4, "z": 3.37, "yaw": 90, "note": "what they sell, laid out: the cage's own tire-rubber vest"},
-  {"model": "wooden_crate_02", "x": -6.3, "y": 92.7, "yaw": 0}, {"model": "sign_vest", "x": -6.3, "y": 92.7, "z": 3.23, "yaw": 90, "note": "and its road-sign breastplate"},
+  {"model": "main_shopfront", "x": -9.76, "y": 96.16, "yaw": 0, "hollow": true, "block": {"x": [-12.4, -8.0], "y": [90.86, 101.46]},
+   "note": "Hide & Plate: two containers, the lower cut into three bays. Armor rack in the south bay, the counter in the middle, the curtain to the north"},
+  {"model": "wooden_crate_02", "x": -9.45, "y": 96.16, "yaw": 0, "note": "what Needle stands on behind the counter, which is chest high"},
+  {"model": "main_sewing_machine", "x": -7.3, "y": 99.5, "yaw": 0, "note": "Thread's machine, out under the north awning"},
+  {"model": "main_coat_rail", "x": -7.55, "y": 103.7, "yaw": 0, "note": "the disguise rail"},
+  {"model": "wooden_crate_02", "x": -7.25, "y": 91.6, "yaw": 0}, {"model": "rubber_vest", "x": -7.25, "y": 91.6, "z": 3.2, "yaw": 90, "note": "what they sell, laid out: the cage's own tire-rubber vest"},
 
-  {"model": "floodlight_truck", "x": 6.85, "y": 62.0, "yaw": 90, "note": "Tooth & Trigger: a floodlight truck until the armored bank truck is made"},
-  {"model": "wooden_crate_02", "x": 5.3, "y": 64.9, "yaw": 0}, {"model": "barrel_03", "x": 5.6, "y": 58.6}, {"model": "metal_jerrycan", "x": 5.5, "y": 59.3},
+  {"model": "main_armored_truck", "x": 6.25, "y": 62.0, "yaw": 0, "note": "Tooth & Trigger: the bank truck on its road barriers, nose south, the teller drawer in its west side"},
+  {"model": "barrel_03", "x": 6.9, "y": 57.3}, {"model": "metal_jerrycan", "x": 6.2, "y": 57.5},
 
-  {"model": "street_kiosk", "x": -6.55, "y": 72.0, "yaw": 0, "hollow": true, "note": "a food stall: the window's kiosk"},
-  {"model": "square_table", "x": 6.4, "y": 84.0, "yaw": 0, "note": "a scrap table"},
-  {"model": "old_tyre", "x": 6.3, "y": 86.0}, {"model": "old_tyre", "x": 7.0, "y": 86.3}, {"model": "portable_generator", "x": 6.9, "y": 82.0, "yaw": 0}, {"model": "propane_tank", "x": 6.0, "y": 82.1},
+  {"model": "main_stall", "x": -6.4, "y": 72.0, "yaw": 0, "hollow": true, "note": "a food stall, under the water line"},
+  {"model": "main_lantern", "x": -5.3, "y": 72.9, "z": 2.99, "yaw": 20, "light": {"candela": 700, "reach": 5, "colour": "lantern", "flicker": true, "off": 0.0, "note": "the food stall's lantern"}},
+  {"model": "main_stall", "x": 6.4, "y": 84.0, "yaw": 180, "hollow": true, "note": "a scrap stall"},
+  {"model": "main_lantern", "x": 5.3, "y": 83.1, "z": 3.35, "yaw": 200, "light": {"candela": 700, "reach": 5, "colour": "lantern", "flicker": true, "off": 0.0, "note": "the scrap stall's lantern"}},
+  {"model": "old_tyre", "x": 6.3, "y": 86.2}, {"model": "old_tyre", "x": 7.0, "y": 86.5}, {"model": "portable_generator", "x": 7.0, "y": 81.3, "yaw": 0}, {"model": "propane_tank", "x": 6.2, "y": 81.5},
+  {"model": "street_kiosk", "x": 6.55, "y": 108.0, "yaw": 180, "hollow": true, "note": "a tea stall: the window's kiosk"},
   {"model": "square_card_table", "x": -6.2, "y": 107.0, "yaw": 270, "note": "dice"},
+  {"model": "main_lantern", "x": -5.6, "y": 106.1, "yaw": 70, "light": {"candela": 600, "reach": 5, "colour": "lantern", "flicker": true, "off": 0.0, "note": "the dice, a lantern set down by the table"}},
   {"model": "square_water_cart", "x": 6.3, "y": 100.5, "yaw": 0, "note": "a carrier's cart"},
 
-  {"model": "Barrel_01", "x": -7.2, "y": 45.2}, {"model": "barrel_03", "x": -7.15, "y": 46.0}, {"model": "old_tyre", "x": -7.3, "y": 66.0},
-  {"model": "wooden_crate_02", "x": -7.1, "y": 82.0}, {"model": "metal_jerrycan", "x": -7.2, "y": 82.9}, {"model": "Barrel_01", "x": -7.2, "y": 113.0}, {"model": "propane_tank", "x": -7.25, "y": 113.8},
-  {"model": "barrel_03", "x": 7.2, "y": 47.0}, {"model": "old_tyre", "x": 7.3, "y": 71.0}, {"model": "Barrel_01", "x": 7.2, "y": 109.5}, {"model": "wooden_crate_02", "x": 7.1, "y": 122.0}, {"model": "portable_generator", "x": 7.0, "y": 124.0, "yaw": 0},
+  {"model": "main_fire_drum", "x": 5.9, "y": 43.6, "yaw": 0, "light": {"candela": 2600, "reach": 9, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "note": "a fire at the barrier"}},
+  {"model": "main_fire_drum", "x": 5.6, "y": 76.0, "yaw": 40, "light": {"candela": 2600, "reach": 9, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "shadows": true, "note": "a fire on the east verge"}},
+  {"model": "main_fire_drum", "x": 5.2, "y": 86.9, "yaw": 110, "light": {"candela": 2200, "reach": 8, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "note": "a fire by the scrap stall"}},
+  {"model": "main_fire_drum", "x": 5.3, "y": 102.6, "yaw": 200, "light": {"candela": 2600, "reach": 9, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "note": "a fire by the water cart"}},
+  {"model": "main_fire_drum", "x": -6.9, "y": 121.6, "yaw": 290, "light": {"candela": 2600, "reach": 9, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "shadows": true, "note": "a fire at the head of the street"}},
 
-  {"model": "street_lamp_01", "x": 5.4, "y": 47.5, "lamp": true}, {"model": "street_lamp_01", "x": -5.4, "y": 58.5, "lamp": true},
-  {"model": "street_lamp_01", "x": 5.4, "y": 76.0, "lamp": true}, {"model": "street_lamp_01", "x": -5.4, "y": 83.0, "lamp": true},
-  {"model": "street_lamp_01", "x": 5.4, "y": 104.5, "lamp": true}, {"model": "street_lamp_01", "x": -5.4, "y": 110.5, "lamp": true},
-  {"model": "street_lamp_01", "x": 5.4, "y": 123.0, "lamp": true},
+  {"model": "main_lamp_mast", "x": 5.6, "y": 48.0, "yaw": 270, "light": {"kind": "spot", "candela": 18000, "reach": 24, "cone": 64, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "work lamps, east 1"}},
+  {"model": "main_lamp_mast", "x": 5.6, "y": 67.0, "yaw": 270, "light": {"kind": "spot", "candela": 18000, "reach": 24, "cone": 64, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "work lamps, Tooth & Trigger"}},
+  {"model": "main_lamp_mast", "x": 5.6, "y": 92.5, "yaw": 270, "light": {"kind": "spot", "candela": 18000, "reach": 24, "cone": 64, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "work lamps, east 3"}},
+  {"model": "main_lamp_mast", "x": 5.6, "y": 113.0, "yaw": 270, "light": {"kind": "spot", "candela": 18000, "reach": 24, "cone": 64, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "work lamps, east 4"}},
+  {"model": "main_lamp_mast", "x": 5.5, "y": 125.2, "yaw": 270, "light": {"kind": "spot", "candela": 18000, "reach": 24, "cone": 64, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "work lamps, the head of the street"}},
+  {"model": "main_lamp_mast", "x": -6.75, "y": 54.0, "yaw": 90, "light": {"kind": "spot", "candela": 18000, "reach": 24, "cone": 64, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "work lamps, west 1"}},
+  {"model": "main_lamp_mast", "x": -6.75, "y": 61.0, "yaw": 90, "light": {"kind": "spot", "candela": 42000, "reach": 26, "cone": 30, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "aim": [4.95, 62.2, 1.8], "note": "work lamps turned on Tooth and Trigger, across the road"}},
+  {"model": "main_lamp_mast", "x": -6.75, "y": 88.5, "yaw": 90, "light": {"kind": "spot", "candela": 10000, "reach": 16, "cone": 42, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "aim": [-8.0, 93.6, 4.4], "note": "work lamps turned on Hide and Plate's sign"}},
+  {"model": "main_lamp_mast", "x": -6.75, "y": 79.8, "yaw": 90, "light": {"kind": "spot", "candela": 18000, "reach": 24, "cone": 64, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "work lamps, west 2"}},
+  {"model": "main_lamp_mast", "x": -6.75, "y": 112.8, "yaw": 90, "light": {"kind": "spot", "candela": 18000, "reach": 24, "cone": 64, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "work lamps, west 3"}},
+
+  {"model": "Barrel_01", "x": -7.2, "y": 45.2}, {"model": "barrel_03", "x": -7.15, "y": 46.0}, {"model": "old_tyre", "x": -7.3, "y": 66.0},
+  {"model": "wooden_crate_02", "x": -7.1, "y": 82.0}, {"model": "metal_jerrycan", "x": -7.2, "y": 82.9},
+  {"model": "barrel_03", "x": 7.2, "y": 46.2}, {"model": "old_tyre", "x": 7.3, "y": 71.0}, {"model": "Barrel_01", "x": 7.2, "y": 111.0}, {"model": "wooden_crate_02", "x": 7.1, "y": 121.8}, {"model": "portable_generator", "x": 7.25, "y": 123.6, "yaw": 0},
+
+  {"model": "street_lamp_01", "x": 5.4, "y": 56.5, "note": "the old town's lamps: dead"}, {"model": "street_lamp_01", "x": 5.4, "y": 96.0}, {"model": "street_lamp_01", "x": -7.2, "y": 84.6},
 
   {"model": "town_container_red", "x": -14.5, "y": 59.75, "yaw": 90, "note": "what the alley ends at"},
-  {"model": "floodlight_wagon", "x": -11.0, "y": 22.0, "yaw": 20, "note": "the Gate Yard, seen from the street"},
-  {"model": "floodlight_flatbed", "x": 12.0, "y": 26.0, "yaw": 100},
+  {"model": "main_gantry", "x": 0.0, "y": 12.0, "yaw": 270, "note": "the gallows: the freeway gantry across the road, twelve metres inside the gate, its signs to the town"},
+  {"model": "floodlight_wagon", "x": -13.0, "y": 24.0, "yaw": 20, "note": "the Gate Yard, seen from the street"},
+  {"model": "floodlight_flatbed", "x": 13.0, "y": 27.0, "yaw": 100},
   {"model": "town_overpass", "x": 0.0, "y": 262.0, "yaw": 90, "note": "the overpass, far up the street beyond the square"},
-  {"model": "street_lamp_01", "x": -6.6, "y": 149.0, "lamp": true, "note": "in the square"}
+  {"model": "street_lamp_01", "x": -6.6, "y": 145.0, "lamp": true, "note": "in the square"}
  ],
 
  "pictures_about": "Bills, made in Mixar for Pool Street and the square (ArtSource/mixar/street). 'faces' is the way the surface they are on looks.",
- "pictures": [],
+ "pictures": [
+  {"picture": "five_laws", "x": 0.0, "y": 0.0, "faces": "north", "up": 14.8, "tall": 9.0, "deep": 0.3, "note": "the Five Laws, on the dam over the gate, behind the gantry"},
+  {"picture": "sign_hide_plate", "x": -8.0, "y": 93.4, "faces": "east", "up": 4.55, "tall": 1.3, "deep": 0.3},
+  {"picture": "sign_tooth_trigger", "x": 4.95, "y": 64.0, "faces": "west", "up": 2.05, "tall": 0.8, "deep": 0.25, "rough": 0.7}
+ ],
  "pasted": [
   {"label": "WestStacksB", "from": [-8.05, 62.4], "to": [-8.05, 90.0], "faces": "east", "deep": 0.2, "up": [1.3, 1.9], "tall": [0.75, 1.05], "every": [2.4, 5.5], "lean": 5,
    "pictures": ["bill_sale", "bill_ledger", "bill_champion", "bill_butcher", "bill_kennel_master"]},
-  {"label": "WestStacksC", "from": [-8.05, 100.0], "to": [-8.05, 127.5], "faces": "east", "deep": 0.2, "up": [1.3, 1.9], "tall": [0.75, 1.05], "every": [2.4, 5.5], "lean": 5,
-   "pictures": ["bill_sale", "bill_saltlick", "bill_gasket_rustjaw", "bill_tally_coldwater", "bill_ledger"]},
-  {"label": "TriggerYard", "from": [8.0, 54.0], "to": [8.0, 59.0], "faces": "west", "up": [1.4, 1.9], "tall": [0.75, 1.0], "every": [1.6, 2.6], "lean": 4,
-   "pictures": ["bill_champion", "bill_butcher", "bill_sale"]}
+  {"label": "WestStacksC", "from": [-8.05, 105.4], "to": [-8.05, 127.5], "faces": "east", "deep": 0.2, "up": [1.3, 1.9], "tall": [0.75, 1.05], "every": [2.4, 5.5], "lean": 5,
+   "pictures": ["bill_sale", "bill_saltlick", "bill_gasket_rustjaw", "bill_tally_coldwater", "bill_ledger"]}
  ],
 
  "bulbs_about": "Candelas. The camera is set for the floodlit cage (see NightExposure in Tools/build_gut_content.py), so a bulb that is to light a wall three metres off wants some thousands, and the lamps that wash the dam, forty metres off, tens of thousands.",
  "bulbs": [
-  {"x": 0.0, "y": 42.6, "up": 3.6, "candela": 3400, "reach": 18, "shadows": true, "note": "the Gate Yard barrier"},
-  {"x": -6.6, "y": 47.0, "up": 3.4, "candela": 2800, "reach": 17}, {"x": 6.6, "y": 50.0, "up": 3.4, "candela": 2600, "reach": 16},
-  {"x": 5.2, "y": 62.0, "up": 3.3, "candela": 3800, "reach": 15, "shadows": true, "note": "Tooth & Trigger"},
-  {"x": -6.8, "y": 63.0, "up": 3.4, "candela": 2400, "reach": 15},
-  {"x": -6.1, "y": 72.0, "up": 1.85, "candela": 800, "reach": 5, "note": "under the stall's roof"}, {"x": -4.8, "y": 72.0, "up": 3.0, "candela": 2600, "reach": 13, "note": "the food stall"},
-  {"x": -6.2, "y": 81.0, "up": 3.4, "candela": 2400, "reach": 16},
-  {"x": 5.6, "y": 84.0, "up": 2.6, "candela": 1800, "reach": 9, "note": "over the scrap table"},
-  {"x": -6.0, "y": 93.0, "up": 2.4, "candela": 2200, "reach": 9, "note": "Hide & Plate, under the awning"},
-  {"x": -6.0, "y": 97.0, "up": 2.4, "candela": 2200, "reach": 9, "shadows": true, "note": "Hide & Plate, under the awning, 2"},
-  {"x": 6.6, "y": 93.0, "up": 3.4, "candela": 2600, "reach": 16},
-  {"x": 5.4, "y": 100.5, "up": 2.4, "candela": 1400, "reach": 7, "note": "the carrier's cart"},
-  {"x": -5.6, "y": 107.0, "up": 2.5, "candela": 1800, "reach": 8, "note": "the dice"},
-  {"x": 6.6, "y": 109.0, "up": 3.4, "candela": 2600, "reach": 16},
-  {"x": 7.0, "y": 117.1, "up": 3.0, "candela": 2000, "reach": 10, "note": "Pen Lane's gate"},
-  {"x": -6.6, "y": 118.0, "up": 3.4, "candela": 2800, "reach": 17},
-  {"x": 0.0, "y": 126.0, "up": 4.6, "candela": 3600, "reach": 20, "note": "the head of the street"},
-
-  {"x": 0.0, "y": 50.0, "up": 5.4, "candela": 5200, "reach": 24, "note": "over the road, 1: a street sixteen metres wide is dark down its middle with only its verges lit"},
-  {"x": 0.0, "y": 62.0, "up": 5.4, "candela": 5200, "reach": 24, "note": "over the road, 2"},
-  {"x": 0.0, "y": 74.0, "up": 5.4, "candela": 5200, "reach": 24, "note": "over the road, 3"},
-  {"x": 0.0, "y": 86.0, "up": 5.4, "candela": 5200, "reach": 24, "note": "over the road, 4"},
-  {"x": 0.0, "y": 98.0, "up": 5.4, "candela": 5200, "reach": 24, "note": "over the road, 5"},
-  {"x": 0.0, "y": 110.0, "up": 5.4, "candela": 5200, "reach": 24, "note": "over the road, 6"},
-  {"x": 0.0, "y": 120.0, "up": 5.4, "candela": 5200, "reach": 24, "note": "over the road, 7"},
+  {"x": -9.1, "y": 96.16, "up": 2.3, "candela": 2000, "reach": 9, "hung": true, "note": "Hide & Plate, over the counter"},
+  {"x": -9.0, "y": 92.6, "up": 2.3, "candela": 1500, "reach": 8, "hung": true, "note": "Hide & Plate, the armor rack"},
+  {"x": -7.45, "y": 99.5, "up": 2.0, "candela": 1600, "reach": 8, "hung": true, "shadows": true, "note": "Hide & Plate, over Thread's machine"},
+  {"x": 6.1, "y": 108.0, "up": 1.62, "candela": 800, "reach": 5, "hung": true, "note": "under the tea stall's roof"},
 
   {"x": -10.0, "y": 25.0, "up": 5.0, "candela": 16000, "reach": 45, "note": "the Gate Yard, west"},
   {"x": 11.0, "y": 28.0, "up": 5.0, "candela": 16000, "reach": 45, "note": "the Gate Yard, east"},
   {"x": -9.0, "y": 4.0, "up": 7.0, "candela": 30000, "reach": 42, "note": "the dam by the gate, west"},
   {"x": 9.0, "y": 4.0, "up": 7.0, "candela": 30000, "reach": 42, "note": "the dam by the gate, east"},
+  {"x": 0.0, "y": 9.0, "up": 11.0, "candela": 45000, "reach": 44, "note": "the Laws, lit from the gantry's catwalk"},
   {"x": -42.0, "y": 5.0, "up": 9.0, "candela": 30000, "reach": 46, "note": "the dam, further west"},
   {"x": 42.0, "y": 5.0, "up": 9.0, "candela": 30000, "reach": 46, "note": "the dam, further east"},
 
@@ -179,19 +186,21 @@
 
  "bystanders_about": "People standing about: so many in a stretch of ground, each looking at 'look'. They keep to the verges and the barrier; the middle of the road belongs to whoever walks it.",
  "bystanders": [
-  {"label": "AtTheBarrier", "count": 4, "x": [-6.0, 6.0], "y": [42.4, 45.6], "apart": 1.6, "look": [0.0, 8.0]},
-  {"label": "AtTheTruck", "count": 2, "x": [4.0, 5.0], "y": [58.8, 60.6], "apart": 1.0, "look": [6.85, 62.0]},
-  {"label": "AtTheFoodStall", "count": 3, "x": [-5.2, -4.0], "y": [70.4, 73.6], "apart": 1.0, "look": [-6.55, 72.0]},
-  {"label": "AtTheScrapTable", "count": 3, "x": [4.0, 5.4], "y": [82.4, 85.6], "apart": 1.0, "look": [6.4, 84.0]},
-  {"label": "AtHidePlate", "count": 2, "x": [-5.2, -4.0], "y": [90.2, 92.4], "apart": 1.0, "look": [-6.5, 93.6]},
-  {"label": "AtTheDice", "count": 3, "x": [-5.4, -4.2], "y": [105.4, 108.6], "apart": 1.0, "look": [-6.2, 107.0]}
+  {"label": "AtTheBarrier", "count": 4, "x": [-3.4, 5.0], "y": [42.4, 45.6], "apart": 1.6, "look": [0.0, 8.0]},
+  {"label": "AtTheTruck", "count": 2, "x": [3.3, 4.2], "y": [62.6, 64.4], "apart": 1.0, "look": [4.9, 62.2]},
+  {"label": "AtTheFoodStall", "count": 3, "x": [-4.4, -3.5], "y": [70.6, 73.4], "apart": 1.0, "look": [-6.4, 72.0]},
+  {"label": "AtTheEastFire", "count": 2, "x": [4.2, 4.9], "y": [75.0, 77.0], "apart": 1.0, "look": [5.6, 76.0]},
+  {"label": "AtTheScrapStall", "count": 3, "x": [3.4, 4.4], "y": [82.6, 85.4], "apart": 1.0, "look": [6.4, 84.0]},
+  {"label": "AtHidePlate", "count": 2, "x": [-7.5, -6.8], "y": [92.0, 93.6], "apart": 0.9, "look": [-9.2, 92.6]},
+  {"label": "AtTheDice", "count": 3, "x": [-5.4, -4.2], "y": [105.2, 107.8], "apart": 1.0, "look": [-6.2, 107.0]},
+  {"label": "AtTheHeadFire", "count": 2, "x": [-7.4, -6.4], "y": [122.4, 123.5], "apart": 0.9, "look": [-6.9, 121.6]}
  ],
 
  "people_about": "'beat' is a round somebody walks: each stop is [x, y, seconds they stand there, the way they look while they do]. They go from each stop to the next and from the last back to the first. Each walks a line of their own down the road (x -2.9, -1.4, -0.4, 1.0, 2.9), so that nobody walks through anybody.",
  "people": [
   {
    "name": "Needle", "prompt": "Talk to Needle, at Hide & Plate", "body": "Ada", "cloth": [0.32, 0.31, 0.28],
-   "x": -7.5, "y": 95.0, "facing": 90, "idle": "crowd_watch_hands_on_hips",
+   "x": -9.45, "y": 96.16, "facing": 90, "on": true, "idle": "crowd_watch_hands_on_hips",
    "lines": [
     {"id": "counter", "words": "Arms up. Turn. You stand like somebody who gets hit on the left. We cut ring armor for the Gut: tire rubber for what is swung at you, road sign for what is edged. Water in hand. Nothing here goes on a slate.",
      "answers": [
@@ -208,14 +217,14 @@
   },
   {
    "name": "Thread", "prompt": "Talk to Thread", "body": "Ada", "cloth": [0.3, 0.3, 0.29],
-   "x": -7.3, "y": 98.4, "facing": 100, "idle": "crowd_watch_hands_behind",
+   "x": -7.3, "y": 100.4, "facing": 180, "idle": "crowd_watch_hands_behind",
    "lines": [
     {"id": "line", "words": "Needle sells you the plate. I would sooner know who it is for. Come by when the line is not running, and sit. Tonight it is running."}
    ]
   },
   {
    "name": "Brass", "prompt": "Talk to Brass, at Tooth & Trigger", "body": "Mix02", "cloth": [0.05, 0.07, 0.05],
-   "x": 5.1, "y": 63.2, "facing": 270, "idle": "crowd_watch_arms_crossed",
+   "x": 4.25, "y": 60.6, "facing": 270, "idle": "crowd_watch_arms_crossed",
    "lines": [
     {"id": "drawer", "words": "Scrap, tuned or relic. Scrap is cheap because you'll be back. Relic is dear because you won't.",
      "answers": [
@@ -236,16 +245,23 @@
   },
   {
    "name": "Stallholder", "prompt": "Talk to the stallholder", "body": "Mix07", "cloth": [0.09, 0.06, 0.04],
-   "x": -6.7, "y": 72.0, "facing": 90, "idle": "crowd_watch_hands_behind",
+   "x": -6.5, "y": 72.0, "facing": 90, "idle": "crowd_watch_hands_behind",
    "lines": [
     {"id": "bread", "words": "Bread's hot. Water first, then bread. That is the order everything goes in here."}
    ]
   },
   {
    "name": "Scrap seller", "prompt": "Talk to the scrap seller", "body": "Sookja", "cloth": [0.06, 0.06, 0.05],
-   "x": 7.4, "y": 84.0, "facing": 270, "idle": "crowd_watch_relaxed",
+   "x": 6.5, "y": 84.0, "facing": 270, "idle": "crowd_watch_relaxed",
    "lines": [
     {"id": "table", "words": "If it is on the table it is for sale. If it is under the table it is sold. If it is yours, you should have kept hold of it."}
+   ]
+  },
+  {
+   "name": "Tea seller", "prompt": "Talk to the tea seller", "body": "Jelena", "cloth": [0.08, 0.05, 0.05],
+   "x": 6.7, "y": 108.0, "facing": 270, "idle": "crowd_watch_relaxed",
+   "lines": [
+    {"id": "tea", "words": "Tea. It is leaves and it is hot, and that is all I will say about the leaves. A cup is a tenth of a litre. Yes, I see the joke. Everybody sees the joke."}
    ]
   },
   {

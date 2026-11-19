@@ -9,7 +9,11 @@
 #include "TownGameMode.generated.h"
 
 class AGutFighter;
+class AGutGameMode;
+class ULightComponent;
 class UGutGameInstance;
+struct FGutStableFighter;
+struct FGutStableState;
 class UGutLadderData;
 class UIKRetargeter;
 
@@ -38,6 +42,17 @@ struct FTownLed
 	float Wait = 0.0f;
 };
 
+/** A light in the place that is a fire: how bright the list made it, about which it wavers */
+struct FTownFire
+{
+	TWeakObjectPtr<ULightComponent> Light;
+
+	float Brightness = 0.0f;
+
+	/** Where in the wavering it is, so that no two fires waver together */
+	float Phase = 0.0f;
+};
+
 /** Somebody who walks a round of the place, as the place's list says: where they have got to on it */
 struct FTownBeat
 {
@@ -60,6 +75,12 @@ struct FTownShopLine
 	FString Detail;
 
 	float Price = 0.0f;
+
+	/** The price in words, where it is not so many litres down: a wage, say */
+	FString PriceText;
+
+	/** More about it, shown while the player is on its line */
+	FString About;
 
 	/** The player has it on already */
 	bool bWorn = false;
@@ -145,6 +166,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town")
 	TSoftObjectPtr<UGutLadderData> FirstLadder;
 
+	/** The cage's rules, as its game mode's defaults hold them: who is at the Block, what they cost and what an owner comes with are read off these */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town")
+	TSoftClassPtr<AGutGameMode> CageRules;
+
 	/** Somebody walking their round stops for whoever is in front of them and this near, and walks on when the way is clear */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 30, ClampMax = 400, Units = "cm"))
 	float BeatRoom = 130.0f;
@@ -183,6 +208,12 @@ protected:
 	int32 TalkLine = 0;
 	int32 TalkChoice = 0;
 
+	/** The last of their lines that had answers to it: what can still be said when something said in answer has nothing after it */
+	int32 TalkHub = INDEX_NONE;
+
+	/** What has been asked already in this talk: the line times a hundred, plus the answer */
+	TSet<int32> TalkAsked;
+
 	/** Words put up by something that is not a person: a door that is shut */
 	FString Notice;
 	float NoticeUntil = 0.0f;
@@ -206,6 +237,9 @@ protected:
 	/** Everybody who walks a round of the place */
 	TArray<FTownBeat> Beats;
 
+	/** Every light in the place that is a fire: the drums, the lanterns */
+	TArray<FTownFire> Fires;
+
 	/** Whose counter the player is at, as their place among the people: less than nought is nobody's */
 	int32 ShopKeeper = INDEX_NONE;
 
@@ -213,6 +247,12 @@ protected:
 	bool bShopping = false;
 	int32 ShopChoice = 0;
 	FString ShopSaid;
+
+	/** True if the counter is the Block's book, where what is bought is people, and not the armorers' */
+	bool bAtBook = false;
+
+	/** What somebody who owns nobody yet would have their days at the Block drawn from, once they buy */
+	int32 BookSeed = 0;
 
 	/** The cage's ladder, once read */
 	UPROPERTY(Transient)
@@ -235,6 +275,25 @@ protected:
 
 	/** Moves the talk on from the line it is at: by the answer chosen, or to the line that follows */
 	void AdvanceTalk();
+
+	/**
+	 *  The line whose answers the player has in front of them: the one being said, or, when that was said in answer to
+	 *  something and has nothing after it, the one it was an answer to. A talk with answers is left by the player, and
+	 *  not by running out.
+	 */
+	const FTownLine* GetAnsweredLine() const;
+
+	/** The cage's rules, or nothing if they cannot be found */
+	const AGutGameMode* GetCageRules() const;
+
+	/** The player's stable as it stands, or as it would on the day they began one */
+	FGutStableState GetOwnerState() const;
+
+	/** Who is in the Block's book today, and which of the place's lots each is: nought for somebody who is no lot */
+	void GetBookOffers(TArray<FGutStableFighter>& OutOffers, TArray<int32>& OutLots) const;
+
+	TArray<FTownShopLine> GetBookLines() const;
+	bool BuyAtBook(int32 Line);
 
 	/** Does what a door or an answer does. A door that leads to another place says which. */
 	void Do(ETownDeed Deed, const FTownDoor* Door = nullptr);
@@ -265,6 +324,10 @@ protected:
 
 	/** Moves everybody who walks a round of the place on along it */
 	void UpdateBeats(float DeltaTime);
+
+	/** Finds the place's fires, which the builder marks, and makes them waver */
+	void FindFires();
+	void UpdateFires();
 
 	/** Where somebody is: where they stand, or where their round has taken them */
 	FVector GetPersonPlace(int32 Person) const;
@@ -308,6 +371,9 @@ public:
 	TArray<FString> GetAnswers() const;
 	int32 GetTalkChoice() const { return TalkChoice; }
 
+	/** Which of those answers has been given already in this talk */
+	TArray<bool> GetAnswersAsked() const;
+
 	/** Words put up by a door that is shut, while they last */
 	FString GetNotice() const;
 
@@ -327,6 +393,13 @@ public:
 	/** Opens the armorers' counter, kept by whichever of the people it is, and shuts it */
 	void OpenShop(int32 Keeper);
 	void CloseShop();
+
+	/** Opens the Block's book at its clerk's table: who is for sale today, to be bought there with an owner's water */
+	void OpenBook(int32 Keeper);
+
+	/** What is written over the counter the player is at, and whose water is spent there, in words */
+	FString GetShopTitle() const;
+	FString GetShopPurse() const;
 
 	bool IsShopping() const { return bShopping; }
 
@@ -351,6 +424,9 @@ public:
 
 	/** For the tests: how many walk a round, and how far along it one of them is */
 	int32 GetBeatCount() const { return Beats.Num(); }
+
+	/** For the tests: how many fires burn in the place */
+	int32 GetFireCount() const { return Fires.Num(); }
 
 	/** For the tests: has the call before the given one all but run out, so that the given one is called next */
 	void SkipToCall(int32 Index);

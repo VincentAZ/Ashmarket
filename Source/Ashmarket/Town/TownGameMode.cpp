@@ -3,6 +3,8 @@
 #include "TownGameMode.h"
 #include "Engine/Engine.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/LightComponent.h"
+#include "Engine/Light.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -12,7 +14,9 @@
 #include "GutArmorData.h"
 #include "GutCrowd.h"
 #include "GutGameInstance.h"
+#include "GutGameMode.h"
 #include "GutLadderData.h"
+#include "GutWeaponData.h"
 #include "GutSound.h"
 #include "Misc/PackageName.h"
 #include "Kismet/GameplayStatics.h"
@@ -27,6 +31,11 @@ namespace TownConstants
 {
 	/** How long the words of a shut door stay up */
 	const float NoticeTime = 3.5f;
+
+	/** What the builder marks a light with that is a fire (FIRE_TAG in Tools/build_town_level.py), and how fast a fire breathes and flutters */
+	const FName FireTag = FName("TownFire");
+	const float FireBreath = 1.3f;
+	const float FireFlutter = 7.0f;
 
 	/** The colours of a built person's clothes, as their materials name them */
 	const FName ClothParameters[] = { FName("diffuse_color_1"), FName("diffuse_color_2") };
@@ -59,6 +68,7 @@ ATownGameMode::ATownGameMode()
 	Place = TSoftObjectPtr<UTownPlaceData>(FSoftObjectPath(TEXT("/Game/Town/DA_Town_PoolStreet.DA_Town_PoolStreet")));
 	PersonClass = TSoftClassPtr<AGutFighter>(FSoftObjectPath(TEXT("/Game/Gut/Blueprints/BP_GutDummy.BP_GutDummy_C")));
 	FirstLadder = TSoftObjectPtr<UGutLadderData>(FSoftObjectPath(TEXT("/Game/Gut/Ladder/DA_Gut_MeatLadder.DA_Gut_MeatLadder")));
+	CageRules = TSoftClassPtr<AGutGameMode>(FSoftObjectPath(TEXT("/Game/Gut/Blueprints/BP_GutGameMode.BP_GutGameMode_C")));
 }
 
 void ATownGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
@@ -154,6 +164,7 @@ void ATownGameMode::Tick(float DeltaTime)
 	UpdateCalls(DeltaTime);
 	UpdateLed(DeltaTime);
 	UpdateBeats(DeltaTime);
+	UpdateFires();
 
 	if (AGutFighter* Walker = GetWalker())
 	{
@@ -373,9 +384,52 @@ void ATownGameMode::Settle()
 		GameInstance->ApplyLoudness(this);
 	}
 
+	FindFires();
+
 	bSettled = true;
 
-	UE_LOG(LogTown, Log, TEXT("Street: %s, %d people, %d doors"), PlaceData ? *PlaceData->Name : TEXT("nowhere"), People.Num(), PlaceData ? PlaceData->Doors.Num() : 0);
+	UE_LOG(LogTown, Log, TEXT("Street: %s, %d people, %d doors, %d fires"), PlaceData ? *PlaceData->Name : TEXT("nowhere"), People.Num(), PlaceData ? PlaceData->Doors.Num() : 0, Fires.Num());
+}
+
+void ATownGameMode::FindFires()
+{
+	Fires.Reset();
+
+	// the builder marks every light that is a fire: embers in a drum, a lantern's wick
+	for (TActorIterator<ALight> It(GetWorld()); It; ++It)
+	{
+		ULightComponent* Light = It->GetLightComponent();
+
+		if (!Light || !It->ActorHasTag(TownConstants::FireTag))
+		{
+			continue;
+		}
+
+		FTownFire& Fire = Fires.AddDefaulted_GetRef();
+
+		Fire.Light = Light;
+		Fire.Brightness = Light->Intensity;
+
+		// where it stands is where in the wavering it begins: the same every time the place is come to, and no two alike
+		Fire.Phase = FMath::Fmod(FMath::Abs((It->GetActorLocation().X * 0.0137f) + (It->GetActorLocation().Y * 0.0291f)), 97.0f);
+	}
+}
+
+void ATownGameMode::UpdateFires()
+{
+	const float Now = GetWorld()->GetTimeSeconds();
+
+	for (const FTownFire& Fire : Fires)
+	{
+		if (ULightComponent* Light = Fire.Light.Get())
+		{
+			// a slow breathing with a quick flutter on it, never brighter than it was made and never out
+			const float Slow = FMath::PerlinNoise1D((Now * TownConstants::FireBreath) + Fire.Phase);
+			const float Quick = FMath::PerlinNoise1D((Now * TownConstants::FireFlutter) + (Fire.Phase * 3.1f));
+
+			Light->SetIntensity(Fire.Brightness * FMath::Clamp(0.8f + (Slow * 0.22f) + (Quick * 0.12f), 0.5f, 1.0f));
+		}
+	}
 }
 
 void ATownGameMode::KeepOnGround(AGutFighter* Walker) const
@@ -518,6 +572,8 @@ void ATownGameMode::BeginTalk(int32 Person)
 	TalkingTo = Person;
 	TalkLine = 0;
 	TalkChoice = 0;
+	TalkHub = PlaceData->People[Person].Lines[0].Answers.IsEmpty() ? INDEX_NONE : 0;
+	TalkAsked.Reset();
 	Dealt.Reset();
 
 	// whoever is talking stands still to do it, and looks at who they are talking to
@@ -544,11 +600,43 @@ void ATownGameMode::EndTalk()
 	TalkingTo = INDEX_NONE;
 	TalkLine = 0;
 	TalkChoice = 0;
+	TalkHub = INDEX_NONE;
+	TalkAsked.Reset();
 
 	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
 	{
 		Hands->ResetIgnoreMoveInput();
 	}
+}
+
+const FTownLine* ATownGameMode::GetAnsweredLine() const
+{
+	if (!IsTalking())
+	{
+		return nullptr;
+	}
+
+	const TArray<FTownLine>& Lines = PlaceData->People[TalkingTo].Lines;
+
+	if (!Lines.IsValidIndex(TalkLine))
+	{
+		return nullptr;
+	}
+
+	const FTownLine& Line = Lines[TalkLine];
+
+	if (!Line.Answers.IsEmpty())
+	{
+		return &Line;
+	}
+
+	// said in answer to something, and nothing follows it: everything that could be said before can be said still
+	if (!Lines.IsValidIndex(Line.Next) && Lines.IsValidIndex(TalkHub))
+	{
+		return &Lines[TalkHub];
+	}
+
+	return nullptr;
 }
 
 void ATownGameMode::AdvanceTalk()
@@ -567,25 +655,36 @@ void ATownGameMode::AdvanceTalk()
 	}
 
 	const FTownLine& Line = Lines[TalkLine];
+	const FTownLine* Asked = GetAnsweredLine();
 
 	int32 Next = Line.Next;
 
-	if (Line.Answers.IsValidIndex(TalkChoice))
+	if (Asked && Asked->Answers.IsValidIndex(TalkChoice))
 	{
-		const FTownAnswer& Answer = Line.Answers[TalkChoice];
+		const FTownAnswer& Answer = Asked->Answers[TalkChoice];
 
 		if (Answer.Deed == ETownDeed::Borrow || Answer.Deed == ETownDeed::Repay)
 		{
 			// done where they stand, and the talk goes on with what it came to
 			Do(Answer.Deed);
 		}
-		else if (Answer.Deed == ETownDeed::Armor)
+		else if (Answer.Deed == ETownDeed::Armor || Answer.Deed == ETownDeed::Buy)
 		{
-			// to their counter: whoever was being talked to keeps it
+			// to their counter, or their book: whoever was being talked to keeps it
 			const int32 Keeper = TalkingTo;
+			const bool bBook = Answer.Deed == ETownDeed::Buy;
 
 			EndTalk();
-			OpenShop(Keeper);
+
+			if (bBook)
+			{
+				OpenBook(Keeper);
+			}
+			else
+			{
+				OpenShop(Keeper);
+			}
+
 			return;
 		}
 		else if (Answer.Deed != ETownDeed::None)
@@ -596,16 +695,39 @@ void ATownGameMode::AdvanceTalk()
 		}
 
 		Next = Answer.Next;
+
+		// an answer that does nothing and is answered with nothing is the player leaving: the only way a talk with answers ends
+		if (!Lines.IsValidIndex(Next))
+		{
+			EndTalk();
+			return;
+		}
+
+		TalkAsked.Add((static_cast<int32>(Asked - Lines.GetData()) * 100) + TalkChoice);
 	}
 
-	if (Lines.IsValidIndex(Next))
+	if (!Lines.IsValidIndex(Next))
 	{
-		TalkLine = Next;
-		TalkChoice = 0;
+		// somebody with nothing to be asked has said all they had to say
+		if (!Asked)
+		{
+			EndTalk();
+		}
+
+		return;
 	}
-	else
+
+	TalkLine = Next;
+
+	// a line with answers of its own starts the choosing again; one without keeps the arrow where it was, under what was just asked
+	if (!Lines[Next].Answers.IsEmpty())
 	{
-		EndTalk();
+		if (Next != TalkHub)
+		{
+			TalkChoice = 0;
+		}
+
+		TalkHub = Next;
 	}
 }
 
@@ -684,8 +806,8 @@ void ATownGameMode::HandleMenuInput(EGutMenuInput Input)
 		return;
 	}
 
-	const TArray<FTownLine>& Lines = PlaceData->People[TalkingTo].Lines;
-	const int32 Answers = Lines.IsValidIndex(TalkLine) ? Lines[TalkLine].Answers.Num() : 0;
+	const FTownLine* Asked = GetAnsweredLine();
+	const int32 Answers = Asked ? Asked->Answers.Num() : 0;
 
 	if (Input == EGutMenuInput::Confirm)
 	{
@@ -718,6 +840,13 @@ void ATownGameMode::Do(ETownDeed Deed, const FTownDoor* Door)
 		return;
 	}
 
+	// people are bought where they are sold, at the clerk's table: nobody is taken round to the cage for it
+	if (Deed == ETownDeed::Buy)
+	{
+		OpenBook(INDEX_NONE);
+		return;
+	}
+
 	if (Deed == ETownDeed::Go)
 	{
 		if (!Door || Door->To.IsNone() || !FPackageName::DoesPackageExist(Door->To.ToString()))
@@ -746,11 +875,11 @@ void ATownGameMode::Do(ETownDeed Deed, const FTownDoor* Door)
 	GameInstance->bAtDoor = false;
 	GameInstance->bCameByDoor = true;
 	GameInstance->bSandbox = Deed == ETownDeed::Spar;
-	GameInstance->bStable = Deed == ETownDeed::Own || Deed == ETownDeed::Buy;
-	GameInstance->bStableAtBlock = Deed == ETownDeed::Buy;
+	GameInstance->bStable = Deed == ETownDeed::Own;
+	GameInstance->bStableAtBlock = false;
 	GameInstance->bWindow = Deed == ETownDeed::Bet;
 
-	static const TCHAR* Ways[] = { TEXT("nowhere"), TEXT("fight"), TEXT("fight, from the start"), TEXT("spar"), TEXT("bet"), TEXT("own"), TEXT("another place"), TEXT("buy at the Block") };
+	static const TCHAR* Ways[] = { TEXT("nowhere"), TEXT("fight"), TEXT("fight, from the start"), TEXT("spar"), TEXT("bet"), TEXT("own"), TEXT("another place") };
 
 	UE_LOG(LogTown, Log, TEXT("Street: in to %s"), Ways[FMath::Min<int32>(static_cast<uint8>(Deed), UE_ARRAY_COUNT(Ways) - 1)]);
 
@@ -1294,6 +1423,11 @@ FString ATownGameMode::GetShopKeeper() const
 
 TArray<FTownShopLine> ATownGameMode::GetShopLines() const
 {
+	if (bAtBook)
+	{
+		return GetBookLines();
+	}
+
 	TArray<FTownShopLine> Lines;
 
 	const UGutLadderData* Shelf = GetShelfRank();
@@ -1362,6 +1496,7 @@ void ATownGameMode::OpenShop(int32 Keeper)
 	ShopKeeper = Keeper;
 	ShopChoice = 0;
 	bShopping = true;
+	bAtBook = false;
 
 	// why nothing on it can be bought, if nothing can: said once, at the top
 	if (!Shelf)
@@ -1397,6 +1532,7 @@ void ATownGameMode::CloseShop()
 	}
 
 	bShopping = false;
+	bAtBook = false;
 	ShopKeeper = INDEX_NONE;
 	ShopSaid.Reset();
 
@@ -1408,6 +1544,11 @@ void ATownGameMode::CloseShop()
 
 bool ATownGameMode::BuyAtShop(int32 Line)
 {
+	if (bAtBook)
+	{
+		return BuyAtBook(Line);
+	}
+
 	UGutGameInstance* GameInstance = GetGutGameInstance();
 	const UGutLadderData* Shelf = GetShelfRank();
 
@@ -1472,6 +1613,265 @@ bool ATownGameMode::BuyAtShop(int32 Line)
 	return true;
 }
 
+const AGutGameMode* ATownGameMode::GetCageRules() const
+{
+	const UClass* Rules = CageRules.LoadSynchronous();
+
+	return Rules ? Rules->GetDefaultObject<AGutGameMode>() : nullptr;
+}
+
+FGutStableState ATownGameMode::GetOwnerState() const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (GameInstance && GameInstance->Stable.bStarted)
+	{
+		return GameInstance->Stable;
+	}
+
+	// nobody's owner yet: what they would come to the Block with on the day they first bought
+	FGutStableState State;
+
+	if (const AGutGameMode* Rules = GetCageRules())
+	{
+		Rules->BeginStableState(State, BookSeed);
+	}
+
+	return State;
+}
+
+void ATownGameMode::GetBookOffers(TArray<FGutStableFighter>& OutOffers, TArray<int32>& OutLots) const
+{
+	OutOffers.Reset();
+	OutLots.Reset();
+
+	const AGutGameMode* Rules = GetCageRules();
+
+	if (!Rules || !PlaceData)
+	{
+		return;
+	}
+
+	const FGutStableState State = GetOwnerState();
+
+	Rules->GetBlockOffersFor(State, OutOffers);
+
+	// the lots standing in the place, by their numbers
+	TArray<int32> Standing;
+
+	for (int32 i = 0; i < PlaceData->People.Num(); ++i)
+	{
+		if (PlaceData->People[i].Lot > 0)
+		{
+			Standing.Add(i);
+		}
+	}
+
+	Standing.Sort([this](int32 A, int32 B) { return PlaceData->People[A].Lot < PlaceData->People[B].Lot; });
+
+	// which of them the book's people are: the same on the same day. Whoever is bought is the body that was seen on the Block.
+	FRandomStream Draw(State.Seed + (State.Day * 7919));
+
+	for (FGutStableFighter& Offer : OutOffers)
+	{
+		int32 Lot = 0;
+
+		if (Offer.bOwned && !Standing.IsEmpty())
+		{
+			const int32 Picked = Draw.RandRange(0, Standing.Num() - 1);
+			const FTownPerson& Person = PlaceData->People[Standing[Picked]];
+
+			Lot = Person.Lot;
+
+			if (!Person.Body.IsNull())
+			{
+				Offer.Body = Person.Body;
+			}
+
+			Standing.RemoveAt(Picked);
+		}
+
+		OutLots.Add(Lot);
+	}
+}
+
+TArray<FTownShopLine> ATownGameMode::GetBookLines() const
+{
+	TArray<FTownShopLine> Lines;
+
+	const AGutGameMode* Rules = GetCageRules();
+
+	if (!Rules)
+	{
+		return Lines;
+	}
+
+	TArray<FGutStableFighter> Offers;
+	TArray<int32> Lots;
+	GetBookOffers(Offers, Lots);
+
+	const FGutStableState State = GetOwnerState();
+
+	for (int32 i = 0; i < Offers.Num(); ++i)
+	{
+		const FGutStableFighter& Offer = Offers[i];
+
+		FTownShopLine Line;
+
+		Line.Name = Lots[i] > 0
+			? FString::Printf(TEXT("Lot %d  \u00B7  %s"), Lots[i], *Offer.FighterName.ToString().ToUpper())
+			: FString::Printf(TEXT("No lot  \u00B7  %s"), *Offer.FighterName.ToString().ToUpper());
+
+		Line.Detail = FString::Printf(TEXT("strength %d, speed %d, nerve %d"), Offer.Strength, Offer.Speed, Offer.Nerve);
+
+		// what they are led out holding, and how they came to be here
+		Line.About = (Offer.Weapon ? FString::Printf(TEXT("Fights with the %s. "), *Offer.Weapon->DisplayName.ToString().ToLower()) : FString(TEXT("Fights with bare hands. "))) + Offer.Billing.ToString();
+		Line.Price = Offer.Price;
+
+		if (!Offer.bOwned)
+		{
+			// somebody with a tag: not bought, signed, and paid by the day
+			Line.PriceText = FString::Printf(TEXT("%.0f L a day"), Offer.Wage);
+			Line.About += TEXT(" Not for sale: signs with you for a wage and a share of each purse.");
+		}
+
+		// the cage's own rules say whether they can be had, tried on a copy
+		FGutStableState Tried = State;
+
+		Line.bCanBuy = Rules->TakeBlockOffer(Tried, Offer, i, &Line.Why);
+
+		if (Line.Why == TEXT("taken"))
+		{
+			Line.Why = TEXT("yours");
+			Line.bWorn = true;
+		}
+
+		Lines.Add(MoveTemp(Line));
+	}
+
+	return Lines;
+}
+
+void ATownGameMode::OpenBook(int32 Keeper)
+{
+	ShopKeeper = Keeper;
+	ShopChoice = 0;
+	bShopping = true;
+	bAtBook = true;
+
+	// whoever has no stable yet has the same people read out to them however often they ask, until they buy
+	if (BookSeed == 0)
+	{
+		BookSeed = FMath::RandRange(1, 1000000);
+	}
+
+	if (!GetCageRules())
+	{
+		ShopSaid = TEXT("The book is shut.");
+	}
+	else if (const UGutGameInstance* GameInstance = GetGutGameInstance(); GameInstance && GameInstance->Stable.bStarted)
+	{
+		ShopSaid = TEXT("These are not spoken for yet. Whoever you buy is walked to your yard at the Gut when the sale is done.");
+	}
+	else
+	{
+		ShopSaid = TEXT("These are not spoken for yet. Buy one and you are an owner: they are walked to your yard at the Gut, and you send them in from there.");
+	}
+
+	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		Hands->SetIgnoreMoveInput(true);
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Street: at the Block's book, %d on it"), GetBookLines().Num());
+}
+
+bool ATownGameMode::BuyAtBook(int32 Line)
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+	const AGutGameMode* Rules = GetCageRules();
+
+	TArray<FGutStableFighter> Offers;
+	TArray<int32> Lots;
+	GetBookOffers(Offers, Lots);
+
+	if (!GameInstance || !Rules || !Offers.IsValidIndex(Line))
+	{
+		return false;
+	}
+
+	const FGutStableFighter& Offer = Offers[Line];
+	const FString Who = Offer.FighterName.ToString();
+
+	// tried on a copy first, so that somebody who cannot buy is not made an owner by asking
+	FGutStableState Stable = GetOwnerState();
+	FString Why;
+
+	if (!Rules->TakeBlockOffer(Stable, Offer, Line, &Why))
+	{
+		if (Why == TEXT("taken"))
+		{
+			ShopSaid = FString::Printf(TEXT("%s is yours already. I have your name against theirs."), *Who);
+		}
+		else if (Why == TEXT("yard full"))
+		{
+			ShopSaid = FString::Printf(TEXT("Your yard holds %d and it is full. Sell one, or bury one, and come back."), Rules->GetStableMostFighters());
+		}
+		else
+		{
+			ShopSaid = FString::Printf(TEXT("%s is %.0f L and you hold %.0f. The Block gives no credit: Mother Ledger does, at her table."), *Who, Offer.Price, Stable.Water);
+		}
+
+		return false;
+	}
+
+	// the first one bought is what makes an owner: their story is told when they first come to their yard
+	if (!GameInstance->Stable.bStarted)
+	{
+		GameInstance->PendingStory = EGutStory::Owner;
+	}
+
+	GameInstance->Stable = Stable;
+	GameInstance->SaveRun();
+
+	ShopSaid = Offer.bOwned
+		? FString::Printf(TEXT("Sold: %s, %.0f L. Your name is against theirs, and they sleep in your yard tonight. The yard gate is beside the Gut, on Pool Street: train them and send them in from there."), *Who, Offer.Price)
+		: FString::Printf(TEXT("Signed: %s, for %.0f L a day and a share. They will be at your yard beside the Gut, on Pool Street."), *Who, Offer.Wage);
+
+	if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
+	{
+		Sounds->Play(FName("cash"), FVector::ZeroVector);
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Street: %s"), *ShopSaid);
+
+	return true;
+}
+
+FString ATownGameMode::GetShopTitle() const
+{
+	if (bAtBook)
+	{
+		return TEXT("THE BLOCK'S BOOK");
+	}
+
+	const FString Keeper = GetShopKeeper();
+
+	return Keeper.IsEmpty() ? FString(TEXT("THE COUNTER")) : FString::Printf(TEXT("%s'S COUNTER"), *Keeper.ToUpper());
+}
+
+FString ATownGameMode::GetShopPurse() const
+{
+	if (bAtBook)
+	{
+		const FGutStableState State = GetOwnerState();
+
+		return FString::Printf(TEXT("As an owner you hold %.0f L  \u00B7  yard: %d of %d"), State.Water, State.Fighters.Num(), GetCageRules() ? GetCageRules()->GetStableMostFighters() : 0);
+	}
+
+	return HasFighter() ? FString::Printf(TEXT("Your fighter holds %.0f L"), GetShopWater()) : FString();
+}
+
 const FTownCall* ATownGameMode::GetCall() const
 {
 	return (bSettled && PlaceData && PlaceData->Calls.IsValidIndex(CallIndex)) ? &PlaceData->Calls[CallIndex] : nullptr;
@@ -1518,11 +1918,28 @@ TArray<FString> ATownGameMode::GetAnswers() const
 {
 	TArray<FString> Result;
 
-	if (IsTalking() && PlaceData->People[TalkingTo].Lines.IsValidIndex(TalkLine))
+	if (const FTownLine* Asked = GetAnsweredLine())
 	{
-		for (const FTownAnswer& Answer : PlaceData->People[TalkingTo].Lines[TalkLine].Answers)
+		for (const FTownAnswer& Answer : Asked->Answers)
 		{
 			Result.Add(Told(Answer.Words));
+		}
+	}
+
+	return Result;
+}
+
+TArray<bool> ATownGameMode::GetAnswersAsked() const
+{
+	TArray<bool> Result;
+
+	if (const FTownLine* Asked = GetAnsweredLine())
+	{
+		const int32 Line = static_cast<int32>(Asked - PlaceData->People[TalkingTo].Lines.GetData());
+
+		for (int32 i = 0; i < Asked->Answers.Num(); ++i)
+		{
+			Result.Add(TalkAsked.Contains((Line * 100) + i));
 		}
 	}
 

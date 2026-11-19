@@ -110,9 +110,56 @@ const FGutLadderRung* AGutGameMode::FindRung(int32 Code) const
 
 void AGutGameMode::GetBlockOffers(TArray<FGutStableFighter>& OutOffers) const
 {
-	OutOffers.Reset();
+	GetBlockOffersFor(GetStableState(), OutOffers);
+}
 
-	const FGutStableState& State = GetStableState();
+void AGutGameMode::BeginStableState(FGutStableState& State, int32 Seed) const
+{
+	State = FGutStableState();
+	State.bStarted = true;
+	State.Water = StableStartingWater;
+	State.Seed = Seed != 0 ? Seed : FMath::RandRange(1, 1000000);
+}
+
+bool AGutGameMode::TakeBlockOffer(FGutStableState& State, const FGutStableFighter& Offer, int32 OfferIndex, FString* Why) const
+{
+	auto No = [Why](const FString& Because)
+	{
+		if (Why)
+		{
+			*Why = Because;
+		}
+
+		return false;
+	};
+
+	if (State.BoughtToday.Contains(OfferIndex))
+	{
+		return No(TEXT("taken"));
+	}
+
+	if (State.Fighters.Num() >= StableMostFighters)
+	{
+		return No(TEXT("yard full"));
+	}
+
+	if (Offer.Price > State.Water)
+	{
+		return No(FString::Printf(TEXT("%.0f L short"), Offer.Price - State.Water));
+	}
+
+	State.Water -= Offer.Price;
+	State.Spent += Offer.Price;
+
+	State.BoughtToday.Add(OfferIndex);
+	State.Fighters.Add(Offer);
+
+	return true;
+}
+
+void AGutGameMode::GetBlockOffersFor(const FGutStableState& State, TArray<FGutStableFighter>& OutOffers) const
+{
+	OutOffers.Reset();
 
 	TArray<const UGutLadderData*> Ranks;
 	GetRanks(Ranks);
@@ -289,18 +336,15 @@ bool AGutGameMode::BuyFighter(int32 OfferIndex)
 	TArray<FGutStableFighter> Offers;
 	GetBlockOffers(Offers);
 
-	if (!Offers.IsValidIndex(OfferIndex) || State.BoughtToday.Contains(OfferIndex) || State.Fighters.Num() >= StableMostFighters)
+	if (!Offers.IsValidIndex(OfferIndex) || !TakeBlockOffer(State, Offers[OfferIndex], OfferIndex))
 	{
 		return false;
 	}
 
-	if (!SpendStableWater(Offers[OfferIndex].Price))
+	if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this); Sounds && Offers[OfferIndex].Price > 0.0f)
 	{
-		return false;
+		Sounds->Play(FName("cash"), FVector::ZeroVector);
 	}
-
-	State.BoughtToday.Add(OfferIndex);
-	State.Fighters.Add(Offers[OfferIndex]);
 
 	UE_LOG(LogGut, Log, TEXT("Stable: %s %s, %.0f L in hand"), *Offers[OfferIndex].FighterName.ToString(), Offers[OfferIndex].bOwned ? TEXT("is bought") : TEXT("signs"), State.Water);
 

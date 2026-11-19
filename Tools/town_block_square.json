@@ -334,6 +334,50 @@
     19.0,
     164.9
    ]
+  },
+  {
+   "label": "WaterLine",
+   "model": "main_pipe_trestle",
+   "from": [
+    -5.2,
+    123.5
+   ],
+   "to": [
+    -5.2,
+    166.4
+   ],
+   "hollow": true,
+   "posts": [
+    -3.25,
+    3.15
+   ],
+   "post": [
+    0.4,
+    1.35
+   ],
+   "note": "the Pump's trunk, come up Main Street's west kerb, on along the square's west side and away behind the stacks"
+  },
+  {
+   "label": "WaterLineMainStreet",
+   "model": "main_pipe_trestle",
+   "from": [
+    -5.2,
+    123.5
+   ],
+   "to": [
+    -5.2,
+    97.76
+   ],
+   "hollow": true,
+   "posts": [
+    -3.25,
+    3.15
+   ],
+   "post": [
+    0.4,
+    1.35
+   ],
+   "note": "and down Main Street, seen from here"
   }
  ],
  "things": [
@@ -448,7 +492,7 @@
   {
    "model": "street_lamp_01",
    "x": -6.6,
-   "y": 149.0,
+   "y": 145.0,
    "lamp": true
   },
   {
@@ -464,13 +508,13 @@
   },
   {
    "model": "Barrel_01",
-   "x": -6.5,
-   "y": 139.0
+   "x": -6.9,
+   "y": 137.3
   },
   {
    "model": "barrel_03",
-   "x": -6.4,
-   "y": 139.9
+   "x": -6.85,
+   "y": 138.1
   },
   {
    "model": "propane_tank",
@@ -889,7 +933,7 @@
    "lines": [
     {
      "id": "table",
-     "words": "Lot list is on the board. If you are buying, I write your name against theirs, and they sleep in your yard tonight. The Chainmen's fifth is in the price already. Are you buying?",
+     "words": "Lot list is on the board, and the book is here. If you are buying, I write your name against theirs, and they sleep in your yard tonight. The Chainmen's fifth is in the price already. Are you buying?",
      "answers": [
       {
        "words": "Show me who is for sale.",
@@ -900,6 +944,10 @@
        "next": "price"
       },
       {
+       "words": "Where do they go when I have bought them?",
+       "next": "yard"
+      },
+      {
        "words": "Not tonight."
       }
      ]
@@ -907,6 +955,10 @@
     {
      "id": "price",
      "words": "Eighteen litres, and six more for each thing they know how to do, before anybody bids. A fighter with a name costs what the Gut says they cost."
+    },
+    {
+     "id": "yard",
+     "words": "To your yard, beside the Gut. The yard gate is on Pool Street, past the fighters' door: the yard hand lets owners in. You train them there, and you send them down into the pool from there."
     }
    ]
   },

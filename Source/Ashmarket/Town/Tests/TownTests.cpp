@@ -347,10 +347,32 @@ bool FTownTalkTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Asking keeps them talking"), Town->IsTalking());
 		TestEqual(TEXT("And gets the line that answers it"), Town->GetWords(), Person.Lines[Person.Lines[0].Answers[Asking].Next].Words);
 
-		// a line with nothing to answer ends when the player is ready
+		// what was said back has nothing after it, and the talk does not end for that: everything that could be said can be said still
+		TestEqual(TEXT("The answers are still there under what was said back"), Town->GetAnswers().Num(), Person.Lines[0].Answers.Num());
+		TestTrue(TEXT("And what was asked is marked as asked"), Town->GetAnswersAsked().IsValidIndex(Asking) && Town->GetAnswersAsked()[Asking]);
+
+		Town->Interact();
 		Town->Interact();
 
-		TestTrue(TEXT("A line with nothing after it ends the talk"), !Town->IsTalking());
+		TestTrue(TEXT("Pressing on does not end a talk that has answers"), Town->IsTalking());
+
+		// the answer that does nothing and is answered with nothing is the player leaving
+		const int32 Count = Person.Lines[0].Answers.Num();
+		const int32 Leaving = Person.Lines[0].Answers.IndexOfByPredicate([](const FTownAnswer& Answer) { return Answer.Deed == ETownDeed::None && Answer.Next < 0; });
+
+		if (!TestTrue(TEXT("The first person can be left"), Leaving != INDEX_NONE))
+		{
+			return;
+		}
+
+		for (int32 i = 0; i < (Leaving - Asking + Count) % Count; ++i)
+		{
+			Town->HandleMenuInput(EGutMenuInput::Down);
+		}
+
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestTrue(TEXT("Only the player's own goodbye ends the talk"), !Town->IsTalking());
 		TestTrue(TEXT("And the player can walk again"), !UGameplayStatics::GetPlayerController(Town, 0)->IsMoveInputIgnored());
 
 		// stopping the game, and starting it again from its own menu
@@ -1365,9 +1387,9 @@ bool FTownProbeFeetTest::RunTest(const FString& Parameters)
 
 /**
  *  Ashmarket.Town.Square   Block Square on a sale night: everybody is where the list puts them, the lots up on the Block; a
- *                          walker is stopped by what stands there; the lender lends and is paid; the clerk shows who is for
- *                          sale, what is bought is in the yard, and the way out of the yard is the square; Pool Street and
- *                          the square are a walk apart, both ways.
+ *                          walker is stopped by what stands there; the lender lends and is paid; the clerk's book shows who
+ *                          is for sale and they are bought there, in the square, with the body that stood on the Block;
+ *                          Pool Street and the square are a walk apart, both ways, and whoever was bought is in the yard.
  */
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownSquareTest, "Ashmarket.Town.Square", GutTests::Flags)
 
@@ -1390,6 +1412,9 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		float Still = 0.0f;
 		float WalkTime = 0.0f;
 		int32 Call = 0;
+
+		/** The body of whoever was bought at the Block */
+		FSoftObjectPath Bought;
 	};
 
 	TSharedRef<FNotes> Notes = MakeShared<FNotes>();
@@ -1630,8 +1655,8 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("Paying her back takes what is owed out of what is held"), Run->Window.Water, 0.0f);
 		TestEqual(TEXT("And clears the page"), Run->Window.Debt, 0.0f);
 
-		// the last answer leaves her
-		for (int32 i = 0; i < 3; ++i)
+		// the last answer leaves her: the arrow is still on the second, where it was
+		for (int32 i = 0; i < 2; ++i)
 		{
 			Town->HandleMenuInput(EGutMenuInput::Down);
 		}
@@ -1658,11 +1683,12 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		Run->Window = FGutWindowState();
 	} });
 
-	// the clerk: who is for sale, and what is bought is in the yard
-	Steps.Add({ 0.3f, [this, StandWith]()
+	// the clerk: who is for sale is bought where they are sold, at the clerk's table, and nobody is taken to the cage for it
+	Steps.Add({ 0.3f, [this, Notes, StandWith]()
 	{
 		ATownGameMode* Town = GetTown();
 		UGutGameInstance* Run = GetRun();
+		const UTownPlaceData* Place = Town->GetPlace();
 
 		// in a test the street is the old card unless the test asks for the place
 		Run->bStreetForced = true;
@@ -1674,37 +1700,75 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 
 		Town->Interact();
 		Town->HandleMenuInput(EGutMenuInput::Confirm);
-	} });
 
-	Steps.Add({ 0.5f, [this]()
-	{
-		const UGutGameInstance* Run = GetRun();
-		const GutTests::FFight Fight = GutTests::GetFight();
+		TestTrue(TEXT("Asking who is for sale opens the Block's book, in the square"), Town->IsShopping() && !Town->IsTalking() && !GutTests::GetFight().IsValid());
 
-		TestTrue(TEXT("Buying at the Block opens the cage as an owner has it"), Run->bStable && Fight.GameMode->IsAtStable());
-		TestEqual(TEXT("At who is for sale today"), Fight.GameMode->GetStablePage(), EGutStablePage::Block);
+		const TArray<FTownShopLine> Lines = Town->GetShopLines();
+
+		TestEqual(TEXT("Three are in it today"), Lines.Num(), 3);
+
+		if (Lines.Num() != 3)
+		{
+			return;
+		}
+
+		TestTrue(*FString::Printf(TEXT("The first is one of the lots on the Block, and can be had with what an owner comes with (%s, %.0f L, %s)"), *Lines[0].Name, Lines[0].Price, *Lines[0].Why),
+			Lines[0].Name.StartsWith(TEXT("Lot ")) && Lines[0].bCanBuy && !Lines[0].About.IsEmpty() && Lines[0].Price >= 18.0f);
+		TestTrue(TEXT("The last is nobody's lot: somebody with a tag, who signs for a wage"), Lines[2].Name.StartsWith(TEXT("No lot")) && !Lines[2].PriceText.IsEmpty());
+		TestFalse(TEXT("Nobody is made an owner by looking"), Run->Stable.bStarted);
+		TestTrue(TEXT("The book says what an owner comes with"), Town->GetShopPurse().Contains(TEXT("70 L")));
 
 		// the first on the list
-		Fight.GameMode->HandleMenuInput(EGutMenuInput::Confirm);
+		const float Price = Lines[0].Price;
 
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestTrue(TEXT("Buying makes an owner"), Run->Stable.bStarted);
 		TestEqual(TEXT("Whoever is bought is the owner's"), Run->Stable.Fighters.Num(), 1);
+		TestEqual(TEXT("And is paid for out of what the owner came with"), Run->Stable.Water, 70.0f - Price);
 
-		// back a page is the yard, and they are in it
-		Fight.GameMode->HandleMenuInput(EGutMenuInput::Left);
+		if (Run->Stable.Fighters.Num() == 1)
+		{
+			Notes->Bought = Run->Stable.Fighters[0].Body.ToSoftObjectPath();
 
-		TestEqual(TEXT("And is in the yard"), Fight.GameMode->GetStablePage(), EGutStablePage::Yard);
+			TestTrue(TEXT("They have the body of one of the lots standing on the Block"), Place->People.ContainsByPredicate([Notes](const FTownPerson& Person) { return Person.Lot > 0 && Person.Body.ToSoftObjectPath() == Notes->Bought; }));
+		}
 
-		Fight.GameMode->GoToDoor();
-	}, []() { return GutTests::GetFight().IsValid() && GutTests::GetFight().GameMode->GetPhase() == EGutFightPhase::Card && !GutTests::GetFight().GameMode->IsTellingStory(); } });
+		TestTrue(TEXT("The book shows them as the player's"), Town->GetShopLines()[0].bWorn && !Town->GetShopLines()[0].bCanBuy);
+		TestFalse(TEXT("And they cannot be bought twice"), Town->BuyAtShop(0));
+		TestEqual(TEXT("Nor paid for twice"), Run->Stable.Water, 70.0f - Price);
+		TestTrue(TEXT("The clerk says where they have gone"), Town->GetShopSaid().Contains(TEXT("yours already")));
+		TestTrue(TEXT("The owner's water is on the player's purse"), Town->GetPurses().ContainsByPredicate([Price](const FString& Line) { return Line.Contains(FString::Printf(TEXT("%.0f L in hand"), 70.0f - Price)); }));
 
-	// the yard's way out is the square, at the clerk's table, and from there Pool Street is a walk up the lane
+		// with no water, nobody
+		const float Held = Run->Stable.Water;
+
+		Run->Stable.Water = 3.0f;
+
+		TestFalse(TEXT("Somebody who costs more than is held cannot be bought"), Town->GetShopLines()[1].bCanBuy || Town->BuyAtShop(1));
+		TestTrue(TEXT("And the clerk says what is short"), Town->GetShopSaid().Contains(TEXT("no credit")));
+
+		Run->Stable.Water = Held;
+
+		// the line under the last of them leaves the book
+		for (int32 i = 0; i < Lines.Num(); ++i)
+		{
+			Town->HandleMenuInput(EGutMenuInput::Down);
+		}
+
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestTrue(TEXT("The book is shut by the player, who can walk again"), !Town->IsShopping() && !UGameplayStatics::GetPlayerController(Town, 0)->IsMoveInputIgnored());
+	} });
+
+	// from the clerk's table Pool Street is a walk up the lane
 	Steps.Add({ 0.5f, [this]()
 	{
 		ATownGameMode* Town = GetTown();
 		const UTownPlaceData* Place = Town->GetPlace();
 		const int32 Clerk = Place->People.IndexOfByPredicate([](const FTownPerson& Person) { return Person.Name == TEXT("Margin"); });
 
-		TestTrue(TEXT("Out of the yard the player is back at the clerk's table"), Place->People.IsValidIndex(Clerk) && FVector::Dist2D(Town->GetWalker()->GetActorLocation(), Place->People[Clerk].Place) < 300.0f);
+		TestTrue(TEXT("The player is still at the clerk's table"), Place->People.IsValidIndex(Clerk) && FVector::Dist2D(Town->GetWalker()->GetActorLocation(), Place->People[Clerk].Place) < 300.0f);
 
 		for (const FTownDoor& Door : Place->Doors)
 		{
@@ -1724,6 +1788,57 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		const UTownPlaceData* Place = Town->GetPlace();
 
 		TestTrue(TEXT("Up the lane is Pool Street, at its Main Street end"), Town->GetWalker()->GetActorLocation().Y < Place->People[0].Place.Y);
+
+		// whoever was bought is in the owner's yard, which is gone to from here
+		for (int32 Person = 0; Person < Place->People.Num(); ++Person)
+		{
+			if (Place->People[Person].Lines.IsEmpty())
+			{
+				continue;
+			}
+
+			const int32 Answer = Place->People[Person].Lines[0].Answers.IndexOfByPredicate([](const FTownAnswer& Said) { return Said.Deed == ETownDeed::Own; });
+
+			if (Answer == INDEX_NONE)
+			{
+				continue;
+			}
+
+			StandBy(Place->People[Person].Place, FVector2D(0.0f, -160.0f));
+
+			Town->Tick(0.0f);
+			Town->Interact();
+
+			for (int32 i = 0; i < Answer; ++i)
+			{
+				Town->HandleMenuInput(EGutMenuInput::Down);
+			}
+
+			Town->HandleMenuInput(EGutMenuInput::Confirm);
+			return;
+		}
+
+		AddError(TEXT("Nobody in Pool Street takes an owner round to the yard"));
+	}, InStreet });
+
+	Steps.Add({ 0.5f, [this, Notes]()
+	{
+		const UGutGameInstance* Run = GetRun();
+		const GutTests::FFight Fight = GutTests::GetFight();
+
+		TestTrue(TEXT("The yard is the cage as an owner has it"), Run->bStable && Fight.GameMode->IsAtStable());
+		TestEqual(TEXT("It opens on the yard"), Fight.GameMode->GetStablePage(), EGutStablePage::Yard);
+		TestTrue(TEXT("And whoever was bought at the Block is in it, as they were seen there"), Run->Stable.Fighters.Num() == 1 && Run->Stable.Fighters[0].Body.ToSoftObjectPath() == Notes->Bought);
+
+		Fight.GameMode->GoToDoor();
+	}, []() { return GutTests::GetFight().IsValid() && GutTests::GetFight().GameMode->GetPhase() == EGutFightPhase::Card && !GutTests::GetFight().GameMode->IsTellingStory(); } });
+
+	Steps.Add({ 0.5f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		const UTownPlaceData* Place = Town->GetPlace();
+
+		TestTrue(TEXT("The yard's way out is Pool Street, where the player went in from"), true);
 
 		for (const FTownDoor& Door : Place->Doors)
 		{
@@ -1898,6 +2013,49 @@ bool FTownLookSquareTest::RunTest(const FString& Parameters)
 		Town->HandleMenuInput(EGutMenuInput::Confirm);
 
 		GetRun()->Window = FGutWindowState();
+	} });
+
+	// the clerk: asked something, and the answers still there under what she said back; then her book, before and after buying
+	Steps.Add({ 0.3f, []()
+	{
+		ATownGameMode* Town = GetTown();
+		const UTownPlaceData* Place = Town->GetPlace();
+		const int32 Clerk = Place->People.IndexOfByPredicate([](const FTownPerson& Person) { return Person.Name == TEXT("Margin"); });
+
+		if (Clerk != INDEX_NONE)
+		{
+			GetRun()->Stable = FGutStableState();
+
+			StandBy(Place->People[Clerk].Place, FVector2D(0.0f, -170.0f));
+
+			Town->Tick(0.0f);
+			Town->Interact();
+			Town->HandleMenuInput(EGutMenuInput::Down);
+			Town->HandleMenuInput(EGutMenuInput::Confirm);
+		}
+	} });
+
+	Steps.Add({ 2.5f, []() { GutTests::Screenshot(TEXT("square_18_as_played_the_clerk_asked")); } });
+
+	Steps.Add({ 0.3f, []()
+	{
+		ATownGameMode* Town = GetTown();
+
+		// up from what was asked to the first answer, which is the book
+		Town->HandleMenuInput(EGutMenuInput::Up);
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+	} });
+
+	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("square_19_as_played_the_book")); } });
+	Steps.Add({ 0.3f, []() { GetTown()->HandleMenuInput(EGutMenuInput::Confirm); } });
+	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("square_20_as_played_bought")); } });
+
+	Steps.Add({ 0.3f, []()
+	{
+		GetTown()->CloseShop();
+
+		GetRun()->Stable = FGutStableState();
+		GetRun()->PendingStory = EGutStory::None;
 	} });
 
 	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));

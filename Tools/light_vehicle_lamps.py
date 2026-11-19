@@ -32,6 +32,14 @@ def arguments():
     parser.add_argument("--patch", type=float, default=0.012)
     # for a single lamp that looks along +X from the origin: the glass is only what lies within this many metres of that line
     parser.add_argument("--within", type=float, default=0.0)
+    # for a bulb that hangs: the glass is only what lies below this share of the model's height
+    parser.add_argument("--below", type=float, default=1.0)
+    # which way the glass looks, for a lamp that does not look along +X: a street lamp's looks down ("0,0,-1")
+    parser.add_argument("--look", default="1,0,0")
+    # for a fire and not a lamp: the faces must also be this much redder than they are blue (embers, a flame behind glass)
+    parser.add_argument("--warm", type=float, default=-1.0)
+    # a fire is any shape: no test of how tall its patch is against how wide
+    parser.add_argument("--any-shape", action="store_true")
     return parser.parse_args(sys.argv[sys.argv.index("--") + 1:])
 
 
@@ -59,6 +67,7 @@ def main():
     pixels = numpy.array(picture.pixels[:], dtype=numpy.float32).reshape(height, width, picture.channels)
 
     turn = model.matrix_world.to_3x3()
+    look = Vector([float(part) for part in options.look.split(",")]).normalized()
     heights = [(model.matrix_world @ vertex.co).z for vertex in mesh.vertices]
     low, high = min(heights), max(heights)
     # the middle of the model as seen from the front, for a lamp whose glass is round that middle
@@ -72,15 +81,17 @@ def main():
 
     def is_glass(face):
         middle = model.matrix_world @ face.calc_center_median()
-        if middle.z < low + (high - low) * options.above:
+        if middle.z < low + (high - low) * options.above or middle.z > low + (high - low) * options.below:
             return False
-        if (turn @ face.normal).normalized().x < options.facing:
+        if (turn @ face.normal).normalized().dot(look) < options.facing:
             return False
         if options.within > 0.0 and ((middle.y - across[0]) ** 2 + (middle.z - across[1]) ** 2) ** 0.5 > options.within:
             return False
         u = sum(loop[layer].uv.x for loop in face.loops) / len(face.loops)
         v = sum(loop[layer].uv.y for loop in face.loops) / len(face.loops)
         r, g, b = pixels[int(v % 1.0 * (height - 1)), int(u % 1.0 * (width - 1)), :3]
+        if options.warm >= 0.0 and r - b < options.warm:
+            return False
         return 0.2126 * r + 0.7152 * g + 0.0722 * b > options.pale
 
     chosen = {face.index for face in work.faces if is_glass(face)}
@@ -105,7 +116,11 @@ def main():
         wide = max(middle.y for middle in middles) - min(middle.y for middle in middles)
         tall = max(middle.z for middle in middles) - min(middle.z for middle in middles)
         # (a single lamp marked out by --within needs neither test: everything inside its ring is glass)
-        if options.within > 0.0 or (sum(work.faces[index].calc_area() for index in patch) >= options.patch and max(wide, tall) < 3.5 * max(min(wide, tall), 0.01)):
+        deep = max(middle.x for middle in middles) - min(middle.x for middle in middles)
+        if abs(look.z) > 0.7:
+            # glass that looks up or down is as long as it is wide, seen from above
+            wide, tall = deep, wide
+        if options.within > 0.0 or (sum(work.faces[index].calc_area() for index in patch) >= options.patch and (options.any_shape or max(wide, tall) < 3.5 * max(min(wide, tall), 0.01))):
             kept.update(patch)
     print("[lamps] {}: {} faces of {} are lamp glass, {:.3f} m2".format(os.path.basename(options.gltf), len(kept), len(work.faces), sum(work.faces[index].calc_area() for index in kept)))
 
@@ -129,6 +144,10 @@ def main():
         size = max(model.dimensions)
         camera.location = Vector((size * 1.6, -size * 0.9, high + size * 0.15)) * (3.0 if options.within > 0.0 else 1.0)
         aim = Vector((0.0, 0.0, low + (high - low) * 0.6)) - camera.location
+        if abs(look.z) > 0.7:
+            # from under a lamp that looks down, or over a fire that looks up
+            camera.location = Vector((size * 0.9, -size * 0.6, (low - size * 0.25) if look.z < 0.0 else (high + size * 0.9)))
+            aim = Vector((0.0, 0.0, low + (high - low) * 0.75)) - camera.location
         camera.rotation_euler = aim.to_track_quat("-Z", "Y").to_euler()
         sun = bpy.data.objects.new("Sun", bpy.data.lights.new("Sun", "SUN"))
         sun.data.energy = 3.0

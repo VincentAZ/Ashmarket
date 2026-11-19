@@ -117,6 +117,9 @@ bool FTownMainStreetTest::RunTest(const FString& Parameters)
 
 		TestTrue(*FString::Printf(TEXT("Some of the street's people walk a round (%d)"), Town->GetBeatCount()), Town->GetBeatCount() >= 4);
 
+		// what lights the street is seen to burn: the drums and the lanterns are fires, and the game finds each to make it waver
+		TestTrue(*FString::Printf(TEXT("Fires burn in the street (%d)"), Town->GetFireCount()), Town->GetFireCount() >= 6);
+
 		for (int32 i = 0; i < Place->People.Num(); ++i)
 		{
 			if (!Place->People[i].Beat.IsEmpty() && Town->GetPeople().IsValidIndex(i) && Town->GetPeople()[i])
@@ -476,18 +479,24 @@ bool FTownLookMainStreetTest::RunTest(const FString& Parameters)
 	static const FView Views[] =
 	{
 		{ TEXT("main_01_down_the_street"), FVector(-1.8f, 126.2f, 5.8f), FVector(0.0f, 60.0f, 2.6f), 68.0f },
-		{ TEXT("main_02_hide_and_plate"), FVector(-1.6f, 99.5f, 4.6f), FVector(-7.0f, 94.6f, 4.0f), 62.0f },
-		{ TEXT("main_03_the_counter"), FVector(-3.8f, 95.6f, 4.5f), FVector(-7.4f, 95.0f, 4.1f), 55.0f },
-		{ TEXT("main_04_tooth_and_trigger"), FVector(0.8f, 57.6f, 3.5f), FVector(6.6f, 62.4f, 3.0f), 62.0f },
-		{ TEXT("main_05_the_food_stall"), FVector(-1.6f, 76.4f, 4.2f), FVector(-6.5f, 72.0f, 3.3f), 58.0f },
-		{ TEXT("main_06_the_scrap_table"), FVector(1.6f, 80.0f, 4.4f), FVector(6.6f, 84.2f, 3.4f), 58.0f },
+		{ TEXT("main_02_hide_and_plate"), FVector(-0.6f, 104.5f, 4.9f), FVector(-8.6f, 96.0f, 4.9f), 68.0f },
+		{ TEXT("main_03_the_counter"), FVector(-4.6f, 97.8f, 4.6f), FVector(-9.0f, 96.0f, 4.1f), 55.0f },
+		{ TEXT("main_04_tooth_and_trigger"), FVector(-0.4f, 55.6f, 3.6f), FVector(6.2f, 62.6f, 3.2f), 66.0f },
+		{ TEXT("main_05_the_food_stall"), FVector(-1.0f, 76.6f, 4.2f), FVector(-6.4f, 72.0f, 3.2f), 60.0f },
+		{ TEXT("main_06_the_scrap_stall"), FVector(1.2f, 79.4f, 4.4f), FVector(6.4f, 84.2f, 3.5f), 60.0f },
 		{ TEXT("main_07_dice_and_the_cart"), FVector(1.5f, 111.0f, 5.2f), FVector(-3.0f, 103.0f, 4.0f), 70.0f },
-		{ TEXT("main_08_the_barrier_and_the_dam"), FVector(0.6f, 52.0f, 3.4f), FVector(0.0f, 10.0f, 5.5f), 65.0f },
+		{ TEXT("main_08_the_barrier_and_the_dam"), FVector(0.6f, 52.0f, 3.4f), FVector(0.0f, 6.0f, 8.5f), 72.0f },
 		{ TEXT("main_09_up_the_street"), FVector(-0.6f, 43.5f, 2.9f), FVector(0.0f, 110.0f, 5.4f), 65.0f },
 		{ TEXT("main_10_pen_lane"), FVector(2.5f, 113.5f, 5.3f), FVector(8.0f, 117.1f, 5.0f), 60.0f },
 		{ TEXT("main_11_the_alley"), FVector(-2.5f, 62.6f, 3.6f), FVector(-8.0f, 59.8f, 3.3f), 60.0f },
 		{ TEXT("main_12_from_above"), FVector(0.0f, 84.0f, 62.0f), FVector(0.3f, 84.6f, 2.5f), 62.0f },
 		{ TEXT("main_13_into_the_square"), FVector(0.5f, 116.0f, 5.4f), FVector(2.0f, 150.0f, 6.5f), 60.0f },
+		{ TEXT("main_13a_the_laws"), FVector(1.0f, 43.2f, 3.2f), FVector(0.0f, 0.0f, 11.5f), 62.0f },
+		{ TEXT("main_13b_under_the_water_line"), FVector(-3.3f, 88.6f, 3.9f), FVector(-5.6f, 70.0f, 3.6f), 62.0f },
+		{ TEXT("main_13c_a_fire"), FVector(2.4f, 79.0f, 3.9f), FVector(5.6f, 76.0f, 3.2f), 50.0f },
+		{ TEXT("main_13d_work_lamps"), FVector(0.5f, 97.0f, 4.2f), FVector(5.6f, 92.5f, 6.4f), 58.0f },
+		{ TEXT("main_13e_the_tea_stall"), FVector(2.2f, 105.0f, 4.9f), FVector(6.5f, 108.0f, 4.2f), 55.0f },
+		{ TEXT("main_13f_thread_at_the_machine"), FVector(-4.2f, 97.4f, 4.4f), FVector(-7.4f, 100.2f, 4.0f), 55.0f },
 	};
 
 	TSharedRef<TWeakObjectPtr<ACameraActor>> Camera = MakeShared<TWeakObjectPtr<ACameraActor>>();

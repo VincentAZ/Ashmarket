@@ -163,6 +163,7 @@ void ATownHUD::DrawTalk(const ATownGameMode* Town, float CenterX)
 {
 	const TArray<FString> Said = Wrap(Town->GetWords(), TalkLineLength);
 	const TArray<FString> Answers = Town->GetAnswers();
+	const TArray<bool> Asked = Town->GetAnswersAsked();
 
 	const float LineHeight = 34.0f;
 	const float Height = 96.0f + (Said.Num() * LineHeight) + (Answers.IsEmpty() ? 40.0f : 26.0f + (Answers.Num() * LineHeight)) + 44.0f;
@@ -188,7 +189,10 @@ void ATownHUD::DrawTalk(const ATownGameMode* Town, float CenterX)
 	{
 		const bool bChosen = i == Town->GetTalkChoice();
 
-		DrawLabel((bChosen ? TEXT(">  ") : TEXT("    ")) + Answers[i], CenterX - 500.0f, Y, 22, bChosen ? GutHUDColors::Warning : GutHUDColors::Text);
+		// what has been asked already stands back, so that what has not is seen
+		const bool bAsked = Asked.IsValidIndex(i) && Asked[i];
+
+		DrawLabel((bChosen ? TEXT(">  ") : TEXT("    ")) + Answers[i], CenterX - 500.0f, Y, 22, bChosen ? GutHUDColors::Warning : (bAsked ? GutHUDColors::DimText : GutHUDColors::Text));
 
 		Y += LineHeight;
 	}
@@ -204,23 +208,28 @@ void ATownHUD::DrawShop(const ATownGameMode* Town, float CenterX)
 	const TArray<FTownShopLine> Lines = Town->GetShopLines();
 	const TArray<FString> Said = Wrap(Town->GetShopSaid(), TalkLineLength);
 
+	// what there is to know about whatever the player is on, under the list: room is kept for the longest of them, so the panel does not jump
+	int32 AboutLines = 0;
+
+	for (const FTownShopLine& Line : Lines)
+	{
+		AboutLines = FMath::Max(AboutLines, Wrap(Line.About, TalkLineLength).Num());
+	}
+
 	const float LineHeight = 40.0f;
-	const float Height = 150.0f + (Said.Num() * 30.0f) + ((Lines.Num() + 1) * LineHeight) + 58.0f;
+	const float AboutHeight = AboutLines > 0 ? 16.0f + (AboutLines * 28.0f) : 0.0f;
+	const float Height = 150.0f + (Said.Num() * 30.0f) + ((Lines.Num() + 1) * LineHeight) + AboutHeight + 58.0f;
 	const float Top = 1040.0f - Height;
 	const float Left = CenterX - 540.0f;
 
 	// a counter is a slate with prices on it, like the window's
 	DrawPanel(CenterX, Top, 1180.0f, Height, EGutPanel::Slate);
 
-	const FString Keeper = Town->GetShopKeeper();
+	DrawLabel(Town->GetShopTitle(), Left, Top + 22.0f, 30, GutHUDColors::Warning);
 
-	DrawLabel(Keeper.IsEmpty() ? FString(TEXT("THE COUNTER")) : FString::Printf(TEXT("%s'S COUNTER"), *Keeper.ToUpper()), Left, Top + 22.0f, 30, GutHUDColors::Warning);
-
-	// whose water it is: a fighter's own, and nobody else's page
-	if (Town->HasFighter())
+	// whose water it is: a fighter's own or an owner's, and nobody else's page
+	if (const FString Held = Town->GetShopPurse(); !Held.IsEmpty())
 	{
-		const FString Held = FString::Printf(TEXT("Your fighter holds %.0f L"), Town->GetShopWater());
-
 		DrawLabel(Held, CenterX + 540.0f - MeasureLabel(Held, 22), Top + 28.0f, 22, GutHUDColors::Text);
 	}
 
@@ -254,7 +263,7 @@ void ATownHUD::DrawShop(const ATownGameMode* Town, float CenterX)
 		DrawLabel(Line.Detail, Left + 408.0f, Y + 5.0f, 16, bChosen ? GutHUDColors::Text : GutHUDColors::DimText);
 
 		// the price, and beside it why it cannot be had, if it cannot
-		const FString Price = FString::Printf(TEXT("%.0f L"), Line.Price);
+		const FString Price = Line.PriceText.IsEmpty() ? FString::Printf(TEXT("%.0f L"), Line.Price) : Line.PriceText;
 
 		DrawLabel(Price, Left + 930.0f - MeasureLabel(Price, 22), Y, 22, Ink);
 
@@ -264,6 +273,18 @@ void ATownHUD::DrawShop(const ATownGameMode* Town, float CenterX)
 		}
 
 		Y += LineHeight;
+	}
+
+	if (Lines.IsValidIndex(Town->GetShopChoice()))
+	{
+		float AboutY = Top + Height - 58.0f - AboutHeight + 16.0f;
+
+		for (const FString& About : Wrap(Lines[Town->GetShopChoice()].About, TalkLineLength))
+		{
+			DrawLabel(About, Left + 20.0f, AboutY, 19, GutHUDColors::DimText);
+
+			AboutY += 28.0f;
+		}
 	}
 
 	DrawLabel(TEXT("W / S or D-pad: choose          E, Enter or A button: buy it, or leave"), CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);

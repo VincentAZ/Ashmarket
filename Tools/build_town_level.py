@@ -50,6 +50,19 @@ WALKER = 34.0
 # a bare bulb is warm
 BULB_COLOUR = unreal.Color(r=255, g=184, b=107, a=255)    # by name: the colour takes blue first
 
+# what a light is the colour of, by what burns in it: a work lamp's glass, a bulb, embers in a drum, a lantern's wick
+LIGHT_COLOURS = {"lamp": unreal.Color(r=255, g=226, b=190, a=255), "bulb": BULB_COLOUR,
+                 "fire": unreal.Color(r=255, g=128, b=48, a=255), "lantern": unreal.Color(r=255, g=166, b=84, a=255)}
+
+# the glass of a lamp that burns: the cage's own lamp glass
+LAMP_GLASS = "/Game/Gut/Materials/MI_Gut_Lamp"
+
+# a light with this tag wavers as a fire does (ATownGameMode::UpdateFires)
+FIRE_TAG = "TownFire"
+
+# the bulb that hangs wherever a list says a bulb is 'hung'
+HUNG_BULB = "main_bulb"
+
 DEEDS = {"": unreal.TownDeed.NONE, "fight": unreal.TownDeed.FIGHT, "fight_afresh": unreal.TownDeed.FIGHT_AFRESH,
          "spar": unreal.TownDeed.SPAR, "bet": unreal.TownDeed.BET, "own": unreal.TownDeed.OWN, "go": unreal.TownDeed.GO,
          "buy": unreal.TownDeed.BUY, "borrow": unreal.TownDeed.BORROW, "repay": unreal.TownDeed.REPAY,
@@ -183,6 +196,21 @@ def model(name):
         box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z))
 
     return mesh
+
+
+def glow_of(name):
+    """Where a model made in Mixar glows, and which way that looks, in the model's own axes as the level has them
+    (centimetres): written beside the model by Tools/light_vehicle_lamps.py's measuring. None for a model that does not.
+    Blender's -Y is the level's +Y for these models, and its X and Z are the level's."""
+    source = os.path.join(MIXAR, name, name + ".glow.json")
+
+    if not os.path.exists(source):
+        return None
+
+    glow = json.load(open(source))
+    centre, look = glow["centre"], glow["look"]
+
+    return unreal.Vector(centre[0] * 100.0, -centre[1] * 100.0, centre[2] * 100.0), unreal.Vector(look[0], -look[1], look[2])
 
 
 def painted(name, roughness):
@@ -599,10 +627,10 @@ def main():
 
         return meshes[name]
 
-    def put(name, where, yaw, kind, blocking, scale=1.0):
+    def put(name, where, yaw, kind, blocking, scale=1.0, pitch=0.0):
         """Puts a model at a place in the level, turned, and made bigger or smaller all ways alike. With blocking, the place
-        keeps where it stands."""
-        actor = actors.spawn_actor_from_object(known(name), where, unreal.Rotator(roll=0.0, pitch=0.0, yaw=yaw))
+        keeps where it stands. `pitch` tips its own front end up, for something long that lies up a slope."""
+        actor = actors.spawn_actor_from_object(known(name), where, unreal.Rotator(roll=0.0, pitch=pitch, yaw=yaw))
         part = actor.get_editor_property("static_mesh_component")
 
         if scale != 1.0:
@@ -625,7 +653,7 @@ def main():
 
         return actor
 
-    def stand(name, x, y, yaw, base=None, kind="Thing", blocking=True, scale=1.0):
+    def stand(name, x, y, yaw, base=None, kind="Thing", blocking=True, scale=1.0, pitch=0.0):
         """Stands a model with the middle of what it covers at a place on the map and its lowest point on the ground there
         (or on `base`), `scale` times its own size. Returns the actor, how high it then reaches, and half its size."""
         box = known(name).get_bounding_box()
@@ -639,7 +667,7 @@ def main():
 
         want = place(x, y, base)
         where = unreal.Vector(want.x - (x0 + x1) * 0.5, want.y - (y0 + y1) * 0.5, want.z - low)
-        actor = put(name, where, yaw, kind, blocking and want.z - place(x, y).z < HEAD, scale)
+        actor = put(name, where, yaw, kind, blocking and want.z - place(x, y).z < HEAD, scale, pitch)
 
         return actor, (want.z + high - low) / 100.0 + origin["z"], unreal.Vector((x1 - x0) * 0.5, (y1 - y0) * 0.5, (high - low) * 0.5)
 
@@ -712,26 +740,121 @@ def main():
 
         for index in range(pieces):
             share = (index + 0.5) / pieces
-            stand(entry["model"], x0 + (x1 - x0) * share, y0 + (y1 - y0) * share, yaw, None, entry["label"], False)
+            middle_y = y0 + (y1 - y0) * share
+
+            # 'slope': a long piece lies along the ground it stands on, where that climbs, and is not stepped up it: its
+            # middle on the ground under its middle, its north end tipped up as the ground is
+            if entry.get("slope") and long_is_x and middle_y > alley["from_y"]:
+                tip = math.degrees(math.atan(alley["rise_per_metre"])) * math.cos(math.radians(yaw))
+                piece_actor = stand(entry["model"], x0 + (x1 - x0) * share, middle_y, yaw, height(middle_y), entry["label"], False, pitch=tip)[0]
+            else:
+                piece_actor = stand(entry["model"], x0 + (x1 - x0) * share, middle_y, yaw, None, entry["label"], False)[0]
+
+            # 'hollow': walked under, and looked through by the camera that follows whoever walks: the model's own solid
+            # shape is one box round all of it
+            if entry.get("hollow"):
+                piece_actor.get_editor_property("static_mesh_component").set_collision_profile_name("NoCollision")
+
+        begin, end = place(x0, y0), place(x1, y1)
+        lies = math.degrees(math.atan2(end.y - begin.y, end.x - begin.x))
+
+        # something carried on posts is walked under between them: each piece's 'posts' are where they stand along it from
+        # its middle, and 'post' is half a post's size along the run and across it
+        if entry.get("posts"):
+            half_along, half_across = [size * 100.0 for size in entry["post"]]
+            along = unreal.Vector(end.x - begin.x, end.y - begin.y, 0.0) * (1.0 / max(1.0, math.hypot(end.x - begin.x, end.y - begin.y)))
+
+            for index in range(pieces):
+                share = (index + 0.5) / pieces
+
+                for post in entry["posts"]:
+                    blocks.append((begin.x + (end.x - begin.x) * share + along.x * post * 100.0, begin.y + (end.y - begin.y) * share + along.y * post * 100.0,
+                                   half_along, half_across, lies))
+
+            continue
 
         # the whole run is one thing to walk round
-        begin, end = place(x0, y0), place(x1, y1)
-        blocks.append(((begin.x + end.x) * 0.5, (begin.y + end.y) * 0.5, length * 50.0, thick * 0.5, math.degrees(math.atan2(end.y - begin.y, end.x - begin.x))))
+        blocks.append(((begin.x + end.x) * 0.5, (begin.y + end.y) * 0.5, length * 50.0, thick * 0.5, lies))
 
     lamps = []
+    lit = []
+
+    def light(where, spec, look=None):
+        """A light, as a list describes it: how bright (candelas), how far it reaches (metres), what burns in it, whether it
+        throws shadows, whether it wavers. A 'spot' looks the way given; anything else shines all round."""
+        spot = spec.get("kind") == "spot" and look is not None
+        turn = unreal.MathLibrary.make_rot_from_x(look) if spot else unreal.Rotator(roll=0.0, pitch=0.0, yaw=0.0)
+        made = actors.spawn_actor_from_class(unreal.SpotLight if spot else unreal.PointLight, where, turn)
+        part = made.get_editor_property("light_component")
+        part.set_editor_property("intensity_units", unreal.LightUnits.CANDELAS)
+        part.set_editor_property("intensity", float(spec["candela"]))
+        part.set_editor_property("light_color", LIGHT_COLOURS[spec.get("colour", "bulb")])
+        part.set_editor_property("attenuation_radius", float(spec["reach"]) * 100.0)
+        part.set_editor_property("source_radius", float(spec.get("size", 0.05)) * 100.0)
+        part.set_editor_property("cast_shadows", bool(spec.get("shadows", False)))
+        part.set_editor_property("volumetric_scattering_intensity", float(spec.get("haze", 0.8)))
+
+        if spot:
+            part.set_editor_property("inner_cone_angle", float(spec.get("cone", 60.0)) * 0.45)
+            part.set_editor_property("outer_cone_angle", float(spec.get("cone", 60.0)))
+
+        if spec.get("flicker"):
+            made.set_editor_property("tags", [unreal.Name(FIRE_TAG)])
+
+        label(made, "Light", spec.get("note", spec.get("colour", "bulb")).replace(" ", "_").replace("'", ""))
+
+        return made
 
     for entry in listed["things"]:
         # 'z' is the ground it stands on where that is not the street's, and 'scale' how much bigger than itself it is made
+        own_block = entry.get("block")
+        size = float(entry.get("scale", 1.0))
         actor, top, _ = stand(entry["model"], entry["x"], entry["y"], entry.get("yaw", (entry["x"] * 37.0 + entry["y"] * 91.0) % 360.0),
-                              base=entry.get("z"), scale=float(entry.get("scale", 1.0)))
+                              base=entry.get("z"), scale=size, blocking=own_block is None and entry.get("blocking", True))
+        part = actor.get_editor_property("static_mesh_component")
+
+        # 'block' is what of it stops a walker, where that is not everything of it that is lower than a head: a shop is
+        # walked up to under its awnings (x from and to, y from and to, on the map)
+        if own_block:
+            south_west, north_east = place(own_block["x"][0], own_block["y"][0]), place(own_block["x"][1], own_block["y"][1])
+            blocks.append(((south_west.x + north_east.x) * 0.5, (south_west.y + north_east.y) * 0.5,
+                           abs(north_east.x - south_west.x) * 0.5, abs(north_east.y - south_west.y) * 0.5, 0.0))
 
         # somebody stands inside it (the window's stall): the model's own solid shape, which stops the camera at everything
         # else, would push them out of it
         if entry.get("hollow"):
-            actor.get_editor_property("static_mesh_component").set_collision_profile_name("NoCollision")
+            part.set_collision_profile_name("NoCollision")
 
         if entry.get("lamp"):
-            lamps.append((entry["x"], entry["y"], top))
+            lamps.append((entry["x"], entry["y"], top, actor))
+
+        # 'light' is what the thing burns with, where the model itself glows (a work lamp's glass, the embers in a drum):
+        # the light is put at the glow, so nothing is lit by something that looks dark
+        if entry.get("light"):
+            glow = glow_of(entry["model"])
+
+            if not glow:
+                raise RuntimeError("{} is given a light, and the model has nothing that glows to put it at".format(entry["model"]))
+
+            centre, look = glow
+            turn = actor.get_actor_transform()
+            where = unreal.MathLibrary.transform_location(turn, centre)
+            way = unreal.MathLibrary.transform_direction(turn, look)
+            spec = entry["light"]
+
+            # a little out from the glass, or up from the embers, so that the glow itself is not what shades it
+            where = where + way * (float(spec.get("off", 0.12)) * 100.0)
+
+            # 'aim' turns a lamp on something: a place on the map and how high up it (x, y, metres over the ground there)
+            if spec.get("aim"):
+                aimed = place(spec["aim"][0], spec["aim"][1], height(spec["aim"][1]) + spec["aim"][2]) - where
+                way = aimed * (1.0 / max(1.0, aimed.length()))
+
+            light(where, spec, way)
+
+            # whatever burns in it does not throw its own shadow
+            part.set_editor_property("cast_shadow", not spec.get("shadows", False))
+            lit.append(entry["model"])
 
     # bills and painted words. Each is a picture thrown onto whatever stands there: 'faces' is the way the surface looks,
     # 'out' how far that surface stands toward the looker from the place given, 'up' the height of the picture's middle.
@@ -803,8 +926,20 @@ def main():
         log("pasted {} bills along {}".format(count, entry["label"]))
 
     # light: bare bulbs, and the street lamps that still burn
+    hung = glow_of(HUNG_BULB) if any(entry.get("hung") for entry in listed["bulbs"]) else None
+
     for entry in listed["bulbs"]:
         where = place(entry["x"], entry["y"], height(entry["y"]) + entry["up"])
+
+        # a bulb that is 'hung' is seen: the bulb on its flex, with its glass where the light is. It wants something over it
+        # to hang from, which is for whoever writes the list to see to.
+        if entry.get("hung") and hung:
+            bulb_model = actors.spawn_actor_from_object(known(HUNG_BULB), where - hung[0], unreal.Rotator(roll=0.0, pitch=0.0, yaw=(entry["x"] * 53.0 + entry["y"] * 29.0) % 360.0))
+            shape = bulb_model.get_editor_property("static_mesh_component")
+            shape.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+            shape.set_editor_property("mobility", unreal.ComponentMobility.STATIC)
+            shape.set_editor_property("cast_shadow", False)
+            label(bulb_model, "Thing", HUNG_BULB)
         bulb = actors.spawn_actor_from_class(unreal.PointLight, where, unreal.Rotator(roll=0.0, pitch=0.0, yaw=0.0))
         part = bulb.get_editor_property("light_component")
         part.set_editor_property("intensity_units", unreal.LightUnits.CANDELAS)
@@ -816,19 +951,37 @@ def main():
         part.set_editor_property("volumetric_scattering_intensity", 0.6)
         label(bulb, "Bulb", entry.get("note", "bulb").replace(" ", "_").replace("'", ""))
 
-    for x, y, top in lamps:
-        where = place(x, y + 0.9, top - 0.25)
-        lamp = actors.spawn_actor_from_class(unreal.SpotLight, where, unreal.Rotator(roll=0.0, pitch=-90.0, yaw=0.0))
+    # A street lamp that burns is a lantern on a post: its bulb glows, and the light is in the lantern, where the bulb is.
+    # (Until 2026-11-18 the light hung a metre to one side of a lamp whose glass was dark, and lit the street from nothing.)
+    glass = unreal.load_asset(LAMP_GLASS)
+
+    for x, y, top, post in lamps:
+        shape = post.get_editor_property("static_mesh_component")
+        names = [str(name) for name in shape.get_material_slot_names()]
+        bulbs = [index for index, name in enumerate(names) if "bulb" in name.lower()]
+
+        if not bulbs or not glass:
+            raise RuntimeError("{} has no bulb to light: its materials are {}".format(post.get_actor_label(), names))
+
+        for index in bulbs:
+            shape.set_material(index, glass)
+
+        # the lantern's own frame would shut the light in
+        shape.set_editor_property("cast_shadow", False)
+
+        lamp = actors.spawn_actor_from_class(unreal.PointLight, place(x, y, top - 0.55), unreal.Rotator(roll=0.0, pitch=0.0, yaw=0.0))
         part = lamp.get_editor_property("light_component")
         part.set_editor_property("intensity_units", unreal.LightUnits.CANDELAS)
-        part.set_editor_property("intensity", 22000.0)
+        part.set_editor_property("intensity", 12000.0)
         part.set_editor_property("light_color", unreal.Color(r=255, g=205, b=150, a=255))
         part.set_editor_property("attenuation_radius", 2400.0)
-        part.set_editor_property("inner_cone_angle", 24.0)
-        part.set_editor_property("outer_cone_angle", 52.0)
+        part.set_editor_property("source_radius", 9.0)
         part.set_editor_property("cast_shadows", True)
         part.set_editor_property("volumetric_scattering_intensity", 1.5)
         label(lamp, "Lamp", "street_lamp")
+
+    if lit:
+        log("lit where they glow: {}".format(", ".join("{} {}".format(lit.count(name), name) for name in sorted(set(lit)))))
 
     # where the player comes in
     start = listed["start"]

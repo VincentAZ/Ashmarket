@@ -994,6 +994,23 @@ public:
 	/** Who is for sale, or will sign, at the Block today */
 	void GetBlockOffers(TArray<FGutStableFighter>& OutOffers) const;
 
+	/**
+	 *  The same for a stable that stands as the one given does. It reads nothing but the cage's own rules, so the Block's
+	 *  clerk in the town can ask it of the cage's defaults without the cage being open.
+	 */
+	void GetBlockOffersFor(const FGutStableState& State, TArray<FGutStableFighter>& OutOffers) const;
+
+	/** Makes a stable of what an owner comes with, for somebody who had none */
+	void BeginStableState(FGutStableState& State, int32 Seed) const;
+
+	/**
+	 *  Writes whoever is at that place on the day's list into the stable, and takes their price out of its water.
+	 *  Returns false, and says why, if they are bought already, the yard is full, or there is not the water.
+	 */
+	bool TakeBlockOffer(FGutStableState& State, const FGutStableFighter& Offer, int32 OfferIndex, FString* Why = nullptr) const;
+
+	float GetStableStartingWater() const { return StableStartingWater; }
+
 	/** The fights on offer today: each opponent as rank times 100 plus place on its ladder */
 	void GetStableOffers(TArray<int32>& OutAgainst) const;
 
