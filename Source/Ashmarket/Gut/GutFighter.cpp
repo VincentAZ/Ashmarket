@@ -4631,7 +4631,9 @@ void AGutFighter::UpdateWeaponMesh()
 			const FQuat Turn = FRotationMatrix::MakeFromZX(-Along, Outward).ToQuat() * FRotationMatrix::MakeFromZX(FVector::ZAxisVector, Face).ToQuat().Inverse();
 
 			WeaponMesh->AttachToComponent(Shown, FAttachmentTransformRules::SnapToTargetNotIncludingScale, ArmBone);
-			WeaponMesh->SetRelativeTransform(FTransform(Turn, (Along * 0.55f) + (Outward.GetSafeNormal() * 7.0f), Weapon->GripTransform.GetScale3D()));
+			// Nearer the elbow than the hand, and well clear of the arm: a sign a metre across, held up beside the head in a
+			// stance, went through the shoulder's armor and the side of the head when it sat 7 cm off the forearm's middle.
+			WeaponMesh->SetRelativeTransform(FTransform(Turn, (Along * 0.45f) + (Outward.GetSafeNormal() * 13.0f), Weapon->GripTransform.GetScale3D()));
 		}
 		else if (HasBody())
 		{

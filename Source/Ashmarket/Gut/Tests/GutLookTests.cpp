@@ -745,6 +745,90 @@ bool FGutFitCollarsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+/**
+ *  Ashmarket.Fit.Shield   Not a test: pictures. The Butcher of Lane Four, in his own body and armor with the stop-sign
+ *                         strapped on, standing and with his guard up, from four sides. For seeing whether the shield
+ *                         goes through him anywhere. Rendered runs only; pictures are shield_<pose>_<side>.png.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGutFitShieldTest, "Ashmarket.Fit.Shield", GutTests::Flags)
+
+bool FGutFitShieldTest::RunTest(const FString& Parameters)
+{
+	using namespace GutTests;
+	using namespace GutLookTests;
+	using FStep = FScriptCommand::FStep;
+
+	if (!FApp::CanEverRender())
+	{
+		return true;
+	}
+
+	if (!OpenCage(this))
+	{
+		return false;
+	}
+
+	TArray<FStep> Steps;
+
+	Steps.Add({ 0.3f, [this](const FFight& Fight)
+	{
+		DisableEnemyBrain(this, Fight);
+
+		Fight.GameMode->StartFight();
+
+		PlaceFaceToFace(Fight);
+
+		const UGutLadderData* Ladder = LoadObject<UGutLadderData>(nullptr, TEXT("/Game/Gut/Ladder/DA_Gut_ButcherLadder"));
+		const FGutLadderRung* Butcher = Ladder ? Ladder->Rungs.FindByPredicate([](const FGutLadderRung& Rung) { return Rung.OpponentName.ToString().Contains(TEXT("Lane Four")); }) : nullptr;
+
+		if (!TestNotNull(TEXT("The Butcher of Lane Four is on his ladder"), Butcher))
+		{
+			return;
+		}
+
+		if (!Butcher->Body.IsNull())
+		{
+			Fight.Player->SetBody(Butcher->Body, Fight.Player->GetBodyRetargeter());
+		}
+
+		Fight.Player->ClearArmor();
+
+		for (UGutArmorData* Piece : Butcher->Armor)
+		{
+			Fight.Player->WearArmor(Piece);
+		}
+
+		Fight.Player->EquipWeapon(Butcher->Weapon);
+
+		// the other one out of the picture
+		PlaceAt(Fight.Enemy, 550.0f, 350.0f, 180.0f);
+	} });
+
+	static const FView Sides[] =
+	{
+		{ TEXT("1_front"), FVector(190.0f, 0.0f, -10.0f), FVector(0.0f, 0.0f, -25.0f), 50.0f, FName("neck_01") },
+		{ TEXT("2_shield_side"), FVector(20.0f, -190.0f, -10.0f), FVector(0.0f, 0.0f, -25.0f), 50.0f, FName("neck_01") },
+		{ TEXT("3_other_side"), FVector(20.0f, 190.0f, -10.0f), FVector(0.0f, 0.0f, -25.0f), 50.0f, FName("neck_01") },
+		{ TEXT("4_behind"), FVector(-190.0f, -30.0f, 10.0f), FVector(0.0f, 0.0f, -25.0f), 50.0f, FName("neck_01") },
+	};
+
+	for (const bool bGuard : { false, true })
+	{
+		Steps.Add({ 1.0f, [bGuard](const FFight& Fight) { Fight.Player->SetBlocking(bGuard); } });
+
+		for (const FView& View : Sides)
+		{
+			Steps.Add({ 1.0f, [View](const FFight& Fight) { LookFrom(Fight, View); } });
+			Steps.Add({ 0.6f, [View, bGuard](const FFight& Fight) { Screenshot(FString::Printf(TEXT("shield_%s_%s"), bGuard ? TEXT("guard") : TEXT("stance"), View.Name)); } });
+			Steps.Add({ 0.2f, [](const FFight& Fight) {} });
+		}
+	}
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScriptCommand(this, MoveTemp(Steps)));
+
+	return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGutLookFightTest, "Ashmarket.Film.Fight", GutTests::Flags)
 
 /**
