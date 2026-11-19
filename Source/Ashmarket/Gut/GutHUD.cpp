@@ -400,9 +400,9 @@ void AGutHUD::DrawHUD()
 		{
 			const bool bLeave = GameMode->IsLeaveChosen();
 
-			DrawLabel(FString(bLeave ? TEXT("") : TEXT(">  ")) + TEXT("The next fight on the bill"), CenterX, PromptY, 26, bLeave ? GutHUDColors::Text : GutHUDColors::Warning, true);
+			DrawLabel(FString(bLeave ? TEXT("") : TEXT(">  ")) + (GameMode->IsWindowNightOver() ? TEXT("The night's reckoning") : TEXT("The next fight on the bill")), CenterX, PromptY, 26, bLeave ? GutHUDColors::Text : GutHUDColors::Warning, true);
 			DrawLabel(FString(bLeave ? TEXT(">  ") : TEXT("")) + TEXT("Back down the stairs to the street"), CenterX, PromptY + 42.0f, 26, bLeave ? GutHUDColors::Warning : GutHUDColors::Text, true);
-			DrawLabel(TEXT("W / S or D-pad: move the arrow          Enter or Start: do it"), CenterX, PromptY + 92.0f, 17, GutHUDColors::Text, true);
+			DrawLabel(TEXT("W / S or D-pad: move the arrow          Enter or Start: do it          Backspace or B button: the street"), CenterX, PromptY + 92.0f, 17, GutHUDColors::Text, true);
 			return;
 		}
 
@@ -1463,7 +1463,15 @@ void AGutHUD::DrawWindowBetting(const AGutGameMode* GameMode, float CenterX)
 
 	DrawLabel(Side == EGutBetSide::None
 		? TEXT("Left mouse, Enter or A button: watch it with no bet")
-		: TEXT("Left mouse, Enter or A button: place it and watch"), CenterX, 484.0f, 17, GutHUDColors::Text, true);
+		: TEXT("Left mouse, Enter or A button: place it and watch"), CenterX, 478.0f, 17, GutHUDColors::Text, true);
+
+	// and the way out of it, for whoever has thought better of betting or of watching
+	if (GameMode->CanGoBack())
+	{
+		DrawLabel(GameMode->IsAtStable()
+			? TEXT("Backspace or B button: no fight, back to the yard")
+			: TEXT("Backspace or B button: no bet, back down the stairs to the street"), CenterX, 504.0f, 17, GutHUDColors::Text, true);
+	}
 }
 
 float AGutHUD::DrawWindowResult(const AGutGameMode* GameMode, float CenterX)
@@ -2018,9 +2026,14 @@ void AGutHUD::DrawStaggerPrompt(const AGutFighter* Player, const AGutFighter* En
 		DrawLabel(FString::Printf(TEXT("%.1f"), Enemy->GetStaggerTimeRemaining()), CenterX, 250.0f, 22, GutHUDColors::Text, true);
 
 		// in reach is enough to show the inputs: a press made while the player is still busy is buffered
-		const FString Prompt = Player->GetGapTo(Enemy) <= Player->GetFinisherRange()
-			? TEXT("Light attack: clean kill     Heavy attack: slow kill")
-			: TEXT("Get close to finish it");
+		// with the spikes or the cable behind it, the heavy blow sends it onto them
+		const AGutHazard* Behind = Player->FindDriveHazard(Enemy);
+
+		const FString Prompt = Behind
+			? FString::Printf(TEXT("Light attack: clean kill     Heavy attack: onto the %s"), *Behind->GetDisplayName().ToString().ToLower())
+			: (Player->GetGapTo(Enemy) <= Player->GetFinisherRange()
+				? FString(TEXT("Light attack: clean kill     Heavy attack: slow kill"))
+				: FString(TEXT("Get close to finish it")));
 
 		DrawLabel(Prompt, CenterX, 290.0f, 20, GutHUDColors::Text, true);
 	}
@@ -2226,8 +2239,8 @@ void AGutHUD::DrawLabel(const FString& Text, float X, float Y, int32 Size, const
 	// A line too long for its place is set smaller until it fits.
 	const FVector2D At(X * UIScale, Y * UIScale);
 
-	float Left = 12.0f * UIScale;
-	float Right = Canvas->SizeX - (12.0f * UIScale);
+	float Left = 24.0f * UIScale;
+	float Right = Canvas->SizeX - (24.0f * UIScale);
 
 	if (LastPanel.bIsValid && LastPanel.IsInside(At))
 	{
@@ -2243,7 +2256,9 @@ void AGutHUD::DrawLabel(const FString& Text, float X, float Y, int32 Size, const
 		Room = FMath::Min(Room, MaxWidth);
 	}
 
-	const float Width = MeasureLabel(Text, Size);
+	// a little more than it measures: big type comes out a few parts in a hundred wider than the measure says, which
+	// was enough to put the ends of a long headline off the screen
+	const float Width = MeasureLabel(Text, Size) * 1.06f;
 
 	float Shrink = 1.0f;
 

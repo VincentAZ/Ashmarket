@@ -9,6 +9,7 @@
 #include "Sound/ReverbEffect.h"
 #include "Sound/SoundAttenuation.h"
 #include "Sound/SoundBase.h"
+#include "Sound/SoundWave.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GutSound)
 
@@ -16,6 +17,10 @@ namespace GutSoundConstants
 {
 	/** Where Tools/import_gut_sound.sh leaves the list of sounds */
 	const TCHAR* DataPath = TEXT("/Game/Gut/Sound/DA_Gut_Sound.DA_Gut_Sound");
+
+	/** A bed stays on one recording at least this long, however short the recording, and takes this long to go over to the next */
+	const float BedLeastTime = 24.0f;
+	const float BedCrossFade = 4.0f;
 }
 
 UGutSoundSubsystem* UGutSoundSubsystem::Get(const UObject* WorldContextObject)
@@ -59,10 +64,123 @@ void UGutSoundSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 			continue;
 		}
 
-		if (UAudioComponent* Playing = Loop(Kind, FVector::ZeroVector))
+		StartBed(Kind, 1.0f, 0.5f);
+	}
+}
+
+int32 UGutSoundSubsystem::StartBed(FName Kind, float Volume, float FadeIn)
+{
+	if (!Has(Kind) || Volume <= 0.0f)
+	{
+		return INDEX_NONE;
+	}
+
+	FGutSoundBed& Bed = Beds.AddDefaulted_GetRef();
+
+	Bed.Kind = Kind;
+	Bed.Volume = Volume;
+
+	ChangeBed(Bed, FadeIn);
+
+	return Beds.Num() - 1;
+}
+
+void UGutSoundSubsystem::StopBed(int32 Bed, float FadeOut)
+{
+	if (!Beds.IsValidIndex(Bed) || Beds[Bed].bStopped)
+	{
+		return;
+	}
+
+	Beds[Bed].bStopped = true;
+
+	if (UAudioComponent* Playing = Beds[Bed].Playing)
+	{
+		Playing->FadeOut(FadeOut, 0.0f);
+	}
+
+	Beds[Bed].Playing = nullptr;
+}
+
+void UGutSoundSubsystem::ChangeBed(FGutSoundBed& Bed, float Fade)
+{
+	const FGutSoundSet* Set = nullptr;
+
+	USoundBase* Sound = Choose(Bed.Kind, Set, false);
+
+	if (!Sound)
+	{
+		Bed.bStopped = true;
+		return;
+	}
+
+	// a recording made to go round is as long as its wave, whatever it says about going on for ever
+	const USoundWave* Wave = Cast<USoundWave>(Sound);
+	const float Length = Wave ? FMath::Max(Wave->Duration, 1.0f) : FMath::Max(Sound->GetDuration(), 1.0f);
+
+	// whole times round, so that a short one is heard more than once before it gives way, and begun somewhere in its
+	// first half, so that the same recording does not always open the same way
+	const float Hold = Length * FMath::CeilToFloat(GutSoundConstants::BedLeastTime / Length);
+	const float From = Bed.Changes > 0 ? FMath::FRandRange(0.0f, Length * 0.5f) : 0.0f;
+
+	UAudioComponent* Next = UGameplayStatics::CreateSound2D(this, Sound, Set->Volume * Bed.Volume, 1.0f, 0.0f, nullptr, false, false);
+
+	if (!Next)
+	{
+		Bed.bStopped = true;
+		return;
+	}
+
+	if (UAudioComponent* Last = Bed.Playing)
+	{
+		Last->FadeOut(Fade, 0.0f);
+	}
+
+	Next->FadeIn(Fade, 1.0f, From);
+
+	Bed.Playing = Next;
+	Bed.ChangeAt = GetWorld()->GetTimeSeconds() + Hold;
+
+	++Bed.Changes;
+	++TimesPlayed.FindOrAdd(Bed.Kind);
+}
+
+void UGutSoundSubsystem::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (!GetWorld())
+	{
+		return;
+	}
+
+	const double Now = GetWorld()->GetTimeSeconds();
+
+	for (FGutSoundBed& Bed : Beds)
+	{
+		if (Bed.bStopped || Now < Bed.ChangeAt)
 		{
-			AlwaysPlaying.Add(Playing);
+			continue;
 		}
+
+		// a kind with one recording has nothing to change to: it goes on round
+		const FGutSoundSet* Set = Data ? Data->Sets.Find(Bed.Kind) : nullptr;
+
+		if (!Set || Set->Sounds.Num() < 2)
+		{
+			Bed.ChangeAt = Now + 3600.0;
+			continue;
+		}
+
+		ChangeBed(Bed, GutSoundConstants::BedCrossFade);
+	}
+}
+
+void UGutSoundSubsystem::HurryBeds()
+{
+	for (FGutSoundBed& Bed : Beds)
+	{
+		Bed.ChangeAt = 0.0;
 	}
 }
 

@@ -21,6 +21,7 @@
  *  Ashmarket.Gut.HazardDeath       hazards that are switched off stay off; the cable kills the player and loses the fight
  *  Ashmarket.Gut.HazardAvoidance   the opponent walks round the live cable to reach the player, and never touches it
  *  Ashmarket.Gut.CageFinish        one of the cage's own, beaten in front of the spikes by another, is knocked onto them
+ *  Ashmarket.Gut.PlayerCageFinish  the player's heavy blow knocks a beaten opponent onto the spikes behind it, and is told it can
  *  Ashmarket.Gut.Flood             the valve opens before round 4 and the water rises; over the ankles it slows everybody,
  *                                  shortens a dodge and carries the cable's current; switched off, the pool is dry again
  *
@@ -502,6 +503,88 @@ bool FGutCageFinishTest::RunTest(const FString& Parameters)
 	Steps.Add({ 0.5f, [](const FFight& Fight)
 	{
 		Screenshot(TEXT("22_driven_onto_the_spikes"));
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScriptCommand(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGutPlayerCageFinishTest, "Ashmarket.Gut.PlayerCageFinish", GutTests::Flags)
+
+bool FGutPlayerCageFinishTest::RunTest(const FString& Parameters)
+{
+	using namespace GutTests;
+	using namespace GutHazardTests;
+	using FStep = FScriptCommand::FStep;
+
+	if (!OpenCage(this))
+	{
+		return false;
+	}
+
+	TArray<FStep> Steps;
+	TSharedRef<bool> bReady = MakeShared<bool>(false);
+
+	// the player's own fighter, with a beaten opponent between it and the spikes while they are out
+	Steps.Add({ 0.2f, [this, bReady](const FFight& Fight)
+	{
+		*bReady = HasHazards(this, Fight);
+
+		if (!*bReady)
+		{
+			return;
+		}
+
+		// the opponent does nothing of its own
+		if (AGutBrainController* Brain = Cast<AGutBrainController>(Fight.Enemy->GetController()))
+		{
+			Brain->SetBrainEnabled(false);
+		}
+
+		Fight.GameMode->StartFight();
+
+		SetFightTime(Fight, Fight.GameMode->GetRoundStartTime(2) + 1.0f);
+
+		TestEqual(TEXT("The spikes are out"), FindHazard<AGutSpikeWall>(Fight)->GetHazardState(), EGutHazardState::Live);
+
+		// the opponent's back to the spikes, two metres off them, and the player in front of it, in reach
+		PlaceAt(Fight.Enemy, 0.0f, SpikeWallY + 245.0f, 90.0f);
+		PlaceAt(Fight.Player, 0.0f, SpikeWallY + 245.0f + Fight.Player->GetFinisherRange() - 10.0f, -90.0f);
+
+		TestNull(TEXT("An opponent on its feet is not offered to the spikes"), Fight.Player->FindDriveHazard(Fight.Enemy));
+
+		Fight.Enemy->SetHealth(1.0f);
+
+		if (const FGutAttackDef* Blow = Fight.Player->GetNextLightAttack())
+		{
+			Fight.Enemy->ReceiveAttack(Fight.Player, *Blow);
+		}
+
+		TestTrue(TEXT("It is beaten and still standing"), Fight.Enemy->IsStaggered());
+		TestFalse(TEXT("And is not on the spikes yet"), FindHazard<AGutSpikeWall>(Fight)->IsTouching(Fight.Enemy));
+		TestTrue(*FString::Printf(TEXT("The player is told the spikes are behind it (%.0f cm off, reach %.0f)"), Fight.Player->GetGapTo(Fight.Enemy), Fight.Player->GetFinisherRange()),
+			Fight.Player->FindDriveHazard(Fight.Enemy) == FindHazard<AGutSpikeWall>(Fight));
+
+		// the heavy blow, from the player's own hand
+		TestTrue(TEXT("The heavy blow is thrown"), Fight.Player->TryHeavyAttack());
+	} });
+
+	Steps.Add({ 3.0f, [this, bReady](const FFight& Fight)
+	{
+		if (!*bReady) { return; }
+
+		TestFalse(TEXT("The beaten opponent is dead"), Fight.Enemy->IsAlive());
+		TestTrue(TEXT("It was sent reeling by the blow"), Fight.Enemy->GetTimesDriven() >= 1);
+		TestTrue(TEXT("The spikes killed it"), Fight.Enemy->GetKillingHazard() == FindHazard<AGutSpikeWall>(Fight));
+		TestFalse(TEXT("And no finisher did"), Fight.Enemy->WasFinished());
+		TestTrue(TEXT("The player is credited"), Fight.Enemy->GetKiller() == Fight.Player);
+		TestTrue(TEXT("The fight is the player's"), Fight.GameMode->GetPhase() == EGutFightPhase::PlayerWon);
+	} });
+
+	Steps.Add({ 0.5f, [](const FFight& Fight)
+	{
+		Screenshot(TEXT("23_the_player_knocks_one_onto_the_spikes"));
 	} });
 
 	ADD_LATENT_AUTOMATION_COMMAND(FScriptCommand(this, MoveTemp(Steps)));

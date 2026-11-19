@@ -822,6 +822,16 @@ public:
 	void GoToDoor();
 
 	/**
+	 *  The key that backs out of whatever screen is up, where there is somewhere to back out to: from the betting to the
+	 *  street with no bet (or to the yard, for an owner), from a card to the street, from a fight that was watched to
+	 *  the street. Nobody is kept on a screen because the only key it listens to goes on.
+	 */
+	void HandleBack();
+
+	/** True if the back key does something on the screen that is up, for the screen to say so */
+	bool CanGoBack() const;
+
+	/**
 	 *  Comes to the cage to bet, not to fight, from the first night: the fights on the bill are between the ladder's own fighters,
 	 *  watched from the wall, with water on them and whatever has been arranged. The seed fixes who is on the bills.
 	 */
@@ -872,6 +882,9 @@ public:
 	/** Arranges for the fighter in a corner (0 or 1) to lose the fight on the card, or with None arranges nothing */
 	UFUNCTION(BlueprintCallable, Category="Gut|Window")
 	void SetWindowFix(EGutFix Fix, int32 Corner);
+
+	/** Turns the gambler's night over: a new bill, the sums begun again. Done on the way out of a night, whichever way that is. */
+	void TurnWindowNight();
 
 	/** Leaves the night's reckoning for the next night's first fight */
 	UFUNCTION(BlueprintCallable, Category="Gut|Window")

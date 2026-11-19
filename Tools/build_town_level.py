@@ -1166,6 +1166,7 @@ def main():
 
     data.set_editor_property("name", listed["name"])
     data.set_editor_property("errand", listed.get("errand", []))
+    data.set_editor_property("beds", [unreal.Name(bed) for bed in listed.get("beds", [])])
     data.set_editor_property("people", people)
     data.set_editor_property("doors", doors)
     data.set_editor_property("arrivals", arrivals)

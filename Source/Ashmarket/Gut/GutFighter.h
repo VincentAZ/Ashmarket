@@ -975,6 +975,13 @@ public:
 	bool TryFinisher(EGutFinisherStyle Style);
 
 	/**
+	 *  The live hazard that a heavy blow thrown from where this fighter stands would send a beaten opponent onto: the
+	 *  spikes or the cable, with the opponent between. None if the opponent is not beaten, is out of reach, or nothing
+	 *  live lies that way. Whoever plays a fighter is offered it; the cage's own choose for themselves.
+	 */
+	class AGutHazard* FindDriveHazard(const AGutFighter* Target) const;
+
+	/**
 	 *  Throws the heavy attack at a staggered opponent to drive it, not to finish it: a blow that lands sends it reeling
 	 *  the way the blow was going, and the cage ends it if that is onto something live. Returns true if the blow started now.
 	 */

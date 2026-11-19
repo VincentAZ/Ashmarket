@@ -150,6 +150,18 @@ bool FGutWindowTest::RunTest(const FString& Parameters)
 
 		TestEqual(TEXT("The first line leads to the betting"), GameMode->GetPhase(), EGutFightPhase::Betting);
 
+		// whoever has thought better of it backs out: with no street to go down to, that is the card again
+		TestTrue(TEXT("The betting can be backed out of"), GameMode->CanGoBack());
+
+		GameMode->HandleBack();
+
+		TestEqual(TEXT("Backing out of the betting is the card again"), GameMode->GetPhase(), EGutFightPhase::Card);
+		TestEqual(TEXT("With nothing put on anybody"), GameMode->GetBetSide(), EGutBetSide::None);
+
+		GameMode->ActivateCardSelection();
+
+		TestEqual(TEXT("And the betting can be come to again"), GameMode->GetPhase(), EGutFightPhase::Betting);
+
 		// the odds shorten as the water goes on
 		const float Step = GameMode->GetLadder()->BetStep;
 

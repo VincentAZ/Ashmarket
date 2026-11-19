@@ -1191,8 +1191,74 @@ bool AGutGameMode::CanLeaveForStreet() const
 		return IsAtWindow();
 	}
 
-	// not somebody who was caught, who goes into the cage, and not at the end of a night, which has its reckoning first
-	return CanRestart() && WindowSettlement.bSettled && !WindowSettlement.bOwnFight && !WindowSettlement.bCaught && !IsWindowNightOver();
+	// not somebody who was caught, who goes into the cage. At the end of a night the street is still a way out: the night
+	// is reckoned on the way down the stairs.
+	return CanRestart() && WindowSettlement.bSettled && !WindowSettlement.bOwnFight && !WindowSettlement.bCaught;
+}
+
+bool AGutGameMode::CanGoBack() const
+{
+	if (IsStopped() || IsTellingStory())
+	{
+		return false;
+	}
+
+	if (Phase == EGutFightPhase::Betting)
+	{
+		return IsAtWindow() || IsAtStable();
+	}
+
+	return CanLeaveForStreet();
+}
+
+void AGutGameMode::HandleBack()
+{
+	if (!CanGoBack())
+	{
+		return;
+	}
+
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (Phase == EGutFightPhase::Betting)
+	{
+		SetBet(EGutBetSide::None, 0.0f);
+
+		if (IsAtStable())
+		{
+			// the fight that was made is unmade, and the owner is in the yard again
+			UE_LOG(LogGut, Log, TEXT("Stable: backed out of the betting, to the yard"));
+
+			BeginStableCard();
+		}
+		else if (GameInstance->IsStreetOpen())
+		{
+			// no bet and nothing watched. Anything arranged at the card was paid for there, and stays paid.
+			UE_LOG(LogGut, Log, TEXT("Window: backed out of the betting, down to the street"));
+
+			GameInstance->GoToStreet(this);
+		}
+		else
+		{
+			UE_LOG(LogGut, Log, TEXT("Window: backed out of the betting, to the card"));
+
+			BeginWindowCard();
+		}
+
+		return;
+	}
+
+	// a fight that was watched, or a night's reckoning: back is the street
+	bLeaveChosen = true;
+
+	if (Phase == EGutFightPhase::Gate)
+	{
+		LeaveWindowNight();
+	}
+	else
+	{
+		RequestRestart();
+	}
 }
 
 float AGutGameMode::GetMaxStake() const
@@ -1678,6 +1744,12 @@ void AGutGameMode::RequestRestart()
 	// whoever watched and has had enough goes back down to the street: what the fight came to is already written down
 	if (IsLeaveChosen())
 	{
+		// after the last fight on the bill the night is turned over on the way out, as its reckoning would have done
+		if (IsAtWindow() && IsWindowNightOver())
+		{
+			TurnWindowNight();
+		}
+
 		UE_LOG(LogGut, Log, TEXT("Window: back down to the street after the fight"));
 
 		GetGutGameInstance()->GoToStreet(this);

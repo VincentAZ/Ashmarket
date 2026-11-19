@@ -343,6 +343,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place")
 	TArray<FString> Errand;
 
+	/**
+	 *  What the place sounds like under everything else, over the night that every place has: kinds of sound, each a bed
+	 *  that goes from one recording to another (a market, a wet alley). Heard the same wherever the player stands in it.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place")
+	TArray<FName> Beds;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place")
 	TArray<FTownPerson> People;
 

@@ -30,6 +30,12 @@ void ATownHUD::DrawHUD()
 		return;
 	}
 
+	if (Town->IsMapUp())
+	{
+		DrawMap(Town, CenterX);
+		return;
+	}
+
 	// where this is, and what the player has on them
 	if (const UTownPlaceData* Place = Town->GetPlace())
 	{
@@ -72,7 +78,7 @@ void ATownHUD::DrawHUD()
 	}
 
 	// what there is to do here, down the right-hand side, out of the way of the street
-	if (const UTownPlaceData* Place = Town->GetPlace(); Place && !Place->Errand.IsEmpty() && !Town->IsTalking())
+	if (const UTownPlaceData* Place = Town->GetPlace(); Place && !Place->Errand.IsEmpty() && !Town->IsTalking() && !Town->IsShopping())
 	{
 		float Y = 44.0f;
 
@@ -83,10 +89,25 @@ void ATownHUD::DrawHUD()
 
 			Y += i == 0 ? 32.0f : 25.0f;
 		}
+
+		// and, wherever the player is, where what it owns has got to, and how to find anything else
+		if (const FString Owned = Town->GetOwnedLine(); !Owned.IsEmpty() && !Town->IsShopping())
+		{
+			DrawLabel(Owned, LayoutWidth - 50.0f - MeasureLabel(Owned, 17), Y + 4.0f, 17, GutHUDColors::Stamina);
+
+			Y += 29.0f;
+		}
+
+		if (!Town->IsShopping())
+		{
+			const FString Map = TEXT("M or Y button: the map");
+
+			DrawLabel(Map, LayoutWidth - 50.0f - MeasureLabel(Map, 17), Y + 4.0f, 17, GutHUDColors::DimText);
+		}
 	}
 
 	// what is being called out over the place: there is nobody to speak it, so it is written up, as what people say is
-	if (const FTownCall* Call = Town->GetCall(); Call && !Town->IsTalking())
+	if (const FTownCall* Call = Town->GetCall(); Call && !Town->IsTalking() && !Town->IsShopping())
 	{
 		const TArray<FString> Said = Wrap(Call->Words, 52);
 		const float Height = 62.0f + (Said.Num() * 30.0f);
@@ -198,7 +219,7 @@ void ATownHUD::DrawTalk(const ATownGameMode* Town, float CenterX)
 	}
 
 	DrawLabel(Answers.Num() > 1
-		? TEXT("W / S or D-pad: choose          E, Enter or A button: say it")
+		? TEXT("W / S or D-pad: choose          E, Enter or A button: say it          Backspace or B button: leave")
 		: TEXT("E, Enter or A button: go on"),
 		CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);
 }
@@ -287,7 +308,70 @@ void ATownHUD::DrawShop(const ATownGameMode* Town, float CenterX)
 		}
 	}
 
-	DrawLabel(TEXT("W / S or D-pad: choose          E, Enter or A button: buy it, or leave"), CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);
+	DrawLabel(TEXT("W / S or D-pad: choose          E, Enter or A button: buy it          Backspace or B button: leave"), CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);
+}
+
+void ATownHUD::DrawMap(const ATownGameMode* Town, float CenterX)
+{
+	if (!MapPicture)
+	{
+		MapPicture = LoadObject<UTexture2D>(nullptr, TEXT("/Game/Gut/Art/UI/ui_map.ui_map"), nullptr, LOAD_NoWarn | LOAD_Quiet);
+	}
+
+	// the street stands back behind it
+	DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.72f), 0.0f, 0.0f, Canvas->SizeX, Canvas->SizeY);
+
+	if (!MapPicture || !MapPicture->GetResource())
+	{
+		DrawLabel(TEXT("There is no map of the town here."), CenterX, 500.0f, 26, GutHUDColors::Text, true);
+		return;
+	}
+
+	// the whole picture, as tall as the screen allows, in its own shape
+	const float High = 900.0f;
+	const float Wide = High * MapPicture->GetSizeX() / FMath::Max(1, MapPicture->GetSizeY());
+	const float Left = CenterX - (Wide * 0.5f);
+	const float Top = 70.0f;
+
+	DrawPiece(MapPicture, Left, Top, Wide, High, FVector2D(0.0f, 0.0f), FVector2D(1.0f, 1.0f), FLinearColor::White);
+
+	LoadLook();
+
+	// where the player is: the figure the cage's screens are drawn with, breathing a little so that the eye finds it
+	FVector2D Spot;
+
+	if (Town->GetMapSpot(Spot))
+	{
+		const float X = Left + (Spot.X * Wide);
+		const float Y = Top + (Spot.Y * High);
+		const float Beat = 1.0f + (0.12f * FMath::Sin(GetWorld()->GetRealTimeSeconds() * 5.0f));
+
+		if (FigureStencil && FigureStencil->GetResource())
+		{
+			const FVector2D From(0.14f, 0.03f);
+			const FVector2D To(0.86f, 0.97f);
+
+			const float FigureHigh = 46.0f * Beat;
+			const float FigureWide = FigureHigh * ((To.X - From.X) * FigureStencil->GetSizeX()) / FMath::Max((To.Y - From.Y) * FigureStencil->GetSizeY(), 1.0f);
+
+			// its feet on the spot
+			DrawPiece(FigureStencil, X - (FigureWide * 0.5f), Y - FigureHigh, FigureWide, FigureHigh, From, To, GutHUDColors::Warning);
+		}
+
+		DrawLabel(TEXT("YOU"), X, Y + 4.0f, 18, GutHUDColors::Warning, true);
+	}
+
+	if (const UTownPlaceData* Place = Town->GetPlace())
+	{
+		DrawLabel(FString::Printf(TEXT("YOU ARE IN %s"), *Place->Name.ToUpper()), CenterX, 22.0f, 26, GutHUDColors::Text, true);
+	}
+
+	if (const FString Owned = Town->GetOwnedLine(); !Owned.IsEmpty())
+	{
+		DrawLabel(Owned, CenterX, 984.0f, 19, GutHUDColors::Stamina, true);
+	}
+
+	DrawLabel(TEXT("M, Backspace, or the Y or B button: put the map away"), CenterX, 1026.0f, 17, GutHUDColors::Text, true);
 }
 
 void ATownHUD::DrawTownStopped(const ATownGameMode* Town, float CenterX)

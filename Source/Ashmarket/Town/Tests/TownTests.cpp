@@ -2046,13 +2046,42 @@ bool FTownLookSquareTest::RunTest(const FString& Parameters)
 		Town->HandleMenuInput(EGutMenuInput::Confirm);
 	} });
 
-	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("square_19_as_played_the_book")); } });
+	Steps.Add({ 1.6f, []() { GutTests::Screenshot(TEXT("square_19_as_played_the_book")); } });
 	Steps.Add({ 0.3f, []() { GetTown()->HandleMenuInput(EGutMenuInput::Confirm); } });
 	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("square_20_as_played_bought")); } });
 
-	Steps.Add({ 0.3f, []()
+	// down the book: the second lot, and the one who signs, each looked at as the player comes to their line
+	Steps.Add({ 0.3f, []() { GetTown()->HandleMenuInput(EGutMenuInput::Down); } });
+	Steps.Add({ 1.6f, []() { GutTests::Screenshot(TEXT("square_21_as_played_the_next_lot")); } });
+	Steps.Add({ 0.3f, []() { GetTown()->HandleMenuInput(EGutMenuInput::Down); } });
+	Steps.Add({ 1.6f, []() { GutTests::Screenshot(TEXT("square_22_as_played_the_one_who_signs")); } });
+
+	// backing out shuts the book, and the map goes up with the player on it and what they own under it
+	Steps.Add({ 0.3f, [this]()
 	{
-		GetTown()->CloseShop();
+		ATownGameMode* Town = GetTown();
+
+		Town->HandleBack();
+
+		TestFalse(TEXT("The back key shuts the book"), Town->IsShopping());
+
+		Town->ToggleMap();
+
+		FVector2D Spot;
+
+		TestTrue(TEXT("The map goes up, and the square is on it"), Town->IsMapUp() && Town->GetMapSpot(Spot) && Spot.X > 0.4 && Spot.X < 0.6 && Spot.Y > 0.4 && Spot.Y < 0.6);
+		TestFalse(TEXT("Somebody who owns a fighter is told where it is"), Town->GetOwnedLine().IsEmpty());
+	} });
+
+	Steps.Add({ 1.2f, []() { GutTests::Screenshot(TEXT("square_23_as_played_the_map")); } });
+
+	Steps.Add({ 0.3f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Town->HandleBack();
+
+		TestFalse(TEXT("And the back key takes the map down"), Town->IsMapUp());
 
 		GetRun()->Stable = FGutStableState();
 		GetRun()->PendingStory = EGutStory::None;

@@ -102,6 +102,12 @@ protected:
 	/** The key that stops the game and starts it again, and the three that work the menu while it is stopped */
 	void StopPressed();
 	void StoppedUpPressed();
+
+	/** Backs out of whatever screen is up, in the cage or in the town, where there is anywhere to back out to */
+	void BackPressed();
+
+	/** Puts the town's map up, or takes it down */
+	void MapPressed();
 	void StoppedDownPressed();
 	void StoppedConfirmPressed();
 

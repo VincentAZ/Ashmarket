@@ -2,6 +2,8 @@
 
 #include "TownGameMode.h"
 #include "Engine/Engine.h"
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/LightComponent.h"
 #include "Engine/Light.h"
@@ -32,10 +34,44 @@ namespace TownConstants
 	/** How long the words of a shut door stay up */
 	const float NoticeTime = 3.5f;
 
+	/**
+	 *  Each place's patch of the map's picture: the stretch of the town it covers (the map's own metres, x east and y
+	 *  north) and where on the picture that stretch is drawn, as shares of the picture from its top left. The picture is
+	 *  ArtSource/mixar/ui/ui_map.png.
+	 */
+	struct FMapPatch
+	{
+		const TCHAR* Place;
+		FBox2D Town;
+		FBox2D Picture;
+	};
+
+	const FMapPatch MapPatches[] =
+	{
+		{ TEXT("Main Street"), FBox2D(FVector2D(-8.0f, 41.0f), FVector2D(8.0f, 127.0f)), FBox2D(FVector2D(0.486f, 0.748f), FVector2D(0.514f, 0.548f)) },
+		{ TEXT("Block Square"), FBox2D(FVector2D(-7.5f, 130.0f), FVector2D(30.7f, 166.0f)), FBox2D(FVector2D(0.456f, 0.544f), FVector2D(0.541f, 0.433f)) },
+		{ TEXT("Pool Street"), FBox2D(FVector2D(2.0f, 172.0f), FVector2D(108.0f, 200.0f)), FBox2D(FVector2D(0.508f, 0.460f), FVector2D(0.661f, 0.420f)) },
+	};
+
+	/** Where the level's own middle is on the town's map: every town level is laid out from the same one */
+	const FVector2D MapOrigin(95.0f, 208.0f);
+
+	/**
+	 *  How the book's camera looks at somebody: from this far in front of them, level with a point this high over their
+	 *  feet, this wide. That puts their head and chest in the top half of the screen, over the book, and nobody else's.
+	 */
+	const float BookCameraDistance = 250.0f;
+	const float BookCameraHeight = 120.0f;
+	const float BookCameraFieldOfView = 55.0f;
+	const float BookCameraBlend = 0.35f;
+
 	/** What the builder marks a light with that is a fire (FIRE_TAG in Tools/build_town_level.py), and how fast a fire breathes and flutters */
 	const FName FireTag = FName("TownFire");
 	const float FireBreath = 1.3f;
 	const float FireFlutter = 7.0f;
+
+	/** A fire's light at least this bright (candelas) is a fire that is heard */
+	const float FireHeardFrom = 1500.0f;
 
 	/** The colours of a built person's clothes, as their materials name them */
 	const FName ClothParameters[] = { FName("diffuse_color_1"), FName("diffuse_color_2") };
@@ -165,6 +201,11 @@ void ATownGameMode::Tick(float DeltaTime)
 	UpdateLed(DeltaTime);
 	UpdateBeats(DeltaTime);
 	UpdateFires();
+
+	if (bAtBook)
+	{
+		ShowBookLine();
+	}
 
 	if (AGutFighter* Walker = GetWalker())
 	{
@@ -386,6 +427,15 @@ void ATownGameMode::Settle()
 
 	FindFires();
 
+	// what the place sounds like, under the night
+	if (UGutSoundSubsystem* Sounds = PlaceData ? UGutSoundSubsystem::Get(this) : nullptr)
+	{
+		for (const FName& Bed : PlaceData->Beds)
+		{
+			Sounds->StartBed(Bed, 1.0f, 3.0f);
+		}
+	}
+
 	bSettled = true;
 
 	UE_LOG(LogTown, Log, TEXT("Street: %s, %d people, %d doors, %d fires"), PlaceData ? *PlaceData->Name : TEXT("nowhere"), People.Num(), PlaceData ? PlaceData->Doors.Num() : 0, Fires.Num());
@@ -409,6 +459,12 @@ void ATownGameMode::FindFires()
 
 		Fire.Light = Light;
 		Fire.Brightness = Light->Intensity;
+
+		// a fire big enough to stand round is heard where it burns: the drums, not the lanterns
+		if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this); Sounds && Light->Intensity >= TownConstants::FireHeardFrom)
+		{
+			Sounds->Loop(FName("fire_drum"), It->GetActorLocation());
+		}
 
 		// where it stands is where in the wavering it begins: the same every time the place is come to, and no two alike
 		Fire.Phase = FMath::Fmod(FMath::Abs((It->GetActorLocation().X * 0.0137f) + (It->GetActorLocation().Y * 0.0291f)), 97.0f);
@@ -731,6 +787,91 @@ void ATownGameMode::AdvanceTalk()
 	}
 }
 
+void ATownGameMode::HandleBack()
+{
+	if (bMapUp)
+	{
+		ToggleMap();
+	}
+	else if (bStoppedMenu)
+	{
+		SetStopped(false);
+	}
+	else if (bShopping)
+	{
+		CloseShop();
+	}
+	else if (IsTalking())
+	{
+		EndTalk();
+	}
+}
+
+void ATownGameMode::ToggleMap()
+{
+	if (!bSettled || bStoppedMenu || IsTalking() || bShopping)
+	{
+		return;
+	}
+
+	bMapUp = !bMapUp;
+
+	// whoever reads a map stands still to do it
+	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		if (bMapUp)
+		{
+			Hands->SetIgnoreMoveInput(true);
+		}
+		else
+		{
+			Hands->ResetIgnoreMoveInput();
+		}
+	}
+}
+
+bool ATownGameMode::GetMapSpot(FVector2D& OutSpot) const
+{
+	const AGutFighter* Walker = GetWalker();
+
+	if (!PlaceData || !Walker)
+	{
+		return false;
+	}
+
+	// the level's X is the map's north and its Y the map's east, in centimetres from the same middle
+	const FVector Here = Walker->GetActorLocation();
+	const FVector2D OnMap((Here.Y / 100.0f) + TownConstants::MapOrigin.X, (Here.X / 100.0f) + TownConstants::MapOrigin.Y);
+
+	for (const TownConstants::FMapPatch& Patch : TownConstants::MapPatches)
+	{
+		if (PlaceData->Name == Patch.Place)
+		{
+			const FVector2D Share((OnMap - Patch.Town.Min) / (Patch.Town.Max - Patch.Town.Min));
+
+			OutSpot = Patch.Picture.Min + (FVector2D(FMath::Clamp(Share.X, -0.1, 1.1), FMath::Clamp(Share.Y, -0.1, 1.1)) * (Patch.Picture.Max - Patch.Picture.Min));
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+FString ATownGameMode::GetOwnedLine() const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance || !GameInstance->Stable.bStarted || GameInstance->Stable.Fighters.IsEmpty())
+	{
+		return FString();
+	}
+
+	const int32 Count = GameInstance->Stable.Fighters.Num();
+
+	return FString::Printf(TEXT("You own %d %s: in your yard beside the Gut. On Pool Street, talk to the yard hand."), Count, Count == 1 ? TEXT("fighter") : TEXT("fighters"));
+}
+
 void ATownGameMode::HandleMenuInput(EGutMenuInput Input)
 {
 	if (bStoppedMenu)
@@ -785,6 +926,12 @@ void ATownGameMode::HandleMenuInput(EGutMenuInput Input)
 		if (Input == EGutMenuInput::Up || Input == EGutMenuInput::Down)
 		{
 			ShopChoice = (ShopChoice + (Input == EGutMenuInput::Up ? Pieces : 1)) % (Pieces + 1);
+
+			// whoever the line is about is looked at as the player comes to it
+			if (bAtBook)
+			{
+				ShowBookLine();
+			}
 		}
 		else if (Input == EGutMenuInput::Confirm)
 		{
@@ -1531,6 +1678,11 @@ void ATownGameMode::CloseShop()
 		return;
 	}
 
+	if (bAtBook)
+	{
+		EndBookShow();
+	}
+
 	bShopping = false;
 	bAtBook = false;
 	ShopKeeper = INDEX_NONE;
@@ -1784,6 +1936,147 @@ void ATownGameMode::OpenBook(int32 Keeper)
 	}
 
 	UE_LOG(LogTown, Log, TEXT("Street: at the Block's book, %d on it"), GetBookLines().Num());
+
+	// whoever is in the book and is nobody's lot is stood beside the table while it is open: somebody bought or signed is
+	// somebody seen first
+	TArray<FGutStableFighter> Offers;
+	TArray<int32> Lots;
+	GetBookOffers(Offers, Lots);
+
+	const int32 Signer = Lots.IndexOfByKey(0);
+	UClass* Kind = PersonClass.LoadSynchronous();
+
+	if (Offers.IsValidIndex(Signer) && Kind && PlaceData->People.IsValidIndex(Keeper))
+	{
+		const FTownPerson& Clerk = PlaceData->People[Keeper];
+
+		// in front of the clerk and to one side, out of the way of whoever is at the table
+		const FVector Ahead = FRotator(0.0f, Clerk.Facing, 0.0f).Vector();
+		const FVector Feet = Clerk.Place + (Ahead * 170.0f) + (FVector::CrossProduct(FVector::UpVector, Ahead) * 130.0f);
+		const float Facing = Clerk.Facing;
+
+		const AGutFighter* Walker = GetWalker();
+		const float HalfHeight = Walker ? Walker->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 88.0f;
+		const FTransform Where(FRotator(0.0f, Facing, 0.0f), Feet + FVector(0.0f, 0.0f, HalfHeight));
+
+		if (AGutFighter* Body = GetWorld()->SpawnActorDeferred<AGutFighter>(Kind, Where, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn))
+		{
+			if (!Offers[Signer].Body.IsNull())
+			{
+				Body->SetBodyClass(Offers[Signer].Body);
+			}
+
+			UGameplayStatics::FinishSpawningActor(Body, Where);
+
+			Body->EquipWeapon(nullptr);
+			Body->SetCollared(false);
+			Body->SetAtEase(true);
+			Body->GetCharacterMovement()->DisableMovement();
+
+			BookSigner = Body;
+		}
+	}
+
+	BookShown = INDEX_NONE;
+
+	ShowBookLine();
+}
+
+void ATownGameMode::ShowBookLine()
+{
+	APlayerController* Eyes = UGameplayStatics::GetPlayerController(this, 0);
+
+	if (!bAtBook || !Eyes || !PlaceData)
+	{
+		return;
+	}
+
+	// turned to them when the player comes to their line, and kept on them after: a lot may be walked off the Block, or
+	// brought back up it, while the book is open
+	const bool bTurnedTo = ShopChoice != BookShown;
+
+	BookShown = ShopChoice;
+
+	TArray<FGutStableFighter> Offers;
+	TArray<int32> Lots;
+	GetBookOffers(Offers, Lots);
+
+	// who the line is about: the lot of that number where it stands, or the one stood by the table
+	const AGutFighter* Shown = nullptr;
+
+	if (Lots.IsValidIndex(ShopChoice))
+	{
+		if (Lots[ShopChoice] > 0)
+		{
+			const int32 Lot = Lots[ShopChoice];
+			const int32 Who = PlaceData->People.IndexOfByPredicate([Lot](const FTownPerson& Person) { return Person.Lot == Lot; });
+
+			Shown = People.IsValidIndex(Who) ? People[Who].Get() : nullptr;
+		}
+		else
+		{
+			Shown = BookSigner;
+		}
+	}
+
+	// the line that leaves, or somebody who is not there to be seen: the player's own eyes
+	if (!Shown)
+	{
+		if (AGutFighter* Walker = GetWalker(); Walker && bTurnedTo)
+		{
+			Eyes->SetViewTargetWithBlend(Walker, TownConstants::BookCameraBlend);
+		}
+
+		return;
+	}
+
+	if (!BookCamera)
+	{
+		BookCamera = GetWorld()->SpawnActor<ACameraActor>();
+
+		if (BookCamera)
+		{
+			BookCamera->GetCameraComponent()->SetFieldOfView(TownConstants::BookCameraFieldOfView);
+			BookCamera->GetCameraComponent()->SetConstraintAspectRatio(false);
+		}
+	}
+
+	if (!BookCamera)
+	{
+		return;
+	}
+
+	// from in front of them and a little to one side, level with their chest
+	const FVector Feet = Shown->GetActorLocation() - FVector(0.0f, 0.0f, Shown->GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
+	const float Aside = Shown == BookSigner ? 0.0f : 18.0f;
+	const FVector From = Feet + (FRotator(0.0f, Shown->GetActorRotation().Yaw + Aside, 0.0f).Vector() * TownConstants::BookCameraDistance) + FVector(0.0f, 0.0f, TownConstants::BookCameraHeight);
+	const FVector At = Feet + FVector(0.0f, 0.0f, TownConstants::BookCameraHeight);
+
+	BookCamera->SetActorLocationAndRotation(From, (At - From).Rotation());
+
+	if (bTurnedTo)
+	{
+		Eyes->SetViewTargetWithBlend(BookCamera, TownConstants::BookCameraBlend);
+	}
+}
+
+void ATownGameMode::EndBookShow()
+{
+	if (APlayerController* Eyes = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		if (AGutFighter* Walker = GetWalker())
+		{
+			Eyes->SetViewTargetWithBlend(Walker, TownConstants::BookCameraBlend);
+		}
+	}
+
+	if (BookSigner)
+	{
+		BookSigner->Destroy();
+		BookSigner = nullptr;
+	}
+
+	BookShown = INDEX_NONE;
 }
 
 bool ATownGameMode::BuyAtBook(int32 Line)

@@ -136,14 +136,12 @@ protected:
 	TArray<FSpectator> Spectators;
 
 	/** The noise of the crowd standing about, and how many of them it was started for */
-	UPROPERTY(Transient)
-	TObjectPtr<UAudioComponent> Murmur;
+	int32 Murmur = INDEX_NONE;
 
 	int32 HeardSpectators = 0;
 
 	/** A crowd yelling at a fight, laid under the fight while it lasts: one of them, and a second for a deck that is full */
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UAudioComponent>> FightNoise;
+	TArray<int32> FightNoise;
 
 	/** True while that is being heard */
 	bool bFightHeard = false;

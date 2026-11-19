@@ -22,6 +22,7 @@
 #include "Components/DecalComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GutDroppedWeapon.h"
+#include "GutGameMode.h"
 #include "GutGore.h"
 #include "GutSound.h"
 #include "TimerManager.h"
@@ -564,6 +565,13 @@ bool AGutFighter::TryHeavyAttack()
 		return false;
 	}
 
+	// a beaten opponent with the spikes or the cable behind it is knocked onto them, when it is the player's hand that
+	// throws the blow: the cage's own decide that for themselves (AGutOpponentController::TickCageFinish)
+	if (IsPlayerControlled() && FindDriveHazard(Opponent.Get()) && TryDrive())
+	{
+		return true;
+	}
+
 	// a staggered opponent in reach is finished, not hit
 	if (TryFinisher(EGutFinisherStyle::Slow))
 	{
@@ -635,6 +643,55 @@ bool AGutFighter::TryDodge(FVector WorldDirection)
 	}
 
 	return StartDodge(WorldDirection);
+}
+
+AGutHazard* AGutFighter::FindDriveHazard(const AGutFighter* Target) const
+{
+	if (!Target || !Target->IsStaggered() || Target->IsBeingFinished() || Beast || Target->Beast || !GetArmament())
+	{
+		return nullptr;
+	}
+
+	// near enough for the blow to land
+	if (GetGapTo(Target) > FMath::Min(GetFinisherRange(), GetHeavyAttack().Reach))
+	{
+		return nullptr;
+	}
+
+	const AGutGameMode* GameMode = GetWorld() ? GetWorld()->GetAuthGameMode<AGutGameMode>() : nullptr;
+
+	if (!GameMode)
+	{
+		return nullptr;
+	}
+
+	// the blow sends it straight on from whoever throws it. Its body touches a hazard when it comes within its own width
+	// of it, anywhere along the way it is sent.
+	const FVector There = Target->GetActorLocation();
+	const FVector Push = (There - GetActorLocation()).GetSafeNormal2D();
+	const float Radius = Target->GetCapsuleComponent()->GetScaledCapsuleRadius();
+
+	static const int32 Looks = 8;
+
+	for (AGutHazard* Hazard : GameMode->GetHazards())
+	{
+		if (!Hazard || !Hazard->IsLive())
+		{
+			continue;
+		}
+
+		for (int32 i = 1; i <= Looks; ++i)
+		{
+			FVector Away;
+
+			if (Hazard->GetDangerDistance(There + (Push * (Target->GetDriveDistance() * 0.9f * i / Looks)), Away) <= Radius)
+			{
+				return Hazard;
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 bool AGutFighter::TryFinisher(EGutFinisherStyle Style)

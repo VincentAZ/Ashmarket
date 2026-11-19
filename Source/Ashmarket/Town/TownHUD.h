@@ -34,4 +34,11 @@ protected:
 	void DrawTalk(const ATownGameMode* Town, float CenterX);
 	void DrawShop(const ATownGameMode* Town, float CenterX);
 	void DrawTownStopped(const ATownGameMode* Town, float CenterX);
+
+	/** The town's own map, with the player marked on it */
+	void DrawMap(const ATownGameMode* Town, float CenterX);
+
+	/** The map's picture, once fetched */
+	UPROPERTY(Transient)
+	TObjectPtr<UTexture2D> MapPicture;
 };

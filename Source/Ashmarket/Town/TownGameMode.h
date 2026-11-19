@@ -8,6 +8,7 @@
 #include "TownTypes.h"
 #include "TownGameMode.generated.h"
 
+class ACameraActor;
 class AGutFighter;
 class AGutGameMode;
 class ULightComponent;
@@ -251,6 +252,19 @@ protected:
 	/** True if the counter is the Block's book, where what is bought is people, and not the armorers' */
 	bool bAtBook = false;
 
+	/** What looks at whoever the book's line is about, while the book is open, and which line it was last turned to */
+	UPROPERTY(Transient)
+	TObjectPtr<ACameraActor> BookCamera;
+
+	int32 BookShown = INDEX_NONE;
+
+	/** Whoever is in the book and is nobody's lot, stood by the clerk's table for as long as the book is open, to be looked at */
+	UPROPERTY(Transient)
+	TObjectPtr<AGutFighter> BookSigner;
+
+	/** True while the town's map is up */
+	bool bMapUp = false;
+
 	/** What somebody who owns nobody yet would have their days at the Block drawn from, once they buy */
 	int32 BookSeed = 0;
 
@@ -294,6 +308,12 @@ protected:
 
 	TArray<FTownShopLine> GetBookLines() const;
 	bool BuyAtBook(int32 Line);
+
+	/** Turns the book's camera on whoever the line the player is on is about: the lot on the Block, or the one who signs */
+	void ShowBookLine();
+
+	/** Gives the player its own eyes back, and sends whoever was stood by the table away */
+	void EndBookShow();
 
 	/** Does what a door or an answer does. A door that leads to another place says which. */
 	void Do(ETownDeed Deed, const FTownDoor* Door = nullptr);
@@ -359,6 +379,24 @@ public:
 
 	/** Up, down and confirm, for the answers of a talk and for the menu that stops the game */
 	void HandleMenuInput(EGutMenuInput Input);
+
+	/** The key that backs out: takes the map down, shuts a counter or a book, leaves a talk */
+	void HandleBack();
+
+	/** Puts the map up, or takes it down. Not while somebody is being talked to. */
+	void ToggleMap();
+
+	bool IsMapUp() const { return bMapUp; }
+
+	/**
+	 *  Where the player is on the map's picture, as shares of its width and height from its top left. The map is the
+	 *  town's own, scratched on a car bonnet, and not to scale: each place has a patch of it, and the player is put
+	 *  in that patch where they are in the place. False if this place is not on it.
+	 */
+	bool GetMapSpot(FVector2D& OutSpot) const;
+
+	/** What the player owns that it might be looking for, in words for the top of the screen, or nothing */
+	FString GetOwnedLine() const;
 
 	/** What the player is offered just now ("Talk to Chalk"), or nothing */
 	FString GetPrompt() const;

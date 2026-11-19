@@ -45,20 +45,12 @@ void AGutCrowd::Tick(float DeltaTime)
 	{
 		HeardSpectators = Spectators.Num();
 
-		if (Murmur)
+		// a bed of them, that goes from one recording of a crowd to another and never round and round one
+		if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
 		{
-			Murmur->FadeOut(1.0f, 0.0f);
-			Murmur = nullptr;
-		}
+			Sounds->StopBed(Murmur, 1.0f);
 
-		if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this); Sounds && HeardSpectators > 0)
-		{
-			Murmur = Sounds->Loop(FName("crowd_bed"), GetActorLocation(), FMath::Clamp(HeardSpectators / 40.0f, 0.3f, 1.2f));
-
-			if (Murmur)
-			{
-				Murmur->FadeIn(1.5f);
-			}
+			Murmur = HeardSpectators > 0 ? Sounds->StartBed(FName("crowd_bed"), FMath::Clamp(HeardSpectators / 40.0f, 0.3f, 1.2f), 1.5f) : INDEX_NONE;
 		}
 	}
 
@@ -83,12 +75,12 @@ void AGutCrowd::Tick(float DeltaTime)
 	{
 		bFightHeard = bFight;
 
-		for (UAudioComponent* Yelling : FightNoise)
+		if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
 		{
-			if (Yelling)
+			for (const int32 Yelling : FightNoise)
 			{
 				// the roar at the end of a fight covers their going
-				Yelling->FadeOut(3.0f, 0.0f);
+				Sounds->StopBed(Yelling, 3.0f);
 			}
 		}
 
@@ -101,10 +93,8 @@ void AGutCrowd::Tick(float DeltaTime)
 
 			for (int32 Layer = 0; Layer < (Spectators.Num() >= 30 ? 2 : 1); ++Layer)
 			{
-				if (UAudioComponent* Yelling = Sounds->Loop(FName("crowd_fight"), GetActorLocation(), Size * (Layer == 0 ? 1.0f : 0.7f)))
+				if (const int32 Yelling = Sounds->StartBed(FName("crowd_fight"), Size * (Layer == 0 ? 1.0f : 0.7f), Layer == 0 ? 1.5f : 4.0f); Yelling != INDEX_NONE)
 				{
-					Yelling->FadeIn(Layer == 0 ? 1.5f : 4.0f);
-
 					FightNoise.Add(Yelling);
 				}
 			}

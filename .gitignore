@@ -53,3 +53,7 @@ plan-*.md
 /Config/DefaultEditorPerProjectUserSettings.ini
 __pycache__/
 *.pyc
+
+# keys for services, wherever they are kept: never in git
+.env
+.env.*

@@ -76,10 +76,38 @@ public:
 };
 
 /**
+ *  A kind of sound that lies under a place for as long as anybody is in it: the night, a crowd standing about, a market.
+ *  It is never one recording going round and round. One of the kind's recordings is played for a while, then another
+ *  is faded in over it as it fades out, and never the same one twice running.
+ */
+USTRUCT()
+struct FGutSoundBed
+{
+	GENERATED_BODY()
+
+	FName Kind;
+
+	/** How loud whoever started it asked for, against the kind's own loudness */
+	float Volume = 1.0f;
+
+	/** The recording that is being heard now */
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> Playing;
+
+	/** When, by the world's clock, the next recording is brought in */
+	double ChangeAt = 0.0;
+
+	/** How many recordings it has gone through: what a test counts */
+	int32 Changes = 0;
+
+	bool bStopped = false;
+};
+
+/**
  *  Plays the Gut's sounds. Anything in the cage asks for a sound by name and says where it is.
  */
 UCLASS()
-class UGutSoundSubsystem : public UWorldSubsystem
+class UGutSoundSubsystem : public UTickableWorldSubsystem
 {
 	GENERATED_BODY()
 
@@ -89,6 +117,24 @@ public:
 
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
+
+	/** Moves each bed on to its next recording when its time has come */
+	virtual void Tick(float DeltaTime) override;
+	virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UGutSoundSubsystem, STATGROUP_Tickables); }
+
+	/**
+	 *  Starts a bed of a kind, heard everywhere, and returns the number to stop it or change its loudness by (less than
+	 *  nought if the kind has no recordings). It goes from one recording of the kind to another for as long as it lasts.
+	 */
+	int32 StartBed(FName Kind, float Volume = 1.0f, float FadeIn = 2.0f);
+
+	void StopBed(int32 Bed, float FadeOut = 1.5f);
+
+	/** How many recordings a bed has gone through so far, or nought */
+	int32 GetBedChanges(int32 Bed) const { return Beds.IsValidIndex(Bed) ? Beds[Bed].Changes : 0; }
+
+	/** For the tests: brings every bed's next change forward to now */
+	void HurryBeds();
 
 	/** Plays one recording of a kind, once, at a place. Volume and pitch are multiplied onto the kind's own. */
 	void Play(FName Kind, const FVector& Where, float Volume = 1.0f, float Pitch = 1.0f);
@@ -123,8 +169,11 @@ private:
 
 	FName Footfall = FName("step");
 
+	/** Brings in the bed's next recording, fading the one before it out under it */
+	void ChangeBed(FGutSoundBed& Bed, float Fade);
+
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UAudioComponent>> AlwaysPlaying;
+	TArray<FGutSoundBed> Beds;
 
 	TMap<FName, int32> LastChosen;
 	TMap<FName, double> LastPlayed;

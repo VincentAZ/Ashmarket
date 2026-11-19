@@ -72,6 +72,18 @@ void AGutPlayerController::SetupInputComponent()
 			Bind(Key, &AGutPlayerController::StoppedConfirmPressed);
 		}
 
+		// and Backspace, or the gamepad's B, backs out of whatever screen is up, where there is anywhere to back out to
+		for (const FKey& Key : { EKeys::BackSpace, EKeys::Gamepad_FaceButton_Right })
+		{
+			Bind(Key, &AGutPlayerController::BackPressed);
+		}
+
+		// the town's map goes up and comes down on M, or the gamepad's Y
+		for (const FKey& Key : { EKeys::M, EKeys::Gamepad_FaceButton_Top })
+		{
+			Bind(Key, &AGutPlayerController::MapPressed);
+		}
+
 		// Enter says yes on every screen there is, and it is not a key anybody fights with, so it also goes on from a fight that is over
 		Bind(EKeys::Enter, &AGutPlayerController::EnterPressed);
 
@@ -235,6 +247,26 @@ void AGutPlayerController::StopPressed()
 	else if (ATownGameMode* Town = GetWorld()->GetAuthGameMode<ATownGameMode>())
 	{
 		Town->SetStopped(!Town->IsStopped());
+	}
+}
+
+void AGutPlayerController::BackPressed()
+{
+	if (AGutGameMode* GameMode = GetWorld()->GetAuthGameMode<AGutGameMode>())
+	{
+		GameMode->HandleBack();
+	}
+	else if (ATownGameMode* Town = GetWorld()->GetAuthGameMode<ATownGameMode>())
+	{
+		Town->HandleBack();
+	}
+}
+
+void AGutPlayerController::MapPressed()
+{
+	if (ATownGameMode* Town = GetWorld()->GetAuthGameMode<ATownGameMode>())
+	{
+		Town->ToggleMap();
 	}
 }
 
