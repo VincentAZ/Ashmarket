@@ -1046,8 +1046,46 @@
     {
      "file": "crowd/loop_bar_pub_walla_medium_stereo_preview.mp3",
      "seconds": 45
+    },
+    {
+     "file": "crowd/bed_fifty_people_village_gathering_hubbub_spanish_preview.mp3",
+     "seconds": 79.0
+    },
+    {
+     "file": "crowd/bed_forty_people_mixed_chatter_in_room_preview.mp3",
+     "seconds": 80.0
+    },
+    {
+     "file": "crowd/bed_small_group_men_talking_laughing_not_english_vintage_preview.mp3",
+     "seconds": 64.0
+    },
+    {
+     "file": "crowd/bed_crowd_milling_about_outside_before_event_preview.mp3",
+     "seconds": 80.0
+    },
+    {
+     "file": "crowd/bed_pub_walla_background_preview.mp3",
+     "seconds": 80.0
+    },
+    {
+     "file": "crowd/bed_audience_waiting_theatre_nearly_full_preview.mp3",
+     "seconds": 80.0
+    },
+    {
+     "file": "crowd/bed_hundred_people_chatting_small_hall_preview.mp3",
+     "seconds": 73.0
+    },
+    {
+     "file": "crowd/bed_evening_outdoor_crowd_walla_french_english_preview.mp3",
+     "seconds": 67.0
+    },
+    {
+     "file": "crowd/bed_medium_busy_crowd_spanish_voices_waiting_hall_preview.mp3",
+     "seconds": 80.0
     }
-   ]
+   ],
+   "about": "People standing about: at the cage's rail, and round the Block. A bed of several, as the night is.",
+   "mean": -22.0
   },
   "crowd_react": {
    "volume": 0.5,
@@ -1307,8 +1345,58 @@
     {
      "file": "ambience/city_night_quiet_distant_traffic_stereo_preview.mp3",
      "seconds": 50
+    },
+    {
+     "file": "ambience/night_desert_crickets_silent_breeze_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/night_wind_electrical_wire_whistling_dry_bushes_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/night_wind_inside_corrugated_metal_cabin_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/night_mining_camp_generator_cicadas_distant_voices_laughs_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/night_generator_fifty_metres_away_crickets_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/night_dogs_barking_far_echo_small_village_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/night_dogs_barking_far_away_slight_wind_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/night_crickets_distant_dog_barking_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/night_distant_voices_crickets_dogs_faraway_city_hum_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/night_wind_strong_howling_open_desert_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/night_village_outskirts_quiet_crickets_far_motor_far_dog_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/night_wind_knocking_creaking_fence_panels_preview.mp3",
+     "seconds": 90.0
     }
-   ]
+   ],
+   "about": "The night over the town, under everything: wind, insects, dogs and engines a long way off. A bed: the game goes from one of these to another, and never round and round one (UGutSoundSubsystem::StartBed). Real recordings, chosen by what their makers say is in them; nobody has listened.",
+   "mean": -31.0
   },
   "room": {
    "volume": 0.3,
@@ -1318,8 +1406,38 @@
     {
      "file": "ambience/quarry_tunnel_echoey_wet_droplets_stereo_preview.mp3",
      "seconds": 40
+    },
+    {
+     "file": "ambience/wet_underground_room_tunnel_leaking_dripping_preview.mp3",
+     "seconds": 70.0
+    },
+    {
+     "file": "ambience/wet_dripping_echo_inside_large_water_tank_night_crickets_preview.mp3",
+     "seconds": 70.0
+    },
+    {
+     "file": "ambience/wet_flooded_basement_drips_from_cellar_roof_preview.mp3",
+     "seconds": 70.0
+    },
+    {
+     "file": "ambience/wet_basement_water_pipe_steady_metallic_trickle_preview.mp3",
+     "seconds": 70.0
+    },
+    {
+     "file": "ambience/wet_room_tone_underground_parking_empty_preview.mp3",
+     "seconds": 70.0
+    },
+    {
+     "file": "ambience/wet_cave_room_tone_preview.mp3",
+     "seconds": 70.0
+    },
+    {
+     "file": "ambience/wet_empty_swimming_pool_ambient_water_preview.mp3",
+     "seconds": 70.0
     }
-   ]
+   ],
+   "about": "The room the pool is: wet concrete, drips, a long echo. A bed of several, as the night is.",
+   "mean": -27.0
   },
   "card": {
    "volume": 0.6,
@@ -1858,6 +1976,78 @@
     {
      "file": "crowd/fight_angry_crowd_fight_preview.mp3",
      "seconds": 8.0
+    }
+   ]
+  },
+  "market": {
+   "about": "A market street with people in it, for Main Street: voices, steps, carts. A bed of several, as the night is, laid over the night.",
+   "volume": 0.3,
+   "everywhere": true,
+   "loop": true,
+   "mean": -25.0,
+   "from": [
+    {
+     "file": "ambience/market_covered_alley_arabic_walla_sandy_steps_cart_rattle_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/market_day_small_village_mali_voices_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/market_souk_far_away_slight_wind_donkey_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/market_evening_bazaar_food_stalls_vendor_calling_arabic_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/market_walking_narrow_bazaar_streets_fez_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/market_bazaar_night_crowded_greece_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/market_street_market_marrakesh_vintage_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/market_outdoor_fair_wide_indistinct_crowd_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/market_vegetable_market_merchants_people_passing_carts_preview.mp3",
+     "seconds": 90.0
+    },
+    {
+     "file": "ambience/market_open_street_medium_crowd_vendors_shout_luganda_preview.mp3",
+     "seconds": 90.0
+    }
+   ]
+  },
+  "fire_drum": {
+   "about": "A fire in a drum, heard where it burns and not everywhere: one of these goes round at each drum (ATownGameMode::FindFires).",
+   "volume": 0.6,
+   "loop": true,
+   "from": [
+    {
+     "file": "ambience/fire_in_car_tyre_rim_close_crackle_loop_preview.mp3",
+     "seconds": 30.0
+    },
+    {
+     "file": "ambience/fire_small_embers_new_log_barely_burning_preview.mp3",
+     "seconds": 30.0
+    },
+    {
+     "file": "ambience/fire_bonfire_close_embers_hissing_crackling_preview.mp3",
+     "seconds": 20.0
+    },
+    {
+     "file": "ambience/fire_campfire_adding_kindling_medium_wind_preview.mp3",
+     "seconds": 30.0
     }
    ]
   }

@@ -141,6 +141,8 @@ void UGutSoundSubsystem::ChangeBed(FGutSoundBed& Bed, float Fade)
 	Bed.Playing = Next;
 	Bed.ChangeAt = GetWorld()->GetTimeSeconds() + Hold;
 
+	UE_LOG(LogTemp, Log, TEXT("[sound] the %s bed goes to %s for %.0f s, from %.0f s in, at %.2f of full"), *Bed.Kind.ToString(), *Sound->GetName(), Hold, From, Set->Volume * Bed.Volume);
+
 	++Bed.Changes;
 	++TimesPlayed.FindOrAdd(Bed.Kind);
 }

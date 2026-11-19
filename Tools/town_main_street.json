@@ -19,6 +19,9 @@
   {"name": "from_square", "x": 0.5, "y": 123.5, "facing": 180}
  ],
 
+ "beds_about": "What the street sounds like under everything, over the night every place has: kinds of sound from Tools/gut_sounds.json, each a bed that goes from one recording to another.",
+ "beds": ["market"],
+
  "errand": [
   "MAIN STREET",
   "Hide & Plate, on the west side: armor for the Gut's fighters. Needle, at the counter.",

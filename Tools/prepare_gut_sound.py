@@ -10,6 +10,7 @@ under what licence). Nothing is synthesised here. What this does to a recording 
   - trims the silence off the front and the tail, with a fade a few thousandths of a second long so the cut does not click
   - where a cut is to hold one blow and no more ("single"), cuts off whatever follows or comes before the loudest in it
   - brings every cut to the same peak level, so that how loud a kind of sound is in the game is set in one place
+    (or, for a kind with "mean", to the same loudness throughout: the beds that lie under a place)
   - for something that plays without end, takes a stretch and folds its tail into its head so that the join cannot be heard
 Tools/gut_sounds.json says which recording becomes which kind of sound and how. The cuts are written to
 ArtSource/sound/prepared/<kind>/<kind>_NN.wav at 48 kHz, with prepared.json beside them listing what each was cut from.
@@ -181,6 +182,22 @@ def level_to(sound, peak=-1.0):
     return sound if top < 1e-6 else sound * (10.0 ** (peak / 20.0) / top)
 
 
+def level_to_mean(sound, mean, peak=-1.0):
+    """Brought to the same loudness over its whole length, for something that lies under a place for minutes: two beds
+    cut to the same peak are as different as a dog barking once in a quiet night and a crowd. Never past the peak, so a
+    recording with one loud thing in it comes out quieter and whole."""
+    power = (sound ** 2).mean()
+
+    if power < 1e-12:
+        return sound
+
+    out = sound * (10.0 ** (mean / 20.0) / np.sqrt(power))
+    top = np.abs(out).max()
+    most = 10.0 ** (peak / 20.0)
+
+    return out if top <= most else out * (most / top)
+
+
 def make_loop(sound, join=0.75):
     """A stretch that can be played end to end for ever: its last part is folded under its first, each fading as the other comes up."""
     fold = min(int(join * RATE), sound.shape[0] // 4)
@@ -282,7 +299,11 @@ def prepare(kinds):
 
                 name = "{}_{:02d}.wav".format(kind, len(made) + 1)
 
-                write(OUT / kind / name, level_to(cut, float(how.get("peak", -1.0))))
+                # 'mean' on a kind levels each cut by its loudness throughout, and not by its loudest moment
+                if "mean" in how:
+                    write(OUT / kind / name, level_to_mean(cut, float(how["mean"]), float(how.get("peak", -1.0))))
+                else:
+                    write(OUT / kind / name, level_to(cut, float(how.get("peak", -1.0))))
 
                 made.append({"file": "{}/{}".format(kind, name), "from": source["file"], "cut": where, "seconds": round(cut.shape[0] / RATE, 3)})
 
