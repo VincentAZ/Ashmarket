@@ -1,0 +1,36 @@
+{
+ "Block Square/Caller Strand": {
+  "description": "An auctioneer calling bids from the back of a trailer at an open-air night market. An androgynous voice in its thirties, hoarse from shouting every night, nasal and hard, fast and rhythmic like a livestock auctioneer's chant, thrown over the heads of a crowd, tired underneath. Rough and loud, not smooth, not a radio voice.",
+  "generated_voice_id": "KVQ7glCZSAjHAhqikyVx",
+  "note": "the take Vincent chose from the audition (D1), 2026-11-19"
+ },
+ "Block Square/Mother Ledger": {
+  "description": "An old woman, late sixties, a moneylender who has never needed to raise her voice. Thin, dry, papery, very calm and slow, faintly amused, patient in a way that frightens people. She speaks softly and close, as if across a small table at night. Not a narrator and not an actress: plain, tired, exact.",
+  "generated_voice_id": "tAxtp9dr0UYE6W7sxYdT",
+  "note": "the take Vincent chose from the audition (D1), 2026-11-19"
+ },
+ "Block Square/Warden": {
+  "description": "A militia guard in his thirties standing post at a crowded night market in a desert shanty town. A rough, mid-pitched man's voice, hoarse from dust, curt, a little impatient, talking while he looks past you at the crowd. Plain working American speech with a trace of a Southwestern drawl. Not an announcer: close, clipped, real.",
+  "first_said": "Main Street is open as far as the Gate Yard. The armorers and the gunsmith are down it, if you have business with either. Keep your hands where the Chainmen can see them.",
+  "generated_voice_id": "mfxwpuEWNuf2xBVoA8Gi"
+ },
+ "Main Street/Brass": {
+  "description": "A woman in her fifties, a gunsmith who trades from the back of a truck in a desert shanty town. Hard, clipped, gravelly, very few words and none wasted: the voice of somebody who has turned away better customers than you. Low and dry, with a smoker's edge. Plain working American speech. Not an announcer and not a narrator: curt, close, real.",
+  "first_said": "Scrap, tuned or relic. Scrap is cheap because you'll be back. Relic is dear because you won't. Nothing the Gut lets through its door. Hasp racks what you fight with, and Hasp does not take mine. When you have a tag and a reason, come back and I will find you a tool. Ten litres a fight to wear them, from Butcher rank. The offer comes to your card at the Gut. I do not chase fighters down the street.",
+  "generated_voice_id": "MgplkC3ZIovO2H5wJVdl"
+ },
+ "Pool Street/Chalk": {
+  "description": "A woman in her forties who keeps the betting slate at a pit-fighting cage in a desert shanty town. Quick, dry, flat, a little hoarse, has heard every excuse and is bored of all of them. Plain working American speech, clipped, said through a window to a queue. Not an announcer and not a narrator: offhand, imperfect, real.",
+  "generated_voice_id": "7mDZJz8OmE8eeHWcgMB3"
+ },
+ "Pool Street/Hasp": {
+  "description": "A man in his fifties who hands out weapons at a pit-fighting cage in a desert shanty town. Gravelly, worn, a smoker's rasp, low and unhurried, bored, with dry humour underneath. Plain working American speech with no polish. He talks close and quiet, like somebody who has said this a thousand times. Not an announcer and not a narrator: a little mumbled, imperfect, real.",
+  "generated_voice_id": "JXfxPvKfMj2Oq1Heocj8",
+  "note": "the take Vincent chose from the audition (D1), 2026-11-19"
+ },
+ "Pool Street/Yard hand": {
+  "description": "A man in his thirties who works the yard gate behind a pit-fighting cage in a desert shanty town. A light Mexican Spanish accent, easy and low, a little tired, friendly enough but watching you. Short sentences, no hurry, talks out of the side of his mouth. Not an announcer and not a narrator: offhand, a little mumbled, real.",
+  "first_said": "Alley's shut past the fence. Owners go round to the yard gate, and I walk them. You an owner? Then you wait here like everybody else.",
+  "generated_voice_id": "3lwppkZo7aWctrr0mn4Y"
+ }
+}

@@ -16,10 +16,22 @@ if ! compgen -G "$VOICES/*/*.mp3" >/dev/null; then
 	exit 1
 fi
 
+# Every voice is brought to one loudness, however loud it was made: a voice designed for somebody comes out some
+# six decibels above the account's own. LEVEL is the mean, in decibels below full, and no peak is let above -1.
+LEVEL=-23
+
+if [[ "$(cat "$VOICES/wav/.level" 2>/dev/null || true)" != "$LEVEL" ]]; then
+	rm -rf "$VOICES/wav"
+fi
+
+mkdir -p "$VOICES/wav"
+echo "$LEVEL" > "$VOICES/wav/.level"
+
 for recording in "$VOICES"/*/*.mp3; do
 	place="$(basename "$(dirname "$recording")")"
 
-	[[ "$place" == "wav" ]] && continue
+	# wav is ours, and designed holds each made voice's first hearing, which nobody says in the game
+	[[ "$place" == "wav" || "$place" == "designed" ]] && continue
 
 	mkdir -p "$VOICES/wav/$place"
 
@@ -27,7 +39,10 @@ for recording in "$VOICES"/*/*.mp3; do
 
 	# only what is new, or has been made again
 	if [[ ! -f "$wav" || "$recording" -nt "$wav" ]]; then
-		ffmpeg -v error -y -i "$recording" -ac 1 -ar 44100 -c:a pcm_s16le "$wav"
+		read -r mean peak < <(ffmpeg -nostdin -i "$recording" -af volumedetect -f null - 2>&1 | awk '/mean_volume/ {m = $5} /max_volume/ {p = $5} END {print m, p}')
+		gain="$(awk -v m="$mean" -v p="$peak" -v t="$LEVEL" 'BEGIN {g = t - m; if (p + g > -1) g = -1 - p; printf "%.1f", g}')"
+
+		ffmpeg -nostdin -v error -y -i "$recording" -af "volume=${gain}dB" -ac 1 -ar 44100 -c:a pcm_s16le "$wav"
 	fi
 done
 

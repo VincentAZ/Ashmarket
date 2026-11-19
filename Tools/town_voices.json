@@ -1,32 +1,39 @@
 {
- "about": "Who speaks with which voice. Read by Tools/make_town_voices.py, which has ElevenLabs say every line the three places' lists give their people, and the calls from the Block. A speaker is 'Place/Name'; where a place has two people of one name the second is 'Place/Name#2', in the order the place's list has them. 'voice' is the name of one of the account's voices as far as its first ' - '. Change a voice here and run the tool again: only that speaker's lines are made again.",
+ "about": "Who speaks with which voice. Read by Tools/make_town_voices.py, which has ElevenLabs say every line the three places' lists give their people, and the calls from the Block. A speaker is 'Place/Name'; where a place has two people of one name the second is 'Place/Name#2', in the order the place's list has them. Vincent, 2026-11-19, after hearing seven ways of making them: the designed voice. So each speaker has 'design', a description of who is talking, from which ElevenLabs makes a voice for them alone; the voice it made is remembered in Tools/town_voices_designed.json. 'design_text' is what the voice is first heard saying, where the speaker's own lines come to under a hundred characters. Change a description here and run the tool again: that speaker gets a new voice and all their lines are made again. A speaker with 'voice' instead speaks with one of the account's own voices, by its name as far as the first ' - '.",
 
- "model": "eleven_v4",
+ "model": "eleven_v3",
+ "design_model": "eleven_ttv_v3",
  "format": "mp3_44100_128",
- "settings": {"stability": 0.4, "similarity_boost": 0.75},
+ "settings": {"stability": 0.5, "similarity_boost": 0.75},
+
+ "keep": ["Block Square/Caller Strand", "Block Square/Margin", "Pool Street/Chalk"],
+ "keep_about": "The account holds three voices at a time, so a voice is saved, speaks its lines and is let go for the next. These three are made last and so are the ones left saved: the people likeliest to be given more to say.",
 
  "speakers": {
-  "Pool Street/Chalk": {"voice": "Laura", "note": "keeps the window's slate: quick, dry, has heard every excuse"},
-  "Pool Street/Hasp": {"voice": "Callum", "note": "racks the weapons: husky, in no hurry"},
-  "Pool Street/Yard hand": {"voice": "Chris", "note": "lets owners in at the yard gate"},
-  "Pool Street/Warden": {"voice": "Adam", "note": "the corner post"},
+  "Pool Street/Chalk": {"design": "A woman in her forties who keeps the betting slate at a pit-fighting cage in a desert shanty town. Quick, dry, flat, a little hoarse, has heard every excuse and is bored of all of them. Plain working American speech, clipped, said through a window to a queue. Not an announcer and not a narrator: offhand, imperfect, real."},
+  "Pool Street/Hasp": {"design": "A man in his fifties who hands out weapons at a pit-fighting cage in a desert shanty town. Gravelly, worn, a smoker's rasp, low and unhurried, bored, with dry humour underneath. Plain working American speech with no polish. He talks close and quiet, like somebody who has said this a thousand times. Not an announcer and not a narrator: a little mumbled, imperfect, real."},
+  "Pool Street/Yard hand": {"design": "A man in his thirties who works the yard gate behind a pit-fighting cage in a desert shanty town. A light Mexican Spanish accent, easy and low, a little tired, friendly enough but watching you. Short sentences, no hurry, talks out of the side of his mouth. Not an announcer and not a narrator: offhand, a little mumbled, real.",
+   "design_text": "Alley's shut past the fence. Owners go round to the yard gate, and I walk them. You an owner? Then you wait here like everybody else."},
+  "Pool Street/Warden": {"design": "A militia guard in his forties posted on a street corner at night in a desert shanty town. A deep, flat, heavy voice, bored and faintly threatening, used to being obeyed without raising it. Slow. Plain working American speech. He says the same warning forty times a night and sounds like it. Not an announcer: close, dull, real."},
 
-  "Block Square/Margin": {"voice": "Matilda", "note": "the Block's clerk: exact, reads figures back"},
-  "Block Square/Mother Ledger": {"voice": "Lily", "note": "the lender: soft, unhurried, never raises it"},
-  "Block Square/Warden": {"voice": "Daniel", "note": "the square post"},
-  "Block Square/Caller Strand": {"voice": "River", "settings": {"stability": 0.3, "similarity_boost": 0.75}, "note": "the auctioneer, they/them: patter"},
+  "Block Square/Margin": {"design": "A woman in her fifties, the clerk who keeps the book at an open-air auction in a desert shanty town. Precise, dry, brisk, a little nasal: the voice of somebody who reads figures back all night and never gets one wrong. No warmth and no malice, only business. Plain American speech, quick and even. Not a narrator and not an announcer: a tired official talking across a table."},
+  "Block Square/Mother Ledger": {"design": "An old woman, late sixties, a moneylender who has never needed to raise her voice. Thin, dry, papery, very calm and slow, faintly amused, patient in a way that frightens people. She speaks softly and close, as if across a small table at night. Not a narrator and not an actress: plain, tired, exact."},
+  "Block Square/Warden": {"design": "A militia guard in his thirties standing post at a crowded night market in a desert shanty town. A rough, mid-pitched man's voice, hoarse from dust, curt, a little impatient, talking while he looks past you at the crowd. Plain working American speech with a trace of a Southwestern drawl. Not an announcer: close, clipped, real."},
+  "Block Square/Caller Strand": {"design": "An auctioneer calling bids from the back of a trailer at an open-air night market. An androgynous voice in its thirties, hoarse from shouting every night, nasal and hard, fast and rhythmic like a livestock auctioneer's chant, thrown over the heads of a crowd, tired underneath. Rough and loud, not smooth, not a radio voice."},
   "Block Square/Margin, at the table": {"same_as": "Block Square/Margin"},
 
-  "Main Street/Needle": {"voice": "Sarah", "note": "Hide & Plate's counter: sizes you up"},
-  "Main Street/Thread": {"voice": "Bella", "note": "Needle's twin, at the machine"},
-  "Main Street/Brass": {"voice": "Alice", "note": "Tooth & Trigger: clipped, sells nothing twice"},
-  "Main Street/Gate Warden": {"voice": "Brian", "note": "at the barrier"},
-  "Main Street/Stallholder": {"voice": "Jessica", "note": "bread"},
-  "Main Street/Scrap seller": {"voice": "Laura", "note": "scrap"},
-  "Main Street/Tea seller": {"voice": "Lily", "note": "tea, and the joke everybody sees"},
-  "Main Street/Dealer": {"voice": "Roger", "note": "dice: laid back"},
-  "Main Street/Carrier": {"voice": "Matilda", "note": "water, sealed at the window"},
-  "Main Street/Warden": {"voice": "Eric", "note": "walks the Market Loop"},
-  "Main Street/Warden#2": {"voice": "Harry", "note": "walks it beside the first, counting"}
+  "Main Street/Needle": {"design": "A woman in her late thirties who fits armor at a workshop counter in a desert shanty town. Low for a woman, level and sharp, sizing you up while she talks, and she says a thing once. Dry, a little smoky, practical, faintly scornful of anybody who has not been hit yet. Plain working American speech. Not a narrator: close, matter-of-fact, real."},
+  "Main Street/Thread": {"design": "A woman in her late thirties who sews at a machine in the back of an armor workshop. Softer and warmer than her twin sister at the counter: low, slow, a little amused, a little inviting, talking without looking up from her work. A slight rasp. Plain American speech. Not a narrator and not an actress: quiet, close, real."},
+  "Main Street/Brass": {"design": "A woman in her fifties, a gunsmith who trades from the back of a truck in a desert shanty town. Hard, clipped, gravelly, very few words and none wasted: the voice of somebody who has turned away better customers than you. Low and dry, with a smoker's edge. Plain working American speech. Not an announcer and not a narrator: curt, close, real."},
+  "Main Street/Gate Warden": {"design": "A militia guard in his fifties who minds a barrier gate at night in a desert shanty town. Gruff, gravelly, deep, tired on his feet. He has turned people back all his life and takes no pleasure in it any more. Slow and final. Plain working American speech. Not an announcer: flat, worn, real."},
+  "Main Street/Stallholder": {"design": "A woman in her sixties who sells bread from a market stall at night in a desert shanty town. Warm but loud, a market voice cracked from calling over a crowd, brisk and motherly and not to be argued with. Plain working American speech. Not an announcer and not a narrator: busy, rough, real.",
+   "design_text": "Bread's hot. Water first, then bread. That is the order everything goes in here. Next. You, are you buying or are you looking?"},
+  "Main Street/Scrap seller": {"design": "A woman in her fifties who sells scrap from a table at a night market in a desert shanty town. A faint Korean accent. Sly, dry, quick, quietly amused at her own jokes and never smiling when she says them. A thin, slightly hoarse voice. Not a narrator and not an actress: offhand, close, real."},
+  "Main Street/Tea seller": {"design": "A woman in her sixties who sells tea from a kiosk at a night market in a desert shanty town. A faint Eastern European accent. Deadpan and weary, low and a little cracked: she has told the same joke for twenty years and stopped finding it funny after the first. Slow. Not a narrator and not an actress: flat, close, real."},
+  "Main Street/Dealer": {"design": "A man in his forties who runs a dice game on a crate at a night market in a desert shanty town. Lazy, smooth, low, smiling as he talks: a gambler's easy drawl with smoke in it, friendly in a way you should not trust. Unhurried. Plain American speech with a little Southern in it. Not an announcer and not a narrator: close, offhand, real."},
+  "Main Street/Carrier": {"design": "A woman in her thirties who hauls a water cart through a night market in a desert shanty town. Strong, blunt, wary, a little out of breath, a mid-low voice with dust in it. She says each thing like a rule she is tired of repeating. Plain working American speech. Not a narrator: short, guarded, real."},
+  "Main Street/Warden": {"design": "A militia guard in his twenties walking a patrol through a night market in a desert shanty town. A young man's voice trying to sound harder than he is: flat, clipped, a little nasal, bored. He talks while he walks. Plain working American speech. Not an announcer: curt, close, real."},
+  "Main Street/Warden#2": {"design": "A militia guard in his forties walking a patrol through a night market in a desert shanty town. A very deep, slow, gravelly man's voice: a man of few words who resents every one of them. He mutters and barely opens his mouth. Plain working American speech. Not an announcer: low, close, real.",
+   "design_text": "Talk to the other one. I am counting. Forty-one. Forty-two. Forty-three. I said talk to the other one. Forty-four."}
  }
 }

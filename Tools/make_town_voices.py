@@ -4,8 +4,13 @@
     Tools/make_town_voices.sh --list     what would be made, and how many characters it comes to: nothing is asked of ElevenLabs
     Tools/make_town_voices.sh --only "Block Square/Margin"     one speaker
     Tools/make_town_voices.sh --force    everything again
+    Tools/make_town_voices.sh --only "Main Street/Brass" --redesign     a new voice for one speaker, and their lines again
 
 Reads the three places' lists (Tools/town_*.json) and Tools/town_voices.json, which says who speaks with which voice.
+A speaker with a 'design' there has a voice made for them from that description (Vincent's choice of 2026-11-19, of
+seven ways tried); which voice it made is kept in Tools/town_voices_designed.json. The account holds only a few voices
+at once, so each is saved, speaks, and is let go when the room is wanted: those named under 'keep' are made last and
+so are left saved.
 A line is whatever somebody says to the player, and each call from the Block. A line with a figure written into it as it
 is said ({held}, {owed}, {dealt}) is left as words: it is different every time.
 
@@ -16,6 +21,7 @@ The key is never in this file: the ElevenLabs client reads ELEVENLABS_API_KEY fr
 from .env.local (git never sees that file) just before the client is made.
 """
 import argparse
+import base64
 import glob
 import hashlib
 import json
@@ -24,8 +30,10 @@ import re
 import sys
 
 PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LISTS = sorted(glob.glob(os.path.join(PROJECT, "Tools", "town_*.json")))
 CAST = os.path.join(PROJECT, "Tools", "town_voices.json")
+DESIGNED = os.path.join(PROJECT, "Tools", "town_voices_designed.json")
+LISTS = sorted(path for path in glob.glob(os.path.join(PROJECT, "Tools", "town_*.json")) if path not in (CAST, DESIGNED))
+OURS = "Ashmarket: "
 OUT = os.path.join(PROJECT, "ArtSource", "voices")
 MANIFEST = os.path.join(OUT, "manifest.json")
 
@@ -67,23 +75,31 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--redesign", action="store_true")
     parser.add_argument("--only", default="")
     options = parser.parse_args()
+
+    if options.redesign and not options.only:
+        sys.exit("--redesign gives a speaker a new voice: name the speaker with --only")
 
     cast = json.load(open(CAST))
     speakers = cast["speakers"]
     manifest = json.load(open(MANIFEST)) if os.path.exists(MANIFEST) else {}
+    designed = json.load(open(DESIGNED)) if os.path.exists(DESIGNED) else {}
 
     def voice_of(speaker):
+        """Whose voice a speaker has (Margin at the table is Margin), and what the cast says of it."""
         entry = speakers.get(speaker)
 
         if entry and entry.get("same_as"):
-            entry = speakers.get(entry["same_as"])
+            speaker = entry["same_as"]
+            entry = speakers.get(speaker)
 
-        return entry
+        return speaker, entry
 
     wanted = []
     silent = []
+    said = {}
 
     for path in LISTS:
         listed = json.load(open(path))
@@ -94,30 +110,37 @@ def main():
         place, found = lines_of(listed)
 
         for speaker, name, words in found:
-            if options.only and speaker != options.only:
-                continue
-
-            entry = voice_of(speaker)
+            whose, entry = voice_of(speaker)
 
             if not entry:
                 silent.append(speaker)
                 continue
 
+            said.setdefault(whose, []).append(words)
+
+            if options.only and whose != options.only and speaker != options.only:
+                continue
+
             settings = entry.get("settings", cast["settings"])
             file = os.path.join(slug(place), name + ".mp3")
-            mark = hashlib.sha1(json.dumps([words, entry["voice"], cast["model"], settings], sort_keys=True).encode()).hexdigest()
+            voice = entry.get("design") or entry["voice"]
+            mark = hashlib.sha1(json.dumps([words, voice, cast["model"], settings], sort_keys=True).encode()).hexdigest()
 
-            if options.force or manifest.get(file, {}).get("mark") != mark or not os.path.exists(os.path.join(OUT, file)):
-                wanted.append((file, speaker, entry["voice"], settings, words, mark))
+            if options.force or options.redesign or manifest.get(file, {}).get("mark") != mark or not os.path.exists(os.path.join(OUT, file)):
+                wanted.append((file, speaker, whose, entry, settings, words, mark))
 
     for speaker in sorted(set(silent)):
         print("no voice is given for {}: their lines stay words (Tools/town_voices.json)".format(speaker))
 
-    print("{} lines to make, {} characters".format(len(wanted), sum(len(item[4]) for item in wanted)))
+    # those whose voices are to stay saved come last
+    keep = cast.get("keep", [])
+    wanted.sort(key=lambda item: (keep.index(item[2]) if item[2] in keep else -1, item[2], item[0]))
+
+    print("{} lines to make, {} characters".format(len(wanted), sum(len(item[5]) for item in wanted)))
 
     if options.list or not wanted:
-        for file, speaker, voice, _, words, _ in wanted:
-            print("  {:44s} {:34s} {:9s} {}".format(file, speaker, voice, words[:60]))
+        for file, speaker, whose, entry, _, words, _ in wanted:
+            print("  {:44s} {:34s} {:9s} {}".format(file, speaker, "designed" if entry.get("design") else entry["voice"], words[:60]))
 
         return
 
@@ -135,37 +158,120 @@ def main():
 
     client = ElevenLabs(api_key=os.environ["ELEVENLABS_API_KEY"])
 
-    # the account's voices by the first part of their names: "Laura - Enthusiast, Quirky Attitude" is Laura
-    voices = {voice.name.split(" - ")[0].strip(): voice.voice_id for voice in client.voices.get_all().voices}
+    def saved():
+        return {voice.voice_id: voice.name for voice in client.voices.get_all().voices}
 
-    missing = sorted({item[2] for item in wanted} - set(voices))
+    def design(speaker, entry):
+        """A new voice for somebody, from what the cast says of them: heard first saying their own lines."""
+        text = entry.get("design_text") or " ".join(said[speaker])
 
-    if missing:
-        sys.exit("the account has no voice called {}: it has {}".format(", ".join(missing), ", ".join(sorted(voices))))
+        if len(text) < 100:
+            sys.exit("{} says under a hundred characters: give them a 'design_text' of a hundred or more in Tools/town_voices.json".format(speaker))
+
+        # no more than a thousand, and whole sentences
+        while len(text) > 1000:
+            text = text[:text.rstrip(".?! ").rfind(". ") + 1]
+
+        made = client.text_to_voice.design(voice_description=entry["design"], model_id=cast["design_model"], text=text)
+        preview = made.previews[0]
+
+        os.makedirs(os.path.join(OUT, "designed"), exist_ok=True)
+
+        with open(os.path.join(OUT, "designed", slug(speaker) + ".mp3"), "wb") as out:
+            out.write(base64.b64decode(preview.audio_base_64))
+
+        designed[speaker] = {"description": entry["design"], "generated_voice_id": preview.generated_voice_id, "first_said": text}
+
+        with open(DESIGNED, "w") as out:
+            json.dump(designed, out, indent=1, sort_keys=True)
+            out.write("\n")
+
+        print("designed a voice for {} ({})".format(speaker, preview.generated_voice_id))
+
+    def room():
+        """Sees that the account can hold one more voice, letting an earlier one of ours go if it is full."""
+        held = saved()
+        plan = client.user.subscription.get()
+
+        if plan.voice_slots_used < plan.voice_limit:
+            return
+
+        ours = [voice for voice, name in held.items() if name.startswith(OURS)]
+
+        if not ours:
+            sys.exit("the account's {} voices are all somebody else's: nothing of ours to let go".format(plan.voice_limit))
+
+        try:
+            client.voices.delete(voice_id=ours[0])
+        except Exception as error:
+            sys.exit("the account holds {} voices and is full ({}), and this key may not let one go: {}\n"
+                     "either the plan needs more voices than the {} speakers here, or the key needs 'voices_write'".format(
+                         plan.voice_limit, ", ".join(held[voice] for voice in ours), str(error)[-220:], len({voice_of(name)[0] for name in speakers})))
+
+        print("let go of {} to make room".format(held[ours[0]]))
+
+    def save(speaker, entry):
+        """Has the account hold a designed voice, so that it can speak."""
+        return client.text_to_voice.create(voice_name=OURS + speaker, voice_description=entry["design"],
+                                           generated_voice_id=designed[speaker]["generated_voice_id"]).voice_id
+
+    def voice_for(speaker, entry):
+        if not entry.get("design"):
+            # the account's own voices by the first part of their names: "Laura - Enthusiast, Quirky Attitude" is Laura
+            named = {name.split(" - ")[0].strip(): voice for voice, name in saved().items()}
+
+            if entry["voice"] not in named:
+                sys.exit("the account has no voice called {}: it has {}".format(entry["voice"], ", ".join(sorted(named))))
+
+            return named[entry["voice"]]
+
+        if options.redesign or designed.get(speaker, {}).get("description") != entry["design"]:
+            design(speaker, entry)
+
+        if designed[speaker]["generated_voice_id"] in saved():
+            return designed[speaker]["generated_voice_id"]
+
+        room()
+
+        try:
+            return save(speaker, entry)
+        except Exception as error:
+            # a voice that was made a while ago and never saved is forgotten at their end: make them another
+            print("the voice made for {} cannot be saved any more ({}): designing again".format(speaker, str(error)[-200:]))
+            design(speaker, entry)
+
+            return save(speaker, entry)
 
     made = 0
+    voices = {}
 
-    for file, speaker, voice, settings, words, mark in wanted:
+    for file, speaker, whose, entry, settings, words, mark in wanted:
         os.makedirs(os.path.dirname(os.path.join(OUT, file)), exist_ok=True)
 
-        audio = client.text_to_speech.convert(text=words, voice_id=voices[voice], model_id=cast["model"], output_format=cast["format"],
+        if whose not in voices:
+            voices[whose] = voice_for(whose, entry)
+
+        audio = client.text_to_speech.convert(text=words, voice_id=voices[whose], model_id=cast["model"], output_format=cast["format"],
                                               voice_settings=VoiceSettings(stability=settings["stability"], similarity_boost=settings["similarity_boost"]))
 
         with open(os.path.join(OUT, file), "wb") as out:
             for chunk in audio:
                 out.write(chunk)
 
-        manifest[file] = {"speaker": speaker, "voice": voice, "voice_id": voices[voice], "model": cast["model"], "settings": settings, "words": words, "mark": mark,
-                          "made_with": "ElevenLabs text to speech"}
+        manifest[file] = {"speaker": speaker, "voice": "designed for {}".format(whose) if entry.get("design") else entry["voice"], "voice_id": voices[whose],
+                          "model": cast["model"], "settings": settings, "words": words, "mark": mark, "made_with": "ElevenLabs text to speech"}
 
         # written after every line, so that a run that stops half way has lost nothing it paid for
         with open(MANIFEST, "w") as out:
             json.dump(manifest, out, indent=1, sort_keys=True)
 
         made += 1
-        print("[{}/{}] {}  ({}, {} characters)".format(made, len(wanted), file, voice, len(words)))
+        print("[{}/{}] {}  ({}, {} characters)".format(made, len(wanted), file, whose, len(words)))
+
+    plan = client.user.subscription.get()
 
     print("made {} recordings in {}".format(made, OUT))
+    print("the account has used {} of {} characters".format(plan.character_count, plan.character_limit))
 
 
 main()
