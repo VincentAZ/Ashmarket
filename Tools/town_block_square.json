@@ -405,6 +405,14 @@
    "scale": 1.333
   },
   {
+   "model": "square_ramp",
+   "x": 25.77,
+   "y": 153.8,
+   "yaw": 180,
+   "note": "the way down for whoever is sold: off the Block's north end, past the last number, to the square's own ground among the buyers. A little smaller than the other, which stands on ground 8 cm lower, so that its head is level with the deck too.",
+   "scale": 1.285
+  },
+  {
    "model": "square_lectern",
    "x": 26.55,
    "y": 146.3,
@@ -551,7 +559,7 @@
    "note": "the lot board, on the trailer's headboard, which is 74 cm high over the deck: it faces down the deck and is read from the clerk's side"
   },
   {
-   "picture": "sign_counting_house",
+   "picture": "sign_counting_house_by_hand",
    "x": 36.75,
    "y": 166.33,
    "faces": "west",
@@ -896,9 +904,20 @@
       139.5,
       158.5
      ]
+    },
+    {
+     "x": [21.6, 24.6],
+     "y": [151.0, 155.4]
     }
    ]
   }
+ ],
+ "lot_down_about": "The way somebody the player has bought comes down to them: from the head of the deck along behind the numbers to the head of the other ramp, down it, and back out of the buyers to the strip the clerk's table stands in. From there they follow the player.",
+ "lot_down": [
+  [30.3, 153.8],
+  [28.7, 153.8],
+  [22.6, 153.8],
+  [25.6, 151.6]
  ],
  "lot_way_about": "The way the lots come up: from the head of the file they are kept in, in the Holding Yard, to the foot of the ramp, to the head of the deck. The file runs back east from its first place. 'lot_aisle' is how far behind its number a lot walks along the line of the others.",
  "lot_way": [
@@ -929,7 +948,7 @@
    "x": 27.75,
    "y": 143.6,
    "facing": 270,
-   "idle": "crowd_watch_hands_behind",
+   "idle": "crowd_watch_relaxed",
    "lines": [
     {
      "id": "table",
@@ -974,7 +993,7 @@
    "x": 27.75,
    "y": 157.6,
    "facing": 250,
-   "idle": "crowd_watch_hands_behind",
+   "idle": "crowd_watch_relaxed",
    "lines": [
     {
      "id": "book",
@@ -1180,31 +1199,36 @@
    }
   }
  ],
- "calls_about": "What Caller Strand calls from the Block, round and round. Nobody speaks it: there is no voice for it, so it is written up on the screen. 'stirs' is a lot knocked down, which gets something out of the crowd. Prices follow the numbers pass: 18 L and 6 L for each skill, before bidding. 'sells' is the lot a call knocks down: it is walked off the Block, down the ramp, to the file kept in the Holding Yard. 'brings_up' walks every lot that is kept back up to its number.",
+ "calls_about": "What Caller Strand calls from the Block, round and round. Nobody speaks it: there is no voice for it, so it is written up on the screen. 'stirs' is a lot knocked down, which gets something out of the crowd. Prices follow the numbers pass: 18 L and 6 L for each skill, before bidding. 'lot' is the lot a call is about, from its being put up to the clerk's writing it down: none of them is called once the player has bought that lot and led it away. 'sells' is the lot a call knocks down: it is walked off the Block, down the ramp, to the file kept in the Holding Yard. 'brings_up' walks every lot that is kept back up to its number.",
  "calls": [
   {
    "speaker": "Caller Strand",
    "words": "Lot one. A man, twenty-six, sound in wind and limb. Digs, hauls, and has swung a club for money.",
+   "lot": 1,
    "seconds": 5.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Thirty litres opens. Thirty. Who starts me?",
+   "lot": 1,
    "seconds": 3.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Thirty at the rope. Thirty-five, the Gut's man. Forty, at the back.",
+   "lot": 1,
    "seconds": 4.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Forty-five? Forty-five, Mr Rask. Going at forty-five.",
+   "lot": 1,
    "seconds": 4.0
   },
   {
    "speaker": "Caller Strand",
    "words": "Sold. Forty-five litres, to Mr Rask of the Gut.",
+   "lot": 1,
    "seconds": 4.0,
    "stirs": true,
    "sells": 1
@@ -1212,26 +1236,31 @@
   {
    "speaker": "Margin, at the table",
    "words": "Lot one, forty-five litres, to H. Rask. Nine to the book.",
+   "lot": 1,
    "seconds": 3.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Lot two. A woman, thirty-one. Reads, figures, and sews a straight seam. Three things on the card.",
+   "lot": 2,
    "seconds": 5.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Thirty-six opens, and cheap at it. Thirty-six, the Tin. Forty.",
+   "lot": 2,
    "seconds": 4.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Forty-four, the Pump office. Forty-eight, the Tin again. Any more?",
+   "lot": 2,
    "seconds": 4.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Sold. Forty-eight litres, to the Velvet Tin.",
+   "lot": 2,
    "seconds": 4.0,
    "stirs": true,
    "sells": 2
@@ -1239,26 +1268,31 @@
   {
    "speaker": "Margin, at the table",
    "words": "Lot two, forty-eight litres, to the Tin. Nine and a half to the book.",
+   "lot": 2,
    "seconds": 3.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Lot three. A man, nineteen. Strong as he looks and knows nothing yet. Somebody will teach him.",
+   "lot": 3,
    "seconds": 5.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Eighteen opens. Eighteen, the Scrappers. Twenty.",
+   "lot": 3,
    "seconds": 4.0
   },
   {
    "speaker": "Caller Strand",
    "words": "Twenty-two. Twenty-two once. Nobody? He eats less than a dog.",
+   "lot": 3,
    "seconds": 4.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Sold. Twenty-two litres, to the Scrappers' guild.",
+   "lot": 3,
    "seconds": 4.0,
    "stirs": true,
    "sells": 3
@@ -1266,26 +1300,31 @@
   {
    "speaker": "Margin, at the table",
    "words": "Lot three, twenty-two litres, to the guild. Four and a half to the book.",
+   "lot": 3,
    "seconds": 3.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Lot four. A woman, twenty-four. Cooks, and can strip a pump and put it back. Two on the card.",
+   "lot": 4,
    "seconds": 5.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Thirty opens. Thirty, the Pump office. Thirty-four, at the rope.",
+   "lot": 4,
    "seconds": 4.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Thirty-eight, the Pump. Forty-two. Forty-two, and the Pump shakes its head.",
+   "lot": 4,
    "seconds": 4.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Sold. Forty-two litres, to the bidder at the rope.",
+   "lot": 4,
    "seconds": 4.0,
    "stirs": true,
    "sells": 4
@@ -1293,26 +1332,31 @@
   {
    "speaker": "Margin, at the table",
    "words": "Lot four, forty-two litres. Name, please. Eight and a half to the book.",
+   "lot": 4,
    "seconds": 3.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Lot five. A man, thirty-five, heavy. Hauls for two and has stood in a ring and walked out of it.",
+   "lot": 5,
    "seconds": 5.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Thirty opens. Thirty-five, Mr Rask. Forty, the Scrappers.",
+   "lot": 5,
    "seconds": 4.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Forty-five, Mr Rask. Fifty. Fifty, Mr Rask, and that is the Gut's water talking.",
+   "lot": 5,
    "seconds": 4.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Sold. Fifty litres, to Mr Rask of the Gut.",
+   "lot": 5,
    "seconds": 4.0,
    "stirs": true,
    "sells": 5
@@ -1320,26 +1364,31 @@
   {
    "speaker": "Margin, at the table",
    "words": "Lot five, fifty litres, to H. Rask. Ten to the book.",
+   "lot": 5,
    "seconds": 3.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Lot six. A woman, twenty-eight. Reads, and keeps a count. Signed for her brother's water and here she stands.",
+   "lot": 6,
    "seconds": 6.0
   },
   {
    "speaker": "Caller Strand",
    "words": "Thirty opens. Thirty, the Tin. Thirty-four, the Pump office.",
+   "lot": 6,
    "seconds": 4.5
   },
   {
    "speaker": "Caller Strand",
    "words": "Thirty-eight? Thirty-eight, the Pump. Going at thirty-eight.",
+   "lot": 6,
    "seconds": 4.0
   },
   {
    "speaker": "Caller Strand",
    "words": "Sold. Thirty-eight litres, to the Pump office.",
+   "lot": 6,
    "seconds": 4.0,
    "stirs": true,
    "sells": 6
@@ -1347,6 +1396,7 @@
   {
    "speaker": "Margin, at the table",
    "words": "Lot six, thirty-eight litres, to the Pump. Seven and a half to the book.",
+   "lot": 6,
    "seconds": 3.5
   },
   {

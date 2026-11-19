@@ -1734,6 +1734,22 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 			TestTrue(TEXT("They have the body of one of the lots standing on the Block"), Place->People.ContainsByPredicate([Notes](const FTownPerson& Person) { return Person.Lot > 0 && Person.Body.ToSoftObjectPath() == Notes->Bought; }));
 		}
 
+		// whoever is bought comes away with the buyer: off the Block, wrists tied, behind the player from now on
+		TestEqual(TEXT("Whoever is bought is in tow"), Town->GetTowCount(), 1);
+		TestTrue(TEXT("And the run knows they have not been brought to the yard yet"), Run->Stable.Fighters.Num() == 1 && Run->Stable.Fighters[0].bInTow);
+		TestTrue(TEXT("The player is told who is with them and where to take them"), Town->GetOwnedLine().Contains(TEXT("with you")) && Town->GetOwnedLine().Contains(TEXT("yard")));
+
+		if (const AGutFighter* Towed = Town->GetTowBody(0); TestNotNull(TEXT("They are somebody to be seen"), Towed))
+		{
+			TestTrue(TEXT("Their wrists are tied"), Towed->IsBound());
+			TestTrue(TEXT("They are the lot that stood on the Block, which is no longer one of the sale's"), !Town->GetPeople().Contains(Towed) && Town->GetPeople().FilterByPredicate([](const TObjectPtr<AGutFighter>& Body) { return Body == nullptr; }).Num() == 1);
+
+			if (Towed->HasBody())
+			{
+				TestTrue(TEXT("And wear the collar still"), Towed->IsCollared());
+			}
+		}
+
 		TestTrue(TEXT("The book shows them as the player's"), Town->GetShopLines()[0].bWorn && !Town->GetShopLines()[0].bCanBuy);
 		TestFalse(TEXT("And they cannot be bought twice"), Town->BuyAtShop(0));
 		TestEqual(TEXT("Nor paid for twice"), Run->Stable.Water, 70.0f - Price);
@@ -1761,14 +1777,57 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("The book is shut by the player, who can walk again"), !Town->IsShopping() && !UGameplayStatics::GetPlayerController(Town, 0)->IsMoveInputIgnored());
 	} });
 
+	// whoever was bought comes down off the Block and across to the player, and stands behind them
+	Steps.Add({ 24.0f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		const AGutFighter* Walker = Town->GetWalker();
+		const AGutFighter* Towed = Town->GetTowBody(0);
+
+		if (!TestNotNull(TEXT("Whoever was bought is still in tow"), Towed))
+		{
+			return;
+		}
+
+		const float Off = FVector::Dist2D(Towed->GetActorLocation(), Walker->GetActorLocation());
+		const float Up = Towed->GetActorLocation().Z - Walker->GetActorLocation().Z;
+
+		TestTrue(*FString::Printf(TEXT("They have come to the player (%.0f cm off)"), Off), Off < 260.0f);
+		TestTrue(*FString::Printf(TEXT("Down on the ground the player stands on (%.0f cm over it)"), Up), FMath::Abs(Up) < 20.0f);
+		TestTrue(*FString::Printf(TEXT("And stand, with nowhere to go (going %.0f cm a second, at %s, the player at %s)"), Towed->GetLedVelocity().Size2D(), *Towed->GetActorLocation().ToCompactString(), *Walker->GetActorLocation().ToCompactString()),
+			Towed->GetLedVelocity().IsNearlyZero() && !Towed->IsJogging());
+
+		// the player sets off at a run
+		Town->GetWalker()->SetJogging(true);
+
+		const FVector Here = Walker->GetActorLocation();
+
+		StandAt(FVector2D(Here.X - 220.0f, Here.Y));
+	}, InSquare });
+
+	Steps.Add({ 0.35f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		const AGutFighter* Towed = Town->GetTowBody(0);
+
+		TestTrue(TEXT("When the player runs, whoever is in tow runs"), Towed && Towed->IsJogging() && Towed->GetLedVelocity().Size2D() > 250.0f);
+
+		Town->GetWalker()->SetJogging(false);
+	}, InSquare });
+
 	// from the clerk's table Pool Street is a walk up the lane
-	Steps.Add({ 0.5f, [this]()
+	Steps.Add({ 2.0f, [this]()
 	{
 		ATownGameMode* Town = GetTown();
 		const UTownPlaceData* Place = Town->GetPlace();
 		const int32 Clerk = Place->People.IndexOfByPredicate([](const FTownPerson& Person) { return Person.Name == TEXT("Margin"); });
 
-		TestTrue(TEXT("The player is still at the clerk's table"), Place->People.IsValidIndex(Clerk) && FVector::Dist2D(Town->GetWalker()->GetActorLocation(), Place->People[Clerk].Place) < 300.0f);
+		TestTrue(TEXT("The player is still by the clerk's table"), Place->People.IsValidIndex(Clerk) && FVector::Dist2D(Town->GetWalker()->GetActorLocation(), Place->People[Clerk].Place) < 500.0f);
+
+		if (const AGutFighter* Towed = Town->GetTowBody(0))
+		{
+			TestTrue(TEXT("Whoever is in tow walks again when the player does, and has caught up"), !Towed->IsJogging() && FVector::Dist2D(Towed->GetActorLocation(), Town->GetWalker()->GetActorLocation()) < 260.0f);
+		}
 
 		for (const FTownDoor& Door : Place->Doors)
 		{
@@ -1788,6 +1847,11 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		const UTownPlaceData* Place = Town->GetPlace();
 
 		TestTrue(TEXT("Up the lane is Pool Street, at its Main Street end"), Town->GetWalker()->GetActorLocation().Y < Place->People[0].Place.Y);
+
+		// and whoever is in tow has come up it behind the player
+		const AGutFighter* Towed = Town->GetTowBody(0);
+
+		TestTrue(TEXT("Whoever is in tow comes into the next place behind the player"), Town->GetTowCount() == 1 && Towed && Towed->IsBound() && FVector::Dist2D(Towed->GetActorLocation(), Town->GetWalker()->GetActorLocation()) < 300.0f);
 
 		// whoever was bought is in the owner's yard, which is gone to from here
 		for (int32 Person = 0; Person < Place->People.Num(); ++Person)
@@ -1829,6 +1893,7 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("The yard is the cage as an owner has it"), Run->bStable && Fight.GameMode->IsAtStable());
 		TestEqual(TEXT("It opens on the yard"), Fight.GameMode->GetStablePage(), EGutStablePage::Yard);
 		TestTrue(TEXT("And whoever was bought at the Block is in it, as they were seen there"), Run->Stable.Fighters.Num() == 1 && Run->Stable.Fighters[0].Body.ToSoftObjectPath() == Notes->Bought);
+		TestTrue(TEXT("They were handed in at the gate, and are in tow no longer"), Run->Stable.Fighters.Num() == 1 && !Run->Stable.Fighters[0].bInTow);
 
 		Fight.GameMode->GoToDoor();
 	}, []() { return GutTests::GetFight().IsValid() && GutTests::GetFight().GameMode->GetPhase() == EGutFightPhase::Card && !GutTests::GetFight().GameMode->IsTellingStory(); } });
@@ -1839,6 +1904,7 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		const UTownPlaceData* Place = Town->GetPlace();
 
 		TestTrue(TEXT("The yard's way out is Pool Street, where the player went in from"), true);
+		TestEqual(TEXT("Nobody is behind the player now"), Town->GetTowCount(), 0);
 
 		for (const FTownDoor& Door : Place->Doors)
 		{
@@ -1911,6 +1977,7 @@ bool FTownLookSquareTest::RunTest(const FString& Parameters)
 		{ TEXT("square_13_the_gap_in_the_rope"), FVector(13.5f, 150.6f, 6.3f), FVector(24.0f, 150.4f, 5.6f), 60.0f },
 		{ TEXT("square_14_the_counting_house"), FVector(24.5f, 160.6f, 6.4f), FVector(37.0f, 164.0f, 7.6f), 60.0f },
 		{ TEXT("square_15_the_holding_yard"), FVector(24.0f, 138.5f, 6.4f), FVector(36.0f, 144.0f, 5.6f), 55.0f },
+		{ TEXT("square_29_the_way_down"), FVector(20.6f, 159.2f, 6.5f), FVector(27.6f, 152.8f, 5.3f), 55.0f },
 		{ TEXT("square_16_the_table_and_the_scale"), FVector(24.3f, 143.0f, 6.0f), FVector(27.2f, 142.6f, 5.2f), 60.0f },
 		{ TEXT("square_17_the_lot_board"), FVector(26.2f, 145.2f, 6.3f), FVector(29.6f, 154.3f, 6.7f), 40.0f },
 	};
@@ -2082,6 +2149,44 @@ bool FTownLookSquareTest::RunTest(const FString& Parameters)
 		Town->HandleBack();
 
 		TestFalse(TEXT("And the back key takes the map down"), Town->IsMapUp());
+	} });
+
+	// whoever was bought, on their way down off the Block; then stood behind the player; then led off at a walk and at a run
+	Steps.Add({ 1.5f, []() { GutTests::Screenshot(TEXT("square_24_as_played_coming_down")); } });
+	Steps.Add({ 12.0f, []() { GutTests::Screenshot(TEXT("square_25_as_played_in_tow")); } });
+
+	Steps.Add({ 0.3f, []()
+	{
+		ATownGameMode* Town = GetTown();
+
+		// looked back at over the player's shoulder, from in front of them
+		if (AController* Eyes = Town->GetWalker()->GetController())
+		{
+			Eyes->SetControlRotation(FRotator(-8.0f, Town->GetWalker()->GetActorRotation().Yaw + 100.0f, 0.0f));
+		}
+	} });
+
+	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("square_26_as_played_in_tow_from_the_side")); } });
+
+	for (const bool bRun : { false, true })
+	{
+		Steps.Add({ 0.3f, [bRun]()
+		{
+			ATownGameMode* Town = GetTown();
+			const FVector Here = Town->GetWalker()->GetActorLocation();
+
+			Town->GetWalker()->SetJogging(bRun);
+
+			StandAt(FVector2D(Here.X - 450.0f, Here.Y), 180.0f);
+		} });
+
+		Steps.Add({ 0.9f, [bRun]() { GutTests::Screenshot(bRun ? TEXT("square_28_as_played_led_at_a_run") : TEXT("square_27_as_played_led_at_a_walk")); } });
+		Steps.Add({ 3.0f, []() {} });
+	}
+
+	Steps.Add({ 0.3f, []()
+	{
+		GetTown()->GetWalker()->SetJogging(false);
 
 		GetRun()->Stable = FGutStableState();
 		GetRun()->PendingStory = EGutStory::None;

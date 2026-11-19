@@ -259,6 +259,10 @@ struct FTownCall
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Call", meta = (ClampMin = 0))
 	int32 Sells = 0;
 
+	/** The lot this is about, from its being put up to its being written down. Nought is none. It is not called if that lot is no longer there to be sold. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Call", meta = (ClampMin = 0))
+	int32 About = 0;
+
 	/** If true every lot that has been walked off comes back up as it is called: the next of them */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Call")
 	bool bBringsUp = false;
@@ -380,6 +384,14 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place")
 	TArray<FVector> LotWay;
+
+	/**
+	 *  The way somebody the player has bought comes down off where they are sold from, to the ground the player walks on:
+	 *  from the head of the deck (the last place of Lot Way) on. From its last place they follow the player. With none
+	 *  they go down the way the lots came up.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place")
+	TArray<FVector> LotDown;
 
 	/** How far behind its own mark a lot walks along the line of the others, to get to it or away from it without going through them */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place", meta = (ClampMin = 0, Units = "cm"))

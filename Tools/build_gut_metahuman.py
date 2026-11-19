@@ -315,13 +315,14 @@ GRIP_THUMB = (unreal.Rotator(roll=0.0, pitch=0.0, yaw=0.0), unreal.Rotator(roll=
 
 
 def grip_poses(asset):
-    """Adds to the retargeter three more poses for the body to start from: the right hand closed with the left half closed
-    (a weapon in the right hand, the left free to guard and grab), the left hand closed, and both closed (fists).
+    """Adds to the retargeter four more poses for the body to start from: the right hand closed with the left half closed
+    (a weapon in the right hand, the left free to guard and grab), the left hand closed, both closed (fists), and both
+    half closed (somebody whose wrists are tied behind them).
     The game picks one for what the fighter holds, and the fingers stay that way whatever the fight does with the arm."""
     controller = unreal.IKRetargeterController.get_controller(asset)
     target = unreal.RetargetSourceOrTarget.TARGET
     resting = controller.get_current_retarget_pose_name(target)
-    for pose, closing in (("GripRight", {"r": 1.0, "l": FREE_HAND}), ("GripLeft", {"l": 1.0}), ("GripBoth", {"r": 1.0, "l": 1.0})):
+    for pose, closing in (("GripRight", {"r": 1.0, "l": FREE_HAND}), ("GripLeft", {"l": 1.0}), ("GripBoth", {"r": 1.0, "l": 1.0}), ("GripLoose", {"r": 0.5, "l": 0.5})):
         controller.remove_retarget_pose(pose, target)
         controller.duplicate_retarget_pose(resting, pose, target)
         controller.set_current_retarget_pose(pose, target)

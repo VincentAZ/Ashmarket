@@ -95,6 +95,8 @@ AGutFighter::AGutFighter()
 
 	DisplayName = FText::FromString(TEXT("FIGHTER"));
 
+	BoundArms = TSoftObjectPtr<UAnimSequenceBase>(FSoftObjectPath(TEXT("/Game/Gut/Art/Motion/crowd_watch_hands_behind.crowd_watch_hands_behind")));
+
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(35.0f, 90.0f);
 
@@ -149,6 +151,11 @@ AGutFighter::AGutFighter()
 	Collar->SetupAttachment(GetMesh(), CollarBone);
 	Collar->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Collar->SetVisibility(false);
+
+	Tie = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Tie"));
+	Tie->SetupAttachment(RootComponent);
+	Tie->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Tie->SetVisibility(false);
 
 	// create the body the player sees. Which body, if any, comes from the Blueprint.
 	BodyRetarget = CreateDefaultSubobject<URetargetComponent>(TEXT("BodyRetarget"));
@@ -270,11 +277,42 @@ void AGutFighter::Tick(float DeltaTime)
 	if (!HasBody())
 	{
 		UpdateChain();
+		UpdateTie();
 		ListenToFeet();
 	}
 
 	UpdateStrikeShift(DeltaTime);
 	Bleed(DeltaTime);
+
+	// tied wrists: where those of the body that is seen have come to, across the body, and so how much further to bring them
+	if (BoundClip)
+	{
+		static const FName LeftHand(TEXT("hand_l"));
+		static const FName RightHand(TEXT("hand_r"));
+
+		static const FName LeftShoulder(TEXT("upperarm_l"));
+		static const FName RightShoulder(TEXT("upperarm_r"));
+
+		if (const USkeletalMeshComponent* Seen = GetShownMesh(); Seen && Seen->GetBoneIndex(LeftHand) != INDEX_NONE && Seen->GetBoneIndex(RightHand) != INDEX_NONE
+			&& Seen->GetBoneIndex(LeftShoulder) != INDEX_NONE && Seen->GetBoneIndex(RightShoulder) != INDEX_NONE)
+		{
+			// across the body is from one shoulder to the other, whichever way the body is turned
+			const FVector Across = (Seen->GetBoneLocation(RightShoulder) - Seen->GetBoneLocation(LeftShoulder)).GetSafeNormal2D();
+			const float Apart = FVector::DotProduct(Seen->GetBoneLocation(RightHand) - Seen->GetBoneLocation(LeftHand), Across);
+
+			BoundPast = FMath::Clamp(BoundPast + ((Apart + BoundCross) * 0.5f * FMath::Min(DeltaTime * 8.0f, 1.0f)), -10.0f, 20.0f);
+
+			// -GutBoundLog on the command line writes down, four times a second, where the tied wrists are and what is being done about it
+			static const bool bBoundLog = FParse::Param(FCommandLine::Get(), TEXT("GutBoundLog"));
+
+			if (bBoundLog && GFrameCounter % 15 == 0)
+			{
+				UE_LOG(LogGut, Log, TEXT("[bound] %s: the seen wrists are %.1f cm apart across the body (%.1f in all), the fighting skeleton's %.1f; each is taken %.1f past the middle"),
+					*GetName(), Apart, FVector::Dist(Seen->GetBoneLocation(RightHand), Seen->GetBoneLocation(LeftHand)),
+					FVector::DotProduct(GetMesh()->GetBoneLocation(RightHand) - GetMesh()->GetBoneLocation(LeftHand), Across), BoundPast);
+			}
+		}
+	}
 
 	if (State == EGutFighterState::Dead)
 	{
@@ -2541,6 +2579,15 @@ void AGutFighter::SetAtEase(bool bNewAtEase)
 	UpdateWeaponMesh();
 }
 
+void AGutFighter::SetBound(bool bNewBound)
+{
+	BoundClip = bNewBound ? BoundArms.LoadSynchronous() : nullptr;
+	BoundPast = 2.0f;
+
+	// and what its hands do
+	UpdateWeaponMesh();
+}
+
 void AGutFighter::SetJogging(bool bNewJogging)
 {
 	if (bJogging != bNewJogging)
@@ -3654,10 +3701,81 @@ float AGutFighter::GetBlockCost(const FGutAttackDef& Attack) const
 	return Attack.BlockStaminaDamage * Scale;
 }
 
+void AGutFighter::UpdateTie()
+{
+	static const FName Hands[] = { FName("hand_l"), FName("hand_r") };
+	static const FName Forearms[] = { FName("lowerarm_l"), FName("lowerarm_r") };
+
+	const USkeletalMeshComponent* Seen = GetShownMesh();
+
+	const bool bTied = BoundClip && TieMesh && !Beast && Seen
+		&& Seen->GetBoneIndex(Hands[0]) != INDEX_NONE && Seen->GetBoneIndex(Hands[1]) != INDEX_NONE
+		&& Seen->GetBoneIndex(Forearms[0]) != INDEX_NONE && Seen->GetBoneIndex(Forearms[1]) != INDEX_NONE;
+
+	if (Tie->IsVisible() != bTied)
+	{
+		Tie->SetVisibility(bTied);
+	}
+
+	if (!bTied)
+	{
+		return;
+	}
+
+	if (Tie->GetStaticMesh() != TieMesh)
+	{
+		Tie->SetStaticMesh(TieMesh);
+	}
+
+	const FVector Left = Seen->GetBoneLocation(Hands[0]);
+	const FVector Right = Seen->GetBoneLocation(Hands[1]);
+	const FVector Middle = (Left + Right) * 0.5f;
+
+	// the arms go through it. Wrists crossed behind the back come at one another from either side, so the two forearms
+	// lie along one line there, one over the other, and that line is the way through; held side by side they would both
+	// point the same way, and that would be.
+	const FVector LeftArm = (Left - Seen->GetBoneLocation(Forearms[0])).GetSafeNormal();
+	const FVector RightArm = (Right - Seen->GetBoneLocation(Forearms[1])).GetSafeNormal();
+
+	const bool bCrossed = FVector::DotProduct(LeftArm, RightArm) < 0.0f;
+
+	FVector Through = (bCrossed ? LeftArm - RightArm : LeftArm + RightArm).GetSafeNormal();
+
+	if (Through.IsNearlyZero())
+	{
+		Through = LeftArm;
+	}
+
+	// its longer way from one wrist to the other, which crossed is from the one underneath to the one on top
+	FVector Across = (Right - Left) - (Through * FVector::DotProduct(Right - Left, Through));
+	const float Apart = Across.Size();
+
+	if (!Across.Normalize())
+	{
+		Across = FVector::CrossProduct(Through, GetActorForwardVector()).GetSafeNormal();
+	}
+
+	// and its knot away from the back
+	FVector Out = FVector::CrossProduct(Through, Across);
+
+	if (FVector::DotProduct(Out, Middle - GetActorLocation()) < 0.0f)
+	{
+		Across = -Across;
+		Out = -Out;
+	}
+
+	// big enough to go round both: as far as they are apart, and a wrist's thickness more on either side
+	const float Size = FMath::Clamp((Apart + (TieWrist * 2.0f)) / FMath::Max(TieSpan, 1.0f), 0.85f, 1.3f);
+
+	Tie->SetWorldLocationAndRotation(Middle - (Through * (bCrossed ? 0.0f : TieUpTheArm)), FMatrix(Across, Out, Through, FVector::ZeroVector).Rotator());
+	Tie->SetWorldScale3D(FVector(Size));
+}
+
 void AGutFighter::OnBodyPosed()
 {
 	FeedFace();
 	UpdateChain();
+	UpdateTie();
 	ListenToFeet();
 	MeasureStrike();
 }
@@ -4675,6 +4793,12 @@ void AGutFighter::UpdateWeaponMesh()
 			// bare hands are fists
 			Profile.bApplyTargetRetargetPose = true;
 			Profile.TargetRetargetPoseName = GripPoseBoth;
+		}
+		else if (BoundClip)
+		{
+			// tied hands hang half shut
+			Profile.bApplyTargetRetargetPose = true;
+			Profile.TargetRetargetPoseName = GripPoseBound;
 		}
 
 		BodyRetarget->SetCustomRetargetProfile(Profile);

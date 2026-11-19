@@ -1512,3 +1512,86 @@ bool FGutLookFinishersTest::RunTest(const FString& Parameters)
 }
 
 #endif // WITH_DEV_AUTOMATION_TESTS
+
+/**
+ *  Ashmarket.Fit.Bound   Not a test: pictures. Somebody with their wrists tied behind their back, as a lot on the Block
+ *  or somebody bought and led away is: standing, led at a walk and led at a jog, from behind, from the side and from
+ *  three quarters behind. Two bodies, one broad and one slight, since no two are as wide across the back.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGutFitBoundTest, "Ashmarket.Fit.Bound", GutTests::Flags)
+
+bool FGutFitBoundTest::RunTest(const FString& Parameters)
+{
+	using namespace GutTests;
+	using namespace GutLookTests;
+	using FStep = FScriptCommand::FStep;
+
+	if (!FApp::CanEverRender())
+	{
+		return true;
+	}
+
+	if (!OpenCage(this))
+	{
+		return false;
+	}
+
+	TArray<FStep> Steps;
+
+	Steps.Add({ 0.3f, [this](const FFight& Fight)
+	{
+		DisableEnemyBrain(this, Fight);
+
+		Fight.GameMode->StartFight();
+
+		PlaceFaceToFace(Fight);
+
+		// the other one out of the picture
+		PlaceAt(Fight.Enemy, 550.0f, 350.0f, 180.0f);
+	} });
+
+	static const FView Sides[] =
+	{
+		{ TEXT("1_behind"), FVector(-170.0f, 0.0f, 0.0f), FVector(0.0f, 0.0f, 0.0f), 40.0f, FName("pelvis") },
+		{ TEXT("2_side"), FVector(0.0f, -170.0f, 0.0f), FVector(0.0f, 0.0f, 0.0f), 40.0f, FName("pelvis") },
+		{ TEXT("3_three_quarters"), FVector(-130.0f, 110.0f, 25.0f), FVector(0.0f, 0.0f, 0.0f), 40.0f, FName("pelvis") },
+		{ TEXT("4_whole"), FVector(-330.0f, 120.0f, 40.0f), FVector(0.0f, 0.0f, 0.0f), 40.0f, FName("pelvis") },
+	};
+
+	static const TCHAR* Bodies[] = { TEXT("Asha"), TEXT("Mix05") };
+
+	for (const TCHAR* Who : Bodies)
+	{
+		Steps.Add({ 0.3f, [this, Who](const FFight& Fight)
+		{
+			const TSoftClassPtr<AActor> Body(FSoftObjectPath(FString::Printf(TEXT("/Game/Gut/Art/MetaHumans/%s/BP_%s.BP_%s_C"), Who, Who, Who)));
+
+			if (TestNotNull(*FString::Printf(TEXT("There is a body called %s"), Who), Body.LoadSynchronous()))
+			{
+				Fight.Player->SetBody(Body, Fight.Player->GetBodyRetargeter());
+			}
+
+			Fight.Player->ClearArmor();
+			Fight.Player->EquipWeapon(nullptr);
+			Fight.Player->SetAtEase(true);
+			Fight.Player->SetCollared(true);
+			Fight.Player->SetBound(true);
+		} });
+
+		for (const float Pace : { 0.0f, 150.0f, 340.0f })
+		{
+			Steps.Add({ 1.5f, [Pace](const FFight& Fight) { Fight.Player->SetLedVelocity(Fight.Player->GetActorForwardVector() * Pace); } });
+
+			for (const FView& View : Sides)
+			{
+				Steps.Add({ 0.5f, [View](const FFight& Fight) { LookFrom(Fight, View); } });
+				Steps.Add({ 0.5f, [View, Who, Pace](const FFight& Fight) { Screenshot(FString::Printf(TEXT("bound_%s_%s_%s"), Who, Pace <= 0.0f ? TEXT("standing") : (Pace < 200.0f ? TEXT("walked") : TEXT("jogged")), View.Name)); } });
+				Steps.Add({ 0.2f, [](const FFight& Fight) {} });
+			}
+		}
+	}
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScriptCommand(this, MoveTemp(Steps)));
+
+	return true;
+}

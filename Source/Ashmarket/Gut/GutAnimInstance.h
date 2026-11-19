@@ -70,6 +70,16 @@ struct FGutAnimInputs
 	/** Which way that weapon points while standing ready and with the guard up, in the space of the body's own mesh. Zero for none. */
 	FVector WeaponAim = FVector::ZeroVector;
 	FVector BlockWeaponAim = FVector::ZeroVector;
+
+	/**
+	 *  For somebody whose wrists are tied behind their back: a clip with the arms held there, which the arms are taken
+	 *  from whatever the legs and the back are doing. None for anybody whose hands are their own.
+	 */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequenceBase> Bound;
+
+	/** How far past the middle of the two each wrist is taken toward the other's side, in centimetres: see AGutFighter::BoundPast */
+	float BoundPast = 2.0f;
 };
 
 /**
@@ -108,6 +118,9 @@ private:
 		FCompactPoseBoneIndex Head = FCompactPoseBoneIndex(INDEX_NONE);
 		FCompactPoseBoneIndex Forearm = FCompactPoseBoneIndex(INDEX_NONE);
 		FCompactPoseBoneIndex Hand = FCompactPoseBoneIndex(INDEX_NONE);
+
+		/** Each arm from the shoulder down, left then right: upper arm, forearm, hand */
+		FCompactPoseBoneIndex Arm[2][3] = { { FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE) }, { FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE) } };
 	};
 
 	/** Fills a pose from a clip at a time, or with the reference pose if there is no clip */
@@ -130,6 +143,12 @@ private:
 
 	/** Carries the body over from what it was doing when something else started */
 	void CarryOver(FPoseContext& Output);
+
+	/** Holds the arms behind the back, whatever the rest of the body is doing, and brings the wrists together there */
+	void BindArms(FPoseContext& Output);
+
+	/** Bends one arm at the elbow, on the side it is bent already, until its wrist is at a place in the space of the whole body */
+	static void ReachTo(FCompactPose& Pose, const FCompactPoseBoneIndex Arm[3], const FVector& Target);
 
 	/** The turning clip for a body that many degrees behind where the fighter faces */
 	const FGutTurnClip* ChooseTurn(float Offset) const;
@@ -165,6 +184,9 @@ private:
 	FGraphTraversalCounter SlotCounter;
 
 	TArray<float> UpperBody;
+
+	/** How much each bone belongs to an arm: all of it from the collarbone down, none of it anywhere else */
+	TArray<float> Arms;
 	TArray<float> Scratch;
 	uint16 UpperBodySerial = 0;
 	bool bUpperBodyBuilt = false;

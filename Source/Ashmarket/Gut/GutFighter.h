@@ -82,6 +82,10 @@ class AGutFighter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* Collar;
 
+	/** The rope round the wrists of somebody who is tied */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	UStaticMeshComponent* Tie;
+
 	/** The character the player sees, when the fighter has been given one: a whole actor with body, face and hair, spawned for the fight */
 	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, Category="Components", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<AActor> BodyActor;
@@ -350,6 +354,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation|At Ease", meta = (ClampMin = 10, ClampMax = 1000, Units = "cm/s"))
 	float AtEaseJogSpeed = 340.0f;
 
+	/** Where somebody's arms are when their wrists are tied behind their back: a clip the arms are taken from, whatever the rest of them is doing */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation|At Ease")
+	TSoftObjectPtr<UAnimSequenceBase> BoundArms;
+
+	/** How far the tied wrists of the body that is seen lie across one another: the right one this far to the left of the left one */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation|At Ease", meta = (ClampMin = -10, ClampMax = 20, Units = "cm"))
+	float BoundCross = 3.0f;
+
 	/** Animation slot the placeholder animations play on */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation")
 	FName AnimSlotName = FName("DefaultSlot");
@@ -504,6 +516,27 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Look")
 	FName GripPoseBoth = FName("GripBoth");
 
+	/** Pose in the Body Retargeter that half closes both hands: somebody whose wrists are tied, with nothing to do with them */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Look")
+	FName GripPoseBound = FName("GripLoose");
+
+	/**
+	 *  What ties the wrists of somebody who is bound: a band of rope, lying in its own space with its opening along Z, its
+	 *  longer way along X and its knot toward +Y. Leave empty and the wrists are held together by nothing that is seen.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation")
+	TObjectPtr<UStaticMesh> TieMesh;
+
+	/** How long that band's opening is at its own size, how thick a wrist is taken to be, and how far up the arms from the wrists it lies when they are side by side */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation", meta = (ClampMin = 1, ClampMax = 50, Units = "cm"))
+	float TieSpan = 10.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation", meta = (ClampMin = 1, ClampMax = 20, Units = "cm"))
+	float TieWrist = 3.75f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation", meta = (ClampMin = -10, ClampMax = 20, Units = "cm"))
+	float TieUpTheArm = 2.0f;
+
 	/** Shape of the collar. Leave empty for a fighter with no collar. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation")
 	TObjectPtr<UStaticMesh> CollarMesh;
@@ -610,6 +643,16 @@ protected:
 	bool bAtEase = false;
 
 	bool bJogging = false;
+
+	/**
+	 *  The clip its arms are held by while its wrists are tied, or none; and how far past the middle of the two each wrist
+	 *  of the fighting skeleton is taken, which is whatever puts the wrists of the body that is seen across one another:
+	 *  no two bodies are as broad, so it is found by looking, a little each frame
+	 */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequenceBase> BoundClip;
+
+	float BoundPast = 2.0f;
 
 	/** How fast it is being moved by something other than its own movement, for its legs to keep up with: see SetLedVelocity */
 	FVector LedVelocity = FVector::ZeroVector;
@@ -1193,6 +1236,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Gut")
 	void SetJogging(bool bNewJogging);
 
+	bool IsJogging() const { return bJogging; }
+
+	/** Ties its wrists behind its back, or lets them go: a lot on the Block, somebody bought and led away */
+	UFUNCTION(BlueprintCallable, Category="Gut")
+	void SetBound(bool bNewBound);
+
+	UFUNCTION(BlueprintPure, Category="Gut")
+	bool IsBound() const { return BoundClip != nullptr; }
+
+	UAnimSequenceBase* GetBoundArms() const { return BoundClip; }
+
+	float GetBoundPast() const { return BoundPast; }
+
 	/** At ease: stands in this clip, not the one every fighter has. For the people of the street, who do not all stand alike. */
 	void SetAtEaseIdle(UAnimSequenceBase* Idle) { AtEaseStance.Idle = Idle; }
 
@@ -1490,6 +1546,9 @@ protected:
 
 	/** Called as the body's pose is settled each frame: the moment to do what depends on where its bones have ended up */
 	void OnBodyPosed();
+
+	/** Puts the rope round the two wrists of the body that is seen, wherever they have got to, or puts it away */
+	void UpdateTie();
 
 	/** Hands this frame of the Face Loop to the body, which the face reads its expression from */
 	void FeedFace();

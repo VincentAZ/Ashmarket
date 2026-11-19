@@ -131,7 +131,7 @@
  "people": [
   {
    "name": "Chalk", "prompt": "Talk to Chalk, at the window", "body": "Zuri", "cloth": [0.06, 0.065, 0.075],
-   "x": 81.5, "y": 198.15, "facing": 270, "idle": "crowd_watch_hands_behind",
+   "x": 81.5, "y": 198.15, "facing": 270, "idle": "crowd_watch_arms_crossed",
    "lines": [
     {"id": "slate", "words": "Slate's up. Four fights tonight. The house keeps a tenth of the pot, you bet in fives, fifty at most a fight. I write the odds. I don't sell results.",
      "answers": [

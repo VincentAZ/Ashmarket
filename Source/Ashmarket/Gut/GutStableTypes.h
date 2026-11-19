@@ -64,6 +64,10 @@ struct FGutStableFighter
 	UPROPERTY(BlueprintReadOnly, Category="Stable")
 	float Wage = 0.0f;
 
+	/** If true it has been bought or signed and not yet brought to the yard: it is with its owner, wherever in the town that is */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	bool bInTow = false;
+
 	/** How its limbs are, carried from fight to fight. Negative for a fighter that has not been hurt yet. */
 	UPROPERTY()
 	float LimbHealth[GutNumLimbs] = { -1.0f, -1.0f, -1.0f, -1.0f };

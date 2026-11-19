@@ -73,6 +73,12 @@ namespace GutAnimConstants
 		{ FName("spine_04"), 0.9f },
 		{ FName("spine_05"), 1.0f },
 	};
+
+	/** Where each arm begins, as far as being tied goes: the collarbones stay with the shoulders' own movement */
+	const FName ArmRoots[] = { FName("upperarm_l"), FName("upperarm_r") };
+
+	/** Tied wrists lie one across the other: each this far above or below the middle of the two, in centimetres */
+	const float BoundStack = 1.5f;
 }
 
 namespace
@@ -136,6 +142,8 @@ void UGutAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	Inputs.Locomotion = Fighter->GetLocomotionAnimations();
 	Inputs.bKeepUpperBodyWhileMoving = Stance.bKeepUpperBodyWhileMoving;
 	Inputs.bBlocking = Fighter->IsBlocking();
+	Inputs.Bound = Fighter->GetBoundArms();
+	Inputs.BoundPast = Fighter->GetBoundPast();
 
 	// only what its own legs are doing: a shove from a blow or the carry of a lunge is not walking
 	const UCharacterMovementComponent* Movement = Fighter->GetCharacterMovement();
@@ -473,6 +481,7 @@ const TArray<float>& FGutAnimInstanceProxy::GetUpperBody(const FBoneContainer& B
 	const int32 Count = Bones.GetCompactPoseNumBones();
 
 	UpperBody.Init(0.0f, Count);
+	Arms.Init(0.0f, Count);
 
 	const FReferenceSkeleton& Skeleton = Bones.GetReferenceSkeleton();
 
@@ -493,6 +502,9 @@ const TArray<float>& FGutAnimInstanceProxy::GetUpperBody(const FBoneContainer& B
 		}
 
 		UpperBody[Bone.GetInt()] = Share;
+
+		// an arm is everything from its upper arm down
+		Arms[Bone.GetInt()] = (Parent.GetInt() >= 0 && Arms[Parent.GetInt()] > 0.0f) || Name == GutAnimConstants::ArmRoots[0] || Name == GutAnimConstants::ArmRoots[1] ? 1.0f : 0.0f;
 	}
 
 	// and the bones that are turned by hand
@@ -513,6 +525,13 @@ const TArray<float>& FGutAnimInstanceProxy::GetUpperBody(const FBoneContainer& B
 	Named.Head = Find(TEXT("head"));
 	Named.Forearm = Find(TEXT("lowerarm_r"));
 	Named.Hand = Find(TEXT("hand_r"));
+
+	Named.Arm[0][0] = Find(TEXT("upperarm_l"));
+	Named.Arm[0][1] = Find(TEXT("lowerarm_l"));
+	Named.Arm[0][2] = Find(TEXT("hand_l"));
+	Named.Arm[1][0] = Find(TEXT("upperarm_r"));
+	Named.Arm[1][1] = Find(TEXT("lowerarm_r"));
+	Named.Arm[1][2] = Find(TEXT("hand_r"));
 
 	return UpperBody;
 }
@@ -649,6 +668,98 @@ void FGutAnimInstanceProxy::HoldWeapon(FPoseContext& Output)
 	const FQuat Parent = InBody(Pose, Pose.GetParentBoneIndex(Named.Hand)).GetRotation();
 
 	Pose[Named.Hand].SetRotation((Parent.Inverse() * (HoldTurn * Hand.GetRotation())).GetNormalized());
+}
+
+void FGutAnimInstanceProxy::ReachTo(FCompactPose& Pose, const FCompactPoseBoneIndex Arm[3], const FVector& Target)
+{
+	const FTransform Upper = InBody(Pose, Arm[0]);
+	const FTransform Lower = InBody(Pose, Arm[1]);
+
+	const FVector Shoulder = Upper.GetLocation();
+	const FVector Elbow = Lower.GetLocation();
+	const FVector Wrist = InBody(Pose, Arm[2]).GetLocation();
+
+	const float UpperLength = FVector::Dist(Shoulder, Elbow);
+	const float LowerLength = FVector::Dist(Elbow, Wrist);
+
+	if (UpperLength < UE_KINDA_SMALL_NUMBER || LowerLength < UE_KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+
+	// no further than the arm is long, and no nearer than it can fold
+	const FVector Toward = (Target - Shoulder).GetSafeNormal();
+	const float Distance = FMath::Clamp(FVector::Dist(Target, Shoulder), FMath::Abs(UpperLength - LowerLength) + 0.5f, UpperLength + LowerLength - 0.5f);
+
+	// the elbow stays out on the side it is out on
+	FVector Out = (Elbow - Shoulder) - (Toward * FVector::DotProduct(Elbow - Shoulder, Toward));
+
+	if (!Out.Normalize())
+	{
+		return;
+	}
+
+	const float Along = (FMath::Square(UpperLength) - FMath::Square(LowerLength) + FMath::Square(Distance)) / (2.0f * Distance);
+	const float Off = FMath::Sqrt(FMath::Max(FMath::Square(UpperLength) - FMath::Square(Along), 0.0f));
+
+	const FVector NewElbow = Shoulder + (Toward * Along) + (Out * Off);
+	const FVector NewWrist = Shoulder + (Toward * Distance);
+
+	const FQuat UpperTurn = FQuat::FindBetweenNormals((Elbow - Shoulder).GetSafeNormal(), (NewElbow - Shoulder).GetSafeNormal());
+	const FQuat LowerTurn = FQuat::FindBetweenNormals(UpperTurn.RotateVector((Wrist - Elbow).GetSafeNormal()), (NewWrist - NewElbow).GetSafeNormal());
+
+	const FQuat UpperTurned = UpperTurn * Upper.GetRotation();
+	const FQuat LowerTurned = LowerTurn * UpperTurn * Lower.GetRotation();
+
+	const FQuat Parent = InBody(Pose, Pose.GetParentBoneIndex(Arm[0])).GetRotation();
+
+	// the hand goes with the forearm, turned on it as it was
+	Pose[Arm[0]].SetRotation((Parent.Inverse() * UpperTurned).GetNormalized());
+	Pose[Arm[1]].SetRotation((UpperTurned.Inverse() * LowerTurned).GetNormalized());
+}
+
+void FGutAnimInstanceProxy::BindArms(FPoseContext& Output)
+{
+	using namespace GutAnimConstants;
+
+	if (!Inputs.Bound || Arms.Num() != Output.Pose.GetNumBones())
+	{
+		return;
+	}
+
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		for (int32 Part = 0; Part < 3; ++Part)
+		{
+			if (Named.Arm[Side][Part].GetInt() < 0)
+			{
+				return;
+			}
+		}
+	}
+
+	// the arms as the clip holds them, behind the back, on whatever the legs and the back are doing
+	FPoseContext Held(Output);
+	FPoseContext Mixed(Output);
+
+	Sample(Held, Inputs.Bound, FMath::Fmod(IdleTime, FMath::Max(Inputs.Bound->GetPlayLength(), 0.01f)));
+
+	MixByBone(Output, Held, Arms, Mixed);
+
+	Output = Mixed;
+
+	// and the wrists brought together, one across the other: somebody tied cannot hold their hands a foot apart
+	FCompactPose& Pose = Output.Pose;
+
+	const FVector Left = InBody(Pose, Named.Arm[0][2]).GetLocation();
+	const FVector Right = InBody(Pose, Named.Arm[1][2]).GetLocation();
+	const FVector Middle = (Left + Right) * 0.5f;
+
+	// which way is across the body is read off the shoulders, which never change sides: the clip's own wrists do, as its hands shift
+	const FVector Across = (InBody(Pose, Named.Arm[1][0]).GetLocation() - InBody(Pose, Named.Arm[0][0]).GetLocation()).GetSafeNormal2D();
+
+	ReachTo(Pose, Named.Arm[0], Middle + (Across * Inputs.BoundPast) + (FVector::UpVector * BoundStack));
+	ReachTo(Pose, Named.Arm[1], Middle - (Across * Inputs.BoundPast) - (FVector::UpVector * BoundStack));
 }
 
 void FGutAnimInstanceProxy::ClearWeapon(FPoseContext& Output) const
@@ -1013,6 +1124,8 @@ bool FGutAnimInstanceProxy::Evaluate(FPoseContext& Output)
 
 		SlotEvaluatePose(SlotName, BaseData, SlotSourceWeight, OutputData, SlotWeight, SlotTotalWeight);
 	}
+
+	BindArms(Output);
 
 	if (Inputs.bFighter && Named.Hand.GetInt() >= 0)
 	{

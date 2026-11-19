@@ -45,6 +45,23 @@ struct FTownLed
 	float Wait = 0.0f;
 };
 
+/** Somebody the player has bought or signed and not yet brought to their yard: they come along behind, wherever the player goes */
+struct FTownTow
+{
+	/** Which of the stable's fighters they are, and which line of the day's book they were */
+	int32 Fighter = INDEX_NONE;
+	int32 Offer = INDEX_NONE;
+
+	/** The places they first go through to get down to the ground, off the Block, before they follow anybody */
+	TArray<FVector> Way;
+
+	/** How long before they set off */
+	float Wait = 0.0f;
+
+	/** Where the player's feet have been since, oldest first. They are walked along it, and so round whatever the player went round. */
+	TArray<FVector> Trail;
+};
+
 /** A light in the place that is a fire: how bright the list made it, about which it wavers */
 struct FTownFire
 {
@@ -173,6 +190,28 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town")
 	TSoftClassPtr<AGutGameMode> CageRules;
 
+	/** Whoever is in tow keeps this far behind the player, and each of them this far behind the one in front */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 50, ClampMax = 500, Units = "cm"))
+	float TowGap = 130.0f;
+
+	/**
+	 *  And this far to one side of the way the player went, the first to the left and the next to the right: at the
+	 *  player's shoulder, where they can be seen, and not between the player and whoever is looking over the player's back
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 0, ClampMax = 300, Units = "cm"))
+	float TowAside = 80.0f;
+
+	/** The player's way is marked this often for them to follow, and they hurry when they are this much further behind than they should be */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 10, ClampMax = 200, Units = "cm"))
+	float TowCrumb = 40.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 50, ClampMax = 2000, Units = "cm"))
+	float TowHurry = 250.0f;
+
+	/** The colour of what somebody sold at the Block is dressed in */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town")
+	FLinearColor TowCloth = FLinearColor(0.09f, 0.085f, 0.075f);
+
 	/** Somebody walking their round stops for whoever is in front of them and this near, and walks on when the way is clear */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 30, ClampMax = 400, Units = "cm"))
 	float BeatRoom = 130.0f;
@@ -239,6 +278,12 @@ protected:
 
 	/** Everybody who walks a round of the place */
 	TArray<FTownBeat> Beats;
+
+	/** Everybody who is in tow, nearest the player first, and the body of each */
+	TArray<FTownTow> Tow;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<AGutFighter>> TowBodies;
 
 	/** Every light in the place that is a fire: the drums, the lanterns */
 	TArray<FTownFire> Fires;
@@ -364,6 +409,27 @@ protected:
 	/** Moves everybody who walks a round of the place on along it */
 	void UpdateBeats(float DeltaTime);
 
+	/** Dyes what somebody is wearing */
+	static void Dye(const AGutFighter* Body, const FLinearColor& Cloth);
+
+	/** Stands somebody who is owned or signed in the place: collared and tied if they are owned */
+	AGutFighter* StandOwned(const FGutStableFighter& Fighter, const FTransform& Where);
+
+	/** Has somebody come along behind the player from now on: by Way first, if they have to get down from somewhere */
+	void TakeInTow(AGutFighter* Body, int32 Fighter, int32 Offer, TArray<FVector> Way = TArray<FVector>(), float Wait = 0.0f);
+
+	/** Takes off the Block whoever the player bought from it today, and stands behind the player whoever is in tow, when the place is come to */
+	void SettleOwned();
+
+	/** Moves everybody in tow along after the player: at a walk, or a jog when the player jogs or they have fallen behind */
+	void UpdateTow(float DeltaTime);
+
+	/** Whoever is in tow is in the yard from now on: the player has gone in at the Gut */
+	void HandInTow();
+
+	/** True if the lot of that number is not there to be sold: the player has bought it */
+	bool IsLotGone(int32 Lot) const;
+
 	/** Finds the place's fires, which the builder marks, and makes them waver */
 	void FindFires();
 	void UpdateFires();
@@ -481,6 +547,10 @@ public:
 
 	/** Buys the piece on that line with the fighter's own water. Returns false if it cannot be bought, and says why. */
 	bool BuyAtShop(int32 Line);
+
+	/** How many are in tow behind the player, and the body of one of them */
+	int32 GetTowCount() const { return Tow.Num(); }
+	const AGutFighter* GetTowBody(int32 Index) const { return TowBodies.IsValidIndex(Index) ? TowBodies[Index].Get() : nullptr; }
 
 	/** For the tests: how many walk a round, and how far along it one of them is */
 	int32 GetBeatCount() const { return Beats.Num(); }

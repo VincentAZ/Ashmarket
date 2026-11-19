@@ -208,6 +208,7 @@ void ATownGameMode::Tick(float DeltaTime)
 	UpdateCalls(DeltaTime);
 	UpdateLed(DeltaTime);
 	UpdateBeats(DeltaTime);
+	UpdateTow(DeltaTime);
 	UpdateFires();
 
 	if (bAtBook)
@@ -395,29 +396,10 @@ void ATownGameMode::Settle()
 			}
 
 			// their clothes are the clothes everybody has, in their own colour
-			if (const AActor* Seen = Body->GetBodyActor())
-			{
-				for (UActorComponent* Component : Seen->GetComponents())
-				{
-					USkeletalMeshComponent* Part = Cast<USkeletalMeshComponent>(Component);
+			Dye(Body, Person.Cloth);
 
-					if (!Part || Part->GetFName() == TownConstants::BodyPart || Part->GetFName() == TownConstants::FacePart)
-					{
-						continue;
-					}
-
-					for (int32 i = 0; i < Part->GetNumMaterials(); ++i)
-					{
-						if (UMaterialInstanceDynamic* Cloth = Part->CreateAndSetMaterialInstanceDynamic(i))
-						{
-							for (const FName& Parameter : TownConstants::ClothParameters)
-							{
-								Cloth->SetVectorParameterValue(Parameter, Person.Cloth);
-							}
-						}
-					}
-				}
-			}
+			// a lot on the Block has its wrists tied behind it
+			Body->SetBound(Person.bCollared && Person.Lot > 0);
 
 			People.Add(Body);
 
@@ -434,6 +416,7 @@ void ATownGameMode::Settle()
 	}
 
 	FindFires();
+	SettleOwned();
 
 	// what the place sounds like, under the night
 	if (UGutSoundSubsystem* Sounds = PlaceData ? UGutSoundSubsystem::Get(this) : nullptr)
@@ -447,6 +430,357 @@ void ATownGameMode::Settle()
 	bSettled = true;
 
 	UE_LOG(LogTown, Log, TEXT("Street: %s, %d people, %d doors, %d fires"), PlaceData ? *PlaceData->Name : TEXT("nowhere"), People.Num(), PlaceData ? PlaceData->Doors.Num() : 0, Fires.Num());
+}
+
+void ATownGameMode::Dye(const AGutFighter* Body, const FLinearColor& Cloth)
+{
+	const AActor* Seen = Body ? Body->GetBodyActor() : nullptr;
+
+	if (!Seen)
+	{
+		return;
+	}
+
+	for (UActorComponent* Component : Seen->GetComponents())
+	{
+		USkeletalMeshComponent* Part = Cast<USkeletalMeshComponent>(Component);
+
+		if (!Part || Part->GetFName() == TownConstants::BodyPart || Part->GetFName() == TownConstants::FacePart)
+		{
+			continue;
+		}
+
+		for (int32 i = 0; i < Part->GetNumMaterials(); ++i)
+		{
+			if (UMaterialInstanceDynamic* Dyed = Part->CreateAndSetMaterialInstanceDynamic(i))
+			{
+				for (const FName& Parameter : TownConstants::ClothParameters)
+				{
+					Dyed->SetVectorParameterValue(Parameter, Cloth);
+				}
+			}
+		}
+	}
+}
+
+AGutFighter* ATownGameMode::StandOwned(const FGutStableFighter& Fighter, const FTransform& Where)
+{
+	UClass* Kind = PersonClass.LoadSynchronous();
+
+	AGutFighter* Body = Kind ? GetWorld()->SpawnActorDeferred<AGutFighter>(Kind, Where, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn) : nullptr;
+
+	if (!Body)
+	{
+		return nullptr;
+	}
+
+	if (!Fighter.Body.IsNull())
+	{
+		Body->SetBodyClass(Fighter.Body);
+	}
+
+	UGameplayStatics::FinishSpawningActor(Body, Where);
+
+	Body->EquipWeapon(nullptr);
+	Body->SetCollared(Fighter.bOwned);
+	Body->SetAtEase(true);
+	Body->GetCharacterMovement()->DisableMovement();
+
+	if (Fighter.bOwned)
+	{
+		Dye(Body, TowCloth);
+	}
+
+	return Body;
+}
+
+void ATownGameMode::TakeInTow(AGutFighter* Body, int32 Fighter, int32 Offer, TArray<FVector> Way, float Wait)
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!Body || !GameInstance || !GameInstance->Stable.Fighters.IsValidIndex(Fighter))
+	{
+		return;
+	}
+
+	// somebody bought is led with their wrists tied. Somebody who signed walks with whoever pays them.
+	Body->SetBound(GameInstance->Stable.Fighters[Fighter].bOwned);
+	Body->GetCharacterMovement()->DisableMovement();
+
+	// the player is never shut in by what they own
+	Body->GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+
+	FTownTow& One = Tow.AddDefaulted_GetRef();
+
+	One.Fighter = Fighter;
+	One.Offer = Offer;
+	One.Way = MoveTemp(Way);
+	One.Wait = Wait;
+
+	TowBodies.Add(Body);
+
+	UE_LOG(LogTown, Log, TEXT("Street: %s is in tow, %d behind the player"), *GameInstance->Stable.Fighters[Fighter].FighterName.ToString(), Tow.Num());
+}
+
+bool ATownGameMode::IsLotGone(int32 Lot) const
+{
+	if (!PlaceData || Lot <= 0)
+	{
+		return false;
+	}
+
+	const int32 Who = PlaceData->People.IndexOfByPredicate([Lot](const FTownPerson& Person) { return Person.Lot == Lot; });
+
+	// only once everybody has been stood: before that nobody is there yet
+	return bSettled && People.IsValidIndex(Who) && !People[Who];
+}
+
+void ATownGameMode::SettleOwned()
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+	const AGutFighter* Walker = GetWalker();
+
+	if (!GameInstance || !Walker || !PlaceData || !GameInstance->Stable.bStarted)
+	{
+		return;
+	}
+
+	// whoever was bought off the Block today is not standing on it still
+	TArray<FGutStableFighter> Offers;
+	TArray<int32> Lots;
+	GetBookOffers(Offers, Lots);
+
+	for (int32 i = 0; i < Lots.Num(); ++i)
+	{
+		const int32 Lot = Lots[i];
+
+		if (Lot <= 0 || !GameInstance->Stable.BoughtToday.Contains(i))
+		{
+			continue;
+		}
+
+		const int32 Who = PlaceData->People.IndexOfByPredicate([Lot](const FTownPerson& Person) { return Person.Lot == Lot; });
+
+		if (People.IsValidIndex(Who) && People[Who])
+		{
+			People[Who]->Destroy();
+			People[Who] = nullptr;
+
+			UE_LOG(LogTown, Log, TEXT("Street: %s was bought today, and is not on the Block"), *PlaceData->People[Who].Name);
+		}
+	}
+
+	// and whoever is in tow comes into the place behind the player
+	const float HalfHeight = Walker->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	const FVector Back = -Walker->GetActorForwardVector();
+
+	for (int32 i = 0; i < GameInstance->Stable.Fighters.Num(); ++i)
+	{
+		const FGutStableFighter& Fighter = GameInstance->Stable.Fighters[i];
+
+		if (!Fighter.bInTow)
+		{
+			continue;
+		}
+
+		const FTransform Where(Walker->GetActorRotation(), Walker->GetActorLocation() + (Back * (TowGap * ((Tow.Num() / 2) + 1)))
+			+ (Walker->GetActorRightVector() * (TowAside * ((Tow.Num() % 2) == 0 ? -1.0f : 1.0f))));
+
+		if (AGutFighter* Body = StandOwned(Fighter, Where))
+		{
+			KeepOnGround(Body);
+			TakeInTow(Body, i, INDEX_NONE);
+		}
+	}
+}
+
+void ATownGameMode::UpdateTow(float DeltaTime)
+{
+	AGutFighter* Walker = GetWalker();
+
+	if (Tow.IsEmpty() || !Walker)
+	{
+		return;
+	}
+
+	const FVector WalkerFeet = Walker->GetActorLocation() - FVector(0.0f, 0.0f, Walker->GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
+
+	// what is under somebody coming down off the Block is its deck, its ramp or the ground, and never anybody
+	FCollisionQueryParams Looking(FName("TownTow"), true, Walker);
+
+	for (const TArray<TObjectPtr<AGutFighter>>* Bodies : { &People, &TowBodies })
+	{
+		for (const AGutFighter* Body : *Bodies)
+		{
+			if (Body)
+			{
+				Looking.AddIgnoredActor(Body);
+				Looking.AddIgnoredActor(Body->GetBodyActor());
+			}
+		}
+	}
+
+	for (int32 i = 0; i < Tow.Num(); ++i)
+	{
+		FTownTow& One = Tow[i];
+		AGutFighter* Body = TowBodies.IsValidIndex(i) ? TowBodies[i].Get() : nullptr;
+
+		if (!Body)
+		{
+			continue;
+		}
+
+		// the player's way is marked as it is walked, a little to their own side of it
+		const FVector Mark = WalkerFeet + (Walker->GetActorRightVector() * (TowAside * ((i % 2) == 0 ? -1.0f : 1.0f)));
+
+		if (One.Trail.IsEmpty() || FVector::Dist2D(One.Trail.Last(), Mark) > TowCrumb)
+		{
+			One.Trail.Add(Mark);
+		}
+
+		if (One.Wait > 0.0f)
+		{
+			One.Wait -= DeltaTime;
+			continue;
+		}
+
+		const float HalfHeight = Body->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+		const FRotator Facing = Body->GetActorRotation();
+
+		FVector Feet = Body->GetActorLocation() - FVector(0.0f, 0.0f, HalfHeight);
+		FVector2D Flat(Feet.X, Feet.Y);
+
+		const bool bComingDown = !One.Way.IsEmpty();
+
+		// how far behind the player they are, by the way the player went
+		float Behind = 0.0f;
+		FVector2D From = Flat;
+
+		for (const FVector& Crumb : One.Trail)
+		{
+			Behind += FVector2D::Distance(From, FVector2D(Crumb.X, Crumb.Y));
+			From = FVector2D(Crumb.X, Crumb.Y);
+		}
+
+		Behind += FVector2D::Distance(From, FVector2D(WalkerFeet.X, WalkerFeet.Y));
+
+		const float Gap = TowGap * ((i / 2) + 1);
+		const bool bFarBehind = Behind > Gap + TowHurry;
+
+		// they run when the player runs, and to catch up
+		Body->SetJogging(!bComingDown && (Walker->IsJogging() || bFarBehind));
+
+		const float OwnPace = Body->GetCharacterMovement()->MaxWalkSpeed;
+		const float Pace = (OwnPace > 1.0f ? OwnPace : 150.0f) * (!bComingDown && bFarBehind ? 1.15f : 1.0f);
+
+		TArray<FVector>& Path = bComingDown ? One.Way : One.Trail;
+
+		// as far as a frame's going goes, and no nearer the player than their place behind
+		float Left = bComingDown ? Pace * DeltaTime : FMath::Min(Pace * DeltaTime, FMath::Max(Behind - Gap, 0.0f));
+
+		FVector2D Going = FVector2D::ZeroVector;
+		bool bMoved = false;
+
+		while (Left > UE_KINDA_SMALL_NUMBER && !Path.IsEmpty())
+		{
+			const FVector2D To(Path[0].X, Path[0].Y);
+			const float Distance = FVector2D::Distance(Flat, To);
+
+			if (Distance > UE_KINDA_SMALL_NUMBER)
+			{
+				Going = (To - Flat) / Distance;
+			}
+
+			const float Step = FMath::Min(Distance, Left);
+
+			// the ground under the player's feet there is the ground under theirs
+			if (!bComingDown && Distance > UE_KINDA_SMALL_NUMBER)
+			{
+				Feet.Z += (Path[0].Z - Feet.Z) * (Step / Distance);
+			}
+
+			Flat += Going * Step;
+			Left -= Step;
+			bMoved = bMoved || Step > UE_KINDA_SMALL_NUMBER;
+
+			if (Distance <= Step + UE_KINDA_SMALL_NUMBER)
+			{
+				Path.RemoveAt(0);
+			}
+		}
+
+		if (bComingDown)
+		{
+			// on whatever is under them there, as a lot walked off the Block is: see UpdateLed
+			float Highest = -TNumericLimits<float>::Max();
+
+			for (float Along : { 0.0f, 14.0f, -14.0f })
+			{
+				const FVector2D At = Flat + (Going * Along);
+
+				FHitResult Under;
+
+				if (GetWorld()->LineTraceSingleByChannel(Under, FVector(At.X, At.Y, Feet.Z + 80.0f), FVector(At.X, At.Y, Feet.Z - 120.0f), ECC_Visibility, Looking))
+				{
+					Highest = FMath::Max(Highest, Under.Location.Z);
+				}
+			}
+
+			if (Highest > -TNumericLimits<float>::Max())
+			{
+				Feet.Z = FMath::FInterpTo(Feet.Z, Highest, DeltaTime, 14.0f);
+			}
+		}
+
+		// standing, they turn to whoever owns them; going, to where they are going
+		FVector2D Toward = Going;
+
+		if (!bMoved)
+		{
+			Toward = FVector2D(WalkerFeet.X, WalkerFeet.Y) - Flat;
+		}
+
+		FRotator Turned = Facing;
+
+		if (!Toward.IsNearlyZero())
+		{
+			Turned = FMath::RInterpConstantTo(Facing, FRotator(0.0f, FVector(Toward.X, Toward.Y, 0.0f).Rotation().Yaw, 0.0f), DeltaTime, LotTurnSpeed);
+		}
+
+		Body->SetActorLocationAndRotation(FVector(Flat.X, Flat.Y, Feet.Z + HalfHeight), Turned, false, nullptr, ETeleportType::None);
+		Body->SetLedVelocity(bMoved ? FVector(Going.X, Going.Y, 0.0f) * Pace : FVector::ZeroVector);
+
+		// and round whatever stands in the place, once they are down on its ground
+		if (!bComingDown)
+		{
+			KeepOnGround(Body);
+		}
+	}
+}
+
+void ATownGameMode::HandInTow()
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	int32 Handed = 0;
+
+	for (FGutStableFighter& Fighter : GameInstance->Stable.Fighters)
+	{
+		Handed += Fighter.bInTow ? 1 : 0;
+		Fighter.bInTow = false;
+	}
+
+	if (Handed > 0)
+	{
+		GameInstance->SaveRun();
+
+		UE_LOG(LogTown, Log, TEXT("Street: %d in tow handed in at the yard"), Handed);
+	}
 }
 
 void ATownGameMode::FindFires()
@@ -948,6 +1282,22 @@ FString ATownGameMode::GetOwnedLine() const
 
 	const int32 Count = GameInstance->Stable.Fighters.Num();
 
+	// whoever is with the player now comes first: where they are to be taken
+	TArray<FString> With;
+
+	for (const FGutStableFighter& Fighter : GameInstance->Stable.Fighters)
+	{
+		if (Fighter.bInTow)
+		{
+			With.Add(Fighter.FighterName.ToString());
+		}
+	}
+
+	if (!With.IsEmpty())
+	{
+		return FString::Printf(TEXT("%s %s with you. Your yard: Pool Street, the yard hand at the gate beside the Gut."), *FString::Join(With, TEXT(" and ")), With.Num() == 1 ? TEXT("is") : TEXT("are"));
+	}
+
 	return FString::Printf(TEXT("You own %d %s: in your yard beside the Gut. On Pool Street, talk to the yard hand."), Count, Count == 1 ? TEXT("fighter") : TEXT("fighters"));
 }
 
@@ -1101,6 +1451,9 @@ void ATownGameMode::Do(ETownDeed Deed, const FTownDoor* Door)
 		return;
 	}
 
+	// whoever is in tow goes round to the yard, whichever of the Gut's ways the player goes in by: the yard hand sees to it
+	HandInTow();
+
 	// the cage's way out leads back to where the player is standing now
 	if (const AGutFighter* Walker = GetWalker())
 	{
@@ -1219,7 +1572,17 @@ void ATownGameMode::UpdateCalls(float DeltaTime)
 	// a call that is spoken stays up until it has been said, and a moment more
 	if (!PlaceData->Calls.IsValidIndex(CallIndex) || CallTime >= FMath::Max(PlaceData->Calls[CallIndex].Seconds, CallSpoken))
 	{
-		CallIndex = (CallIndex + 1) % PlaceData->Calls.Num();
+		// the next of them that is not about a lot the player has taken away: nobody is put up who is not there
+		for (int32 Tried = 0; Tried < PlaceData->Calls.Num(); ++Tried)
+		{
+			CallIndex = (CallIndex + 1) % PlaceData->Calls.Num();
+
+			if (!IsLotGone(PlaceData->Calls[CallIndex].About))
+			{
+				break;
+			}
+		}
+
 		CallTime = 0.0f;
 
 		BeginCall(PlaceData->Calls[CallIndex]);
@@ -2030,11 +2393,11 @@ void ATownGameMode::OpenBook(int32 Keeper)
 	}
 	else if (const UGutGameInstance* GameInstance = GetGutGameInstance(); GameInstance && GameInstance->Stable.bStarted)
 	{
-		ShopSaid = TEXT("These are not spoken for yet. Whoever you buy is walked to your yard at the Gut when the sale is done.");
+		ShopSaid = TEXT("These are not spoken for yet. Whoever you buy comes away with you: your yard is beside the Gut, on Pool Street.");
 	}
 	else
 	{
-		ShopSaid = TEXT("These are not spoken for yet. Buy one and you are an owner: they are walked to your yard at the Gut, and you send them in from there.");
+		ShopSaid = TEXT("These are not spoken for yet. Buy one and you are an owner: they come away with you, to your yard beside the Gut, and you send them in from there.");
 	}
 
 	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
@@ -2053,7 +2416,8 @@ void ATownGameMode::OpenBook(int32 Keeper)
 	const int32 Signer = Lots.IndexOfByKey(0);
 	UClass* Kind = PersonClass.LoadSynchronous();
 
-	if (Offers.IsValidIndex(Signer) && Kind && PlaceData->People.IsValidIndex(Keeper))
+	// unless they signed with the player today, and are behind them already
+	if (Offers.IsValidIndex(Signer) && Kind && PlaceData->People.IsValidIndex(Keeper) && !GetOwnerState().BoughtToday.Contains(Signer))
 	{
 		const FTownPerson& Clerk = PlaceData->People[Keeper];
 
@@ -2123,6 +2487,12 @@ void ATownGameMode::ShowBookLine()
 		else
 		{
 			Shown = BookSigner;
+		}
+
+		// bought a moment ago: still looked at, wherever they have got to
+		if (const int32 Towed = Tow.IndexOfByPredicate([this](const FTownTow& One) { return One.Offer == ShopChoice; }); !Shown && TowBodies.IsValidIndex(Towed))
+		{
+			Shown = TowBodies[Towed];
 		}
 	}
 
@@ -2231,12 +2601,98 @@ bool ATownGameMode::BuyAtBook(int32 Line)
 		GameInstance->PendingStory = EGutStory::Owner;
 	}
 
+	// whoever is bought or signed goes with the buyer, and is in tow until the yard
+	const int32 Fighter = Stable.Fighters.Num() - 1;
+
+	if (Stable.Fighters.IsValidIndex(Fighter))
+	{
+		Stable.Fighters[Fighter].bInTow = true;
+	}
+
 	GameInstance->Stable = Stable;
 	GameInstance->SaveRun();
 
+	const int32 Lot = Lots[Line];
+	const int32 Stood = Lot > 0 ? PlaceData->People.IndexOfByPredicate([Lot](const FTownPerson& Person) { return Person.Lot == Lot; }) : INDEX_NONE;
+
+	if (People.IsValidIndex(Stood) && People[Stood])
+	{
+		// a lot: no longer one of the sale's, and down off the Block by the way the lots go, from wherever on it they are
+		AGutFighter* Body = People[Stood];
+
+		People[Stood] = nullptr;
+		KeptLots.Remove(Stood);
+		Led.RemoveAll([Stood](const FTownLed& One) { return One.Person == Stood; });
+
+		const FTownPerson& Person = PlaceData->People[Stood];
+		const TArray<FVector>& Down = PlaceData->LotWay;
+		const FVector Here = Body->GetActorLocation();
+
+		TArray<FVector> Way;
+		int32 Nearest = Down.Num() - 1;
+
+		const bool bOnMark = FVector::Dist2D(Here, Person.Place) < 40.0f;
+
+		if (bOnMark)
+		{
+			// still on its mark: back off it first, along behind the others
+			Way.Add(Person.Place - (FRotator(0.0f, Person.Facing, 0.0f).Vector() * PlaceData->LotAisle));
+		}
+		else
+		{
+			for (int32 i = 0; i < Down.Num(); ++i)
+			{
+				if (FVector::DistSquared2D(Down[i], Here) < FVector::DistSquared2D(Down[Nearest], Here))
+				{
+					Nearest = i;
+				}
+			}
+		}
+
+		if (!PlaceData->LotDown.IsEmpty())
+		{
+			// the place has a way down to the buyers: up to the head of the deck first, if they are not on it
+			for (int32 i = bOnMark ? Down.Num() : Nearest; i < Down.Num(); ++i)
+			{
+				Way.Add(Down[i]);
+			}
+
+			Way.Append(PlaceData->LotDown);
+		}
+		else
+		{
+			for (int32 i = Nearest; i >= 0; --i)
+			{
+				Way.Add(Down[i]);
+			}
+		}
+
+		TakeInTow(Body, Fighter, Line, MoveTemp(Way), LotSoldWait);
+	}
+	else if (BookSigner && Lot <= 0)
+	{
+		// the one stood by the table, who walks with whoever pays them
+		AGutFighter* Body = BookSigner;
+
+		BookSigner = nullptr;
+
+		TakeInTow(Body, Fighter, Line);
+	}
+	else if (const AGutFighter* Walker = GetWalker(); Walker && Stable.Fighters.IsValidIndex(Fighter))
+	{
+		// nobody to be seen was standing for them: they are brought to the buyer
+		const FTransform Where(Walker->GetActorRotation(), Walker->GetActorLocation() - (Walker->GetActorForwardVector() * (TowGap * (Tow.Num() + 1))));
+
+		if (AGutFighter* Body = StandOwned(Stable.Fighters[Fighter], Where))
+		{
+			KeepOnGround(Body);
+			TakeInTow(Body, Fighter, Line);
+		}
+	}
+
 	ShopSaid = Offer.bOwned
-		? FString::Printf(TEXT("Sold: %s, %.0f L. Your name is against theirs, and they sleep in your yard tonight. The yard gate is beside the Gut, on Pool Street: train them and send them in from there."), *Who, Offer.Price)
-		: FString::Printf(TEXT("Signed: %s, for %.0f L a day and a share. They will be at your yard beside the Gut, on Pool Street."), *Who, Offer.Wage);
+		? FString::Printf(TEXT("Sold: %s, %.0f L. Your name is against theirs, and they come with you now. Your yard is beside the Gut, on Pool Street: the yard hand at the gate lets owners in."), *Who, Offer.Price)
+		: FString::Printf(TEXT("Signed: %s, for %.0f L a day and a share. They walk with you now. Your yard is beside the Gut, on Pool Street."), *Who, Offer.Wage);
 
 	if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
 	{

@@ -63,6 +63,8 @@ void ATownHUD::DrawHUD()
 			{ TEXT("Look"), TEXT("Mouse / right stick") },
 			{ TEXT("Jog (hold)"), TEXT("Shift / LB") },
 			{ TEXT("Talk, use"), TEXT("E / X") },
+			{ TEXT("Map"), TEXT("M / Y") },
+			{ TEXT("Back out"), TEXT("Backspace / B") },
 			{ TEXT("Stop"), TEXT("Esc / Back") },
 		};
 

@@ -64,6 +64,9 @@ POOL_LIGHTS = (238.0, (0, 3))
 # the collar: how the ring (which lies flat in its own space) sits round the neck bone, and its size against the model's
 COLLAR = ("steel_collar", unreal.Rotator(roll=0.0, pitch=90.0, yaw=0.0), unreal.Vector(5.0, 0.0, 0.0), 1.15)
 
+# the rope round tied wrists: exported lying with its opening along Z, its longer way along X and its knot toward UE's +Y
+TIE = "wrist_rope"
+
 OTHER_MODELS = ["worn_metal_rack", "portable_generator"]
 
 # what stands about on the deck, behind the crowd and clear of the trucks: model, where (cm from the middle of the pool), and its turn
@@ -81,7 +84,7 @@ FROM_MIXAR = ["rebar_club", "stop_sign_shield", "tow_chain", "steel_collar", "sp
               "rubber_sleeve", "rubber_vest", "sign_sleeve", "sign_vest",
               "floodlight_truck", "floodlight_flatbed", "floodlight_wagon", "floodlight_van",
               "chain_link", "tow_chain_handle", "tow_chain_hook", "pool_light",
-              "tow_chain_fine", "tow_chain_grip", "chain_link_small", "tow_chain_hook_small"]
+              "tow_chain_fine", "tow_chain_grip", "chain_link_small", "tow_chain_hook_small", "wrist_rope"]
 
 # armor asset -> the tube it is made of, how much wider than the old box the tube is made, and its depth against its width
 ARMOR = {
@@ -901,10 +904,20 @@ def wire(models, surfaces):
             save(blueprint)
         log("collar is {}".format(collar_model))
 
+    # what ties the wrists of a lot on the Block, or of somebody bought and led away: the rope made in Mixar
+    if models.get(TIE):
+        for blueprint_name in ("BP_GutPlayer", "BP_GutOpponent", "BP_GutDummy"):
+            blueprint = unreal.load_asset("/Game/Gut/Blueprints/" + blueprint_name)
+            defaults = unreal.get_default_object(blueprint.generated_class())
+            defaults.set_editor_property("tie_mesh", models[TIE])
+            unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
+            save(blueprint)
+        log("wrists are tied with {}".format(TIE))
+
 
 def main():
     surfaces = {ours: import_surface(name, ours, size) for name, (ours, size) in SURFACE_ASSETS.items()}
-    models = {name: import_model(name) for name in [model for model, _, _, _ in WEAPONS.values()] + OTHER_MODELS + sorted({model for model, _, _, _ in DECK_CLUTTER}) + [COLLAR[0], "spike_panel", "floor_cable", "pool_ladder", "pool_coping", "pool_drain", "pool_light", CHAIN[1], CHAIN[2], CHAIN[3]] + sorted({model for model, _, _ in ARMOR.values()}) + sorted({name for _, _, name in TRUCKS})}
+    models = {name: import_model(name) for name in [model for model, _, _, _ in WEAPONS.values()] + OTHER_MODELS + sorted({model for model, _, _, _ in DECK_CLUTTER}) + [COLLAR[0], TIE, "spike_panel", "floor_cable", "pool_ladder", "pool_coping", "pool_drain", "pool_light", CHAIN[1], CHAIN[2], CHAIN[3]] + sorted({model for model, _, _ in ARMOR.values()}) + sorted({name for _, _, name in TRUCKS})}
     models.update({name: import_model(name, part) for name, part in KIT_PARTS.items()})
 
     # a fighter cannot walk through the generator

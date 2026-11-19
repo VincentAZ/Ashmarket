@@ -72,6 +72,9 @@ DEEDS = {"": unreal.TownDeed.NONE, "fight": unreal.TownDeed.FIGHT, "fight_afresh
          "buy": unreal.TownDeed.BUY, "borrow": unreal.TownDeed.BORROW, "repay": unreal.TownDeed.REPAY,
          "armor": unreal.TownDeed.ARMOR}
 
+# the clip somebody with their wrists tied has their arms taken from (AGutFighter::BoundArms), which nobody else in a town stands in
+BOUND_STANCE = "crowd_watch_hands_behind"
+
 # what the cage's crowd is made of, which a crowd standing anywhere else is made of too: read from the cage's own crowd
 CROWD_MAKINGS = ("spectator_mesh", "idle_animation", "cheer_animation", "idle_animations", "cheer_animations", "tint_parameter",
                  "spectator_classes", "spectator_retargeter", "person_body_name", "cloth_parameters")
@@ -391,6 +394,9 @@ def level(listed):
 
         if not makings:
             raise RuntimeError("the cage has no crowd to make this place's bystanders from")
+
+        # nobody free stands in the town with their hands behind their back: here that is how somebody tied stands
+        makings["idle_animations"] = [clip for clip in makings["idle_animations"] if clip and clip.get_name() != BOUND_STANCE]
 
     def here():
         """Stops everything unless the level the editor has open is the place's own. Nothing below is safe in any other."""
@@ -1124,6 +1130,7 @@ def main():
         call.set_editor_property("seconds", float(entry.get("seconds", 3.5)))
         call.set_editor_property("stirs_the_crowd", bool(entry.get("stirs")))
         call.set_editor_property("sells", int(entry.get("sells", 0)))
+        call.set_editor_property("about", int(entry.get("lot", 0)))
         call.set_editor_property("brings_up", bool(entry.get("brings_up")))
         calls.append(call)
 
@@ -1207,6 +1214,7 @@ def main():
 
     # the way a sale's lots come up and go down, and how far behind their marks they walk
     data.set_editor_property("lot_way", [place(x, y) for x, y in listed.get("lot_way", [])])
+    data.set_editor_property("lot_down", [place(x, y) for x, y in listed.get("lot_down", [])])
     data.set_editor_property("lot_aisle", float(listed.get("lot_aisle", 0.7)) * 100.0)
     data.set_editor_property("ground", ground)
 
