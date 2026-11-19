@@ -124,11 +124,16 @@ def main():
     # only now is anything asked of ElevenLabs. The key comes out of .env.local into the environment, and from there
     # the client takes it.
     from dotenv import load_dotenv
-    from elevenlabs import ElevenLabs, VoiceSettings
 
+    # before the SDK is so much as imported: it looks for the key once, as it is read in
     load_dotenv(os.path.join(PROJECT, ".env.local"))
 
-    client = ElevenLabs()
+    from elevenlabs import ElevenLabs, VoiceSettings
+
+    if not os.environ.get("ELEVENLABS_API_KEY"):
+        sys.exit("there is no ELEVENLABS_API_KEY in .env.local: run npx -y @elevenlabs/cli@latest onboard init")
+
+    client = ElevenLabs(api_key=os.environ["ELEVENLABS_API_KEY"])
 
     # the account's voices by the first part of their names: "Laura - Enthusiast, Quirky Attitude" is Laura
     voices = {voice.name.split(" - ")[0].strip(): voice.voice_id for voice in client.voices.get_all().voices}
