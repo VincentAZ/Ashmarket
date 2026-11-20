@@ -147,8 +147,54 @@ bool FGutStableTest::RunTest(const FString& Parameters)
 
 		TestEqual(TEXT("Back in the yard"), GameMode->GetStablePage(), EGutStablePage::Yard);
 		TestEqual(TEXT("The yard now has a line for each fighter, the Block, the bill and the day"), GameMode->GetCardItems().Num(), 5);
+	} });
+
+	// --- whoever is in the yard is seen standing in it, not only listed ---
+
+	Steps.Add({ 1.5f, [this](const FFight& Fight)
+	{
+		AGutGameMode* GameMode = Fight.GameMode;
+		const FGutStableState& State = GameMode->GetStableState();
+
+		const AGutFighter* First = GameMode->GetYardBody(0);
+		const AGutFighter* Second = GameMode->GetYardBody(1);
+
+		if (TestTrue(TEXT("Each of the yard's two stands in it"), First && Second && !GameMode->GetYardBody(2)))
+		{
+			TestTrue(TEXT("The bought one in its collar, the signed one without"), First->IsCollared() == State.Fighters[0].bOwned && Second->IsCollared() == State.Fighters[1].bOwned);
+			TestTrue(TEXT("Standing apart, on the pool's floor"), FVector::Dist2D(First->GetActorLocation(), Second->GetActorLocation()) > 200.0f
+				&& FMath::Abs(First->GetActorLocation().X) < 700.0f && FMath::Abs(First->GetActorLocation().Y) < 500.0f);
+		}
 
 		Screenshot(TEXT("46_stable_yard"));
+	} });
+
+	Steps.Add({ 0.3f, [this](const FFight& Fight)
+	{
+		AGutGameMode* GameMode = Fight.GameMode;
+		UGutGameInstance* Run = Cast<UGutGameInstance>(GameMode->GetGameInstance());
+
+		// one fighter's own page: with a street outside, the last thing on it before selling is walking out with it
+		GameMode->ActivateCardSelection();
+
+		TestEqual(TEXT("A fighter's line opens its page"), GameMode->GetStablePage(), EGutStablePage::Fighter);
+		TestFalse(TEXT("With no street outside, nobody is walked out"), GameMode->GetCardItems().Contains(FGutCardItem{ EGutCardItemType::Stable, GutStableLines::WalkOut }));
+
+		const bool bCame = Run->bCameByDoor;
+
+		Run->bStreetForced = true;
+		Run->bCameByDoor = true;
+
+		TestTrue(TEXT("With one, whoever came in off it can go back out with this fighter behind them"), GameMode->GetCardItems().Contains(FGutCardItem{ EGutCardItemType::Stable, GutStableLines::WalkOut }));
+
+		Run->bStreetForced.Reset();
+		Run->bCameByDoor = bCame;
+
+		Screenshot(TEXT("46_stable_yard_one_of_them"));
+
+		GameMode->HandleMenuInput(EGutMenuInput::Left);
+
+		TestEqual(TEXT("And back to the yard"), GameMode->GetStablePage(), EGutStablePage::Yard);
 	} });
 
 	Steps.Add({ 0.3f, [this, Notes](const FFight& Fight)

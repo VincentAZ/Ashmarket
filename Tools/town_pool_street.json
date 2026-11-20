@@ -104,12 +104,12 @@
  ],
  "pasted": [
   {"label": "Hoarding", "from": [47.4, 171.83], "to": [111.6, 171.83], "faces": "north", "deep": 0.15, "up": [1.4, 2.2], "tall": [0.8, 1.1], "every": [1.2, 3.6], "lean": 5,
-   "pictures": ["bill_champion", "bill_butcher", "bill_saltlick", "bill_kennel_master", "bill_gasket_rustjaw", "bill_tally_coldwater"]},
+   "pictures": ["bill_champion_by_hand", "bill_butcher_by_hand", "bill_saltlick_by_hand", "bill_kennel_master_by_hand", "bill_gasket_rustjaw_by_hand", "bill_tally_coldwater_by_hand"]},
   {"label": "Lockers", "from": [88.2, 180.0], "to": [93.9, 180.0], "faces": "south", "up": [1.35, 1.8], "tall": [0.65, 0.85], "every": [1.3, 2.4], "lean": 4,
-   "pictures": ["bill_gasket_rustjaw", "bill_tally_coldwater", "bill_kennel_master"]},
+   "pictures": ["bill_gasket_rustjaw_by_hand", "bill_tally_coldwater_by_hand", "bill_kennel_master_by_hand"]},
   {"label": "Alley", "from": [80.2, 182.5], "to": [80.2, 191.5], "faces": "west", "up": [1.35, 1.8], "tall": [0.65, 0.85], "every": [2.0, 3.6], "lean": 4,
-   "pictures": ["bill_champion", "bill_butcher", "bill_saltlick"]},
-  {"label": "Corner", "from": [2.6, 178.2], "to": [8.4, 178.2], "faces": "south", "deep": 0.2, "up": [1.4, 1.9], "tall": [0.8, 1.05], "every": [1.4, 2.4], "lean": 4, "pictures": ["bill_sale", "bill_ledger"]}
+   "pictures": ["bill_champion_by_hand", "bill_butcher_by_hand", "bill_saltlick_by_hand"]},
+  {"label": "Corner", "from": [2.6, 178.2], "to": [8.4, 178.2], "faces": "south", "deep": 0.2, "up": [1.4, 1.9], "tall": [0.8, 1.05], "every": [1.4, 2.4], "lean": 4, "pictures": ["bill_sale_by_hand", "bill_ledger_by_hand"]}
  ],
 
  "bulbs_about": "Candelas. The camera is set for the floodlit cage (see NightExposure in Tools/build_gut_content.py), so a bulb that is to light a wall three metres off wants some thousands.",

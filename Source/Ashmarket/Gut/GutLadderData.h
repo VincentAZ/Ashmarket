@@ -150,6 +150,13 @@ public:
 	TObjectPtr<UGutLadderData> NextLadder;
 
 	/**
+	 *  Who the cage's new meat is seen as: the people who come in after the dead, each a character nobody else in the cage is.
+	 *  Read from the first ladder only. Set by Tools/build_gut_metahuman.py.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Ladder")
+	TArray<TSoftClassPtr<AActor>> NewcomerBodies;
+
+	/**
 	 *  Armor on sale before each fight of this rank. Empty for a rank where the player cannot buy armor.
 	 *  What the player owns is remembered by name, so a later rank must sell a piece for the player to go on wearing it.
 	 */

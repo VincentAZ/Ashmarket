@@ -164,8 +164,11 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UTexture2D> FigureStencil;
 
-	/** A part of a photograph drawn into a part of the screen, in a colour: the corners of each are given as shares of the whole */
-	void DrawPiece(UTexture2D* Picture, float X, float Y, float Width, float Height, const FVector2D& From, const FVector2D& To, const FLinearColor& Color);
+	/**
+	 *  A part of a photograph drawn into a part of the screen, in a colour: the corners of each are given as shares of the whole.
+	 *  A cut-out is a photograph of one thing with nothing round it: what is under it shows where it is clear.
+	 */
+	void DrawPiece(UTexture2D* Picture, float X, float Y, float Width, float Height, const FVector2D& From, const FVector2D& To, const FLinearColor& Color, bool bCutOut = false);
 
 	/** The typefaces: a typewriter's for everything, a stencil for the big words. Read from Content/Gut/Fonts. Without them the engine's own. */
 	TSharedPtr<const FCompositeFont> BodyFont;

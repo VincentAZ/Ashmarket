@@ -5,6 +5,7 @@ This script only picks, assembles and assigns; the look comes from MetaHuman's s
 Environment: GUT_METAHUMANS, the presets to build (space separated, "all" for the whole cast, "crowd" for the spectators). With none it only
 puts the ones already built into the cage. GUT_RETAILOR=1 also goes over the clothes of the ones already built.
 """
+import json
 import os
 import random
 import zlib
@@ -50,6 +51,158 @@ GROOMING = {
     },
 }
 
+# New meat (Vincent, 2026-11-19: "we need a variety of fighters", and whoever dies is not to be seen again). The cage
+# kills four a night and Epic made twenty-nine people, so these are made as the deck's mixes are, but as fighters: one
+# preset's body, another's skin, a face somewhere between the two, and hair and a beard that are neither's. A man is
+# mixed with a man and a woman with a woman, three in ten are women, and no pair is one the deck already has. Each is
+# (body, skin and the other half of the face, how much of the face is the second's, hair, beard, mustache).
+MEN = ["Aoi", "Bo", "Bruce", "Cameron", "Dominic", "Isaiah", "Jorge", "Kelvin", "Lorenzo", "Mateo", "Mikel", "Omari", "Orlando", "Trey", "Victor", "Walter"]
+WOMEN = [name for name in EVERYONE if name not in MEN]
+# Hair that is seen. Strand hair is off in this build, so a style is drawn only if Epic made cards for it, and four have
+# none: 360Waves, BuzzCut, CoilBuzzCut and BaldingStubble leave a bare scalp. The first twenty were drawn from lists with
+# those in (2026-11-20: seven came out shaven, four of them alike). Now the one buzz cut in each list is a head shaven on
+# purpose, and every other style has cards.
+MENS_HAIR = ["S_BuzzCut", "S_BrushCut", "S_AfroFade", "S_CurlyFade", "S_HairLoss", "M_Mohawk", "M_FauxMohawk", "S_Cornrows", "S_RecedeMessy",
+             "S_Clean", "S_Messy", "M_TwistedBraids", "S_LowPonytail", "S_PulledBack", "S_Coil", "S_Casual", "S_SlickBack", "S_SweptUp"]
+WOMENS_HAIR = ["S_BuzzCut", "S_Pixie", "S_Cornrows", "S_UpdoBraids", "S_UpdoBuns", "S_LowPonytail", "S_PulledBack", "M_Mohawk",
+               "M_TwistedBraids", "M_BobMessy", "S_Updo"]
+# whose body no new fighter is given: Grace's eyebrows are white and stay white under whatever hair is put on her
+NOT_A_NEW_BODY = ["Grace"]
+BEARDS = [None, None, None, "Beards/WI_Beard_S_Stubble", "Beards/WI_Beard_M_Stubble", "Beards/WI_Beard_S_Full", "Beards/WI_Beard_L_Full",
+          "Beards/WI_Beard_L_Messy", "Beards/WI_Beard_M_MuttonChops", "Beards/WI_Beard_S_Uneven", "Beards/WI_Goatee_L_Scraggly",
+          "Beards/WI_Goatee_M_Pointed", "Beards/WI_Goatee_S_ChinStrap", "Beards/WI_Beard_M_Curly"]
+MUSTACHES = [None, None, None, "WI_Mustache_S_Stubble", "WI_Mustache_M_Stubble", "WI_Mustache_S_Horseshoe", "WI_Mustache_L_Handlebar",
+             "WI_Mustache_M_Gunslinger", "WI_Mustache_L_Scraggly", "WI_Mustache_S_Full", "WI_Mustache_S_Uneven"]
+NEW_MEAT_COUNT = 20
+
+
+def _new_meat():
+    lot = random.Random("new meat")
+    taken = {frozenset(pair) for pair in MIXES.values()}
+    people = {}
+    # nobody's body twice and nobody's hair twice: each is dealt out like a pack of cards, the men's and the women's apart.
+    # Beards and mustaches are dealt from two packs each, so no one of them is on more than two faces.
+    bodies = {woman: lot.sample([name for name in names if name not in NOT_A_NEW_BODY], len(names) - sum(name in NOT_A_NEW_BODY for name in names))
+              for woman, names in ((False, MEN), (True, WOMEN))}
+    hair = {woman: lot.sample(styles, len(styles)) for woman, styles in ((False, MENS_HAIR), (True, WOMENS_HAIR))}
+    beards, mustaches = lot.sample(BEARDS * 2, len(BEARDS) * 2), lot.sample(MUSTACHES * 2, len(MUSTACHES) * 2)
+    for index in range(NEW_MEAT_COUNT):
+        # three in ten are women: the third, sixth and tenth of every ten
+        woman = index % 10 in (2, 5, 9)
+        body = bodies[woman].pop()
+        while True:
+            pair = (body, lot.choice([name for name in (WOMEN if woman else MEN) if name != body]))
+            if frozenset(pair) not in taken:
+                taken.add(frozenset(pair))
+                break
+        people["Meat%02d" % (index + 1)] = pair + (round(lot.uniform(0.35, 0.65), 2), hair[woman].pop(),
+                                                  None if woman else beards.pop(), None if woman else mustaches.pop())
+    return people
+
+
+NEW_MEAT = _new_meat()
+
+# People dressed out of what Vincent has from Fab (2026-11-19; unpacked into Content/Outfits by Tools/unpack_fab_outfits.py,
+# and never in the repository). Each is (the preset it is, the wardrobe items it wears): one whole outfit, or pieces worn
+# together. They keep the build the preset came with, and nothing of theirs is dyed.
+WARDROBE = "/Game/Outfits/"
+
+
+def _wi(folder, item=None):
+    return WARDROBE + folder + "/" + (item or "WI_OA_" + folder)
+
+
+# whole outfits, as their makers dressed them: none of these is dyed
+SCAVENGER = _wi("Scavenger", "WI_Scavenger")
+PA_07 = _wi("PA_07", "WI_PA_07")
+SURVIVOR = _wi("SurvivorOutfit")
+SOLDIER = _wi("Soldier_Outfit_v1", "WI_Soldier_Outfit_v1")
+HELMET = _wi("Helmet_Outfit_v1", "WI_Helmet_Outfit_v1")
+TECHWEAR = _wi("techwearOutfit")
+WRAPPED = "/Game/outfit_40/WI_OA_outfit_40"
+VEST = _wi("HS_Tactical_Vest_42", "WI_HS_Tactical_Vest_42")
+
+# Epic's own plain pieces, worn together: a top, something on the legs, something on the feet
+HOODIE, SWEATER = _wi("Hoodie"), _wi("Sweater")
+TEE, TEE_3Q, TEE_LONG, TEE_CUFF, TEE_PUSH = (_wi("OA_" + name, "WI_OA_" + name) for name in ("Crewneckt", "Tshirt3QSlv", "TshirtLngSlv", "TshirtLngCufSlv", "TshirtPushCufSlv"))
+TUCKED, TUCKED_3Q, TUCKED_LONG, TUCKED_CUFF, TUCKED_PUSH = (_wi("OA_" + name, "WI_OA_" + name) for name in ("CrewnecktTk", "TshirtTk3QSlv", "TshirtTkLngSlv", "TshirtTkLngCufSlv", "TshirtTkPushCufSlv"))
+CROP_3Q, CROP_LONG, CROP_CUFF, CROP_PUSH = (_wi("OA_" + name, "WI_OA_" + name) for name in ("TCrop3QSlv", "TCropLngSlv", "TCropLngCufSlv", "TCropPushCufSlv"))
+CARGO, JEANS, JEANS_SLIM, JEANS_ANKLE, JEANS_CUFFED, SHORTS = _wi("Cargopants"), _wi("Jeans"), _wi("Jeans_slm"), _wi("Jeansakn"), _wi("Jeansmcf"), _wi("Shorts")
+LEGGINGS_SHORT, LEGGINGS = _wi("Yogaakn"), _wi("Yogaful")
+BOOTS, CHELSEA, FLATS, FLIPFLOPS, HIGHTOPS, LOAFERS = _wi("Boots"), _wi("Chelseaboots"), _wi("Flats"), _wi("Flipflops"), _wi("Hightop"), _wi("Loafers")
+
+# Everybody in the town and on the deck (Vincent, 2026-11-18: "a wholesale upgrade on ALL characters"; the people were 4 in 10).
+# Each is dressed for what they are in the town's lists: a Warden in a vest, a lot off the Block in what it was sold in
+# and barefoot, a trader in what a trader would have. Each is (the preset it is, or None for one of the mixes; what it wears).
+DRESSED = {
+    # Pool Street
+    "Zuri": ("Zuri", [SWEATER, JEANS, BOOTS]),                 # Chalk, at the slate
+    "Omari": ("Omari", [PA_07]),                               # Hasp, who hands out the weapons
+    "Jorge": ("Jorge", [SURVIVOR]),                            # the yard hand
+    "Lorenzo": ("Lorenzo", [VEST, TEE, CARGO, BOOTS]),         # a Warden
+    # Block Square
+    "Vivian": ("Vivian", [TUCKED_LONG, JEANS_SLIM, CHELSEA]),  # Margin, the clerk
+    "Lani": ("Lani", [TECHWEAR]),                              # Mother Ledger
+    "Orlando": ("Orlando", [SWEATER, CARGO, BOOTS]),           # Caller Strand
+    "Bo": ("Bo", [VEST, TEE_LONG, JEANS, BOOTS]),              # a Warden
+    "Mix05": (None, [SHORTS]),                                 # the lots, in what they were sold in
+    "Asha": ("Asha", [TEE, SHORTS]),
+    "Mix09": (None, [TEE, SHORTS]),
+    "Aera": ("Aera", [CROP_3Q, LEGGINGS_SHORT]),
+    "Mix06": (None, [TEE_3Q, SHORTS]),
+    "Sunita": ("Sunita", [TEE_LONG, LEGGINGS]),
+    # Main Street
+    "Ada": ("Ada", [TEE_PUSH, CARGO, BOOTS]),                  # Needle, and Thread
+    "Mix02": (None, [SURVIVOR]),                               # Brass
+    "Mix04": (None, [SOLDIER]),                                # the Gate Warden
+    "Mix07": (None, [SWEATER, JEANS_ANKLE, FLATS]),            # the stallholder
+    "Sook-ja": ("Sook-ja", [SCAVENGER]),                       # the scrap seller
+    "Jelena": ("Jelena", [TEE_CUFF, LEGGINGS, FLIPFLOPS]),     # the tea seller
+    "Mix14": (None, [PA_07]),                                  # the dealer
+    "Mix03": (None, [WRAPPED]),                                # a carrier
+    "Mix08": (None, [HOODIE, CARGO, BOOTS]),                   # a carrier
+    "Mix13": (None, [VEST, TEE_PUSH, CARGO, BOOTS]),           # a Warden
+    "Mix11": (None, [VEST, TEE_3Q, JEANS_CUFFED, BOOTS]),      # a Warden
+    "Mix10": (None, [SCAVENGER]),                              # somebody
+    "Mix12": (None, [HOODIE, JEANS_SLIM, HIGHTOPS]),           # somebody
+    "Mix01": (None, [WRAPPED]),                                # on the deck only
+
+    # the first people the wardrobe was tried on, kept for the pictures of them
+    "Try01": ("Vivian", [SCAVENGER]),
+    "Try02": ("Etta", [HOODIE, CARGO, BOOTS]),
+    "Try03": ("Orlando", [SURVIVOR]),
+    "Try04": ("Jorge", [PA_07]),
+    "Try05": ("Lorenzo", [SOLDIER, HELMET]),
+    "Try06": ("Bo", [VEST, TEE, CARGO, BOOTS]),
+    "Try07": ("Lani", [TECHWEAR]),
+    "Try08": ("Sunita", [WRAPPED]),
+    "Try09": ("Dominic", [CARGO, BOOTS]),
+    "Try10": ("Tuya", [CROP_PUSH, LEGGINGS_SHORT]),
+    "Try11": ("Asha", [TEE, SHORTS]),
+}
+
+# and of those, whoever fights: lean and trained as the cage's own are, whatever they have on
+DRESSED_FIGHTERS = {"Try09", "Try10"}
+
+# what the new meat fights in. A man is stripped to the waist, as the cage's own are: something on the legs, and boots
+# or bare feet. A woman has a top as well. Drawn by lot, the same lot every run.
+_cloth = random.Random("what the new meat has on")
+for _name, _made in NEW_MEAT.items():
+    _woman = _made[0] in WOMEN
+    _worn = [_cloth.choice([CROP_PUSH, CROP_3Q, CROP_LONG, TEE])] if _woman else []
+    _worn.append(_cloth.choice([LEGGINGS_SHORT, SHORTS, CARGO, LEGGINGS] if _woman else [CARGO, JEANS, JEANS_CUFFED, SHORTS, JEANS_ANKLE, CARGO]))
+    _feet = _cloth.choice([None, None, BOOTS] if _woman else [BOOTS, None, None, HIGHTOPS])
+    if _feet:
+        _worn.append(_feet)
+    DRESSED[_name] = (None, _worn)
+    DRESSED_FIGHTERS.add(_name)
+for _name, (_body, _skin, _share, _hair, _beard, _mustache) in NEW_MEAT.items():
+    GROOMING[_name] = {"Hair": GROOMS + "Hair/WI_Hair_" + _hair}
+    if _beard:
+        GROOMING[_name]["Beard"] = GROOMS + _beard
+    if _mustache:
+        GROOMING[_name]["Mustache"] = GROOMS + "Mustaches/" + _mustache
+
 # cloth colours for the shorts (and the women's shirts): worn, dark, nobody's team
 CLOTH = [(0.016, 0.016, 0.018), (0.05, 0.045, 0.04), (0.07, 0.02, 0.018), (0.03, 0.04, 0.03), (0.02, 0.028, 0.045), (0.09, 0.075, 0.055)]
 
@@ -68,6 +221,27 @@ def asset_name(preset):
 def lot(preset, salt):
     """A number from 0 to 1 that is always the same for the same fighter."""
     return (zlib.crc32((preset + salt).encode()) % 10000) / 10000.0
+
+
+def is_man(preset):
+    """Whether somebody has a man's body: by whose body it is. MetaHuman's own "Masculine/Feminine" measurement is not to be
+    trusted for this: it read Asha as a man (2026-11-20), and the game takes a fighter's voice and strength from the answer."""
+    body = MIXES.get(preset, (preset,))[0]
+    if preset in DRESSED and DRESSED[preset][0]:
+        body = DRESSED[preset][0]
+    if preset in NEW_MEAT:
+        body = NEW_MEAT[preset][0]
+    return body in MEN
+
+
+def note_bodies():
+    """Writes down who is a man and who a woman, by the name each is built under, for Tools/import_gut_sound.py."""
+    everyone = [PLAYER] + OPPONENTS + CROWD + list(NEW_MEAT) + list(DRESSED)
+    said = {asset_name(preset): "man" if is_man(preset) else "woman" for preset in everyone}
+    path = os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()), "Tools", "gut_bodies.json")
+    with open(path, "w") as out:
+        json.dump(said, out, indent=1, sort_keys=True)
+        out.write("\n")
 
 
 def shorts_cut_away():
@@ -115,18 +289,29 @@ def bare_chested_garment():
 def dress(character, preset, bare):
     collection = character.internal_collection
     instance = collection.default_instance
-    choices = dict(GROOMING.get(preset, {}), Outfits=bare_chested_garment() if bare else GARMENT)
+    worn = DRESSED[preset][1] if preset in DRESSED else [bare_chested_garment() if bare else GARMENT]
+    choices = dict(GROOMING.get(preset, {}), Outfits=worn[0])
     for slot, choice in choices.items():
         key = collection.try_add_item_from_wardrobe_item(slot, unreal.load_asset(choice))
         instance.set_single_slot_selection(slot, key)
+    # anything more is worn with the first: trousers and boots with a top
+    for choice in worn[1:]:
+        key = collection.try_add_item_from_wardrobe_item("Outfits", unreal.load_asset(choice))
+        selection = unreal.MetaHumanPipelineSlotSelection()
+        selection.set_editor_property("slot_name", "Outfits")
+        selection.set_editor_property("selected_item", key)
+        if not instance.try_add_slot_selection(selection):
+            log(preset, "could not also put on", choice)
+    if preset in DRESSED:
+        log(preset, "wears", " + ".join(choice.split("/")[-1] for choice in worn), "; selections now:", len(instance.get_slot_selections()))
 
 
 def shape(subsystem, character, preset):
     """Sets MetaHuman's fat and muscle sliders, as its editor does when one is dragged: lean and trained, each to a different degree.
     A spectator keeps the build the preset came with. Returns True for a man's body."""
     constraints = subsystem.get_body_constraints(character)
-    man = [c.target_measurement for c in constraints if str(c.name) == "Masculine/Feminine"][0] < 0
-    if preset in CROWD:
+    man = is_man(preset)
+    if preset in CROWD or (preset in DRESSED and preset not in DRESSED_FIGHTERS):
         return man
     sliders = {"Fat": -0.6 - 0.8 * lot(preset, "fat"), "Muscularity": (0.8 if man else 0.4) + 0.8 * lot(preset, "muscle")}
     for index, constraint in enumerate(constraints):
@@ -196,6 +381,53 @@ def tailor(preset, bare=None):
     log(preset, "shorts only" if bare else "shirt and shorts", "cloth", colour)
 
 
+# what Epic's own plain pieces are dyed for this town: they come clean and bright, and nobody here has soap. Tops and
+# trousers out of one list, boots and shoes out of another; the bought outfits come dirty and are left as they are.
+DENIM = [(0.02, 0.028, 0.045), (0.035, 0.035, 0.04), (0.012, 0.012, 0.014), (0.03, 0.036, 0.05)]
+# The techwear outfit is Epic's too and comes brightest of all: yellow and white, on Mother Ledger (seen 2026-11-20).
+PLAIN = ("Hoodie", "Sweater", "Crewneckt", "Tshirt", "TCrop", "Cargopants", "Jeans", "Shorts", "Yoga", "Boots", "Chelseaboots", "Flats", "Flipflops", "Hightop", "Loafers",
+         "techwearOutfit")
+DRAB = [(0.09, 0.075, 0.055), (0.05, 0.045, 0.04), (0.07, 0.022, 0.018), (0.03, 0.04, 0.03), (0.02, 0.028, 0.045), (0.11, 0.10, 0.085),
+        (0.06, 0.05, 0.03), (0.035, 0.035, 0.04), (0.075, 0.06, 0.05), (0.045, 0.03, 0.02)]
+LEATHER = [(0.02, 0.015, 0.012), (0.035, 0.025, 0.018), (0.012, 0.012, 0.013), (0.05, 0.035, 0.022)]
+# left as Epic set them: turned right up, the wear goes white and bleaches trousers to rags of no colour (tried 2026-11-19)
+WORN = {}
+
+
+def weather(preset):
+    """Dyes down whatever of Epic's plain pieces somebody has on, each piece its own worn colour, and wears the cloth."""
+    name = asset_name(preset)
+    folder = "%s/%s/Clothing" % (ROOT, name)
+    library = unreal.MaterialEditingLibrary
+    for path in sorted(eal.list_assets(folder, recursive=False)):
+        instance = unreal.load_asset(path.split(".")[0])
+        if not isinstance(instance, unreal.MaterialInstanceConstant):
+            continue
+        piece = instance.get_name()
+        # only Epic's own: what was bought as a whole outfit keeps its maker's colours
+        if not piece.startswith(tuple("MI_WI_OA_" + plain for plain in PLAIN)):
+            continue
+        shoes = "_shs_" in piece or piece.endswith("_Shoes")
+        colours = LEATHER if shoes else (DENIM if "Jeans" in piece else DRAB)
+        colour = colours[int(lot(preset, piece) * len(colours)) % len(colours)]
+        second = colours[int(lot(preset, piece + " trim") * len(colours)) % len(colours)]
+        vectors = {str(parameter) for parameter in library.get_vector_parameter_names(instance)}
+        for parameter, value in (("diffuse_color_1", colour), ("B_diffuse_color_1", colour), ("diffuse_color_2", second), ("C_color", second)):
+            if parameter in vectors:
+                library.set_material_instance_vector_parameter_value(instance, parameter, unreal.LinearColor(*value, 1.0))
+        scalars = {str(parameter) for parameter in library.get_scalar_parameter_names(instance)}
+        for parameter, value in WORN.items():
+            if parameter in scalars:
+                library.set_material_instance_scalar_parameter_value(instance, parameter, value)
+        if os.environ.get("GUT_CLOTH_LOG"):
+            parent = instance.parent
+            log(preset, piece, "wear", {parameter: round(library.get_material_instance_scalar_parameter_value(instance, parameter), 2) for parameter in sorted(scalars) if "Wear" in parameter or "pilling" in parameter or "Overlay" in parameter or "txMult" in parameter},
+                "parent says", {parameter: round(library.get_material_default_scalar_parameter_value(parent, parameter), 2) for parameter in ("WearMaskStrength", "B_WearMaskStrength") if parent and isinstance(parent, unreal.Material)})
+        library.update_material_instance(instance)
+        eal.save_loaded_asset(instance, only_if_is_dirty=False)
+        log(preset, piece, "dyed", colour)
+
+
 def other_parent(subsystem, preset):
     """The face and the skin of the second preset a mixed person is made from."""
     path = "%s/Characters/_parent" % ROOT
@@ -215,6 +447,11 @@ def build(preset):
     subsystem = unreal.get_editor_subsystem(unreal.MetaHumanCharacterEditorSubsystem)
     path = "%s/Characters/%s" % (ROOT, name)
     first, second = MIXES.get(preset, (preset, None))
+    if preset in DRESSED and DRESSED[preset][0]:
+        first = DRESSED[preset][0]
+    share = 0.5
+    if preset in NEW_MEAT:
+        first, second, share = NEW_MEAT[preset][:3]
     other_face, other_skin = other_parent(subsystem, second) if second else (None, None)
     character = eal.load_asset(path) if eal.does_asset_exist(path) else eal.duplicate_asset(PRESETS + first, path)
     if not subsystem.try_add_object_to_edit(character):
@@ -222,11 +459,11 @@ def build(preset):
     try:
         if second:
             own_face = list(subsystem.get_face_model_coefficients(character))
-            subsystem.set_face_model_coefficients(character, [(a + b) * 0.5 for a, b in zip(own_face, other_face)])
+            subsystem.set_face_model_coefficients(character, [a + (b - a) * share for a, b in zip(own_face, other_face)])
             subsystem.commit_face_state(character)
-            log(preset, "is", first, "with the skin of", second, "and a face between the two")
+            log(preset, "is", first, "with the skin of", second, "and a face between the two,", share, "of it the second's")
         man = shape(subsystem, character, preset)
-        bare = man and preset not in CROWD
+        bare = man and preset not in CROWD and preset not in DRESSED
         dress(character, preset, bare)
         skin = other_skin if second else character.skin_settings
         properties = skin.skin
@@ -234,14 +471,21 @@ def build(preset):
         skin.skin = properties
         subsystem.commit_skin_settings(character, skin)
 
-        rig = unreal.MetaHumanCharacterAutoRiggingRequestParams()
-        rig.blocking, rig.report_progress = True, False
-        rig.rig_type = unreal.MetaHumanRigType.JOINTS_ONLY
-        subsystem.request_auto_rigging(character, rig)
+        # Epic's service now and then drops the connection in the middle of a request (Meat17 and Vivian, 2026-11-19 and 20),
+        # and asking again is all it takes
+        for attempt in range(3):
+            rig = unreal.MetaHumanCharacterAutoRiggingRequestParams()
+            rig.blocking, rig.report_progress = True, False
+            rig.rig_type = unreal.MetaHumanRigType.JOINTS_ONLY
+            subsystem.request_auto_rigging(character, rig)
 
-        textures = unreal.MetaHumanCharacterTextureRequestParams()
-        textures.blocking, textures.report_progress = True, False
-        subsystem.request_texture_sources(character, textures)
+            textures = unreal.MetaHumanCharacterTextureRequestParams()
+            textures.blocking, textures.report_progress = True, False
+            subsystem.request_texture_sources(character, textures)
+
+            if subsystem.can_build_meta_human(character=character):
+                break
+            log(preset, "was not rigged or textured at try", attempt + 1)
 
         if not subsystem.can_build_meta_human(character=character):
             raise RuntimeError("%s cannot be built (not rigged or textured: is the editor signed in to Epic?)" % preset)
@@ -260,7 +504,14 @@ def build(preset):
         if subsystem.is_object_added_for_editing(character):
             subsystem.remove_object_to_edit(character)
     unreal.EditorLoadingAndSavingUtils.save_dirty_packages(True, True)
-    tailor(preset, bare)
+    if preset in DRESSED:
+        weather(preset)
+    else:
+        tailor(preset, bare)
+    # a man or a woman, written on the character itself: a shirt no longer says which (Tools/import_gut_sound.py reads it)
+    blueprint = unreal.load_asset("%s/%s/BP_%s" % (ROOT, name, name))
+    eal.set_metadata_tag(blueprint, "GutSex", "man" if man else "woman")
+    eal.save_loaded_asset(blueprint, only_if_is_dirty=False)
     log(preset, "built")
 
 
@@ -391,6 +642,11 @@ def wire():
             rung.set_editor_property("body", character_class(preset))
             rungs[index] = rung
             log(ladder_name, index + 1, str(rung.get_editor_property("opponent_name")), "is", preset, "" if character_class(preset) else "(not built yet)")
+        # the first ladder also keeps who the new meat is seen as: whoever comes into the cage after the dead
+        if ladder_name == LADDERS[0][0]:
+            fresh = [character_class(name) for name in NEW_MEAT if character_class(name)]
+            ladder.set_editor_property("newcomer_bodies", fresh)
+            log("new meat:", len(fresh), "of", len(NEW_MEAT), "built:", " ".join(name for name in NEW_MEAT if character_class(name)))
         ladder.set_editor_property("rungs", rungs)
         eal.save_loaded_asset(ladder, only_if_is_dirty=False)
 
@@ -401,6 +657,9 @@ def main():
         wanted = [PLAYER] + OPPONENTS
     elif wanted == ["crowd"]:
         wanted = list(CROWD)
+    elif wanted == ["meat"]:
+        # only the ones not built yet, so that a run that was stopped can be taken up again
+        wanted = [name for name in NEW_MEAT if not character_class(name)]
     failed = []
     for preset in wanted:
         try:
@@ -408,11 +667,19 @@ def main():
         except Exception as error:
             failed.append(preset)
             log(preset, "NOT BUILT:", repr(error))
+    # GUT_REWEATHER dyes again whoever is dressed and built, without building anybody
+    if os.environ.get("GUT_REWEATHER"):
+        for preset in DRESSED:
+            if character_class(preset) and preset not in wanted:
+                weather(preset)
     if os.environ.get("GUT_RETAILOR"):
-        for preset in [PLAYER] + OPPONENTS + CROWD:
+        for preset in [PLAYER] + OPPONENTS + CROWD + list(NEW_MEAT):
             if character_class(preset) and preset not in wanted:
                 tailor(preset)
-    wire()
+    note_bodies()
+    # GUT_NO_WIRE builds people and leaves the cage as it is: for trying something on
+    if not os.environ.get("GUT_NO_WIRE"):
+        wire()
     unreal.EditorLoadingAndSavingUtils.save_dirty_packages(True, True)
     log("cast:", PLAYER, "then", " ".join(OPPONENTS))
     if failed:

@@ -23,10 +23,14 @@ class UIKRetargeter;
 namespace TownStoppedLines
 {
 	inline constexpr int32 GoOn = 0;
-	inline constexpr int32 Sound = 1;
-	inline constexpr int32 Speech = 2;
-	inline constexpr int32 Leave = 3;
-	inline constexpr int32 Count = 4;
+
+	/** The bag and the map each have a key, and are here too for whoever has not found it */
+	inline constexpr int32 Bag = 1;
+	inline constexpr int32 Map = 2;
+	inline constexpr int32 Sound = 3;
+	inline constexpr int32 Speech = 4;
+	inline constexpr int32 Leave = 5;
+	inline constexpr int32 Count = 6;
 }
 
 /** Somebody being walked from where they stand to somewhere else: a lot down off the Block when it is sold, or up onto it */
@@ -107,6 +111,74 @@ struct FTownShopLine
 
 	/** It can be bought now. If not, Why says why not. */
 	bool bCanBuy = false;
+	FString Why;
+};
+
+/** What sort of thing a thing in the bag is */
+enum class ETownBagKind : uint8
+{
+	/** Water in hand, which is what everything is paid in: one for each way the player has come to the cage */
+	Water,
+
+	/** Somebody the player owns, or pays: the paper that says so. They themselves walk behind, or are in the yard. */
+	Person,
+
+	/** Something bought at a stall, to be used or given */
+	Good,
+
+	/** Armor the player's fighter has on */
+	Worn,
+
+	/** The map of the town */
+	Map,
+
+	/** What is owed, written down by whoever is owed it */
+	Note
+};
+
+/** One thing in the bag, as the bag's screen shows it */
+struct FTownBagLine
+{
+	ETownBagKind Kind = ETownBagKind::Good;
+
+	/** The part of the bag it is in, which is written over the first thing of each part */
+	FString Part;
+
+	FString Name;
+
+	/** How many, or how much, in a word. Empty for one of a thing there is only one of. */
+	FString Count;
+
+	/** What it is for, or how it stands, in a few words beside its name */
+	FString Detail;
+
+	/** More about it, beside its picture, a line at a time */
+	TArray<FString> About;
+
+	/** The picture of it, by name, among the pictures the screens are drawn with */
+	FName Picture;
+
+	/** What the key that says yes does with it, in a word or two. Empty if there is nothing to be done with it from here. */
+	FString Verb;
+
+	/** It can be done now. If not, Why says why not. */
+	bool bCanUse = false;
+	FString Why;
+
+	/** Which good it is, or which of the player's people */
+	FName Good;
+	int32 Fighter = INDEX_NONE;
+};
+
+/** Somebody a thing out of the bag can be used on, or given to */
+struct FTownBagTaker
+{
+	FString Name;
+
+	/** Which of the player's people. None for the player's own fighter. */
+	int32 Fighter = INDEX_NONE;
+
+	bool bCan = false;
 	FString Why;
 };
 
@@ -303,6 +375,11 @@ protected:
 	bool bAtStall = false;
 	bool bAtBag = false;
 
+	/** True while the bag is asking who a thing is for, which thing, and which of the answers the player is on */
+	bool bBagAsking = false;
+	FName BagAsked;
+	int32 BagAskChoice = 0;
+
 	/** What looks at whoever the book's line is about, while the book is open, and which line it was last turned to */
 	UPROPERTY(Transient)
 	TObjectPtr<ACameraActor> BookCamera;
@@ -413,12 +490,13 @@ protected:
 	/** Moves everybody who walks a round of the place on along it */
 	void UpdateBeats(float DeltaTime);
 
-	/** What a stall has for sale, and what is in the bag, as lines of the same panel a counter has */
+	/** What a stall has for sale, as lines of the same panel a counter has */
 	TArray<FTownShopLine> GetStallLines() const;
-	TArray<FTownShopLine> GetBagLines() const;
 
 	bool BuyAtStall(int32 Line);
-	bool UseFromBag(int32 Line);
+
+	/** The keys that choose and say yes, while the bag is open */
+	void HandleBagInput(EGutMenuInput Input);
 
 	/**
 	 *  The water the market is paid in: the fighter's if the player has one, or an owner's, or a gambler's, in that order.
@@ -547,6 +625,33 @@ public:
 	void ToggleBag();
 
 	bool IsBagOpen() const { return bShopping && bAtBag; }
+
+	/**
+	 *  Everything the player has on it, as the bag's screen shows it: water, the papers for whoever it owns or pays,
+	 *  what it has bought, what its fighter wears, the map, and what it owes. There is always the map.
+	 */
+	TArray<FTownBagLine> GetBagLines() const;
+
+	/** Which of them the player is on, and what was last said about any of them */
+	int32 GetBagChoice() const { return ShopChoice; }
+	FString GetBagSaid() const { return ShopSaid; }
+
+	/**
+	 *  Does what can be done with a thing in the bag. A good that more than one could have is asked about first:
+	 *  the answer is given to GiveFromBag. False if nothing was done.
+	 */
+	bool UseFromBag(int32 Line);
+
+	/** Who a good could be used on or given to: the player's own fighter, and whoever of its people is walking with it */
+	TArray<FTownBagTaker> GetBagTakers(const FName& Good) const;
+
+	/** Uses a good on the player's own fighter, or gives it to one of its people who is with it. False if it would be wasted: it is kept. */
+	bool GiveFromBag(const FName& Good, int32 Fighter);
+
+	/** True while the bag is asking who a thing is for; then who could have it, and which the player is on. The line after the last is nobody. */
+	bool IsBagAsking() const { return IsBagOpen() && bBagAsking; }
+	FName GetBagAsked() const { return BagAsked; }
+	int32 GetBagAskChoice() const { return BagAskChoice; }
 
 	/** What the key that says yes does at the counter the player is at, in a word or two: "buy it", "use it" */
 	FString GetShopVerb() const;

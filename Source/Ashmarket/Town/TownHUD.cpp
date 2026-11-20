@@ -36,6 +36,12 @@ void ATownHUD::DrawHUD()
 		return;
 	}
 
+	if (Town->IsBagOpen())
+	{
+		DrawBag(Town, CenterX);
+		return;
+	}
+
 	// where this is, and what the player has on them
 	if (const UTownPlaceData* Place = Town->GetPlace())
 	{
@@ -55,7 +61,7 @@ void ATownHUD::DrawHUD()
 		}
 	}
 
-	if (bShowControls && !Town->IsTalking())
+	if (bShowControls && !Town->IsTalking() && !Town->IsShopping())
 	{
 		const TCHAR* Controls[][2] =
 		{
@@ -63,49 +69,76 @@ void ATownHUD::DrawHUD()
 			{ TEXT("Look"), TEXT("Mouse / right stick") },
 			{ TEXT("Jog (hold)"), TEXT("Shift / LB") },
 			{ TEXT("Talk, use"), TEXT("E / X") },
-			{ TEXT("Map"), TEXT("M / Y") },
-			{ TEXT("Bag"), TEXT("I / D-pad right") },
 			{ TEXT("Back out"), TEXT("Backspace / B") },
 			{ TEXT("Stop"), TEXT("Esc / Back") },
 		};
+
+		// on something dark, so that it can be read against a lit street
+		DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.5f), 38.0f * UIScale, 86.0f * UIScale, 372.0f * UIScale, ((UE_ARRAY_COUNT(Controls) * 24.0f) + 14.0f) * UIScale);
 
 		float Y = 92.0f;
 
 		for (const auto& Line : Controls)
 		{
-			DrawLabel(Line[0], 50.0f, Y, 16, GutHUDColors::DimText);
-			DrawLabel(Line[1], 190.0f, Y, 16, GutHUDColors::DimText);
+			DrawLabel(Line[0], 50.0f, Y, 17, GutHUDColors::DimText);
+			DrawLabel(Line[1], 190.0f, Y, 17, GutHUDColors::Text);
 
-			Y += 20.0f;
+			Y += 24.0f;
 		}
+	}
+
+	// the bag and the map, each with its key, in the corner where nothing else is: they are what a player looks for and cannot guess
+	if (!Town->IsTalking() && !Town->IsShopping())
+	{
+		const float Right = LayoutWidth - 50.0f;
+		const float Top = 938.0f;
+
+		DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.5f), (Right - 452.0f) * UIScale, (Top - 10.0f) * UIScale, 488.0f * UIScale, 112.0f * UIScale);
+
+		if (UTexture2D* Satchel = GetBagPicture(FName("bag_satchel")); Satchel && Satchel->GetResource())
+		{
+			DrawPiece(Satchel, Right - 446.0f, Top - 4.0f, 100.0f, 100.0f, FVector2D(0.0f, 0.0f), FVector2D(1.0f, 1.0f), FLinearColor::White, true);
+		}
+
+		DrawLabel(TEXT("YOUR BAG"), Right - 336.0f, Top + 6.0f, 22, GutHUDColors::Warning);
+		DrawLabel(TEXT("I  /  D-pad right"), Right - 180.0f, Top + 9.0f, 19, GutHUDColors::Text);
+
+		DrawLabel(TEXT("THE MAP"), Right - 336.0f, Top + 52.0f, 22, GutHUDColors::Warning);
+		DrawLabel(TEXT("M  /  Y button"), Right - 180.0f, Top + 55.0f, 19, GutHUDColors::Text);
 	}
 
 	// what there is to do here, down the right-hand side, out of the way of the street
 	if (const UTownPlaceData* Place = Town->GetPlace(); Place && !Place->Errand.IsEmpty() && !Town->IsTalking() && !Town->IsShopping())
 	{
+		// no wider than leaves the slate over the middle of the street alone, when something is being called out on it
+		const float Column = 500.0f;
+
 		float Y = 44.0f;
 
 		for (int32 i = 0; i < Place->Errand.Num(); ++i)
 		{
 			// the first line is the heading
-			DrawLabel(Place->Errand[i], LayoutWidth - 50.0f - MeasureLabel(Place->Errand[i], i == 0 ? 20 : 17), Y, i == 0 ? 20 : 17, i == 0 ? GutHUDColors::Warning : GutHUDColors::Text);
+			const int32 Size = i == 0 ? 20 : 17;
 
-			Y += i == 0 ? 32.0f : 25.0f;
+			for (const FString& Line : WrapLabel(Place->Errand[i], Size, Column))
+			{
+				DrawLabel(Line, LayoutWidth - 50.0f - MeasureLabel(Line, Size), Y, Size, i == 0 ? GutHUDColors::Warning : GutHUDColors::Text);
+
+				Y += i == 0 ? 32.0f : 25.0f;
+			}
 		}
 
-		// and, wherever the player is, where what it owns has got to, and how to find anything else
-		if (const FString Owned = Town->GetOwnedLine(); !Owned.IsEmpty() && !Town->IsShopping())
+		// and, wherever the player is, where what it owns has got to
+		if (const FString Owned = Town->GetOwnedLine(); !Owned.IsEmpty())
 		{
-			DrawLabel(Owned, LayoutWidth - 50.0f - MeasureLabel(Owned, 17), Y + 4.0f, 17, GutHUDColors::Stamina);
+			Y += 4.0f;
 
-			Y += 29.0f;
-		}
+			for (const FString& Line : WrapLabel(Owned, 17, Column))
+			{
+				DrawLabel(Line, LayoutWidth - 50.0f - MeasureLabel(Line, 17), Y, 17, GutHUDColors::Stamina);
 
-		if (!Town->IsShopping())
-		{
-			const FString Map = TEXT("M or Y button: the map");
-
-			DrawLabel(Map, LayoutWidth - 50.0f - MeasureLabel(Map, 17), Y + 4.0f, 17, GutHUDColors::DimText);
+				Y += 25.0f;
+			}
 		}
 	}
 
@@ -313,6 +346,242 @@ void ATownHUD::DrawShop(const ATownGameMode* Town, float CenterX)
 	}
 
 	DrawLabel(FString::Printf(TEXT("W / S or D-pad: choose          E, Enter or A button: %s          Backspace or B button: leave"), *Town->GetShopVerb()), CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);
+}
+
+UTexture2D* ATownHUD::GetBagPicture(const FName& Name)
+{
+	if (Name.IsNone())
+	{
+		return nullptr;
+	}
+
+	if (const TObjectPtr<UTexture2D>* Fetched = BagPictures.Find(Name))
+	{
+		return *Fetched;
+	}
+
+	// looked for once, found or not
+	UTexture2D* Picture = LoadObject<UTexture2D>(nullptr, *FString::Printf(TEXT("/Game/Gut/Art/UI/%s.%s"), *Name.ToString(), *Name.ToString()), nullptr, LOAD_NoWarn | LOAD_Quiet);
+
+	BagPictures.Add(Name, Picture);
+
+	return Picture;
+}
+
+void ATownHUD::DrawBag(const ATownGameMode* Town, float CenterX)
+{
+	const TArray<FTownBagLine> Things = Town->GetBagLines();
+	const int32 Choice = Town->GetBagChoice();
+
+	// the street stands back behind it
+	DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.72f), 0.0f, 0.0f, Canvas->SizeX, Canvas->SizeY);
+
+	const float Wide = 1640.0f;
+	const float Top = 50.0f;
+	const float High = 980.0f;
+	const float Left = CenterX - (Wide * 0.5f);
+
+	DrawPanel(CenterX, Top, Wide, High, EGutPanel::Slate);
+
+	// the bag itself, and what is in the fighter already for the fight ahead
+	UTexture2D* Satchel = GetBagPicture(FName("bag_satchel"));
+
+	if (Satchel && Satchel->GetResource())
+	{
+		DrawPiece(Satchel, Left + 30.0f, Top + 12.0f, 100.0f, 100.0f, FVector2D(0.0f, 0.0f), FVector2D(1.0f, 1.0f), FLinearColor::White, true);
+	}
+
+	DrawLabel(TEXT("YOUR BAG"), Left + 144.0f, Top + 30.0f, 34, GutHUDColors::Warning);
+
+	if (const FString Ahead = Town->GetShopPurse(); !Ahead.IsEmpty())
+	{
+		DrawLabel(Ahead, Left + 146.0f, Top + 80.0f, 16, GutHUDColors::Stamina);
+	}
+
+	// everything in it, down the left, a part at a time
+	const float ListLeft = Left + 44.0f;
+	const float CountRight = Left + 560.0f;
+	const float LineHeight = 33.0f;
+
+	float Y = Top + 132.0f;
+	FString Part;
+
+	for (int32 i = 0; i <= Things.Num(); ++i)
+	{
+		const bool bChosen = i == Choice;
+		const TCHAR* Mark = bChosen ? TEXT(">  ") : TEXT("    ");
+
+		// under the things, the line that shuts it
+		if (i == Things.Num())
+		{
+			DrawLabel(FString(Mark) + TEXT("Shut the bag"), ListLeft, Y + 16.0f, 21, bChosen ? GutHUDColors::Warning : GutHUDColors::Text);
+			break;
+		}
+
+		const FTownBagLine& Thing = Things[i];
+
+		if (Thing.Part != Part)
+		{
+			Part = Thing.Part;
+
+			Y += i == 0 ? 0.0f : 12.0f;
+
+			DrawLabel(Part, ListLeft, Y, 15, GutHUDColors::DimText);
+			DrawRect(FLinearColor(1.0f, 1.0f, 1.0f, 0.12f), (ListLeft + MeasureLabel(Part, 15) + 14.0f) * UIScale, (Y + 10.0f) * UIScale, (Left + 730.0f - ListLeft - MeasureLabel(Part, 15) - 14.0f) * UIScale, FMath::Max(1.0f, 2.0f * UIScale));
+
+			Y += 26.0f;
+		}
+
+		const FLinearColor Ink = bChosen ? GutHUDColors::Warning : GutHUDColors::Text;
+
+		DrawLabel(FString(Mark) + Thing.Name, ListLeft, Y, 21, Ink, false, 380.0f);
+
+		if (!Thing.Count.IsEmpty())
+		{
+			DrawLabel(Thing.Count, CountRight - MeasureLabel(Thing.Count, 19), Y + 2.0f, 19, Ink);
+		}
+
+		// how it stands: with the player, worn, or why it cannot be used now
+		if (!Thing.Why.IsEmpty())
+		{
+			DrawLabel(Thing.Why.ToUpper(), CountRight + 16.0f, Y + 6.0f, 14, Thing.Kind == ETownBagKind::Good ? GutHUDColors::DimText : GutHUDColors::Stamina);
+		}
+
+		Y += LineHeight;
+	}
+
+	// and the thing the player is on, on the right: its picture, and what there is to know about it
+	const float PageLeft = Left + 800.0f;
+	const float PageWide = 790.0f;
+
+	DrawRect(FLinearColor(1.0f, 1.0f, 1.0f, 0.12f), (Left + 765.0f) * UIScale, (Top + 126.0f) * UIScale, FMath::Max(1.0f, 2.0f * UIScale), (High - 216.0f) * UIScale);
+
+	const bool bOnThing = Things.IsValidIndex(Choice);
+
+	UTexture2D* Picture = bOnThing ? GetBagPicture(Things[Choice].Picture) : Satchel;
+
+	const float BoxTop = Top + 116.0f;
+	const float BoxHigh = 430.0f;
+
+	if (Picture && Picture->GetResource())
+	{
+		// whole, in its own shape, as large as its place allows
+		const float Fit = FMath::Min(PageWide / FMath::Max(1, Picture->GetSizeX()), BoxHigh / FMath::Max(1, Picture->GetSizeY()));
+		const float PictureWide = Picture->GetSizeX() * Fit;
+		const float PictureHigh = Picture->GetSizeY() * Fit;
+
+		DrawPiece(Picture, PageLeft + ((PageWide - PictureWide) * 0.5f), BoxTop + ((BoxHigh - PictureHigh) * 0.5f), PictureWide, PictureHigh, FVector2D(0.0f, 0.0f), FVector2D(1.0f, 1.0f), FLinearColor::White, true);
+	}
+
+	float PageY = BoxTop + BoxHigh + 22.0f;
+
+	if (bOnThing)
+	{
+		const FTownBagLine& Thing = Things[Choice];
+
+		DrawLabel(Thing.Name.ToUpper(), PageLeft, PageY, 28, GutHUDColors::Warning, false, PageWide - 200.0f);
+
+		if (!Thing.Count.IsEmpty())
+		{
+			DrawLabel(Thing.Count, PageLeft + PageWide - MeasureLabel(Thing.Count, 24), PageY + 4.0f, 24, GutHUDColors::Text);
+		}
+
+		PageY += 48.0f;
+
+		DrawLabel(Thing.Detail, PageLeft, PageY, 18, GutHUDColors::DimText, false, PageWide);
+
+		PageY += 36.0f;
+
+		// what there is to know about it: stood back while who it is for is being asked in its place
+		for (const FString& About : Town->IsBagAsking() ? TArray<FString>() : Thing.About)
+		{
+			for (const FString& Line : WrapLabel(About, 17, PageWide))
+			{
+				DrawLabel(Line, PageLeft, PageY, 17, GutHUDColors::Text);
+
+				PageY += 24.0f;
+			}
+
+			PageY += 7.0f;
+		}
+	}
+	else
+	{
+		DrawLabel(TEXT("Everything you have on you is in here."), PageLeft, PageY, 20, GutHUDColors::DimText);
+
+		PageY += 34.0f;
+	}
+
+	// what came of the last thing done: while who it is for is being asked, that is said where it is asked
+	const TArray<FString> Said = WrapLabel(Town->GetBagSaid(), 19, Town->IsBagAsking() ? 580.0f : PageWide);
+
+	for (const FString& Line : Town->IsBagAsking() ? TArray<FString>() : Said)
+	{
+		DrawLabel(Line, PageLeft, PageY + 8.0f, 19, GutHUDColors::Warning);
+
+		PageY += 27.0f;
+	}
+
+	const FString Verb = Town->GetShopVerb();
+
+	// who a thing is for, asked over the page
+	if (Town->IsBagAsking())
+	{
+		const TArray<FTownBagTaker> Takers = Town->GetBagTakers(Town->GetBagAsked());
+
+		const float AskWide = 660.0f;
+		const float AskHigh = 126.0f + ((Takers.Num() + 1) * 38.0f) + (Said.IsEmpty() ? 0.0f : 12.0f + (Said.Num() * 27.0f));
+		const float AskTop = PageY + 6.0f;
+		const float AskCenter = PageLeft + (PageWide * 0.5f);
+		const float AskLeft = AskCenter - (AskWide * 0.5f) + 36.0f;
+
+		DrawPanel(AskCenter, AskTop, AskWide, AskHigh, EGutPanel::Steel);
+		DrawLabel(TEXT("WHO IS IT FOR?"), AskLeft, AskTop + 24.0f, 26, GutHUDColors::Warning);
+
+		float AskY = AskTop + 80.0f;
+
+		for (int32 i = 0; i <= Takers.Num(); ++i)
+		{
+			const bool bChosen = i == Town->GetBagAskChoice();
+			const TCHAR* Mark = bChosen ? TEXT(">  ") : TEXT("    ");
+
+			if (i == Takers.Num())
+			{
+				DrawLabel(FString(Mark) + TEXT("Nobody: it keeps"), AskLeft, AskY, 21, bChosen ? GutHUDColors::Warning : GutHUDColors::Text);
+
+				AskY += 50.0f;
+
+				for (const FString& Line : Said)
+				{
+					DrawLabel(Line, AskLeft, AskY, 19, GutHUDColors::Warning);
+
+					AskY += 27.0f;
+				}
+
+				break;
+			}
+
+			DrawLabel(FString(Mark) + Takers[i].Name, AskLeft, AskY, 21, bChosen ? GutHUDColors::Warning : (Takers[i].bCan ? GutHUDColors::Text : GutHUDColors::DimText), false, 330.0f);
+
+			if (!Takers[i].Why.IsEmpty())
+			{
+				DrawLabel(Takers[i].Why.ToUpper(), AskLeft + 380.0f, AskY + 6.0f, 14, GutHUDColors::DimText);
+			}
+
+			AskY += 38.0f;
+		}
+
+		// what is drawn after this is on the bag's own slate again
+		LastPanel = FBox2D(ForceInit);
+
+		DrawLabel(TEXT("W / S or D-pad: choose          E, Enter or A button: give it          Backspace or B button: back to the bag"), CenterX, Top + High - 38.0f, 17, GutHUDColors::Text, true);
+		return;
+	}
+
+	DrawLabel(Verb.IsEmpty()
+		? FString(TEXT("W / S or D-pad: choose          I, Backspace or B button: shut the bag"))
+		: FString::Printf(TEXT("W / S or D-pad: choose          E, Enter or A button: %s          I, Backspace or B button: shut the bag"), *Verb),
+		CenterX, Top + High - 38.0f, 17, GutHUDColors::Text, true);
 }
 
 void ATownHUD::DrawMap(const ATownGameMode* Town, float CenterX)

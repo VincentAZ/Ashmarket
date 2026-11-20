@@ -62,6 +62,10 @@ struct FGutWindowState
 	UPROPERTY(BlueprintReadOnly, Category="Window")
 	int32 DeadBeforeTonight = 0;
 
+	/** How many newcomers the cage had when tonight's bill was posted: anybody who has come in since is not on it */
+	UPROPERTY(BlueprintReadOnly, Category="Window")
+	int32 NewBeforeTonight = 0;
+
 	/** How closely the gambler is watched, from 0 to 1: added to the chance that a fix is noticed. Every fix raises it, every night lowers it. */
 	UPROPERTY(BlueprintReadOnly, Category="Window")
 	float Heat = 0.0f;

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Assembles fighters as MetaHumans in an editor with no window, and puts the ones that are built into the cage.
-# Pass the names of Epic's presets to build (each is rebuilt from scratch), "all" for the whole cast in build_gut_metahuman.py, or "crowd" for the spectators.
+# Pass the names of Epic's presets to build (each is rebuilt from scratch), "all" for the whole cast in build_gut_metahuman.py, "crowd" for the spectators,
+# or "meat" for whichever of the new fighters are not built yet.
 # With no names it only puts the built ones in the cage. A fighter takes about 3 minutes.
 set -uo pipefail
 
@@ -10,7 +11,7 @@ LOG="$PROJECT_DIR/Saved/Logs/build_gut_metahuman.log"
 
 for PRESET in "$@"; do
 	NAME="${PRESET//-/}"
-	[ "$NAME" = all ] || [ "$NAME" = crowd ] || rm -rf "$PROJECT_DIR/Content/Gut/Art/MetaHumans/$NAME" "$PROJECT_DIR/Content/Gut/Art/MetaHumans/Characters/$NAME.uasset"
+	[ "$NAME" = all ] || [ "$NAME" = crowd ] || [ "$NAME" = meat ] || rm -rf "$PROJECT_DIR/Content/Gut/Art/MetaHumans/$NAME" "$PROJECT_DIR/Content/Gut/Art/MetaHumans/Characters/$NAME.uasset"
 done
 
 GUT_METAHUMANS="$*" "$UE_ROOT/Engine/Binaries/Linux/UnrealEditor-Cmd" "$PROJECT_DIR/Ashmarket.uproject" \

@@ -38,7 +38,17 @@ protected:
 	/** The town's own map, with the player marked on it */
 	void DrawMap(const ATownGameMode* Town, float CenterX);
 
+	/** The player's bag, open: everything it has on it down the left, and the thing it is on, pictured, on the right */
+	void DrawBag(const ATownGameMode* Town, float CenterX);
+
+	/** One of the pictures the bag's things are shown by, fetched the first time it is wanted. Nothing if there is none of that name. */
+	UTexture2D* GetBagPicture(const FName& Name);
+
 	/** The map's picture, once fetched */
 	UPROPERTY(Transient)
 	TObjectPtr<UTexture2D> MapPicture;
+
+	/** The bag's pictures, by name, as they are fetched */
+	UPROPERTY(Transient)
+	TMap<FName, TObjectPtr<UTexture2D>> BagPictures;
 };

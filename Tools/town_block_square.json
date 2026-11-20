@@ -656,11 +656,11 @@
    ],
    "lean": 5,
    "pictures": [
-    "bill_sale",
-    "bill_ledger",
-    "bill_sale",
-    "bill_champion",
-    "bill_kennel_master"
+    "bill_sale_by_hand",
+    "bill_ledger_by_hand",
+    "bill_sale_by_hand",
+    "bill_champion_by_hand",
+    "bill_kennel_master_by_hand"
    ]
   },
   {
@@ -689,9 +689,9 @@
    ],
    "lean": 5,
    "pictures": [
-    "bill_ledger",
-    "bill_sale",
-    "bill_butcher"
+    "bill_ledger_by_hand",
+    "bill_sale_by_hand",
+    "bill_butcher_by_hand"
    ]
   }
  ],
@@ -977,7 +977,7 @@
     },
     {
      "id": "yard",
-     "words": "To your yard, beside the Gut. The yard gate is on Pool Street, past the fighters' door: the yard hand lets owners in. You train them there, and you send them down into the pool from there."
+     "words": "With you. They follow whoever holds their paper, as far as your yard beside the Gut. The yard gate is on Pool Street, past the fighters' door: the yard hand lets owners in. You train them there, and you send them down into the pool from there."
     }
    ]
   },

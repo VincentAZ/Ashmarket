@@ -164,6 +164,7 @@ bool UGutGameInstance::SaveRun()
 	Save->Window = Window;
 	Save->Stable = Stable;
 	Save->Bag = Bag;
+	Save->Roster = Roster;
 
 	return UGameplayStatics::SaveGameToSlot(Save, SaveSlotName, 0);
 }
@@ -190,6 +191,21 @@ bool UGutGameInstance::LoadRun()
 	Window = Save->Window;
 	Stable = Save->Stable;
 	Bag = Save->Bag;
+	Roster = Save->Roster;
+
+	// a run written down before the dead were counted once for all three: whoever the window and the yard each knew to be dead
+	if (Roster.Dead.IsEmpty())
+	{
+		for (const int32 Code : Window.Dead)
+		{
+			Roster.Dead.AddUnique(Code);
+		}
+
+		for (const int32 Code : Stable.Dead)
+		{
+			Roster.Dead.AddUnique(Code);
+		}
+	}
 
 	return true;
 }

@@ -29,6 +29,9 @@ namespace GutLiveCableConstants
 
 	/** How far past the point where the way round the free end opens a walker is sent, so it does not stop on the line */
 	const float WayRoundMargin = 60.0f;
+
+	/** What is left of the wait between one spark and the next while the cable lies in water */
+	const float WetSparkShare = 0.3f;
 }
 
 AGutLiveCable::AGutLiveCable()
@@ -191,13 +194,24 @@ void AGutLiveCable::TickPresentation(float DeltaTime)
 		// sparks jump from somewhere along it
 		if (SparkEffect && Now >= NextSparkTime)
 		{
-			NextSparkTime = Now + SparkInterval;
-
 			FVector Start;
 			FVector End;
 			GetCableEnds(Start, End);
 
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, SparkEffect, FMath::Lerp(Start, End, FMath::FRand()) + FVector(0.0f, 0.0f, CableThickness));
+			FVector From = FMath::Lerp(Start, End, FMath::FRand()) + FVector(0.0f, 0.0f, CableThickness);
+
+			if (WetReach > 0.0f)
+			{
+				// and with water over it, off the water anywhere the current carries: that is how far not to stand
+				const FVector2D Off = FMath::RandPointInCircle(WetReach);
+
+				From += FVector(Off.X, Off.Y, 0.0f);
+			}
+
+			// oftener in the water, which has more of it to show
+			NextSparkTime = Now + (WetReach > 0.0f ? SparkInterval * GutLiveCableConstants::WetSparkShare : SparkInterval);
+
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, SparkEffect, From);
 		}
 		break;
 

@@ -160,7 +160,16 @@ def women():
 
         return any(str(user).startswith("/Game/Gut/Ladder") or str(user).startswith("/Game/Gut/Blueprints") for user in users)
 
-    return sorted("BP_" + name for name in everybody - men if fights(name)), sorted(name for name in men if fights(name))
+    # Since people were dressed out of the wardrobe a man with trousers on has no shirt that was taken off him, so the build
+    # writes down which each body is (Tools/gut_bodies.json, from whose body it has). That goes for everybody it names,
+    # fighter or not: somebody bought off the Block fights too, and the game takes voice and strength from this list.
+    noted = os.path.join(PROJECT, "Tools", "gut_bodies.json")
+    said = json.load(open(noted)) if os.path.exists(noted) else {}
+
+    with_shirts = {name for name in everybody if said.get(name) == "woman"}
+    with_shirts |= {name for name in everybody - men if name not in said and fights(name)}
+
+    return sorted("BP_" + name for name in with_shirts), sorted(name for name in everybody - with_shirts if fights(name))
 
 
 def main():

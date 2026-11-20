@@ -50,9 +50,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Flood", meta = (ClampMin = 0.1, ClampMax = 1))
 	float WadeDodgeScale = 0.8f;
 
-	/** How far a live cable's current carries through the water, beyond the cable itself */
+	/**
+	 *  How far a live cable's current carries through the water, beyond the cable itself. Water with a live cable lying in it
+	 *  is live: worst at the cable and falling away from it, so this is how far off it still puts somebody down.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Flood", meta = (ClampMin = 0, ClampMax = 500, Units = "cm"))
-	float CurrentReach = 60.0f;
+	float CurrentReach = 180.0f;
+
+	/** What is said when the valve opens on a pool with a live cable lying in it, in place of the plain news */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Flood")
+	FText LiveWaterText;
 
 	/** What the water looks like: a surface made elsewhere */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation")

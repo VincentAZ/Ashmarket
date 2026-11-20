@@ -154,6 +154,9 @@ namespace GutTests
 			if (UGutGameInstance* GameInstance = Cast<UGutGameInstance>(World->GetGameInstance()))
 			{
 				GameInstance->bStreetForced.Reset();
+
+				// and each test finds the cage as it was first found: nobody dead from the test before, and nobody new
+				GameInstance->Roster = FGutRosterState();
 			}
 		}
 

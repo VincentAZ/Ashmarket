@@ -68,6 +68,17 @@ struct FGutStableFighter
 	UPROPERTY(BlueprintReadOnly, Category="Stable")
 	bool bInTow = false;
 
+	/** The number it stood on at the Block when it was bought, which its bill of sale has on it. Zero if it stood on none. */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 Lot = 0;
+
+	/** If true it has been given bread, or tea, out of its owner's bag since its last fight: as for the player's own fighter, and gone when that fight is over */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	bool bFed = false;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	bool bSteadied = false;
+
 	/** How its limbs are, carried from fight to fight. Negative for a fighter that has not been hurt yet. */
 	UPROPERTY()
 	float LimbHealth[GutNumLimbs] = { -1.0f, -1.0f, -1.0f, -1.0f };
@@ -274,6 +285,9 @@ namespace GutStableLines
 		HandOverTag = 16,
 		DenyTag = 17,
 		Sell = 18,
+
+		/** Out of the yard gate to the street, with this one walking behind */
+		WalkOut = 19,
 
 		BodyToParts = 20,
 		BodyToGrill = 21,

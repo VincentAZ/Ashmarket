@@ -76,6 +76,8 @@ void AGutGameMode::EnterWindow(int32 Seed)
 	GameInstance->Window.Water = WindowStartingWater;
 	GameInstance->Window.Seed = Seed != 0 ? Seed : FMath::RandRange(1, 1000000);
 
+	PostWindowBill(GameInstance->Window);
+
 	UE_LOG(LogGut, Log, TEXT("Window: a gambler comes to the cage with %.0f L"), WindowStartingWater);
 
 	UGameplayStatics::OpenLevel(this, FName(*UGameplayStatics::GetCurrentLevelName(this)), true);
@@ -95,23 +97,21 @@ void AGutGameMode::BuildWindowBill(const FGutWindowState& State, TArray<FGutWind
 {
 	OutBill.Reset();
 
-	TArray<const UGutLadderData*> Ranks;
-	GetRanks(Ranks);
-
-	// everybody still alive, from the bottom of the ladders to the top: near neighbours are near matches
+	// everybody still alive, from the bottom of the ladders to the top: near neighbours are near matches.
+	// Whoever came into the cage after the bill was posted is not on it.
 	TArray<TPair<int32, int32>> Living;
 
-	for (int32 Rank = 0; Rank < Ranks.Num(); ++Rank)
-	{
-		for (int32 Rung = 0; Rung < Ranks[Rank]->Rungs.Num(); ++Rung)
-		{
-			// alive when the bill was posted: whoever has died on it since is still on it
-			const int32 Place = State.Dead.IndexOfByKey((Rank * 100) + Rung);
+	TArray<int32> Everybody;
+	GetCageFighters(Everybody, State.NewBeforeTonight);
 
-			if (Place == INDEX_NONE || Place >= State.DeadBeforeTonight)
-			{
-				Living.Add({ Rank, Rung });
-			}
+	for (const int32 Code : Everybody)
+	{
+		// alive when the bill was posted: whoever has died on it since is still on it
+		const int32 Place = State.Dead.IndexOfByKey(Code);
+
+		if (Place == INDEX_NONE || Place >= State.DeadBeforeTonight)
+		{
+			Living.Add({ Code / 100, Code % 100 });
 		}
 	}
 
@@ -174,10 +174,17 @@ const UGutLadderData* AGutGameMode::GetWindowRank(int32 Corner) const
 
 const FGutLadderRung* AGutGameMode::GetWindowRung(int32 Corner) const
 {
-	const UGutLadderData* Rank = GetWindowRank(Corner);
-	const int32 Rung = GetWindowFight().Rung[Corner & 1];
+	const FGutWindowFight Fight = GetWindowFight();
 
-	return (Rank && Rank->Rungs.IsValidIndex(Rung)) ? &Rank->Rungs[Rung] : nullptr;
+	// one of a rank's own, or somebody who has come into it since
+	return Fight.IsValid() ? FindRung((Fight.Rank[Corner & 1] * 100) + Fight.Rung[Corner & 1]) : nullptr;
+}
+
+int32 AGutGameMode::GetWindowCode(int32 Corner) const
+{
+	const FGutWindowFight Fight = GetWindowFight();
+
+	return Fight.IsValid() ? (Fight.Rank[Corner & 1] * 100) + Fight.Rung[Corner & 1] : -1;
 }
 
 float AGutGameMode::GetWindowBookChance() const
@@ -192,6 +199,11 @@ float AGutGameMode::GetWindowBookChance() const
 
 	// each rung says what the book gives a newcomer against the fighter on it: the less it gives, the better the fighter
 	float Chance = 0.5f + (Second->BookChance - First->BookChance);
+
+	// what each has won in this cage since the gambler first came to it
+	const FGutWindowFight Fight = GetWindowFight();
+
+	Chance += GetRecordEdge(GetCageWins((Fight.Rank[0] * 100) + Fight.Rung[0]), GetCageWins((Fight.Rank[1] * 100) + Fight.Rung[1]));
 
 	// and what the book knows about the two weapons
 	TArray<const UGutLadderData*> Ranks;
@@ -334,6 +346,38 @@ void AGutGameMode::BeginWindowCard()
 		GameInstance->PendingStory = EGutStory::Gambler;
 		GameInstance->Window.Water = WindowStartingWater;
 		GameInstance->Window.Seed = FMath::RandRange(1, 1000000);
+
+		PostWindowBill(GameInstance->Window);
+	}
+
+	// a fight whose fighter has died since the bill went up, somewhere other than on it, is struck off: the next is up
+	{
+		FGutWindowState& State = GameInstance->Window;
+
+		TArray<FGutWindowFight> Bill;
+		BuildWindowBill(State, Bill);
+
+		const auto Struck = [this, &State](const FGutWindowFight& Fight)
+		{
+			for (int32 Corner = 0; Corner < 2; ++Corner)
+			{
+				const int32 Code = (Fight.Rank[Corner] * 100) + Fight.Rung[Corner];
+
+				if (IsFallen(Code) && !State.Dead.Contains(Code))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		};
+
+		while (!State.bCaught && Bill.IsValidIndex(State.Fight) && Struck(Bill[State.Fight]))
+		{
+			UE_LOG(LogGut, Log, TEXT("Window: fight %d of the night is struck off the bill: one of the two is dead"), State.Fight + 1);
+
+			++State.Fight;
+		}
 	}
 
 	WindowFix = EGutFix::None;
@@ -477,12 +521,14 @@ void AGutGameMode::BeginGamblersOwnFight()
 		{
 			const int32 Rung = (State.TimesCaught + i) % Rank->Rungs.Num();
 
-			if (!State.Dead.Contains((Ranks.IndexOfByKey(Rank) * 100) + Rung))
+			if (!State.Dead.Contains((Ranks.IndexOfByKey(Rank) * 100) + Rung) && !IsFallen((Ranks.IndexOfByKey(Rank) * 100) + Rung))
 			{
 				Chosen = Rung;
 				break;
 			}
 		}
+
+		OwnFightAgainst = (Ranks.IndexOfByKey(Rank) * 100) + Chosen;
 
 		MakeFighter(EnemyFighter, Rank->Rungs[Chosen], false);
 	}
@@ -526,6 +572,16 @@ void AGutGameMode::SettleWindowFight(const AGutFighter* DeadFighter)
 		{
 			// there is nobody left to bet
 			State = FGutWindowState();
+		}
+
+		// the one it was put in against is dead for good, or has one more to its name
+		if (WindowSettlement.bSurvived)
+		{
+			RecordCageFight(-1, OwnFightAgainst, true);
+		}
+		else
+		{
+			RecordCageFight(OwnFightAgainst, -1, false);
 		}
 
 		UE_LOG(LogGut, Log, TEXT("Window: the fixer %s"), WindowSettlement.bSurvived ? TEXT("walks out") : TEXT("is dead"));
@@ -577,6 +633,9 @@ void AGutGameMode::SettleWindowFight(const AGutFighter* DeadFighter)
 	const int32 Loser = 1 - WindowSettlement.Winner;
 
 	State.Dead.AddUnique((Fight.Rank[Loser] * 100) + Fight.Rung[Loser]);
+
+	// and is dead on the ladder and on the pit boss's bills too; the other has a win the book will remember
+	RecordCageFight((Fight.Rank[WindowSettlement.Winner] * 100) + Fight.Rung[WindowSettlement.Winner], (Fight.Rank[Loser] * 100) + Fight.Rung[Loser], true);
 
 	++State.Fight;
 
@@ -648,17 +707,38 @@ void AGutGameMode::TurnWindowNight()
 	State.FixSpend = 0.0f;
 	State.Fines = 0.0f;
 	State.Heat = FMath::Max(0.0f, State.Heat - HeatLostPerNight);
+
+	PostWindowBill(State);
+}
+
+void AGutGameMode::PostWindowBill(FGutWindowState& State)
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	// whoever has died in the cage, on the bill or off it, is not on the next one: and for each of them there is new meat
+	for (const int32 Code : GameInstance->Roster.Dead)
+	{
+		State.Dead.AddUnique(Code);
+	}
+
 	State.DeadBeforeTonight = State.Dead.Num();
 
-	// when the cage has killed nearly everybody there is new meat: the roster starts again
+	RefillRoster();
+
+	State.NewBeforeTonight = GameInstance->Roster.Newcomers.Num();
+
+	// if the cage has run out of places for new people, it starts again as it was first found
 	TArray<FGutWindowFight> Bill;
 
 	BuildWindowBill(State, Bill);
 
 	if (Bill.Num() < FMath::Min(WindowFightsPerNight, 2))
 	{
+		ResetRoster();
+
 		State.Dead.Reset();
 		State.DeadBeforeTonight = 0;
+		State.NewBeforeTonight = 0;
 	}
 }
 

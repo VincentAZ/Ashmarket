@@ -12,7 +12,9 @@
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerController.h"
 #include "GutArmorData.h"
+#include "GenericPlatform/GenericPlatformInputDeviceMapper.h"
 #include "GutLadderData.h"
+#include "InputKeyEventArgs.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/App.h"
 #include "Tests/TownTestHelpers.h"
@@ -509,6 +511,8 @@ bool FTownMarketTest::RunTest(const FString& Parameters)
 		Run->ResetLadder(10.0f);
 		Run->PendingStory = EGutStory::None;
 		Run->Bag.Reset();
+		Run->Stable = FGutStableState();
+		Run->Window = FGutWindowState();
 
 		TestFalse(TEXT("The bag is shut to begin with"), Town->IsBagOpen());
 
@@ -567,6 +571,48 @@ bool FTownMarketTest::RunTest(const FString& Parameters)
 		}
 	}, InStreet });
 
+	// the bag by its own keys, as a player opens it: right on the pad's D-pad, and I
+	const auto Key = [this](const FKey& Which, bool bPressed)
+	{
+		if (APlayerController* Hands = UGameplayStatics::GetPlayerController(GetTown(), 0))
+		{
+			Hands->InputKey(FInputKeyEventArgs(nullptr, IPlatformInputDeviceMapper::Get().GetDefaultInputDevice(), Which, bPressed ? IE_Pressed : IE_Released, 0));
+		}
+	};
+
+	Steps.Add({ 0.3f, [this, Key]()
+	{
+		TestFalse(TEXT("The bag starts shut"), GetTown()->IsBagOpen());
+
+		Key(EKeys::Gamepad_DPad_Right, true);
+	}, InStreet });
+
+	Steps.Add({ 0.3f, [this, Key]()
+	{
+		TestTrue(TEXT("Right on the D-pad opens the bag"), GetTown()->IsBagOpen());
+
+		Key(EKeys::Gamepad_DPad_Right, false);
+		Key(EKeys::I, true);
+	}, InStreet });
+
+	Steps.Add({ 0.3f, [this, Key]()
+	{
+		TestFalse(TEXT("And I shuts it"), GetTown()->IsBagOpen());
+
+		Key(EKeys::I, false);
+
+		// and for whoever has found neither key, it is on the menu that stops the game
+		ATownGameMode* Town = GetTown();
+
+		Town->SetStopped(true);
+		Town->HandleMenuInput(EGutMenuInput::Down);
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestTrue(TEXT("The stopped menu's second line opens the bag and lets the game go on"), Town->IsBagOpen() && !Town->IsStopped());
+
+		Town->ToggleBag();
+	}, InStreet });
+
 	Steps.Add({ 0.3f, [this]()
 	{
 		ATownGameMode* Town = GetTown();
@@ -575,20 +621,38 @@ bool FTownMarketTest::RunTest(const FString& Parameters)
 		// the bag, wherever the player stands
 		Town->ToggleBag();
 
-		TestTrue(TEXT("The bag opens"), Town->IsBagOpen() && Town->GetShopTitle().Contains(TEXT("BAG")) && Town->GetShopVerb().Contains(TEXT("use")));
+		TestTrue(TEXT("The bag opens"), Town->IsBagOpen() && Town->GetShopTitle().Contains(TEXT("BAG")));
 
-		TArray<FTownShopLine> Lines = Town->GetShopLines();
+		TArray<FTownBagLine> Things = Town->GetBagLines();
 
-		if (!TestEqual(TEXT("Three kinds of thing are in it"), Lines.Num(), 3))
+		const auto Find = [&Things](ETownBagKind Kind, const TCHAR* Name)
+		{
+			return Things.IndexOfByPredicate([Kind, Name](const FTownBagLine& Thing) { return Thing.Kind == Kind && Thing.Name.Contains(Name); });
+		};
+
+		if (!TestEqual(TEXT("Water, three kinds of bought thing and the map are in it"), Things.Num(), 5))
 		{
 			return;
 		}
 
-		TestTrue(TEXT("Bread first, two of them, to be eaten"), Lines[0].Name.Contains(TEXT("bread")) && Lines[0].PriceText.Contains(TEXT("2")) && Lines[0].bCanBuy);
-		TestTrue(TEXT("Tea can be drunk"), Lines[1].bCanBuy);
-		TestTrue(TEXT("A splint is no use to somebody who is whole"), !Lines[2].bCanBuy && Lines[2].Why.Contains(TEXT("nothing to bind")));
+		TestTrue(TEXT("Water first, how much, and whose"), Things[0].Kind == ETownBagKind::Water && Things[0].Count == TEXT("0 L") && Things[0].Name.Contains(TEXT("fighter")));
+		TestTrue(TEXT("Then bread, two of them, to be eaten"), Things[1].Name.Contains(TEXT("bread")) && Things[1].Count.Contains(TEXT("2")) && Things[1].bCanUse && Things[1].Picture == FName("bag_bread"));
+		TestTrue(TEXT("Tea can be drunk"), Things[2].bCanUse);
+		TestTrue(TEXT("A splint is no use to somebody who is whole"), !Things[3].bCanUse && Things[3].Why.Contains(TEXT("nothing to bind")));
+		TestTrue(TEXT("And the map, which can be opened"), Things[4].Kind == ETownBagKind::Map && Things[4].bCanUse);
 
-		// eaten once
+		for (const FTownBagLine& Thing : Things)
+		{
+			const FString Picture = Thing.Picture.ToString();
+
+			TestNotNull(*FString::Printf(TEXT("%s has a picture (%s)"), *Thing.Name, *Picture), LoadObject<UTexture2D>(nullptr, *FString::Printf(TEXT("/Game/Gut/Art/UI/%s.%s"), *Picture, *Picture), nullptr, LOAD_NoWarn | LOAD_Quiet));
+		}
+
+		// down to the bread, and eaten once
+		Town->HandleMenuInput(EGutMenuInput::Down);
+
+		TestTrue(TEXT("The key that says yes uses what the player is on"), Town->GetBagChoice() == 1 && Town->GetShopVerb().Contains(TEXT("use")));
+
 		Town->HandleMenuInput(EGutMenuInput::Confirm);
 
 		TestTrue(TEXT("Bread eaten is in the fighter for its next fight"), Run->Ladder.bFed && Run->LadderAtRungStart.bFed);
@@ -599,7 +663,7 @@ bool FTownMarketTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("A second does nothing, and is kept"), Run->GetBagCount(FName("bread")), 1);
 
 		// the splint: not on a whole fighter, nor on a limb broken through, and then on one that is only hurt
-		TestFalse(TEXT("The splint is not used up on nothing"), Town->BuyAtShop(2));
+		TestFalse(TEXT("The splint is not used up on nothing"), Town->UseFromBag(3));
 		TestEqual(TEXT("It is still in the bag"), Run->GetBagCount(FName("splint")), 1);
 
 		const float Whole = Town->GetWalker()->GetMaxLimbHealth();
@@ -613,26 +677,95 @@ bool FTownMarketTest::RunTest(const FString& Parameters)
 
 		Run->Ladder.LimbHealth[0] = 0.0f;
 
-		TestFalse(TEXT("Nor on a limb that is broken through"), Town->BuyAtShop(2));
+		TestFalse(TEXT("Nor on a limb that is broken through"), Town->UseFromBag(3));
 
 		Run->Ladder.LimbHealth[3] = Whole * 0.4f;
 
-		TestTrue(TEXT("On a hurt limb it is used"), Town->BuyAtShop(2));
+		TestTrue(TEXT("On a hurt limb it is used"), Town->UseFromBag(3));
 		TestTrue(*FString::Printf(TEXT("And gives back half of what was lost (%.0f of %.0f)"), Run->Ladder.LimbHealth[3], Whole), FMath::IsNearlyEqual(Run->Ladder.LimbHealth[3], Whole * 0.7f, 0.01f));
 		TestEqual(TEXT("The broken one is as it was"), Run->Ladder.LimbHealth[0], 0.0f);
 		TestEqual(TEXT("And the splint is gone"), Run->GetBagCount(FName("splint")), 0);
-		TestEqual(TEXT("Two kinds of thing are left"), Town->GetShopLines().Num(), 2);
+		TestEqual(TEXT("Four things are left"), Town->GetBagLines().Num(), 4);
 
-		// somebody with no fight ahead keeps what they carry
+		// somebody with no fight ahead, and nobody with them, keeps what they carry
 		Run->bLadderStarted = false;
 
-		Lines = Town->GetShopLines();
+		Things = Town->GetBagLines();
 
-		TestTrue(TEXT("With no fight ahead nothing in the bag is used"), Lines.Num() == 2 && !Lines[1].bCanBuy && !Town->BuyAtShop(1));
+		int32 Tea = Find(ETownBagKind::Good, TEXT("tea"));
+
+		TestTrue(TEXT("With no fight ahead nothing in the bag is used"), Things.IsValidIndex(Tea) && !Things[Tea].bCanUse && Things[Tea].Why.Contains(TEXT("no fight")) && !Town->UseFromBag(Tea));
 		TestEqual(TEXT("The tea is kept"), Run->GetBagCount(FName("tea")), 1);
 
 		Run->bLadderStarted = true;
 
+		// somebody bought off lot three, walking with the player: they are in the bag as their bill of sale
+		FGutStableFighter Bought;
+
+		Bought.FighterName = FText::FromString(TEXT("Tally"));
+		Bought.bOwned = true;
+		Bought.Price = 30.0f;
+		Bought.Lot = 3;
+		Bought.bInTow = true;
+		Bought.Resentment = 20.0f;
+
+		Run->Stable.bStarted = true;
+		Run->Stable.Fighters.Add(Bought);
+
+		Things = Town->GetBagLines();
+
+		const int32 Paper = Find(ETownBagKind::Person, TEXT("Tally"));
+
+		TestTrue(TEXT("Whoever is owned is in the bag, as the paper that says so"), Things.IsValidIndex(Paper) && Things[Paper].Picture == FName("bag_paper_lot3") && Things[Paper].Why.Contains(TEXT("with you")) && Things[Paper].Detail.Contains(TEXT("bill of sale")));
+		TestNotNull(TEXT("Lot three's bill of sale has a picture"), LoadObject<UTexture2D>(nullptr, TEXT("/Game/Gut/Art/UI/bag_paper_lot3.bag_paper_lot3"), nullptr, LOAD_NoWarn | LOAD_Quiet));
+		TestFalse(TEXT("Nothing is done with a person from the bag"), Things.IsValidIndex(Paper) && Town->UseFromBag(Paper));
+
+		// bread that two could have is asked about, with the player on whoever has not eaten
+		const int32 Bread = Find(ETownBagKind::Good, TEXT("bread"));
+
+		TestTrue(TEXT("The bread says it can be given"), Things.IsValidIndex(Bread) && Things[Bread].bCanUse && Things[Bread].Verb.Contains(TEXT("give")));
+		TestFalse(TEXT("Nothing is done until it is said who it is for"), Town->UseFromBag(Bread));
+
+		const TArray<FTownBagTaker> Takers = Town->GetBagTakers(FName("bread"));
+
+		TestTrue(TEXT("It asks who it is for: the player, who has eaten, and Tally, who has not"), Town->IsBagAsking() && Takers.Num() == 2 && !Takers[0].bCan && Takers[1].bCan && Takers[1].Name == TEXT("Tally") && Town->GetBagAskChoice() == 1);
+
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestTrue(TEXT("Given, it is in them for their next fight, and out of the bag"), Run->Stable.Fighters[0].bFed && Run->GetBagCount(FName("bread")) == 0 && !Town->IsBagAsking() && Town->IsBagOpen());
+		TestTrue(*FString::Printf(TEXT("And it is remembered (%.0f)"), Run->Stable.Fighters[0].Resentment), Run->Stable.Fighters[0].Resentment < 20.0f);
+
+		// the back key, while it is asking, goes back to the bag and no further
+		Things = Town->GetBagLines();
+		Tea = Find(ETownBagKind::Good, TEXT("tea"));
+
+		Town->UseFromBag(Tea);
+
+		TestTrue(TEXT("Tea is asked about too"), Town->IsBagAsking());
+
+		Town->HandleBack();
+
+		TestTrue(TEXT("The back key leaves the asking, and the bag stays open with the tea in it"), Town->IsBagOpen() && !Town->IsBagAsking() && Run->GetBagCount(FName("tea")) == 1);
+
+		// nothing can be handed to somebody who is in the yard
+		Run->Stable.Fighters[0].bInTow = false;
+
+		TestEqual(TEXT("With them in the yard there is only the player to have it"), Town->GetBagTakers(FName("tea")).Num(), 1);
+		Things = Town->GetBagLines();
+
+		const int32 Kept = Find(ETownBagKind::Person, TEXT("Tally"));
+
+		TestTrue(TEXT("And their paper says where they are"), Things.IsValidIndex(Kept) && Things[Kept].Why.Contains(TEXT("yard")));
+
+		// the map is in the bag, and opens from it
+
+		TestTrue(TEXT("The map opens from the bag"), Town->UseFromBag(Find(ETownBagKind::Map, TEXT("Map"))) && !Town->IsBagOpen() && Town->IsMapUp());
+
+		Town->HandleBack();
+
+		TestTrue(TEXT("And the back key puts it away, and the player can walk"), !Town->IsMapUp() && !Town->IsShopping() && !UGameplayStatics::GetPlayerController(Town, 0)->IsMoveInputIgnored());
+
+		Town->ToggleBag();
 		Town->HandleBack();
 
 		TestTrue(TEXT("The back key shuts the bag, and the player can walk"), !Town->IsBagOpen() && !Town->IsShopping() && !UGameplayStatics::GetPlayerController(Town, 0)->IsMoveInputIgnored());
@@ -644,6 +777,7 @@ bool FTownMarketTest::RunTest(const FString& Parameters)
 
 		// whatever else runs after this gets nobody's fighter and an empty bag
 		Run->Bag.Reset();
+		Run->Stable = FGutStableState();
 		Run->Ladder = FGutLadderState();
 		Run->LadderAtRungStart = FGutLadderState();
 		Run->bLadderStarted = false;
@@ -822,25 +956,78 @@ bool FTownLookMainStreetTest::RunTest(const FString& Parameters)
 	Steps.Add({ 0.3f, []() { GetTown()->HandleMenuInput(EGutMenuInput::Confirm); } });
 	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("main_21_as_played_bread_bought")); } });
 
+	// the bag of somebody who fights, bets and owns: water three ways, what was bought, a bought woman walking with them, armor, the map and a debt
 	Steps.Add({ 0.3f, []()
 	{
+		UGutGameInstance* Run = GetRun();
+
 		GetTown()->HandleBack();
 
-		GetRun()->AddToBag(FName("tea"), 2);
-		GetRun()->AddToBag(FName("splint"), 1);
+		Run->AddToBag(FName("tea"), 2);
+		Run->AddToBag(FName("splint"), 1);
+
+		Run->Window.bStarted = true;
+		Run->Window.Water = 15.0f;
+		Run->Window.Debt = 35.0f;
+
+		FGutStableFighter Bought;
+
+		Bought.FighterName = FText::FromString(TEXT("Tally"));
+		Bought.Billing = FText::FromString(TEXT("A woman, twenty-four. Cooks, and can strip a pump."));
+		Bought.bOwned = true;
+		Bought.Price = 42.0f;
+		Bought.Lot = 4;
+		Bought.bInTow = true;
+		Bought.Strength = 1;
+		Bought.Speed = 2;
+		Bought.Nerve = 1;
+
+		Run->Stable.bStarted = true;
+		Run->Stable.Water = 8.0f;
+		Run->Stable.Fighters.Add(Bought);
 
 		GetTown()->ToggleBag();
 	} });
 
-	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("main_22_as_played_the_bag")); } });
+	const auto Down = [](int32 Times)
+	{
+		return [Times]()
+		{
+			for (int32 i = 0; i < Times; ++i)
+			{
+				GetTown()->HandleMenuInput(EGutMenuInput::Down);
+			}
+		};
+	};
+
+	Steps.Add({ 1.5f, []() { GutTests::Screenshot(TEXT("main_22_as_played_the_bag")); } });
+
+	// past the three waters to the bread; asked who it is for; given to whoever is walking with the player
+	Steps.Add({ 0.3f, Down(3) });
+	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("main_23_as_played_bag_bread")); } });
 	Steps.Add({ 0.3f, []() { GetTown()->HandleMenuInput(EGutMenuInput::Confirm); } });
-	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("main_23_as_played_bread_eaten")); } });
+	Steps.Add({ 0.3f, Down(1) });
+	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("main_24_as_played_bag_who_for")); } });
+	Steps.Add({ 0.3f, []() { GetTown()->HandleMenuInput(EGutMenuInput::Confirm); } });
+	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("main_25_as_played_bag_given")); } });
+
+	// the bread is gone: tea, splint, and then her bill of sale, the armor, the map, and what is owed
+	Steps.Add({ 0.3f, Down(1) });
+	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("main_26_as_played_bag_splint")); } });
+	Steps.Add({ 0.3f, Down(1) });
+	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("main_27_as_played_bag_bill_of_sale")); } });
+	Steps.Add({ 0.3f, Down(1) });
+	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("main_28_as_played_bag_worn")); } });
+	Steps.Add({ 0.3f, Down(2) });
+	Steps.Add({ 1.0f, []() { GutTests::Screenshot(TEXT("main_29_as_played_bag_note")); } });
 
 	Steps.Add({ 0.3f, []()
 	{
 		GetTown()->CloseShop();
 
 		GetRun()->Bag.Reset();
+		GetRun()->Stable = FGutStableState();
+		GetRun()->Window = FGutWindowState();
 		GetRun()->bLadderStarted = false;
 		GetRun()->Ladder = FGutLadderState();
 		GetRun()->LadderAtRungStart = FGutLadderState();

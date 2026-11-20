@@ -400,16 +400,28 @@ bool AGutCrowd::GivePerson(FSpectator& Spectator)
 				}
 				else
 				{
-					// the clothes
+					// the clothes: each piece in the colour it was made in, a shade darker or lighter than on whoever else
+					// on the deck is the same person. What takes no dye, a bought outfit, is left as it is.
+					const float Shade = FMath::Lerp(0.7f, 1.2f, FMath::Frac((Spectator.Tint.R * 37.1f) + (Spectator.Tint.G * 91.7f) + (Spectator.Tint.B * 53.3f)));
+
 					for (int32 Slot = 0; Slot < Part->GetNumMaterials(); ++Slot)
 					{
+						const UMaterialInterface* Worn = Part->GetMaterial(Slot);
+
+						FLinearColor Now;
+
+						if (ClothParameters.IsEmpty() || !Worn || !Worn->GetVectorParameterValue(FHashedMaterialParameterInfo(ClothParameters[0]), Now))
+						{
+							continue;
+						}
+
 						UMaterialInstanceDynamic* Cloth = Part->CreateAndSetMaterialInstanceDynamic(Slot);
 
 						for (const FName& Parameter : ClothParameters)
 						{
-							if (Cloth)
+							if (Cloth && Cloth->GetVectorParameterValue(FHashedMaterialParameterInfo(Parameter), Now))
 							{
-								Cloth->SetVectorParameterValue(Parameter, Spectator.Tint);
+								Cloth->SetVectorParameterValue(Parameter, FLinearColor(Now.R * Shade, Now.G * Shade, Now.B * Shade, Now.A));
 							}
 						}
 					}

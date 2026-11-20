@@ -547,8 +547,68 @@ bool FGutWindowTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("With a new bill"), State.Fight, 0);
 		TestEqual(TEXT("The water comes along"), State.Water, Notes->Water, 0.01f);
 		TestEqual(TEXT("Last night's sums do not"), State.Staked, 0.0f);
-		TestEqual(TEXT("The dead stay dead"), State.Dead.Num(), 4);
+		TestEqual(TEXT("The dead stay dead: the four who lost on the bill, and the one the fixer killed for its fine"), State.Dead.Num(), 5);
 		TestEqual(TEXT("And the card for its first fight is up"), GameMode->GetPhase(), EGutFightPhase::Card);
+
+		// --- nobody comes back: for each of last night's dead there is somebody new, and the winners have that to show ---
+
+		const FGutRosterState& Roster = GameMode->GetGameInstance<UGutGameInstance>()->Roster;
+
+		TestEqual(TEXT("Whoever died at the window is dead for the ladder and the yard too"), Roster.Dead.Num(), 5);
+		TestEqual(TEXT("Somebody new has come into the cage for each of them"), Roster.Newcomers.Num(), 5);
+
+		TArray<int32> Everybody;
+		GameMode->GetCageFighters(Everybody);
+
+		int32 Living = 0;
+		int32 Won = 0;
+
+		TSet<FString> Names;
+
+		for (const int32 Code : Everybody)
+		{
+			const FGutLadderRung* Rung = GameMode->FindRung(Code);
+
+			if (!TestNotNull(TEXT("Everybody in the cage can be found"), Rung))
+			{
+				continue;
+			}
+
+			Won += GameMode->GetCageWins(Code);
+
+			if (!GameMode->IsFallen(Code))
+			{
+				++Living;
+
+				TestFalse(*FString::Printf(TEXT("Nobody alive shares the name %s"), *Rung->OpponentName.ToString()), Names.Contains(Rung->OpponentName.ToString()));
+
+				Names.Add(Rung->OpponentName.ToString());
+			}
+		}
+
+		TestEqual(TEXT("As many are alive as before anybody died"), Living, Everybody.Num() - 5);
+		TestEqual(TEXT("Four fights have been won in front of the book"), Won, 4);
+
+		for (const FGutNewcomer& New : Roster.Newcomers)
+		{
+			const FGutLadderRung* Rung = GameMode->FindRung(New.Code);
+
+			TestTrue(TEXT("Each newcomer has a name, a line about them and somebody to be seen as"), Rung && !Rung->OpponentName.IsEmpty() && !Rung->Billing.IsEmpty() && !Rung->Body.IsNull());
+			TestTrue(TEXT("And took the rank of somebody who died"), Roster.Dead.ContainsByPredicate([&New](int32 Code) { return Code / 100 == New.Code / 100; }));
+		}
+
+		// the book reads a record: the same two with nothing between them but what one has won
+		const int32 First = GameMode->GetWindowCode(0);
+		const int32 Second = GameMode->GetWindowCode(1);
+
+		TestFalse(TEXT("Nobody on tonight's first fight is dead"), GameMode->IsFallen(First) || GameMode->IsFallen(Second));
+
+		const float Before = GameMode->GetWindowBookChance();
+
+		GameMode->RecordCageFight(First, -1, false);
+		GameMode->RecordCageFight(First, -1, false);
+
+		TestTrue(TEXT("Two more wins and the book thinks more of the first corner"), GameMode->GetWindowBookChance() > Before + 0.05f || Before > 0.85f);
 
 		// back to single fights, so that whatever test comes next finds the cage as it expects it
 		GameMode->GetGameInstance<UGutGameInstance>()->bWindow = false;

@@ -15,6 +15,7 @@ AGutFlood::AGutFlood()
 {
 	DisplayName = FText::FromString(TEXT("WATER"));
 	LiveText = FText::FromString(TEXT("THE VALVE IS OPEN"));
+	LiveWaterText = FText::FromString(TEXT("THE WATER IS LIVE ROUND THE CABLE"));
 	HitText = FText::GetEmpty();
 
 	// the last thing the pit boss does to a fight that will not end
@@ -74,6 +75,18 @@ void AGutFlood::OnHazardStateChanged(EGutHazardState NewState)
 
 		PlaceWater();
 		SetEverybodyWading(false);
+	}
+	else if (NewState == EGutHazardState::Live && !LiveWaterText.IsEmpty())
+	{
+		// with the cable already live in the pool, the news is not that the valve is open: it is what the water has become
+		for (TActorIterator<AGutLiveCable> It(GetWorld()); It; ++It)
+		{
+			if (It->GetHazardState() != EGutHazardState::Off)
+			{
+				LiveText = LiveWaterText;
+				break;
+			}
+		}
 	}
 }
 

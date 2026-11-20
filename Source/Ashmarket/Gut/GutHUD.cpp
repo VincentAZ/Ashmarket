@@ -618,7 +618,10 @@ void AGutHUD::DrawCard(const AGutGameMode* GameMode, float CenterX)
 
 	Y += 66.0f;
 
-	DrawLabel(Rung->Billing.ToString(), CenterX, Y, 18, GutHUDColors::DimText, true);
+	// who it is, and what it has won in this cage since the player came to it
+	const int32 Won = GameMode->GetCageWins(GameMode->GetLadderOpponent(State.Rung));
+
+	DrawLabel(Rung->Billing.ToString() + (Won <= 0 ? FString() : FString::Printf(TEXT("  Has won %d here."), Won)), CenterX, Y, 18, GutHUDColors::DimText, true);
 
 	Y += 46.0f;
 
@@ -1096,6 +1099,10 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 				Line = FString::Printf(TEXT("The grill carts  \u00B7  pays %.0f L"), GameMode->GetBodyPrice(EGutBodyGoesTo::Grill));
 				break;
 
+			case WalkOut:
+				Line = TEXT("Out of the yard gate to the street, with it walking behind you");
+				break;
+
 			case Sell:
 				Line = (Fighter && !Fighter->bOwned) ? FString(TEXT("Let it go")) : FString::Printf(TEXT("Sell it at the Block  \u00B7  about %.0f L back"), Fighter ? FMath::RoundToFloat(Fighter->Price * 0.8f * (Fighter->IsCrippled() ? 0.5f : 1.0f)) : 0.0f);
 				break;
@@ -1117,6 +1124,32 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 	Y += 8.0f;
 
 	DrawLabel(TEXT("W / S or D-pad: choose          Left mouse, Enter or A button: do it          A or D-pad left: back a page"), CenterX, Y, 17, GutHUDColors::Text, true);
+
+	// whoever stands in the yard has its name at its feet, and the one the choice is on is picked out
+	for (int32 i = 0; i < State.Fighters.Num(); ++i)
+	{
+		const AGutFighter* Body = GameMode->GetYardBody(i);
+
+		if (!Body)
+		{
+			continue;
+		}
+
+		const FVector At = Project(Body->GetActorLocation() - FVector(0.0f, 0.0f, Body->GetSimpleCollisionHalfHeight() + 4.0f), false);
+
+		if (At.Z <= 0.0f)
+		{
+			continue;
+		}
+
+		const FGutCardItem Chosen = GameMode->GetCardSelection();
+
+		const bool bPicked = (Page == EGutStablePage::Fighter && GameMode->GetStableFocus() == i)
+			|| (Chosen.Type == EGutCardItemType::Stable && (Chosen.Index == OpenFighter + i || Chosen.Index == SendFighter + i));
+
+		DrawLabelAtScreen(State.Fighters[i].FighterName.ToString().ToUpper(), At.X, At.Y, 22, bPicked ? GutHUDColors::Warning : GutHUDColors::Text, true);
+		DrawLabelAtScreen(State.Fighters[i].bOwned ? TEXT("collared") : TEXT("signed"), At.X, At.Y + (30.0f * UIScale), 15, GutHUDColors::DimText, true);
+	}
 }
 
 float AGutHUD::DrawStableResult(const AGutGameMode* GameMode, float CenterX)
@@ -1311,7 +1344,11 @@ void AGutHUD::DrawWindowCard(const AGutGameMode* GameMode, float CenterX)
 		DrawLabel(Rung->OpponentName.ToString().ToUpper(), X, Y, 34, GutHUDColors::Health, true, 440.0f);
 		DrawLabel(Rung->Billing.ToString(), X, Y + 52.0f, 15, GutHUDColors::DimText, true, 500.0f);
 		DrawLabel(FString::Printf(TEXT("%s  \u00B7  %s"), *Ranks[Corner]->RankName.ToString(), Rung->Weapon ? *Rung->Weapon->DisplayName.ToString() : TEXT("Bare hands")), X, Y + 82.0f, 18, GutHUDColors::Text, true);
-		DrawLabel(FString::Printf(TEXT("Fighting for %.0f L%s"), Rung->Purse, Rung->Armor.IsEmpty() ? TEXT("") : TEXT("  \u00B7  in armor")), X, Y + 110.0f, 16, GutHUDColors::DimText, true);
+		// and what it has won here since the gambler first came: the book has counted those
+		const int32 Won = GameMode->GetCageWins(GameMode->GetWindowCode(Corner));
+
+		DrawLabel(FString::Printf(TEXT("Fighting for %.0f L%s%s"), Rung->Purse, Rung->Armor.IsEmpty() ? TEXT("") : TEXT("  \u00B7  in armor"),
+			Won <= 0 ? TEXT("") : *FString::Printf(TEXT("  \u00B7  has won %d here"), Won)), X, Y + 110.0f, 16, Won > 0 ? GutHUDColors::Text : GutHUDColors::DimText, true);
 	}
 
 	DrawLabel(TEXT("AGAINST"), CenterX, Y + 12.0f, 14, GutHUDColors::DimText, true);
@@ -2104,7 +2141,7 @@ void AGutHUD::DrawLockOnMarker(const AGutFighter* Target)
 	DrawRect(GutHUDColors::Warning, Left + (Half * 2.0f) - Thickness, Top, Thickness, Half * 2.0f);
 }
 
-void AGutHUD::DrawPiece(UTexture2D* Picture, float X, float Y, float Width, float Height, const FVector2D& From, const FVector2D& To, const FLinearColor& Color)
+void AGutHUD::DrawPiece(UTexture2D* Picture, float X, float Y, float Width, float Height, const FVector2D& From, const FVector2D& To, const FLinearColor& Color, bool bCutOut)
 {
 	if (!Picture || !Picture->GetResource() || !Canvas || Width <= 0.0f || Height <= 0.0f)
 	{
@@ -2113,7 +2150,7 @@ void AGutHUD::DrawPiece(UTexture2D* Picture, float X, float Y, float Width, floa
 
 	FCanvasTileItem Tile(FVector2D(X * UIScale, Y * UIScale), Picture->GetResource(), FVector2D(Width * UIScale, Height * UIScale), From, To, Color);
 
-	Tile.BlendMode = SE_BLEND_Opaque;
+	Tile.BlendMode = bCutOut ? SE_BLEND_Translucent : SE_BLEND_Opaque;
 
 	Canvas->DrawItem(Tile);
 }

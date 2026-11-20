@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/SaveGame.h"
+#include "GutRosterTypes.h"
 #include "GutTypes.h"
 #include "GutStableTypes.h"
 #include "GutWindowTypes.h"
@@ -162,6 +163,10 @@ public:
 	/** What the player carries, whichever of those it is being */
 	UPROPERTY()
 	TArray<FGutBagItem> Bag;
+
+	/** Who in the cage is dead, who has come in since, and what each has won: the same for all three */
+	UPROPERTY()
+	FGutRosterState Roster;
 };
 
 /**
@@ -224,6 +229,10 @@ public:
 	/** What the player carries about the town: bought at its stalls, kept with the run */
 	UPROPERTY(BlueprintReadOnly, Category="Gut")
 	TArray<FGutBagItem> Bag;
+
+	/** Who in the cage is dead, who has come in since, and what each has won, whichever way the player comes to it */
+	UPROPERTY(BlueprintReadOnly, Category="Gut")
+	FGutRosterState Roster;
 
 	/** How many of something are in the bag, and puts so many more in it, or takes them out */
 	int32 GetBagCount(FName Good) const;

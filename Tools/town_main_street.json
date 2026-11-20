@@ -161,9 +161,9 @@
  ],
  "pasted": [
   {"label": "WestStacksB", "from": [-8.05, 62.4], "to": [-8.05, 90.0], "faces": "east", "deep": 0.2, "up": [1.3, 1.9], "tall": [0.75, 1.05], "every": [2.4, 5.5], "lean": 5,
-   "pictures": ["bill_sale", "bill_ledger", "bill_champion", "bill_butcher", "bill_kennel_master"]},
+   "pictures": ["bill_sale_by_hand", "bill_ledger_by_hand", "bill_champion_by_hand", "bill_butcher_by_hand", "bill_kennel_master_by_hand"]},
   {"label": "WestStacksC", "from": [-8.05, 105.4], "to": [-8.05, 127.5], "faces": "east", "deep": 0.2, "up": [1.3, 1.9], "tall": [0.75, 1.05], "every": [2.4, 5.5], "lean": 5,
-   "pictures": ["bill_sale", "bill_saltlick", "bill_gasket_rustjaw", "bill_tally_coldwater", "bill_ledger"]}
+   "pictures": ["bill_sale_by_hand", "bill_saltlick_by_hand", "bill_gasket_rustjaw_by_hand", "bill_tally_coldwater_by_hand", "bill_ledger_by_hand"]}
  ],
 
  "bulbs_about": "Candelas. The camera is set for the floodlit cage (see NightExposure in Tools/build_gut_content.py), so a bulb that is to light a wall three metres off wants some thousands, and the lamps that wash the dam, forty metres off, tens of thousands.",

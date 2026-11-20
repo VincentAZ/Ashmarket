@@ -1595,3 +1595,102 @@ bool FGutFitBoundTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+/**
+ *  Ashmarket.Fit.Outfit    people dressed out of the wardrobe, seen standing, walking and at a jog from in front, from
+ *                          the side, from behind and from three quarters, so that anything that cuts through them is seen.
+ *                          -GutFitBodies=Try01+Try02 names who (the folder each was built in).
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGutFitOutfitTest, "Ashmarket.Fit.Outfit", GutTests::Flags)
+
+bool FGutFitOutfitTest::RunTest(const FString& Parameters)
+{
+	using namespace GutTests;
+	using namespace GutLookTests;
+	using FStep = FScriptCommand::FStep;
+
+	FString Named;
+
+	if (!FApp::CanEverRender() || !FParse::Value(FCommandLine::Get(), TEXT("GutFitBodies="), Named))
+	{
+		return true;
+	}
+
+	if (!OpenCage(this))
+	{
+		return false;
+	}
+
+	TArray<FString> Bodies;
+	Named.ParseIntoArray(Bodies, TEXT("+"), true);
+
+	TArray<FStep> Steps;
+
+	Steps.Add({ 0.3f, [this](const FFight& Fight)
+	{
+		DisableEnemyBrain(this, Fight);
+
+		// a long look: nothing the pit boss does to a long fight is to come into it (the dogs are kept out with -GutNoDogs)
+		Fight.GameMode->SetHazardsEnabled(false);
+		Fight.GameMode->StartFight();
+
+		// in the middle of the pool, with room to stand back from them on every side
+		PlaceAt(Fight.Player, 0.0f, 0.0f, 0.0f);
+
+		// the other one out of the picture
+		PlaceAt(Fight.Enemy, 600.0f, 420.0f, 180.0f);
+	} });
+
+	// each from the hips: X in front of them, Y to their right
+	static const FView Sides[] =
+	{
+		{ TEXT("1_front"), FVector(540.0f, 0.0f, -8.0f), FVector(0.0f, 0.0f, -8.0f), 40.0f, FName("pelvis") },
+		{ TEXT("2_side"), FVector(0.0f, -540.0f, -8.0f), FVector(0.0f, 0.0f, -8.0f), 40.0f, FName("pelvis") },
+		{ TEXT("3_behind"), FVector(-540.0f, 0.0f, -8.0f), FVector(0.0f, 0.0f, -8.0f), 40.0f, FName("pelvis") },
+		{ TEXT("4_three_quarters"), FVector(420.0f, 340.0f, 10.0f), FVector(0.0f, 0.0f, -8.0f), 40.0f, FName("pelvis") },
+		{ TEXT("5_close"), FVector(120.0f, 45.0f, 5.0f), FVector(0.0f, 0.0f, -12.0f), 40.0f, FName("head") },
+	};
+
+	for (const FString& Who : Bodies)
+	{
+		Steps.Add({ 0.3f, [this, Who](const FFight& Fight)
+		{
+			const TSoftClassPtr<AActor> Body(FSoftObjectPath(FString::Printf(TEXT("/Game/Gut/Art/MetaHumans/%s/BP_%s.BP_%s_C"), *Who, *Who, *Who)));
+
+			if (TestNotNull(*FString::Printf(TEXT("There is a body called %s"), *Who), Body.LoadSynchronous()))
+			{
+				Fight.Player->SetBody(Body, Fight.Player->GetBodyRetargeter());
+			}
+
+			Fight.Player->ClearArmor();
+			Fight.Player->EquipWeapon(nullptr);
+			Fight.Player->SetAtEase(true);
+			Fight.Player->SetCollared(false);
+			Fight.Player->SetBound(false);
+		} });
+
+		for (const float Pace : { 0.0f, 150.0f, 340.0f })
+		{
+			Steps.Add({ 2.0f, [Pace](const FFight& Fight) { Fight.Player->SetLedVelocity(Fight.Player->GetActorForwardVector() * Pace); } });
+
+			for (int32 i = 0; i < UE_ARRAY_COUNT(Sides); ++i)
+			{
+				// standing is looked at from everywhere; moving, from the side and from three quarters
+				if (Pace > 0.0f && i != 1 && i != 3)
+				{
+					continue;
+				}
+
+				const FView View = Sides[i];
+
+				Steps.Add({ 0.5f, [View](const FFight& Fight) { LookFrom(Fight, View); } });
+				Steps.Add({ 0.5f, [View, Who, Pace](const FFight& Fight) { Screenshot(FString::Printf(TEXT("outfit_%s_%s_%s"), *Who, Pace <= 0.0f ? TEXT("standing") : (Pace < 200.0f ? TEXT("walked") : TEXT("jogged")), View.Name)); } });
+				Steps.Add({ 0.2f, [](const FFight& Fight) {} });
+			}
+		}
+	}
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScriptCommand(this, MoveTemp(Steps)));
+
+	return true;
+}

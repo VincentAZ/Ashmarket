@@ -119,6 +119,12 @@ void AGutGameMode::Tick(float DeltaTime)
 	{
 		UpdateSpectatorCamera(DeltaTime);
 	}
+
+	// and an owner sees who it owns, standing in the yard
+	if (IsAtStable() || !YardBodies.IsEmpty())
+	{
+		UpdateYardBodies();
+	}
 }
 
 void AGutGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
@@ -264,7 +270,8 @@ const FGutLadderRung* AGutGameMode::GetRung() const
 	// once a fight is settled the state has moved on, but this fight is still the one it was
 	const int32 ThisRung = (Settlement.bSettled && Settlement.bPlayerWon) ? Rung - 1 : Rung;
 
-	return GetLadder()->Rungs.IsValidIndex(ThisRung) ? &GetLadder()->Rungs[ThisRung] : nullptr;
+	// the fight's own fighter, or whoever has the place of one who has died since
+	return GetLadderFight(ThisRung);
 }
 
 void AGutGameMode::HandleMenuInput(EGutMenuInput Input)
@@ -637,6 +644,9 @@ void AGutGameMode::BeginCard()
 
 		GameInstance->PendingStory = EGutStory::None;
 	}
+
+	// for anybody the cage has lost since, somebody new is in it: one of them has the place of a fight whose own fighter is dead
+	RefillRoster();
 
 	// a fight that is lost is fought again from here, and a game that is closed comes back here
 	GameInstance->LadderAtRungStart = GameInstance->Ladder;
@@ -1295,7 +1305,10 @@ float AGutGameMode::GetBookChance() const
 		return 0.5f;
 	}
 
-	return GetLadder()->GetBookChance(GetLadderState().Rung, PlayerFighter->GetWeapon(), EnemyFighter->GetWeapon(), PlayerFighter->GetCrippledLimbCount());
+	const float Chance = GetLadder()->GetBookChance(GetLadderState().Rung, PlayerFighter->GetWeapon(), EnemyFighter->GetWeapon(), PlayerFighter->GetCrippledLimbCount());
+
+	// less for every fight the other one has won in this cage since the player came to it: the book has seen those
+	return FMath::Clamp(Chance + GetRecordEdge(0, GetCageWins(GetLadderOpponent(GetLadderState().Rung))), 0.08f, 0.92f);
 }
 
 float AGutGameMode::GetReturnPerLitre(EGutBetSide Side, float Stake) const
@@ -1401,6 +1414,17 @@ void AGutGameMode::SettleLadderFight(bool bPlayerWon, bool bSpared, bool bThrown
 	}
 
 	FGutLadderState& State = GameInstance->Ladder;
+
+	// whoever was in the other corner is dead for the window and the pit boss's bills too, or has one more to show the book.
+	// Read now: the fight is still this one.
+	if (const int32 Against = GetLadderOpponent(State.Rung); bPlayerWon)
+	{
+		RecordCageFight(-1, Against, true);
+	}
+	else
+	{
+		RecordCageFight(Against, -1, false);
+	}
 
 	Settlement = FGutSettlement();
 	Settlement.bPlayerWon = bPlayerWon;

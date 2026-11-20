@@ -5,7 +5,9 @@
 // These are members of the cage's game mode, kept in a file of their own.
 
 #include "GutGameMode.h"
+#include "Camera/CameraActor.h"
 #include "Engine/World.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GutFighter.h"
 #include "GutGameInstance.h"
 #include "GutLadderData.h"
@@ -51,6 +53,19 @@ namespace GutStableConstants
 
 	/** How a fighter with nothing taught it and one with everything taught it fight */
 	const float MostTaught = 5.0f;
+
+	/** Who stands in the yard is the street's own kind of person: one that stands and does nothing else */
+	const TCHAR* YardBodyClass = TEXT("/Game/Gut/Blueprints/BP_GutDummy.BP_GutDummy_C");
+
+	/**
+	 *  Where the yard's people stand as the owner looks at them, in centimetres ahead of its eye and to either side of
+	 *  the middle: the first two, then the two behind them. Clear of the card, which fills the middle of the picture.
+	 */
+	const float YardDepth[] = { 450.0f, 600.0f };
+	const float YardAside[] = { 195.0f, 324.0f };
+
+	/** And no nearer the pool's walls than this, from its middle */
+	const FVector2D YardHalf(640.0f, 440.0f);
 }
 
 bool AGutGameMode::IsAtStable() const
@@ -105,7 +120,13 @@ const FGutLadderRung* AGutGameMode::FindRung(int32 Code) const
 {
 	const UGutLadderData* Rank = FindRank(Code);
 
-	return (Rank && Rank->Rungs.IsValidIndex(Code % 100)) ? &Rank->Rungs[Code % 100] : nullptr;
+	if (!Rank)
+	{
+		return nullptr;
+	}
+
+	// one of the rank's own, or somebody who came into it after the dead
+	return Rank->Rungs.IsValidIndex(Code % 100) ? &Rank->Rungs[Code % 100] : FindNewcomerRung(Code);
 }
 
 void AGutGameMode::GetBlockOffers(TArray<FGutStableFighter>& OutOffers) const
@@ -235,21 +256,11 @@ void AGutGameMode::GetStableOffers(TArray<int32>& OutAgainst) const
 
 	const FGutStableState& State = GetStableState();
 
-	TArray<const UGutLadderData*> Ranks;
-	GetRanks(Ranks);
-
+	// whoever in the cage is alive, however the others died
 	TArray<int32> Living;
+	GetCageFighters(Living);
 
-	for (int32 Rank = 0; Rank < Ranks.Num(); ++Rank)
-	{
-		for (int32 Rung = 0; Rung < Ranks[Rank]->Rungs.Num(); ++Rung)
-		{
-			if (!State.Dead.Contains((Rank * 100) + Rung))
-			{
-				Living.Add((Rank * 100) + Rung);
-			}
-		}
-	}
+	Living.RemoveAll([this, &State](int32 Code) { return State.Dead.Contains(Code) || IsFallen(Code); });
 
 	FRandomStream Draw(State.Seed + (State.Day * 15485863));
 
@@ -289,6 +300,9 @@ float AGutGameMode::GetStableBookChance() const
 	const float Own = FMath::Clamp(0.92f - (0.045f * (Fighter.Strength + Fighter.Speed + Fighter.Nerve)), 0.2f, 0.92f);
 
 	float Chance = 0.5f + (Rung->BookChance - Own);
+
+	// what each has won in front of the book
+	Chance += GetRecordEdge(Fighter.Wins, GetCageWins(State.MatchedAgainst));
 
 	// what the book can see: a fighter led in hurt, or with nothing in its hands
 	if (Fighter.IsCrippled())
@@ -744,7 +758,7 @@ bool AGutGameMode::MakeMatch(int32 FighterIndex, int32 Against)
 	FGutStableState& State = GetGutGameInstance()->Stable;
 	const FGutLadderRung* Rung = FindRung(Against);
 
-	if (!State.Fighters.IsValidIndex(FighterIndex) || !Rung || State.Dead.Contains(Against))
+	if (!State.Fighters.IsValidIndex(FighterIndex) || !Rung || State.Dead.Contains(Against) || IsFallen(Against))
 	{
 		return false;
 	}
@@ -819,7 +833,9 @@ void AGutGameMode::MakeStableFighter(AGutFighter* Fighter, const FGutStableFight
 	Fighter->SetMaxHealth(StableBaseHealth + (HealthPerStrength * Strength));
 	Fighter->SetDamageScale(1.0f + (DamagePerStrength * Strength));
 	Fighter->SetMoveSpeedScale(1.0f + (MovePerSpeed * Speed));
-	Fighter->SetStaminaRegenScale(1.0f + (StaminaPerSpeed * Speed));
+	// and what it was given on the way home from the market, as the player's own fighter is
+	Fighter->SetStaminaRegenScale((1.0f + (StaminaPerSpeed * Speed)) * (Who.bFed ? FedStaminaRegenScale : 1.0f));
+	Fighter->SetStaminaRegenDelayScale(Who.bSteadied ? SteadiedRegenDelayScale : 1.0f);
 
 	if (!Who.Body.IsNull())
 	{
@@ -931,6 +947,107 @@ void AGutGameMode::BeginStableCard()
 	}
 }
 
+void AGutGameMode::UpdateYardBodies()
+{
+	const FGutStableState& State = GetStableState();
+
+	// only while the yard's own pages are up: at the Block it is other people who are looked at, and nobody stands about over the dead
+	const bool bWanted = IsAtStable() && Phase == EGutFightPhase::Card && SpectatorCamera && bSpectatorPlaced && PlayerFighter
+		&& StablePage != EGutStablePage::Block && StablePage != EGutStablePage::Body;
+
+	FString Wanted;
+
+	if (bWanted)
+	{
+		for (const FGutStableFighter& Fighter : State.Fighters)
+		{
+			Wanted += FString::Printf(TEXT("%s|%s|%d;"), *Fighter.FighterName.ToString(), *Fighter.Body.ToString(), Fighter.bOwned ? 1 : 0);
+		}
+	}
+
+	if (Wanted == YardStood)
+	{
+		return;
+	}
+
+	for (AGutFighter* Body : YardBodies)
+	{
+		if (Body)
+		{
+			Body->Destroy();
+		}
+	}
+
+	YardBodies.Reset();
+	YardStood = Wanted;
+
+	if (!bWanted)
+	{
+		return;
+	}
+
+	// the same people the street is made of: they stand, and do nothing else
+	UClass* Kind = TSoftClassPtr<AGutFighter>(FSoftObjectPath(GutStableConstants::YardBodyClass)).LoadSynchronous();
+
+	if (!Kind && EnemyFighter)
+	{
+		Kind = EnemyFighter->GetClass();
+	}
+
+	// to either side of the card as the owner looks at it, the first two nearer and the next two behind and outside them
+	const FVector Eye = SpectatorCamera->GetActorLocation();
+
+	FVector Ahead = (SpectatorLookAt - Eye).GetSafeNormal2D();
+
+	if (Ahead.IsNearlyZero())
+	{
+		Ahead = FVector::RightVector;
+	}
+
+	const FVector Aside = FVector::CrossProduct(FVector::UpVector, Ahead);
+
+	for (int32 i = 0; i < State.Fighters.Num(); ++i)
+	{
+		const FGutStableFighter& Who = State.Fighters[i];
+
+		const int32 Row = FMath::Min(i / 2, static_cast<int32>(UE_ARRAY_COUNT(GutStableConstants::YardDepth)) - 1);
+
+		FVector Where = Eye + (Ahead * GutStableConstants::YardDepth[Row]) + (Aside * GutStableConstants::YardAside[Row] * ((i % 2) == 0 ? -1.0f : 1.0f));
+
+		// inside the pool, on its floor
+		Where.X = FMath::Clamp(Where.X, -GutStableConstants::YardHalf.X, GutStableConstants::YardHalf.X);
+		Where.Y = FMath::Clamp(Where.Y, -GutStableConstants::YardHalf.Y, GutStableConstants::YardHalf.Y);
+		Where.Z = PlayerFighter->GetActorLocation().Z;
+
+		const FTransform Stood(FRotator(0.0f, (Eye - Where).Rotation().Yaw, 0.0f), Where);
+
+		AGutFighter* Body = Kind ? GetWorld()->SpawnActorDeferred<AGutFighter>(Kind, Stood, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn) : nullptr;
+
+		// a place is kept for each, so that the bodies and the stable stay in step
+		YardBodies.Add(Body);
+
+		if (!Body)
+		{
+			continue;
+		}
+
+		if (!Who.Body.IsNull())
+		{
+			Body->SetBodyClass(Who.Body);
+		}
+
+		UGameplayStatics::FinishSpawningActor(Body, Stood);
+
+		Body->EquipWeapon(nullptr);
+		Body->SetCollared(Who.bOwned);
+		Body->SetAtEase(true);
+		Body->SetCombatEnabled(false);
+		Body->GetCharacterMovement()->DisableMovement();
+	}
+
+	UE_LOG(LogGut, Log, TEXT("Stable: %d stood in the yard"), YardBodies.Num());
+}
+
 void AGutGameMode::SettleStableFight(const AGutFighter* DeadFighter)
 {
 	UGutGameInstance* GameInstance = GetGutGameInstance();
@@ -963,6 +1080,8 @@ void AGutGameMode::SettleStableFight(const AGutFighter* DeadFighter)
 	const float WaterBefore = State.Water - StableSettlement.Return;
 
 	Fighter.bDoped = false;
+	Fighter.bFed = false;
+	Fighter.bSteadied = false;
 
 	if (StableSettlement.bWon)
 	{
@@ -975,6 +1094,9 @@ void AGutGameMode::SettleStableFight(const AGutFighter* DeadFighter)
 		State.Purses += StableSettlement.Purse - StableSettlement.FightersShare;
 
 		State.Dead.AddUnique(State.MatchedAgainst);
+
+		// dead for the window and the ladder too
+		RecordCageFight(-1, State.MatchedAgainst, true);
 
 		++State.FightsWon;
 		++State.Name;
@@ -1024,26 +1146,14 @@ void AGutGameMode::SettleStableFight(const AGutFighter* DeadFighter)
 		State.Water -= StableSettlement.DebtPaid;
 	}
 
-	// when the yard has killed nearly everybody on the bills there is new meat: the bottom of the ladder fills again
-	TArray<const UGutLadderData*> Ranks;
-	GetRanks(Ranks);
-
-	int32 LeftAlive = 0;
-
-	for (int32 Rank = 0; Rank < Ranks.Num(); ++Rank)
+	// whoever beat the yard's fighter has that to show the book
+	if (!StableSettlement.bWon)
 	{
-		for (int32 Rung = 0; Rung < Ranks[Rank]->Rungs.Num(); ++Rung)
-		{
-			LeftAlive += State.Dead.Contains((Rank * 100) + Rung) ? 0 : 1;
-		}
+		RecordCageFight(State.MatchedAgainst, -1, false);
 	}
 
-	if (LeftAlive < 3)
-	{
-		State.Dead.RemoveAll([](int32 Code) { return Code / 100 <= 1; });
-
-		UE_LOG(LogGut, Log, TEXT("Stable: the bills are nearly empty. New meat is brought in for the two lowest ranks"));
-	}
+	// and for whoever the cage has lost, somebody new is brought in: nobody comes back
+	RefillRoster();
 
 	UE_LOG(LogGut, Log, TEXT("Stable: %s %s. Purse %.0f L, the window pays %.0f L, %.0f L in hand"), *StableSettlement.FighterName.ToString(),
 		StableSettlement.bWon ? TEXT("walks out") : (StableSettlement.bLayDown ? TEXT("lay down and is dead") : TEXT("is dead")),
@@ -1091,6 +1201,12 @@ void AGutGameMode::GetStableCardItems(TArray<FGutCardItem>& Items) const
 				{
 					Line(Promise);
 				}
+			}
+
+			// somebody who came in off the street can go back out on it with this one behind them
+			if (const UGutGameInstance* GameInstance = GetGutGameInstance(); CameByDoor() && GameInstance && GameInstance->IsStreetOpen())
+			{
+				Line(WalkOut);
 			}
 
 			Line(Sell);
@@ -1273,6 +1389,21 @@ void AGutGameMode::ActivateStableLine(int32 Code)
 		SellFighter(StableFocus);
 		GoTo(EGutStablePage::Yard);
 		break;
+
+	case WalkOut:
+
+		// it follows whoever holds its paper, or pays it, until it is brought back in at the Gut
+		if (UGutGameInstance* GameInstance = GetGutGameInstance(); GameInstance && GameInstance->Stable.Fighters.IsValidIndex(StableFocus))
+		{
+			GameInstance->Stable.Fighters[StableFocus].bInTow = true;
+
+			UE_LOG(LogGut, Log, TEXT("Stable: out of the yard gate with %s"), *GameInstance->Stable.Fighters[StableFocus].FighterName.ToString());
+
+			GoTo(EGutStablePage::Yard);
+			GoToDoor();
+		}
+
+		return;
 
 	case BodyToParts:
 	case BodyToGrill:

@@ -196,7 +196,8 @@ def main():
         if plan.voice_slots_used < plan.voice_limit:
             return
 
-        ours = [voice for voice, name in held.items() if name.startswith(OURS)]
+        # whoever is to stay saved is let go last of all
+        ours = sorted((voice for voice, name in held.items() if name.startswith(OURS)), key=lambda voice: held[voice][len(OURS):] in keep)
 
         if not ours:
             sys.exit("the account's {} voices are all somebody else's: nothing of ours to let go".format(plan.voice_limit))

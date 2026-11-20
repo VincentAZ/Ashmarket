@@ -635,6 +635,34 @@ protected:
 
 	FGutStableSettlement StableSettlement;
 
+	/** Whoever has come into the cage after the dead, made up as fights of their own the first time each is looked for */
+	mutable TMap<int32, TSharedPtr<FGutLadderRung>> NewcomerRungs;
+
+	/** Who the player fights in each fight of its rank, once that has been looked at, and the fight made over for a stand-in */
+	mutable TMap<int32, int32> LadderOpponents;
+	mutable TMap<int32, TSharedPtr<FGutLadderRung>> StandInRungs;
+
+	/** Which of the cage's own a gambler caught fixing was put in against */
+	int32 OwnFightAgainst = -1;
+
+	const FGutLadderRung* FindNewcomerRung(int32 Code) const;
+
+	/** Posts the bill for the night the gambler has come to: strikes off everybody dead, and lets in whoever has come in their place */
+	void PostWindowBill(FGutWindowState& State);
+
+	/** Brings one new fighter into a rank. False if the rank has no room left. */
+	bool AddNewcomer(int32 Rank);
+
+	/** The owner's people, stood in the pool beside the yard's card while it is up, so that they are seen and not only listed: one for each in the stable, in its order */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<AGutFighter>> YardBodies;
+
+	/** Who they were stood as, so that anybody sold, dead, bought or gone in the night is noticed */
+	FString YardStood;
+
+	/** Stands the owner's people beside the card, or takes them away again, as the card and the stable now are */
+	void UpdateYardBodies();
+
 	/** True if the stable's fighter in the cage has decided to lose */
 	bool bStableLayDown = false;
 
@@ -1051,6 +1079,46 @@ public:
 	const FGutStableSettlement& GetStableSettlement() const { return StableSettlement; }
 
 	EGutStablePage GetStablePage() const { return StablePage; }
+
+	/**
+	 *  Everybody who fights in this cage, the dead with the living, from the bottom rank to the top: each as rank times 100
+	 *  plus place. A rank's own fighters come first and then whoever has come into it since, of whom only the first
+	 *  NewcomersUpTo of all who ever came are counted.
+	 */
+	void GetCageFighters(TArray<int32>& OutCodes, int32 NewcomersUpTo = MAX_int32) const;
+
+	/** Who stands in a corner of the fight on the window's card: rank times 100 plus place, or negative */
+	int32 GetWindowCode(int32 Corner) const;
+
+	/** True if that one has died in the cage, whichever way the player was there for it */
+	bool IsFallen(int32 Code) const;
+
+	/** How many fights that one has won since the player came to the cage */
+	int32 GetCageWins(int32 Code) const;
+
+	/** What the book adds to a fighter's chance for having won that many against somebody who has won so many */
+	float GetRecordEdge(int32 FirstWins, int32 SecondWins) const;
+
+	/** Writes a fight down. Either may be negative for somebody who is not the cage's own: the player's fighter, or an owner's. */
+	void RecordCageFight(int32 Winner, int32 Loser, bool bLoserDied);
+
+	/** Brings somebody new into each rank for everybody who has died in it */
+	void RefillRoster();
+
+	/** Everybody alive again and nobody new: the cage as it was first found */
+	void ResetRoster();
+
+	/** Who the player fights in that fight of the rank it is on: the fight's own fighter, or whoever has their place if they are dead */
+	int32 GetLadderOpponent(int32 Rung) const;
+
+	/** That fight as it will be fought: its own, or with somebody else in a dead fighter's place */
+	const FGutLadderRung* GetLadderFight(int32 Rung) const;
+
+	/** Which rank the player's ladder is, counted from the bottom, or INDEX_NONE off the ladder */
+	int32 GetLadderRank() const;
+
+	/** The body one of the stable's fighters is seen as in the yard, if it is stood there now */
+	const AGutFighter* GetYardBody(int32 FighterIndex) const { return YardBodies.IsValidIndex(FighterIndex) ? YardBodies[FighterIndex].Get() : nullptr; }
 	int32 GetStableFocus() const { return StableFocus; }
 	int32 GetStablePicked() const { return StablePicked; }
 

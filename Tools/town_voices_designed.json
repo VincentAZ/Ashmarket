@@ -4,6 +4,11 @@
   "generated_voice_id": "KVQ7glCZSAjHAhqikyVx",
   "note": "the take Vincent chose from the audition (D1), 2026-11-19"
  },
+ "Block Square/Margin": {
+  "description": "A woman in her fifties, the clerk who keeps the book at an open-air auction in a desert shanty town. Precise, dry, brisk, a little nasal: the voice of somebody who reads figures back all night and never gets one wrong. No warmth and no malice, only business. Plain American speech, quick and even. Not a narrator and not an announcer: a tired official talking across a table.",
+  "first_said": "Lot list is on the board, and the book is here. If you are buying, I write your name against theirs, and they sleep in your yard tonight. The Chainmen's fifth is in the price already. Are you buying? Eighteen litres, and six more for each thing they know how to do, before anybody bids. A fighter with a name costs what the Gut says they cost. To your yard, beside the Gut. The yard gate is on Pool Street, past the fighters' door: the yard hand lets owners in. You train them there, and you send them down into the pool from there. Lot one, forty-five litres, to H. Rask. Nine to the book. Lot two, forty-eight litres, to the Tin. Nine and a half to the book. Lot three, twenty-two litres, to the guild. Four and a half to the book. Lot four, forty-two litres. Name, please. Eight and a half to the book. Lot five, fifty litres, to H. Rask. Ten to the book. Lot six, thirty-eight litres, to the Pump. Seven and a half to the book. Second six.",
+  "generated_voice_id": "CLIO1rP4LDHzSdgdwUuk"
+ },
  "Block Square/Mother Ledger": {
   "description": "An old woman, late sixties, a moneylender who has never needed to raise her voice. Thin, dry, papery, very calm and slow, faintly amused, patient in a way that frightens people. She speaks softly and close, as if across a small table at night. Not a narrator and not an actress: plain, tired, exact.",
   "generated_voice_id": "tAxtp9dr0UYE6W7sxYdT",
@@ -19,6 +24,56 @@
   "first_said": "Scrap, tuned or relic. Scrap is cheap because you'll be back. Relic is dear because you won't. Nothing the Gut lets through its door. Hasp racks what you fight with, and Hasp does not take mine. When you have a tag and a reason, come back and I will find you a tool. Ten litres a fight to wear them, from Butcher rank. The offer comes to your card at the Gut. I do not chase fighters down the street.",
   "generated_voice_id": "MgplkC3ZIovO2H5wJVdl"
  },
+ "Main Street/Carrier": {
+  "description": "A woman in her thirties who hauls a water cart through a night market in a desert shanty town. Strong, blunt, wary, a little out of breath, a mid-low voice with dust in it. She says each thing like a rule she is tired of repeating. Plain working American speech. Not a narrator: short, guarded, real.",
+  "first_said": "Pump water, sealed at the window. I carry it. I do not sell it and I do not lend it. Hands off the cart: that is touching the water.",
+  "generated_voice_id": "UNHjTlbdM7MnfhnfJ3to"
+ },
+ "Main Street/Dealer": {
+  "description": "A man in his forties who runs a dice game on a crate at a night market in a desert shanty town. Lazy, smooth, low, smiling as he talks: a gambler's easy drawl with smoke in it, friendly in a way you should not trust. Unhurried. Plain American speech with a little Southern in it. Not an announcer and not a narrator: close, offhand, real.",
+  "first_said": "Three dice, one cup. You fight at the Gut? Then you have had your luck for the week, and I would be robbing you. Come back when you are bored of living.",
+  "generated_voice_id": "sP9LxBSZzACSEnUp0dMt"
+ },
+ "Main Street/Gate Warden": {
+  "description": "A militia guard in his fifties who minds a barrier gate at night in a desert shanty town. Gruff, gravelly, deep, tired on his feet. He has turned people back all his life and takes no pleasure in it any more. Slow and final. Plain working American speech. Not an announcer: flat, worn, real.",
+  "first_said": "Gate Yard is shut to foot traffic until the bell. You can see the gate from here, and that is as near as you get tonight.",
+  "generated_voice_id": "0lEQeqrrqCFevZaEgLH5"
+ },
+ "Main Street/Needle": {
+  "description": "A woman in her late thirties who fits armor at a workshop counter in a desert shanty town. Low for a woman, level and sharp, sizing you up while she talks, and she says a thing once. Dry, a little smoky, practical, faintly scornful of anybody who has not been hit yet. Plain working American speech. Not a narrator: close, matter-of-fact, real.",
+  "first_said": "Arms up. Turn. You stand like somebody who gets hit on the left. We cut ring armor for the Gut: tire rubber for what is swung at you, road sign for what is edged. Water in hand. Nothing here goes on a slate. Rubber takes the weight out of a club or a chain. Sign plate turns an edge. Nothing does both. Find out who you are fighting, and then find out what they carry.",
+  "generated_voice_id": "unfg1WsUZIpoQmsKiUHm"
+ },
+ "Main Street/Scrap seller": {
+  "description": "A woman in her fifties who sells scrap from a table at a night market in a desert shanty town. A faint Korean accent. Sly, dry, quick, quietly amused at her own jokes and never smiling when she says them. A thin, slightly hoarse voice. Not a narrator and not an actress: offhand, close, real.",
+  "first_said": "If it is on the table it is for sale. If it is under the table it is sold. If it is yours, you should have kept hold of it.",
+  "generated_voice_id": "OOIFmml1w1PJaQUUPaeq"
+ },
+ "Main Street/Stallholder": {
+  "description": "A woman in her sixties who sells bread from a market stall at night in a desert shanty town. Warm but loud, a market voice cracked from calling over a crowd, brisk and motherly and not to be argued with. Plain working American speech. Not an announcer and not a narrator: busy, rough, real.",
+  "first_said": "Bread's hot. Water first, then bread. That is the order everything goes in here. Next. You, are you buying or are you looking?",
+  "generated_voice_id": "u9x6huXFf9P9u3EA9eFV"
+ },
+ "Main Street/Tea seller": {
+  "description": "A woman in her sixties who sells tea from a kiosk at a night market in a desert shanty town. A faint Eastern European accent. Deadpan and weary, low and a little cracked: she has told the same joke for twenty years and stopped finding it funny after the first. Slow. Not a narrator and not an actress: flat, close, real.",
+  "first_said": "Tea. It is leaves and it is hot, and that is all I will say about the leaves. A cup is a tenth of a litre. Yes, I see the joke. Everybody sees the joke.",
+  "generated_voice_id": "In7ptkSrAD6QIlkarpWS"
+ },
+ "Main Street/Thread": {
+  "description": "A woman in her late thirties who sews at a machine in the back of an armor workshop. Softer and warmer than her twin sister at the counter: low, slow, a little amused, a little inviting, talking without looking up from her work. A slight rasp. Plain American speech. Not a narrator and not an actress: quiet, close, real.",
+  "first_said": "Needle sells you the plate. I would sooner know who it is for. Come by when the line is not running, and sit. Tonight it is running.",
+  "generated_voice_id": "eDuevxBBBTf1hoq3QDDC"
+ },
+ "Main Street/Warden": {
+  "description": "A militia guard in his twenties walking a patrol through a night market in a desert shanty town. A young man's voice trying to sound harder than he is: flat, clipped, a little nasal, bored. He talks while he walks. Plain working American speech. Not an announcer: curt, close, real.",
+  "first_said": "Market Loop. Thirteen minutes if nobody makes it longer. Do not make it longer. Keep walking. Stalls are that way. Keep your hands where I can see them.",
+  "generated_voice_id": "AWumkhYJ5kqZUwGalseT"
+ },
+ "Main Street/Warden#2": {
+  "description": "A militia guard in his forties walking a patrol through a night market in a desert shanty town. A very deep, slow, gravelly man's voice: a man of few words who resents every one of them. He mutters and barely opens his mouth. Plain working American speech. Not an announcer: low, close, real.",
+  "first_said": "Talk to the other one. I am counting. Forty-one. Forty-two. Forty-three. I said talk to the other one. Forty-four.",
+  "generated_voice_id": "zt6t5RIPaiCCAySLQmGe"
+ },
  "Pool Street/Chalk": {
   "description": "A woman in her forties who keeps the betting slate at a pit-fighting cage in a desert shanty town. Quick, dry, flat, a little hoarse, has heard every excuse and is bored of all of them. Plain working American speech, clipped, said through a window to a queue. Not an announcer and not a narrator: offhand, imperfect, real.",
   "generated_voice_id": "7mDZJz8OmE8eeHWcgMB3"
@@ -27,6 +82,11 @@
   "description": "A man in his fifties who hands out weapons at a pit-fighting cage in a desert shanty town. Gravelly, worn, a smoker's rasp, low and unhurried, bored, with dry humour underneath. Plain working American speech with no polish. He talks close and quiet, like somebody who has said this a thousand times. Not an announcer and not a narrator: a little mumbled, imperfect, real.",
   "generated_voice_id": "JXfxPvKfMj2Oq1Heocj8",
   "note": "the take Vincent chose from the audition (D1), 2026-11-19"
+ },
+ "Pool Street/Warden": {
+  "description": "A militia guard in his forties posted on a street corner at night in a desert shanty town. A deep, flat, heavy voice, bored and faintly threatening, used to being obeyed without raising it. Slow. Plain working American speech. He says the same warning forty times a night and sounds like it. Not an announcer: close, dull, real.",
+  "first_said": "Sale night. The square is open until the last lot is down: south, down the lane. Keep your hands where the Chainmen can see them.",
+  "generated_voice_id": "T7lmujiLj6GoK3nARmRG"
  },
  "Pool Street/Yard hand": {
   "description": "A man in his thirties who works the yard gate behind a pit-fighting cage in a desert shanty town. A light Mexican Spanish accent, easy and low, a little tired, friendly enough but watching you. Short sentences, no hurry, talks out of the side of his mouth. Not an announcer and not a narrator: offhand, a little mumbled, real.",
