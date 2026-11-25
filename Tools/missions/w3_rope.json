@@ -1,0 +1,120 @@
+{
+ "about": "W3, Rope (for-review/design/faction-quests.md, 2.2). Captain Voss, at a back table in the Velvet Tin's court, wants Ilya Brandt, who tapped a Pump line and ran: Law Five hangs him. A Guild crew is hiding him in the Scrappers' yard. Marks: w3 (2 taken, 100 done), w3.where (it is known where he is), w3.how (how that was come by: 1 paid the Guildmaster 40 L, 2 threatened to shut the gate to Guild carts, 3 went in among the sleepers unseen, 4 went in and was seen), w3.have (he is walking to the gate with the player), brandt (what became of him: 1 handed over and hanged, 2 let go, 3 sold at the Block), w3.lied (told Rook he was dead, and was not believed), bounty (what Maren Brandt has posted against the player: nothing reads it yet), brandt.owes (he will open the wall drain once: nothing reads it yet). CALLS THAT ARE MINE: the crew is in the Scrappers' yard in town and not out at Ridgeline; he is handed to Rook at the tally desk; there is no fighting in the street, so 'take him from the crew' is the threat to shut the gate to their carts; nobody is seen hanging.",
+ "key": "w3",
+ "name": "Rope",
+ "faction": "wardens",
+ "giver": "Captain Voss, at the back table in the Velvet Tin's court",
+ "steps": [
+  [2, "Find Ilya Brandt. Captain Voss says a Guild crew is hiding him in the Scrappers' yard, through the gate at the east end of Pool Street. Bring him to Sergeant Rook at the tally desk in the Gate Yard."],
+  [100, "It is finished, one way or the other: Rook has been told what became of Ilya Brandt."]
+ ],
+
+ "places": {
+  "The Velvet Tin": {
+   "lines": {
+    "Captain Voss": [
+     {"id": "w3_offer", "opens": true, "when": "w2>=100 st.wardens>=-19 !w3", "words": "Rook says you count straight. Ilya Brandt. A Pump fitter. He tapped the east branch and ran, and Law Five says what happens next. A Guild crew has him in their yard off Pool Street, and the Guild will tell you it has never heard the name. Bring him to the gate. Fifty litres. I do not care how.",
+      "answers": [
+       {"words": "What did he tap it for?", "next": "w3_why"},
+       {"words": "I will bring him.", "does": "w3=2", "next": "w3_brief"},
+       {"words": "Not for fifty."}]},
+     {"id": "w3_why", "words": "I did not ask. The price is the same either way."},
+     {"id": "w3_brief", "words": "To the gate, not here. Rook takes him off you and counts out the fifty. Corazon does not care for that sort of business in her court, and I pay her to be let sit in it.",
+      "log": "Took Captain Voss's work: bring in Ilya Brandt, who tapped the Pump's line."},
+     {"id": "w3_waiting", "opens": true, "when": "w3=2", "words": "The gate. Not this table."},
+     {"id": "w3_hung", "opens": true, "when": "w3>=100 brandt=1", "words": "He was up before the bell. The Pump has stopped asking, which is what the Pump pays me for. You will be asked for again."},
+     {"id": "w3_lost", "opens": true, "when": "w3>=100 brandt>1", "words": "Fifty litres of mine walked out of this town on its own legs, and your name is on it. I price everything. I have priced that."}
+    ]
+   }
+  },
+
+  "The Scrappers' Yard": {
+   "lines": {
+    "Guildmaster Okafor-Reyes": [
+     {"id": "w3_ask", "opens": true, "when": "w3=2 !w3.where", "words": "Brandt. I know the name. The Guild does not hand its people to the gate. The Guild also has a crew that has not pulled a load in three days, because it is sitting on a wanted man. Forty litres, for the crew's trouble, and I do not see who walks out of my gate.",
+      "answers": [
+       {"words": "Why did he do it?", "next": "w3_sick"},
+       {"words": "Forty, for the crew's trouble. (40 L)", "needs": "water>=40", "does": "water-40 w3.where=1 w3.how=1 st.scrappers-5", "log": "Paid the Guildmaster 40 L to be shown where Ilya Brandt was.", "next": "w3_shown"},
+       {"words": "The gate shuts to Guild carts until he is handed over. That is the Captain's word.", "does": "w3.where=1 w3.how=2 st.scrappers-15 fear+1", "log": "Told the Guildmaster the gate would shut to Guild carts until Ilya Brandt was given up.", "next": "w3_forced"},
+       {"words": "Not now."}]},
+     {"id": "w3_sick", "words": "His partner had the fever. A litre of clean costs what it costs, and he fits the pipe it runs in. You would have done it, and so would I."},
+     {"id": "w3_shown", "words": "North-east corner, behind the tarp. Tell Pike I said so. And tell nobody else, ever, what forty litres bought you here."},
+     {"id": "w3_forced", "words": "You would do that. To sixty families, for one fitter. North-east corner, behind the tarp. The Guild keeps a ledger too, and you have just gone in it."}
+    ],
+    "Pike": [
+     {"id": "w3_nobody", "opens": true, "when": "w3=2 !w3.where", "words": "Nobody here by that name. Look all you like. My people are asleep, and they wake up badly."},
+     {"id": "w3_said", "opens": true, "when": "w3=2 w3.where !brandt !w3.have", "words": "So the Guildmaster said. Then take him, and get out from where I look."}
+    ]
+   },
+   "people": [
+    {"name": "Ilya Brandt", "prompt": "Talk to the man behind the tarp", "body": "Brandt", "cloth": [0.06, 0.07, 0.085], "x": 136.6, "y": 209.6, "facing": 200, "stand": "shift_r",
+     "when": "w3=2 w3.where !w3.have !brandt",
+     "ways": {"out": {"points": [[136.4, 205.6], [124.0, 190.6], [113.6, 176.4]]}},
+     "lines": [
+      {"id": "found", "words": "You are from the gate. Then listen first. Maren was burning up, three days. The Pump wanted eleven litres for two of clean, and I fit their pipes: I know what runs in the east branch. So I took two litres out of forty thousand. That is the hanging.",
+       "answers": [
+        {"words": "Walk in front of me. To the gate.", "does": "w3.have=1", "log": "Took Ilya Brandt out of the Scrappers' yard, to walk him to the gate.", "next": "taken"},
+        {"words": "Go. Out of the gate while the yard sleeps. I never found you.", "does": "brandt=2 brandt.owes=1 st.scrappers+10 st.freetags+5", "log": "Let Ilya Brandt go.", "next": "freed"},
+        {"words": "You are twenty-four litres on the Block, and nobody hangs property.", "does": "brandt=3 water+24 st.chainmen+5 trust-2", "log": "Sold Ilya Brandt at the Block for 24 L, and not to the rope.", "next": "sold"}]},
+      {"id": "taken", "words": "Tell Maren it was quick. It will not be, but tell her."},
+      {"id": "freed", "words": "Why? No. I am not asking. There is a drain under the wall that nobody is paid to watch. If you ever need it opened, once, find me."},
+      {"id": "sold", "words": "A collar. For two litres of water. It is longer than the rope, I will say that for it."}]}
+   ],
+   "doors": [
+    {"prompt": "Go in quietly under the tarp, among the sleepers, and find him yourself", "x": 135.7, "y": 207.0, "when": "w3=2 !w3.where",
+     "does": "w3.where=1 w3.how=3 w3.roll=?3 (w3.roll=1)w3.how=4 (w3.roll=1)st.scrappers-15",
+     "said": "Eight people asleep on plate and blankets, and a ninth awake at the back with his boots on: Brandt. One time in three somebody else wakes.",
+     "log": "Went in among Pike's sleeping crew to find Ilya Brandt."}
+   ]
+  },
+
+  "Main Street": {
+   "lines": {
+    "Sergeant Rook": [
+     {"id": "w3_take", "opens": true, "when": "w3=2 w3.have !brandt", "words": "Brandt. I fitted that man's tag myself. Up the stair with him. Fifty litres, the Captain's water, counted by me. The bell goes once in the morning.",
+      "does": "water+50 st.wardens+15 st.pump+5 brandt=1 w3.have=0 bounty=20 w3=100 sound:gate_bell", "log": "Handed Ilya Brandt to the Wardens at the gate. Rook paid 50 L. He hangs."},
+     {"id": "w3_gone", "opens": true, "when": "w3=2 brandt=2", "words": "The Captain's man from the yard. You have come down without him.",
+      "answers": [
+       {"words": "Brandt is dead. A fall, in the Bones.", "does": "w3.roll=?3", "next": "w3_dead"},
+       {"words": "I let him go.", "next": "w3_let"}]},
+     {"id": "w3_dead", "words": "Dead.",
+      "answers": [
+       {"words": "", "when": "w3.roll=1", "next": "w3_dead_no"},
+       {"words": "", "when": "w3.roll>1", "next": "w3_dead_yes"}]},
+     {"id": "w3_dead_no", "words": "Then the Captain will want to be shown where he lies, and you will be the one to show it. No? Then he is not dead, and you are not paid, and I have written down that you said he was.",
+      "does": "st.wardens-10 w3.lied=1 w3=100", "log": "Told Rook that Ilya Brandt was dead. He did not believe it."},
+     {"id": "w3_dead_yes", "words": "Dead is dead. The Pump likes a rope better, but it will take a body it does not have to look at. Fifty.",
+      "does": "water+50 st.wardens+15 w3=100", "log": "Told Rook that Ilya Brandt was dead, and was paid 50 L for it."},
+     {"id": "w3_let", "words": "Then you let fifty litres go with him. I will not say I would have done different. I will say the Captain hears whose name is on it.",
+      "does": "st.wardens-10 w3=100", "log": "Told Rook the truth: that I let Ilya Brandt go."},
+     {"id": "w3_block", "opens": true, "when": "w3=2 brandt=3", "words": "Sold. At the Block. A man who taps the line is the Pump's to hang, not Mother Ledger's to sell, and the Captain will be told who made the difference.",
+      "does": "st.wardens-10 w3=100", "log": "Rook heard that Ilya Brandt was sold at the Block."},
+     {"id": "w3_after", "opens": true, "when": "w3>=100 st.wardens>=0", "words": "The Captain has the next of it, and none of it can be done while the well holds. Come back when the price changes."}
+    ]
+   },
+   "people": [
+    {"name": "Ilya Brandt", "body": "Brandt", "cloth": [0.06, 0.07, 0.085], "x": 6.6, "y": 6.9, "facing": 340, "stand": "stand", "collared": false,
+     "when": "w3=2 w3.have !brandt",
+     "ways": {"out": {"points": [[5.6, 4.0], [8.6, 1.6], [11.2, 1.0]]}},
+     "lines": []},
+    {"name": "Maren Brandt", "prompt": "Talk to the woman under the gantry", "body": "Maren", "cloth": [0.07, 0.065, 0.07], "x": 3.2, "y": 13.9, "facing": 190, "stand": "stand_f",
+     "when": "brandt=1",
+     "lines": [
+      {"id": "under", "words": "That is Ilya. Three days, they leave him up. I had the fever, and he had the wrench. I have twenty litres in the world, and all of it is on the board at the Last Call, against your name."}]}
+   ],
+   "doors": [
+    {"prompt": "Look up at the gantry", "x": -0.8, "y": 13.2, "when": "brandt=1",
+     "said": "Ilya Brandt, by the neck, on the third hook, with a board wired to his chest: TAPPED THE LINE. Law Five."}
+   ]
+  },
+
+  "Block Square": {
+   "people": [
+    {"name": "Ilya Brandt", "prompt": "Talk to the fitter in the collar", "body": "Brandt", "cloth": [0.06, 0.07, 0.085], "x": 27.6, "y": 134.6, "facing": 300, "stand": "stand", "collared": true,
+     "when": "brandt=3",
+     "lines": [
+      {"id": "lot", "words": "Fitter, it says on the card. Six for the skill. The Pump's man looked me over and went away to ask what a rope is worth against a pair of hands. I do not know which answer I am hoping for."}]}
+   ]
+  }
+ }
+}

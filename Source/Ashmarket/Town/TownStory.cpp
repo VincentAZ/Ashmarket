@@ -208,8 +208,21 @@ FString ATownGameMode::Apply(const FString& Does)
 
 	TArray<FString> Told;
 
-	for (const FString& Term : Terms)
+	for (const FString& Whole : Terms)
 	{
+		// something asked in brackets before a term: it is done only if that holds, as things stand now
+		FString Term = Whole;
+
+		if (FString Asked, Rest; Whole.StartsWith(TEXT("(")) && Whole.Mid(1).Split(TEXT(")"), &Asked, &Rest))
+		{
+			if (!Holds(Asked))
+			{
+				continue;
+			}
+
+			Term = Rest;
+		}
+
 		if (Term.StartsWith(TownStoryWords::Walk))
 		{
 			// whoever is being talked to goes off along a way of theirs, and is gone at its end if the marks no longer have them here

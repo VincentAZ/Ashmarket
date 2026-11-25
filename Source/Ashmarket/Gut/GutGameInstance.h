@@ -126,6 +126,37 @@ public:
 	int32 Speech = 0;
 };
 
+/**
+ *  One line of Mother Ledger's book against the player: something lent, something paid, something kept back at the
+ *  window. The note in the bag shows them one under another, so that what is owed can be followed back to where it
+ *  came from ("I need to see what I borrowed and what I owe and what I paid back", 25 November).
+ */
+USTRUCT(BlueprintType)
+struct FGutDebtLine
+{
+	GENERATED_BODY()
+
+	/** The day it was written */
+	UPROPERTY()
+	int32 Day = 0;
+
+	/** What it was: "lent at her table" */
+	UPROPERTY()
+	FString What;
+
+	/** Water that changed hands: to the player if over nought, from the player if under */
+	UPROPERTY()
+	float Counted = 0.0f;
+
+	/** What it did to what is owed: more if over nought, less if under */
+	UPROPERTY()
+	float Written = 0.0f;
+
+	/** What was owed when it had been written */
+	UPROPERTY()
+	float After = 0.0f;
+};
+
 /** So many of one thing, carried in the player's bag: bought at a stall, and used when the player chooses */
 USTRUCT(BlueprintType)
 struct FGutBagItem
@@ -193,6 +224,9 @@ public:
 
 	UPROPERTY()
 	int32 BlockSoldDay = -1;
+
+	UPROPERTY()
+	TArray<FGutDebtLine> DebtBook;
 
 	UPROPERTY()
 	int32 BlockSoldSeed = 0;
@@ -277,6 +311,13 @@ public:
 	 */
 	UPROPERTY()
 	TArray<int32> BlockSold;
+
+	/** Mother Ledger's book against the player, oldest first: see WriteDebt */
+	UPROPERTY()
+	TArray<FGutDebtLine> DebtBook;
+
+	/** Writes a line in Mother Ledger's book: what it was, the water that changed hands, what it did to what is owed, and what is owed now */
+	void WriteDebt(const FString& What, float Counted, float Written, float After);
 
 	UPROPERTY()
 	TArray<FString> BlockSoldTo;

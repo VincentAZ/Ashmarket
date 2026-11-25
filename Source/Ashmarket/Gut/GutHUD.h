@@ -174,6 +174,9 @@ protected:
 	TSharedPtr<const FCompositeFont> BodyFont;
 	TSharedPtr<const FCompositeFont> HeadFont;
 
+	/** A hand, for what somebody in the town has written on paper: Mother Ledger's entries on her note */
+	TSharedPtr<const FCompositeFont> HandFont;
+
 	bool bLookLoaded = false;
 
 	/** Fetches the surfaces and the typefaces, once */
@@ -205,6 +208,12 @@ protected:
 
 	/** Draws text at a position in screen pixels. Shrink makes the type smaller than its size by that much. */
 	void DrawLabelAtScreen(const FString& Text, float ScreenX, float ScreenY, int32 Size, const FLinearColor& Color, bool bCentered, float Shrink = 1.0f);
+
+	/**
+	 *  Writes something by hand, as ink on paper: no shadow under it, and set smaller if it is wider than MaxWidth.
+	 *  With bRight, X is where it ends.
+	 */
+	void DrawHand(const FString& Text, float X, float Y, float Size, const FLinearColor& Color, bool bRight = false, float MaxWidth = 0.0f);
 
 	/** How wide text of a size is when drawn, in 1080p layout units */
 	float MeasureLabel(const FString& Text, int32 Size);

@@ -48,9 +48,16 @@ void AGutHUD::DrawHUD()
 		return;
 	}
 
-	// on the way out to the street: nothing of the cage's is drawn over its last picture
+	// on the way out to the street: nothing of the cage's is drawn, and nothing of the cage is left to look at either. The
+	// picture stands still while the next place is fetched, and what stood there was whatever the cage happened to be
+	// showing: once, a cage opened a moment before with nothing in it ready (25 November).
 	if (const UGutGameInstance* Run = Cast<UGutGameInstance>(GetGameInstance()); Run && Run->bGoingToStreet)
 	{
+		UIScale = Canvas->SizeY / 1080.0f;
+
+		DrawRect(FLinearColor::Black, 0.0f, 0.0f, Canvas->SizeX, Canvas->SizeY);
+		DrawLabelAtScreen(Run->bStableFromYard ? TEXT("Back out by the hatch, to the yard") : TEXT("Back down to the street"), Canvas->SizeX * 0.5f, Canvas->SizeY * 0.47f, 26, GutHUDColors::DimText, true);
+
 		return;
 	}
 
@@ -446,6 +453,7 @@ void AGutHUD::LoadLook()
 
 	BodyFont = Typeface(TEXT("SpecialElite-Regular.ttf"));
 	HeadFont = Typeface(TEXT("StardosStencil-Bold.ttf"));
+	HandFont = Typeface(TEXT("ArchitectsDaughter-Regular.ttf"));
 }
 
 void AGutHUD::DrawPanel(float CenterX, float Y, float Width, float Height, EGutPanel Kind)
@@ -2460,6 +2468,52 @@ FSlateFontInfo AGutHUD::LabelFont(int32 Size, float Shrink)
 	const TSharedPtr<const FCompositeFont>& Face = (Size >= 28 && HeadFont.IsValid()) ? HeadFont : BodyFont;
 
 	return Face.IsValid() ? FSlateFontInfo(Face, FontSize) : FCoreStyle::GetDefaultFontStyle("Bold", FontSize);
+}
+
+void AGutHUD::DrawHand(const FString& Text, float X, float Y, float Size, const FLinearColor& Color, bool bRight, float MaxWidth)
+{
+	if (!Canvas || Text.IsEmpty())
+	{
+		return;
+	}
+
+	LoadLook();
+
+	const auto Font = [this](float Of)
+	{
+		const int32 FontSize = FMath::Max(6, FMath::RoundToInt32(Of * UIScale));
+
+		return HandFont.IsValid() ? FSlateFontInfo(HandFont, FontSize) : LabelFont(FMath::RoundToInt32(Of), 1.0f);
+	};
+
+	const auto Measure = [&Text](const FSlateFontInfo& With)
+	{
+		if (FSlateApplicationBase::IsInitialized())
+		{
+			if (FSlateRenderer* Renderer = FSlateApplicationBase::Get().GetRenderer())
+			{
+				return static_cast<float>(Renderer->GetFontMeasureService()->Measure(Text, With).X);
+			}
+		}
+
+		return Text.Len() * With.Size * 0.55f;
+	};
+
+	FSlateFontInfo With = Font(Size);
+	float Wide = Measure(With);
+
+	if (MaxWidth > 0.0f && Wide > MaxWidth * UIScale)
+	{
+		With = Font(Size * MaxWidth * UIScale / Wide);
+		Wide = Measure(With);
+	}
+
+	FCanvasTextItem TextItem(FVector2D((X * UIScale) - (bRight ? Wide : 0.0f), Y * UIScale), FText::FromString(Text), GEngine->GetMediumFont(), Color);
+
+	TextItem.SlateFontInfo = With;
+	TextItem.DisableShadow();
+
+	Canvas->DrawItem(TextItem);
 }
 
 float AGutHUD::MeasureLabel(const FString& Text, int32 Size)

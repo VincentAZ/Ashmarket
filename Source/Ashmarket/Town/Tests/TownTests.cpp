@@ -216,6 +216,9 @@ bool FTownStreetTest::RunTest(const FString& Parameters)
 		// back to where the street is come into, for walking at what stands along it
 		StandAt(FVector2D(Notes->Came.X, Notes->Came.Y));
 		Notes->WalkTime = 0.0f;
+
+		// (and kept in the street while that is done: a way out that is walked into is not gone through)
+		GetTown()->bWaysHeld = true;
 	} });
 
 	// north, east, south and west from there until something is in the way: each time it is something that stands there.
@@ -241,6 +244,19 @@ bool FTownStreetTest::RunTest(const FString& Parameters)
 			for (const AGutFighter* Person : Town->GetPeople())
 			{
 				Nearest = FMath::Min(Nearest, Person ? FVector::Dist2D(Person->GetActorLocation(), Here) - 40.0f : Nearest);
+			}
+
+			// and so is a way out of the place, which is walked into, or a door that says why it is shut. (The ways are held
+			// while this walks at the edges: it would be in the next place otherwise, as it was on 25 November when the
+			// Velvet Tin and the Scrappers' yard were opened off the square and the street.)
+			GetTown()->bWaysHeld = true;
+
+			for (const FTownDoor& Door : Town->GetPlace()->Doors)
+			{
+				if ((Door.bWalkedThrough && Door.IsEntered(Here, 110.0f)) || FVector::Dist2D(Door.Place, Here) < 150.0f)
+				{
+					Nearest = 0.0f;
+				}
 			}
 
 			TestTrue(*FString::Printf(TEXT("Going %s, what stops the walker is something standing there (the nearest thing is %.0f cm off)"), WayNames[Way], Nearest),
@@ -269,6 +285,7 @@ bool FTownStreetTest::RunTest(const FString& Parameters)
 	Steps.Add({ 0.1f, []()
 	{
 		GetTown()->GetWalker()->SetJogging(false);
+		GetTown()->bWaysHeld = false;
 	} });
 
 	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
@@ -1507,6 +1524,7 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		Notes->Call = Town->GetCallIndex();
 
 		StandAt(FVector2D(Notes->Came.X, Notes->Came.Y));
+		GetTown()->bWaysHeld = true;
 	}, InSquare });
 
 	static const FVector Ways[] = { FVector(1.0f, 0.0f, 0.0f), FVector(0.0f, 1.0f, 0.0f), FVector(-1.0f, 0.0f, 0.0f), FVector(0.0f, -1.0f, 0.0f) };
@@ -1529,6 +1547,19 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 			for (const AGutFighter* Person : Town->GetPeople())
 			{
 				Nearest = FMath::Min(Nearest, Person ? FVector::Dist2D(Person->GetActorLocation(), Here) - 40.0f : Nearest);
+			}
+
+			// and so is a way out of the place, which is walked into, or a door that says why it is shut. (The ways are held
+			// while this walks at the edges: it would be in the next place otherwise, as it was on 25 November when the
+			// Velvet Tin and the Scrappers' yard were opened off the square and the street.)
+			GetTown()->bWaysHeld = true;
+
+			for (const FTownDoor& Door : Town->GetPlace()->Doors)
+			{
+				if ((Door.bWalkedThrough && Door.IsEntered(Here, 110.0f)) || FVector::Dist2D(Door.Place, Here) < 150.0f)
+				{
+					Nearest = 0.0f;
+				}
 			}
 
 			TestTrue(*FString::Printf(TEXT("Going %s across the square, what stops the walker is something standing there (the nearest thing is %.0f cm off)"), WayNames[Way], Nearest),
@@ -1559,6 +1590,8 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 	Steps.Add({ 0.2f, [this, Notes]()
 	{
 		ATownGameMode* Town = GetTown();
+
+		Town->bWaysHeld = false;
 		const UTownPlaceData* Place = Town->GetPlace();
 
 		Town->GetWalker()->SetJogging(false);
@@ -1853,7 +1886,7 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 
 		for (const FTownDoor& Door : Place->Doors)
 		{
-			if (Door.bWalkedThrough)
+			if (Door.bWalkedThrough && Door.To.ToString().Contains(TEXT("PoolStreet")))
 			{
 				StandAt(FVector2D(Door.Place.X - 40.0f, Door.Place.Y));
 				return;
@@ -1936,9 +1969,10 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("The yard's way out is Pool Street, where the player went in from"), true);
 		TestEqual(TEXT("Nobody is behind the player now"), Town->GetTowCount(), 0);
 
+		// (the way to the square, of the ways out there now are: until the Scrappers' gate was opened it was the first)
 		for (const FTownDoor& Door : Place->Doors)
 		{
-			if (Door.bWalkedThrough)
+			if (Door.bWalkedThrough && Door.To.ToString().Contains(TEXT("BlockSquare")))
 			{
 				StandAt(FVector2D(Door.Place.X + 40.0f, Door.Place.Y));
 				return;

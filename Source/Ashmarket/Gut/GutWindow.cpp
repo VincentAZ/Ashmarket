@@ -71,6 +71,7 @@ void AGutGameMode::EnterWindow(int32 Seed)
 	GameInstance->bWindow = true;
 
 	GameInstance->Window = FGutWindowState();
+	GameInstance->DebtBook.Reset();
 	GameInstance->Window.bStarted = true;
 	GameInstance->PendingStory = EGutStory::Gambler;
 	GameInstance->Window.Water = FMath::Max(GameInstance->GetStartingWater(WindowStartingWater), 0.0f);
@@ -342,6 +343,7 @@ void AGutGameMode::BeginWindowCard()
 	if (!GameInstance->Window.bStarted)
 	{
 		GameInstance->Window = FGutWindowState();
+		GameInstance->DebtBook.Reset();
 		GameInstance->Window.bStarted = true;
 		GameInstance->PendingStory = EGutStory::Gambler;
 		GameInstance->Window.Water = FMath::Max(GameInstance->GetStartingWater(WindowStartingWater), 0.0f);
@@ -565,6 +567,11 @@ void AGutGameMode::SettleWindowFight(const AGutFighter* DeadFighter)
 			// The cage's verdict is final: whoever walks out alive owes nothing.
 			WindowSettlement.DebtCleared = State.Debt;
 
+			if (State.Debt > 0.5f)
+			{
+				GameInstance->WriteDebt(TEXT("paid in the cage, and struck off"), 0.0f, -State.Debt, 0.0f);
+			}
+
 			State.bCaught = false;
 			State.Debt = 0.0f;
 		}
@@ -626,6 +633,11 @@ void AGutGameMode::SettleWindowFight(const AGutFighter* DeadFighter)
 
 		State.Debt -= WindowSettlement.DebtPaid;
 		State.Water += WindowSettlement.Return - WindowSettlement.DebtPaid;
+
+		if (WindowSettlement.DebtPaid > 0.5f)
+		{
+			GameInstance->WriteDebt(FString::Printf(TEXT("kept at the window, of %.0f L won"), WindowSettlement.Return), -WindowSettlement.DebtPaid, -WindowSettlement.DebtPaid, State.Debt);
+		}
 		State.Returned += WindowSettlement.Return;
 	}
 
@@ -660,6 +672,8 @@ void AGutGameMode::SettleWindowFight(const AGutFighter* DeadFighter)
 		{
 			State.Water += LenderStake;
 			State.Debt += LenderOwed;
+
+			GameInstance->WriteDebt(TEXT("lent at the window"), LenderStake, LenderOwed, State.Debt);
 
 			WindowSettlement.bStakedAgain = true;
 		}

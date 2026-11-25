@@ -338,6 +338,71 @@ def footprint(mesh):
     return min(xs), max(xs), min(ys), max(ys)
 
 
+def legs(mesh, head=HEAD, apart=110.0, cell=25.0):
+    """Where a model that stands on legs stands, seen from above: a box (x from, x to, y from, y to, in its own
+    centimetres) round each part of it that is lower than a head and is further than `apart` from every other such part,
+    so that it is walked under between them. A gantry is its two legs and not the road between; a wing on pillars is its
+    pillars. Measured from the model's own points, as footprint() is: so it is for a model made of many small triangles
+    (anything out of Mixar), and not for one whose long flat sides have points only at their corners, which it would
+    take for four legs. Asked for by name in a place's list ('legs': true); nothing is taken for legged unasked.
+    `head` is how far up its own height a walker's head comes: less than a head's height where it stands on ground higher
+    than the walker's (the wing on the Row's two banks, over the furrow). Returns one box round everything low where the
+    shape cannot be read."""
+    box = mesh.get_bounding_box()
+    top = box.min.z + head
+    filled = set()
+
+    try:
+        described = mesh.get_static_mesh_description(0)
+        wanted = described.get_vertex_count()
+        seen = 0
+        index = 0
+
+        while seen < wanted and index < wanted * 4:
+            vertex = unreal.VertexID(index)
+            index += 1
+
+            if not described.is_vertex_valid(vertex):
+                continue
+
+            seen += 1
+            point = described.get_vertex_position(vertex)
+
+            if point.z <= top:
+                filled.add((int(math.floor(point.x / cell)), int(math.floor(point.y / cell))))
+    except Exception as error:
+        log("could not read the legs of {}: {}".format(mesh.get_name(), error))
+        filled = set()
+
+    if not filled:
+        return [footprint(mesh)]
+
+    # what is nearer than `apart` is one part
+    near = int(math.ceil(apart / cell))
+    parts = []
+
+    while filled:
+        edge = [filled.pop()]
+        part = list(edge)
+
+        while edge:
+            across, along = edge.pop()
+
+            for step_across in range(-near, near + 1):
+                for step_along in range(-near, near + 1):
+                    other = (across + step_across, along + step_along)
+
+                    if other in filled:
+                        filled.discard(other)
+                        edge.append(other)
+                        part.append(other)
+
+        parts.append((max(box.min.x, min(square[0] for square in part) * cell), min(box.max.x, (max(square[0] for square in part) + 1) * cell),
+                      max(box.min.y, min(square[1] for square in part) * cell), min(box.max.y, (max(square[1] for square in part) + 1) * cell)))
+
+    return sorted(parts)
+
+
 def turned(box, yaw):
     """A box in a model's own axes (x from, x to, y from, y to) as the level sees it once the model is turned."""
     turn = math.radians(yaw)
@@ -702,6 +767,7 @@ def main():
 
     meshes = {}
     feet = {}
+    on_legs = {}
 
     def known(name):
         if name not in meshes:
@@ -726,8 +792,17 @@ def main():
 
         label(actor, kind, name)
 
-        if blocking:
-            x0, x1, y0, y1 = [edge * scale for edge in feet[name]]
+        # blocking "legs": it stands on legs and is walked under between them, each leg a thing of its own to walk round
+        # (a number with it is how far above the walker's ground it stands)
+        legged = isinstance(blocking, tuple)
+
+        if legged and (name, blocking[1]) not in on_legs:
+            on_legs[(name, blocking[1])] = legs(meshes[name], max(40.0, HEAD - blocking[1]))
+            log("{} stands on {} legs: {}".format(name, len(on_legs[(name, blocking[1])]),
+                                                  ", ".join("{:.1f} by {:.1f} m".format((x1 - x0) / 100.0, (y1 - y0) / 100.0) for x0, x1, y0, y1 in on_legs[(name, blocking[1])])))
+
+        for foot in (on_legs[(name, blocking[1])] if legged else [feet[name]] if blocking else []):
+            x0, x1, y0, y1 = [edge * scale for edge in foot]
             turn = math.radians(yaw)
             middle_x, middle_y = (x0 + x1) * 0.5, (y0 + y1) * 0.5
 
@@ -750,7 +825,8 @@ def main():
 
         want = place(x, y, base)
         where = unreal.Vector(want.x - (x0 + x1) * 0.5, want.y - (y0 + y1) * 0.5, want.z - low)
-        actor = put(name, where, yaw, kind, blocking and want.z - place(x, y).z < HEAD, scale, pitch)
+        rise = want.z - place(x, y).z
+        actor = put(name, where, yaw, kind, (("legs", round(max(0.0, rise))) if blocking == "legs" else blocking) if rise < HEAD else False, scale, pitch)
 
         return actor, (want.z + high - low) / 100.0 + origin["z"], unreal.Vector((x1 - x0) * 0.5, (y1 - y0) * 0.5, (high - low) * 0.5)
 
@@ -900,19 +976,24 @@ def main():
         loose = bool(heavy) and entry.get("loose", True) and not entry.get("hollow") and not entry.get("lamp") and not entry.get("light") and not own_block and entry.get("z") is None
 
         actor, top, _ = stand(entry["model"], entry["x"], entry["y"], entry.get("yaw", (entry["x"] * 37.0 + entry["y"] * 91.0) % 360.0),
-                              base=entry.get("z"), scale=size, blocking=own_block is None and entry.get("blocking", True) and not loose)
+                              base=entry.get("z"), scale=size,
+                              blocking="legs" if entry.get("legs") else own_block is None and entry.get("blocking", True) and not loose)
         part = actor.get_editor_property("static_mesh_component")
 
         # 'block' is what of it stops a walker, where that is not everything of it that is lower than a head: a shop is
         # walked up to under its awnings (x from and to, y from and to, on the map)
-        if own_block:
-            south_west, north_east = place(own_block["x"][0], own_block["y"][0]), place(own_block["x"][1], own_block["y"][1])
+        # (a list of them where it stands on legs and is walked under between: the gantry across the Gate Yard, which as one
+        # box shut the whole road, 25 November)
+        for one in (own_block if isinstance(own_block, list) else [own_block] if own_block else []):
+            south_west, north_east = place(one["x"][0], one["y"][0]), place(one["x"][1], one["y"][1])
             blocks.append(((south_west.x + north_east.x) * 0.5, (south_west.y + north_east.y) * 0.5,
                            abs(north_east.x - south_west.x) * 0.5, abs(north_east.y - south_west.y) * 0.5, 0.0))
 
         # somebody stands inside it (the window's stall): the model's own solid shape, which stops the camera at everything
         # else, would push them out of it
-        if entry.get("hollow"):
+        # (and so is anything on legs: its solid shape is that one box, which stopped a walker under the gantry after the
+        # place's own list had let him through, 25 November)
+        if entry.get("hollow") or entry.get("legs"):
             part.set_collision_profile_name("NoCollision")
 
         # What a person could shove with a foot is loose: walked into, it goes (23 November: "objects are moveable - I kick,
@@ -1243,6 +1324,8 @@ def main():
         door.set_editor_property("reach", float(entry.get("reach", 0.0)) * 100.0)
         door.set_editor_property("when", entry.get("when", ""))
         door.set_editor_property("does", entry.get("does", ""))
+        door.set_editor_property("said", entry.get("said", ""))
+        door.set_editor_property("log", entry.get("log", ""))
 
         # a way as wide as a street is gone through anywhere across its mouth
         if entry.get("mouth"):

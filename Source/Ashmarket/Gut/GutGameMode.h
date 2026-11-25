@@ -1285,6 +1285,15 @@ public:
 	UFUNCTION(BlueprintPure, Category="Gut|Ladder")
 	bool IsArmorWorn(const UGutArmorData* Piece) const;
 
+	/** The piece of armor of that name, off whichever rank's shelf it is on */
+	UGutArmorData* FindArmorPiece(const FName& Name) const;
+
+	/**
+	 *  Whether the cage lets armor in to a fight against somebody of that code: from the rank armor is sold at, up. Under
+	 *  that both corners come in bare, and what a fighter owns stays off for the fight.
+	 */
+	bool IsArmorLetIn(int32 AgainstCode) const;
+
 	/** Returns what the last fight came to in water */
 	const FGutSettlement& GetSettlement() const { return Settlement; }
 

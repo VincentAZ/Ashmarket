@@ -6844,13 +6844,37 @@ void AGutFighter::UpdateWeaponMesh()
 
 			// the shape's own top is its Z, and its face is whatever its grip turns toward X
 			const FVector Face = Weapon->GripTransform.GetRotation().UnrotateVector(FVector::XAxisVector);
-			// top toward the elbow, so it reads the right way up on an arm that hangs
-			const FQuat Turn = FRotationMatrix::MakeFromZX(-Along, Outward).ToQuat() * FRotationMatrix::MakeFromZX(FVector::ZAxisVector, Face).ToQuat().Inverse();
+			// top toward the hand, so it reads the right way up on an arm that is raised: which in the cage, where it is
+			// worn, an arm always is. (It was toward the elbow, for an arm that hangs, and STOP was read upside down in
+			// every stance and guard.)
+			const FQuat Turn = FRotationMatrix::MakeFromZX(Along, Outward).ToQuat() * FRotationMatrix::MakeFromZX(FVector::ZAxisVector, Face).ToQuat().Inverse();
 
 			WeaponMesh->AttachToComponent(Shown, FAttachmentTransformRules::SnapToTargetNotIncludingScale, ArmBone);
-			// Nearer the elbow than the hand, and well clear of the arm: a sign a metre across, held up beside the head in a
-			// stance, went through the shoulder's armor and the side of the head when it sat 7 cm off the forearm's middle.
-			WeaponMesh->SetRelativeTransform(FTransform(Turn, (Along * 0.45f) + (Outward.GetSafeNormal() * 13.0f), Weapon->GripTransform.GetScale3D()));
+
+			// Where on the arm. It sat at the forearm's middle and 13 cm off it, to keep a sign 78 cm across out of the
+			// shoulder's armor and the side of the head: so far off that nothing held it, and so far across the body that
+			// the other arm punched through it (25 November: "she is not holding the sign - see?"). Now it is close
+			// enough that the closed hand is against its back as on a grip, a third of the way down the forearm so that
+			// its top is at the eyes when the guard is up; and it is shifted along
+			// its own width away from the body's middle, so that it covers the side it is worn on and leaves the other
+			// arm its road. -GutShieldOff=, -GutShieldAlong= and -GutShieldAcross= try other places without a build.
+			static float Off = 9.5f;
+			static float AlongShare = 0.3f;
+			static float AcrossBy = -14.0f;
+			static bool bRead = false;
+
+			if (!bRead)
+			{
+				bRead = true;
+
+				FParse::Value(FCommandLine::Get(), TEXT("GutShieldOff="), Off);
+				FParse::Value(FCommandLine::Get(), TEXT("GutShieldAlong="), AlongShare);
+				FParse::Value(FCommandLine::Get(), TEXT("GutShieldAcross="), AcrossBy);
+			}
+
+			const FVector Across = FVector::CrossProduct(Along.GetSafeNormal(), Outward.GetSafeNormal());
+
+			WeaponMesh->SetRelativeTransform(FTransform(Turn, (Along * AlongShare) + (Outward.GetSafeNormal() * Off) + (Across * AcrossBy), Weapon->GripTransform.GetScale3D()));
 		}
 		else if (HasBody())
 		{

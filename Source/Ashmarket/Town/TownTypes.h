@@ -344,6 +344,18 @@ struct FTownDoor
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Door")
 	FString Does;
 
+	/**
+	 *  What is told when it is used, where using it leads nowhere and only does something: a look up at the gantry, a way
+	 *  in under a tarp among sleepers. A door like that with nothing to say when it is shut is not offered at all while
+	 *  its When does not hold: it is only there when there is a reason for it.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Door")
+	FString Said;
+
+	/** What is written in the player's own account of what it has done, if using it is worth a line there */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Door")
+	FString Log;
+
 	/** True if somebody standing there is going through this way, when it is one that is walked through */
 	bool IsEntered(const FVector& Where, float OwnReach) const
 	{

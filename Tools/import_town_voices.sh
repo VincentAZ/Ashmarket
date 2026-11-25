@@ -42,7 +42,17 @@ for recording in "$VOICES"/*/*.mp3; do
 		read -r mean peak < <(ffmpeg -nostdin -i "$recording" -af volumedetect -f null - 2>&1 | awk '/mean_volume/ {m = $5} /max_volume/ {p = $5} END {print m, p}')
 		gain="$(awk -v m="$mean" -v p="$peak" -v t="$LEVEL" 'BEGIN {g = t - m; if (p + g > -1) g = -1 - p; printf "%.1f", g}')"
 
-		ffmpeg -nostdin -v error -y -i "$recording" -af "volume=${gain}dB" -ac 1 -ar 44100 -c:a pcm_s16le "$wav"
+		# A part of the caller's bidding (bid_*) is said hard on the heels of the one before it, so the quiet a recording
+		# begins and ends with is cut off it: all but a few hundredths of a second at each end. And it is said a seventh
+		# quicker than it was recorded, at the same pitch: put end to end at their own pace the parts made a slow caller
+		# ("36, the Velvet Tin, any more?" ran 4.4 s).
+		trim=""
+
+		if [[ "$(basename "$recording")" == bid_* ]]; then
+			trim="silenceremove=start_periods=1:start_threshold=-42dB:start_silence=0.03,areverse,silenceremove=start_periods=1:start_threshold=-42dB:start_silence=0.06,areverse,atempo=1.14,"
+		fi
+
+		ffmpeg -nostdin -v error -y -i "$recording" -af "${trim}volume=${gain}dB" -ac 1 -ar 44100 -c:a pcm_s16le "$wav"
 	fi
 done
 

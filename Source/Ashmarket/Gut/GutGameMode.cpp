@@ -510,6 +510,7 @@ void AGutGameMode::EnterBy(int32 Way)
 
 		case GutDoorLines::Bet:
 			GameInstance->Window = FGutWindowState();
+			GameInstance->DebtBook.Reset();
 			break;
 
 		default:
@@ -1821,6 +1822,20 @@ void AGutGameMode::RequestRestart()
 		UE_LOG(LogGut, Log, TEXT("Window: back down to the street after the fight"));
 
 		GetGutGameInstance()->GoToStreet(this);
+		return;
+	}
+
+	// An owner who came in out of a yard they walk about in goes straight back to it. Until 25 November the cage was
+	// opened again first, only for its card to see that there was no card to show and leave: one picture of a cage with
+	// nothing ready in it (a grey head, "Preparing Textures"), six seconds held on it, and then the yard ("what is this -
+	// why did it freeze - why was I kicked out"). The same asking as BackToWalkedYard and BeginStableCard between them:
+	// nobody dead to be seen to first, and no page owed before the yard's.
+	if (UGutGameInstance* Run = GetGutGameInstance(); IsAtStable() && !LentTo && Run->bStableFromYard && Run->IsStreetOpen()
+		&& !Run->Stable.bBodyWaiting && !Run->bStableAtBlock && !Run->bStableAtBill)
+	{
+		UE_LOG(LogGut, Log, TEXT("Stable: straight back out by the hatch to the yard"));
+
+		Run->GoToStreet(this);
 		return;
 	}
 

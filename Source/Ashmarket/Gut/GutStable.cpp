@@ -8,6 +8,7 @@
 #include "Camera/CameraActor.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GutArmorData.h"
 #include "GutFighter.h"
 #include "GutGameInstance.h"
 #include "GutLadderData.h"
@@ -114,6 +115,42 @@ const UGutLadderData* AGutGameMode::FindRank(int32 Code) const
 	GetRanks(Ranks);
 
 	return (Code >= 0 && Ranks.IsValidIndex(Code / 100)) ? Ranks[Code / 100] : nullptr;
+}
+
+UGutArmorData* AGutGameMode::FindArmorPiece(const FName& Name) const
+{
+	TArray<const UGutLadderData*> Ranks;
+	GetRanks(Ranks);
+
+	for (const UGutLadderData* Rank : Ranks)
+	{
+		for (UGutArmorData* Piece : Rank ? Rank->ArmorShop : TArray<TObjectPtr<UGutArmorData>>())
+		{
+			if (Piece && Piece->GetFName() == Name)
+			{
+				return Piece;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+bool AGutGameMode::IsArmorLetIn(int32 AgainstCode) const
+{
+	TArray<const UGutLadderData*> Ranks;
+	GetRanks(Ranks);
+
+	// let in at the first rank that has a shelf of it, and at every rank over that
+	for (int32 i = 0; i < Ranks.Num() && AgainstCode >= 0 && i <= AgainstCode / 100; ++i)
+	{
+		if (Ranks[i] && !Ranks[i]->ArmorShop.IsEmpty())
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 const FGutLadderRung* AGutGameMode::FindRung(int32 Code) const
@@ -708,6 +745,8 @@ void AGutGameMode::AdvanceStableDay()
 	else
 	{
 		// what cannot be paid is written down, with the lender's share on top
+		State.News += FString::Printf(TEXT("The day's feed and wages were %.0f L and you held %.0f: what was short is written against you, with half as much again on top. "), Due, State.Water);
+
 		State.Debt += (Due - State.Water) * 1.5f;
 		State.Spent += State.Water;
 		State.Water = 0.0f;
@@ -726,6 +765,8 @@ void AGutGameMode::AdvanceStableDay()
 			if (!bPaid)
 			{
 				UE_LOG(LogGut, Log, TEXT("Stable: %s is not paid, and walks"), *Fighter.FighterName.ToString());
+
+				State.News += FString::Printf(TEXT("%s was on a wage, was not paid for the day, and has walked. "), *Fighter.FighterName.ToString());
 
 				State.Fighters.RemoveAt(i);
 			}
@@ -848,6 +889,24 @@ void AGutGameMode::MakeStableFighter(AGutFighter* Fighter, const FGutStableFight
 
 	Fighter->ClearArmor();
 	Fighter->SetCollared(Who.bOwned);
+
+	// What it has been given to wear: in a fight the cage lets armor into, and standing about with no fight made
+	if (const UGutGameInstance* Run = GetGutGameInstance(); Run && !Who.Armor.IsEmpty())
+	{
+		const int32 Against = Run->Stable.MatchedAgainst;
+		const bool bLetIn = Against < 0 || IsArmorLetIn(Against);
+
+		for (const FName& Name : bLetIn ? Who.Armor : TArray<FName>())
+		{
+			if (UGutArmorData* Piece = FindArmorPiece(Name))
+			{
+				Fighter->WearArmor(Piece);
+			}
+		}
+
+		UE_LOG(LogGut, Log, TEXT("Stable: %s owns %d pieces of armor, and %s"), *Who.FighterName.ToString(), Who.Armor.Num(),
+			bLetIn ? TEXT("has them on") : TEXT("is sent in without them: the cage lets no armor in at this rank"));
+	}
 
 	// it comes to the fight in the state the last one left it. Empty its hands first: an arm that arrives crippled has nothing to drop.
 	Fighter->EquipWeapon(nullptr);
@@ -1208,6 +1267,24 @@ void AGutGameMode::SettleStableFight(const AGutFighter* DeadFighter)
 
 		State.Debt -= StableSettlement.DebtPaid;
 		State.Water -= StableSettlement.DebtPaid;
+	}
+
+	// and Mother Ledger's note says the same of her: half of anything the window or the pit pays is kept against it. Until
+	// 25 November that was true only of a bet won at the window: an owner's purse went by her. What the yard's own debt
+	// did not take of the share is hers. (Not where each way of playing keeps its own water, as the tests do.)
+	if (FGutWindowState& Hers = GameInstance->Window; GameInstance->IsOnePurse() && Hers.bStarted && Hers.Debt > 0.5f && CameIn > 0.0f)
+	{
+		const float Kept = FMath::Min(Hers.Debt, FMath::RoundToFloat(CameIn * DebtShareOfWinnings) - StableSettlement.DebtPaid);
+
+		if (Kept > 0.5f)
+		{
+			Hers.Debt -= Kept;
+			State.Water -= Kept;
+
+			StableSettlement.DebtPaid += Kept;
+
+			GameInstance->WriteDebt(FString::Printf(TEXT("kept at the pit, of %.0f L won"), CameIn), -Kept, -Kept, Hers.Debt);
+		}
 	}
 
 	// whoever beat the yard's fighter has that to show the book

@@ -1,0 +1,126 @@
+{
+ "about": "The Velvet Tin's court (for-review/design/map-of-ashmarket.md, place 9): three trailers along the north side of a walled court, come into by the gate in its south wall from Tin Lane. Read by Tools/build_town_level.py (GUT_TOWN_LIST=$PWD/Tools/town_velvet_tin.json Tools/build_town_level.sh). Places are in the map's own metres (x east, y north). BUILT AS FAR AS THE COURT: nobody goes into the trailers, and what the house sells is not shown or written. The trailer, the wall of car doors and the curtained gate were made in Mixar for this place (ArtSource/mixar/tin_*). Nothing lights it that is not seen to burn.",
+
+ "name": "The Velvet Tin",
+ "level": "/Game/Town/Lvl_VelvetTin",
+ "data": "/Game/Town/DA_Town_VelvetTin",
+ "origin": {"x": 95.0, "y": 208.0, "z": 3.0},
+
+ "street_height": 6.0,
+ "alley": {"from_y": 1000.0, "rise_per_metre": 0.0},
+ "sky": {"x": -98.0, "y": 200.0, "z": 3.0, "size": 800},
+
+ "start": {"x": -86.0, "y": 190.4, "facing": 0},
+ "arrivals": [
+  {"name": "from_block_square", "x": -86.0, "y": 190.4, "facing": 0}
+ ],
+
+ "beds": ["market"],
+
+ "errand": [
+  "THE VELVET TIN",
+  "Madam Corazon's house: three trailers and a court.",
+  "Madam Corazon, at the middle trailer's door.",
+  "Captain Voss of the Wardens, at the back table in the corner, when there is work.",
+  "The curtain in the south wall: Tin Lane, and back to Block Square."
+ ],
+
+ "surfaces": {
+  "Sand": {"from": "gravelly_sand", "size": 400},
+  "Earth": {"from": "dry_ground_01", "size": 360},
+  "Sheet": {"from": "rusty_corrugated_iron", "size": 200}
+ },
+
+ "ground": [
+  {"label": "Beyond", "x": [-190.0, -10.0], "y": [110.0, 290.0], "z": 5.95, "surface": "Earth"},
+  {"label": "Court", "x": [-116.0, -80.0], "y": [188.0, 212.0], "z": 6.0, "surface": "Sand"}
+ ],
+
+ "walk": [
+  {"x": [-115.6, -80.4], "y": [188.4, 207.9]}
+ ],
+
+ "walls": [],
+ "rows": [
+  {"label": "StaffStore", "model": ["town_container_red"], "yaw": 90, "high": 1, "along": "x", "from": -116.4, "to": -110.3, "face": 208.15, "side": "north", "note": "a container at the west end of the trailers: what the house keeps locked"}
+ ],
+
+ "runs": [
+  {"label": "WallSouthWest", "model": "tin_wall", "from": [-116.0, 188.0], "to": [-88.0, 188.0]},
+  {"label": "WallSouthEast", "model": "tin_wall", "from": [-84.0, 188.0], "to": [-80.0, 188.0]},
+  {"label": "WallEast", "model": "tin_wall", "from": [-80.0, 188.0], "to": [-80.0, 212.0]},
+  {"label": "WallWest", "model": "tin_wall", "from": [-116.0, 188.0], "to": [-116.0, 212.0]},
+  {"label": "WallNorth", "model": "tin_wall", "from": [-116.0, 212.0], "to": [-80.0, 212.0]}
+ ],
+
+ "things": [
+  {"model": "tin_gate", "x": -86.0, "y": 188.0, "yaw": 90, "hollow": true, "legs": true, "note": "the gate, with the red curtain drawn back"},
+  {"model": "tin_trailer", "x": -105.6, "y": 209.4, "yaw": 90, "note": "the back trailer"},
+  {"model": "tin_trailer", "x": -96.0, "y": 209.4, "yaw": 90, "note": "the middle trailer: the bar, and Madam Corazon's desk"},
+  {"model": "tin_trailer", "x": -86.4, "y": 209.4, "yaw": 90, "note": "the front trailer: the waiting room"},
+  {"model": "Barrel_01", "x": -80.95, "y": 208.4},
+  {"model": "barrel_03", "x": -81.0, "y": 207.5},
+
+  {"model": "square_card_table", "x": -112.6, "y": 204.6, "yaw": 270, "note": "the back table, where the Captain collects"},
+  {"model": "square_table", "x": -93.0, "y": 196.4, "yaw": 0},
+  {"model": "plastic_monobloc_chair_01", "x": -94.3, "y": 195.6, "yaw": 60},
+  {"model": "plastic_monobloc_chair_01", "x": -91.8, "y": 197.3, "yaw": 240},
+  {"model": "plastic_monobloc_chair_01", "x": -103.4, "y": 199.6, "yaw": 20},
+  {"model": "metal_stool_02", "x": -111.2, "y": 203.2, "yaw": 0},
+  {"model": "wooden_crate_02", "x": -114.6, "y": 190.2, "yaw": 20},
+  {"model": "plastic_crate_02", "x": -82.2, "y": 199.5, "yaw": 70},
+  {"model": "plastic_bottle_gallon", "x": -92.4, "y": 195.5, "yaw": 0},
+
+  {"model": "main_fire_drum", "x": -100.6, "y": 197.6, "yaw": 30, "light": {"candela": 2400, "reach": 10, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "shadows": true, "note": "the fire in the middle of the court"}},
+  {"model": "main_lantern", "x": -112.5, "y": 204.7, "z": 6.78, "yaw": 40, "light": {"candela": 900, "reach": 6, "colour": "lantern", "flicker": true, "off": 0.0, "note": "the lantern on the Captain's table"}},
+  {"model": "main_lantern", "x": -93.0, "y": 196.4, "z": 6.86, "yaw": 200, "light": {"candela": 700, "reach": 5, "colour": "lantern", "flicker": true, "off": 0.0, "note": "a lantern on the court's table"}}
+ ],
+
+ "pictures": [
+  {"picture": "sign_velvet_tin_by_hand", "x": -98.4, "y": 208.2, "faces": "south", "up": 1.0, "tall": 0.75, "deep": 0.35, "note": "painted on the middle trailer's side, west of its door"}
+ ],
+ "pasted": [],
+
+ "bulbs": [
+  {"x": -86.0, "y": 191.0, "up": 2.7, "candela": 1500, "reach": 9, "hung": true, "note": "inside the gate"},
+  {"x": -95.2, "y": 207.75, "up": 2.3, "candela": 1700, "reach": 9, "hung": true, "shadows": true, "note": "over the middle trailer's door"},
+  {"x": -85.6, "y": 207.75, "up": 2.3, "candela": 1200, "reach": 8, "hung": true, "note": "over the front trailer's door"},
+  {"x": -104.8, "y": 207.75, "up": 2.3, "candela": 1000, "reach": 8, "hung": true, "note": "over the back trailer's door"}
+ ],
+
+ "bystanders": [
+  {"label": "Regulars", "count": 4, "x": [-102.6, -98.8], "y": [195.6, 199.6], "apart": 1.1, "look": [-100.6, 197.6]}
+ ],
+
+ "people": [
+  {
+   "name": "Madam Corazon", "prompt": "Talk to Madam Corazon", "body": "Corazon", "cloth": [0.16, 0.025, 0.035],
+   "x": -95.2, "y": 206.5, "facing": 180, "stand": "stand_f",
+   "lines": [
+    {"id": "house", "words": "Corazon. Everybody is corazon here, so you may as well start. The house is full tonight, and nobody inside it is here because of a collar. That is the whole of what I sell.",
+     "answers": [
+      {"words": "Who is at the back table?", "next": "voss"},
+      {"words": "Another night."}]},
+    {"id": "voss", "words": "The Captain. Twenty litres a week of mine goes across that table, and I smile when it goes. If the Captain has work for you, take it at the table and do it somewhere else."}
+   ]
+  },
+  {
+   "name": "Captain Voss", "prompt": "Talk to Captain Voss, at the back table", "body": "Voss", "cloth": [0.035, 0.04, 0.055],
+   "x": -111.2, "y": 205.0, "facing": 135, "stand": "stand_f",
+   "lines": [
+    {"id": "table", "words": "The Toll. That is what they call me past the gate, and they are right to. Everything on that wall has a price, and I know all of them. You have nothing I am selling tonight."}
+   ]
+  }
+ ],
+
+ "doors": [
+  {"prompt": "Out through the curtain, to Block Square", "x": -86.0, "y": 188.2, "deed": "go", "to": "/Game/Town/Lvl_BlockSquare", "arrive": "from_tin", "walk_through": true,
+   "mouth": {"x": [-87.6, -84.4], "y": [187.5, 188.75]}},
+  {"prompt": "Try the waiting room", "x": -85.6, "y": 207.5, "shut": "Car seats along one wall, and a curtain. \"Full tonight,\" somebody says from behind it."},
+  {"prompt": "Try the back trailer", "x": -104.8, "y": 207.5, "shut": "Bolted from inside. There is music behind it, played low on something with one string missing."}
+ ],
+
+ "finds": [
+  {"good": "smokes", "x": -114.2, "y": 196.4, "facing": 100}
+ ]
+}

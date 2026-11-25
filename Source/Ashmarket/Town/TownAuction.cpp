@@ -10,6 +10,9 @@
 #include "GutGameInstance.h"
 #include "GutGameMode.h"
 #include "GutSound.h"
+#include "Components/AudioComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogTownAuction, Log, All);
 
@@ -34,6 +37,27 @@ namespace TownAuctionRules
 	const float BidWait = 3.4f;
 	const float GoingWait = 2.6f;
 	const float OpenWait = 2.8f;
+
+	/** The figures that were recorded in the caller's voice: a bid outside them is written and not said */
+	const int32 LeastSpoken = 4;
+	const int32 MostSpoken = 160;
+
+	/** How far the end of one recorded part runs under the start of the next (s) */
+	const float RunsOn = 0.07f;
+
+	/** The recorded part that names one of the houses, or nothing */
+	static FString GetHousePart(const FString& Name)
+	{
+		for (int32 i = 0; i < UE_ARRAY_COUNT(Houses); ++i)
+		{
+			if (Name == Houses[i])
+			{
+				return FString::Printf(TEXT("house_%d"), i);
+			}
+		}
+
+		return FString();
+	}
 }
 
 float ATownGameMode::GetBidStep(float Bid)
@@ -160,10 +184,100 @@ TArray<FTownShopLine> ATownGameMode::GetAuctionLines() const
 	return Lines;
 }
 
-void ATownGameMode::CallAuction(const FString& Words, float Wait)
+FString ATownGameMode::GetFigurePart(float Figure)
+{
+	const int32 Whole = FMath::RoundToInt32(Figure);
+
+	return (Whole >= TownAuctionRules::LeastSpoken && Whole <= TownAuctionRules::MostSpoken) ? FString::Printf(TEXT("num_%d"), Whole) : FString();
+}
+
+USoundBase* ATownGameMode::GetAuctionSound(const FString& Part)
+{
+	if (Part.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	const FName Key(*Part);
+
+	if (const TObjectPtr<USoundBase>* Known = AuctionSounds.Find(Key))
+	{
+		return Known->Get();
+	}
+
+	// (asked for once: a part that is not there is not looked for again)
+	USoundBase* Sound = LoadObject<USoundBase>(nullptr, *FString::Printf(TEXT("/Game/Town/Voices/block_square/bid_%s.bid_%s"), *Part, *Part), nullptr, LOAD_NoWarn | LOAD_Quiet);
+
+	AuctionSounds.Add(Key, Sound);
+
+	return Sound;
+}
+
+void ATownGameMode::SayAuction(const TArray<FString>& Parts)
+{
+	// whatever he was saying, he stops
+	if (CallVoice)
+	{
+		CallVoice->FadeOut(0.08f, 0.0f);
+		CallVoice = nullptr;
+	}
+
+	AuctionParts.Reset();
+	AuctionPart = 0;
+	AuctionPartLeft = 0.0f;
+
+	for (const FString& Part : Parts)
+	{
+		if (!GetAuctionSound(Part))
+		{
+			UE_LOG(LogTownAuction, Log, TEXT("Auction: not said, for want of the part \"%s\""), *Part);
+			return;
+		}
+	}
+
+	AuctionParts = Parts;
+}
+
+void ATownGameMode::UpdateAuctionVoice(float DeltaTime)
+{
+	AuctionPartLeft = FMath::Max(0.0f, AuctionPartLeft - DeltaTime);
+
+	if (AuctionPartLeft > 0.0f || !AuctionParts.IsValidIndex(AuctionPart))
+	{
+		return;
+	}
+
+	USoundBase* Sound = GetAuctionSound(AuctionParts[AuctionPart]);
+
+	++AuctionPart;
+
+	if (Sound)
+	{
+		CallVoice = UGameplayStatics::SpawnSound2D(this, Sound, IsTalking() ? 0.25f : 0.9f);
+
+		// each runs into the next as a caller's words do: the last of one is under the first of the other
+		AuctionPartLeft = FMath::Max(0.1f, Sound->GetDuration() - TownAuctionRules::RunsOn);
+	}
+}
+
+void ATownGameMode::CallAuction(const FString& Words, float Wait, const TArray<FString>& Parts)
 {
 	Auction.Called = Words;
-	Auction.Wait = Wait;
+
+	SayAuction(Parts);
+
+	// he is not hurried through what he has to say: the wait is at least as long as the saying of it, and a breath
+	float Saying = 0.0f;
+
+	for (const FString& Part : AuctionParts)
+	{
+		if (const USoundBase* Sound = GetAuctionSound(Part))
+		{
+			Saying += FMath::Max(0.1f, Sound->GetDuration() - TownAuctionRules::RunsOn);
+		}
+	}
+
+	Auction.Wait = FMath::Max(Wait, Saying + 0.35f);
 
 	AuctionCall.Speaker = TEXT("Caller Strand");
 	AuctionCall.Words = Words;
@@ -239,8 +353,19 @@ bool ATownGameMode::BeginAuction(int32 Line)
 		CallVoice = nullptr;
 	}
 
+	// (said without the name: there are more names than can be recorded)
+	TArray<FString> Parts;
+
+	if (Auction.Lot >= 1 && Auction.Lot <= 12)
+	{
+		Parts.Add(FString::Printf(TEXT("lot_%d"), Auction.Lot));
+	}
+
+	Parts.Add(TEXT("who_opens"));
+	Parts.Add(GetFigurePart(Auction.Open));
+
 	CallAuction(Auction.Lot > 0 ? FString::Printf(TEXT("Lot %d. %s. Who opens at %.0f litres?"), Auction.Lot, *Who, Auction.Open) : FString::Printf(TEXT("%s. Who opens at %.0f litres?"), *Who, Auction.Open),
-		TownAuctionRules::OpenWait);
+		TownAuctionRules::OpenWait, Parts);
 
 	return true;
 }
@@ -274,7 +399,7 @@ bool ATownGameMode::PlaceBid(int32 Option)
 
 	ShopChoice = 0;
 
-	CallAuction(FString::Printf(TEXT("%.0f, at the table."), Auction.Bid), TownAuctionRules::AnswerWait);
+	CallAuction(FString::Printf(TEXT("%.0f, at the table."), Auction.Bid), TownAuctionRules::AnswerWait, { GetFigurePart(Auction.Bid), TEXT("at_the_table") });
 
 	return true;
 }
@@ -341,7 +466,8 @@ void ATownGameMode::UpdateAuction(float DeltaTime)
 		Auction.Leader = Bids + 1;
 		Auction.Count = 0;
 
-		CallAuction(FString::Printf(TEXT("%.0f, %s.%s"), Auction.Bid, *Auction.Rivals[Bids].Name, bOverThePlayer ? TEXT(" Against you at the table.") : TEXT(" Any more?")), TownAuctionRules::BidWait);
+		CallAuction(FString::Printf(TEXT("%.0f, %s.%s"), Auction.Bid, *Auction.Rivals[Bids].Name, bOverThePlayer ? TEXT(" Against you at the table.") : TEXT(" Any more?")), TownAuctionRules::BidWait,
+			{ GetFigurePart(Auction.Bid), TownAuctionRules::GetHousePart(Auction.Rivals[Bids].Name), bOverThePlayer ? TEXT("against_you") : TEXT("any_more") });
 
 		return;
 	}
@@ -350,11 +476,13 @@ void ATownGameMode::UpdateAuction(float DeltaTime)
 
 	if (Auction.Count == 1)
 	{
-		CallAuction(Auction.Leader == INDEX_NONE ? FString::Printf(TEXT("Nobody at %.0f? Once."), Auction.Open) : FString::Printf(TEXT("Going once, at %.0f."), Auction.Bid), TownAuctionRules::GoingWait);
+		CallAuction(Auction.Leader == INDEX_NONE ? FString::Printf(TEXT("Nobody at %.0f? Once."), Auction.Open) : FString::Printf(TEXT("Going once, at %.0f."), Auction.Bid), TownAuctionRules::GoingWait,
+			Auction.Leader == INDEX_NONE ? TArray<FString>({ TEXT("nobody_at"), GetFigurePart(Auction.Open), TEXT("once") }) : TArray<FString>({ TEXT("going_once"), GetFigurePart(Auction.Bid) }));
 	}
 	else if (Auction.Count == 2)
 	{
-		CallAuction(Auction.Leader == INDEX_NONE ? FString(TEXT("Twice.")) : FString::Printf(TEXT("Going twice, at %.0f."), Auction.Bid), TownAuctionRules::GoingWait);
+		CallAuction(Auction.Leader == INDEX_NONE ? FString(TEXT("Twice.")) : FString::Printf(TEXT("Going twice, at %.0f."), Auction.Bid), TownAuctionRules::GoingWait,
+			Auction.Leader == INDEX_NONE ? TArray<FString>({ TEXT("twice") }) : TArray<FString>({ TEXT("going_twice"), GetFigurePart(Auction.Bid) }));
 	}
 	else
 	{
@@ -379,6 +507,8 @@ void ATownGameMode::EndAuction()
 
 	if (Done.Leader == INDEX_NONE)
 	{
+		SayAuction({ TEXT("no_bid") });
+
 		ShopSaid = FString::Printf(TEXT("No bid. %s stays on the book, and can be put up again."), *Who);
 
 		return;
@@ -388,6 +518,9 @@ void ATownGameMode::EndAuction()
 	{
 		It->Cheer(0.12f, 1.2f);
 	}
+
+	// the hammer, and who to
+	SayAuction({ TEXT("sold"), GetFigurePart(Done.Bid), Done.Leader == 0 ? FString(TEXT("to_the_table")) : TownAuctionRules::GetHousePart(Done.Rivals[Done.Leader - 1].Name) });
 
 	if (Done.Leader == 0)
 	{

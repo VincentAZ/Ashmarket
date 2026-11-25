@@ -88,8 +88,8 @@
 
   {"label": "SquareWestBuses", "model": ["town_bus"], "yaw": 0, "high": 1,
    "along": "y", "from": 129.0, "to": 151.2, "face": -7.7, "side": "west"},
-  {"label": "SquareWestStacks", "model": ["town_container_red", "town_container_blue"], "yaw": 0, "high": 2,
-   "along": "y", "from": 151.5, "to": 166.3, "face": -7.7, "side": "west"},
+  {"label": "SquareWestStacks", "model": ["town_container_blue"], "yaw": 0, "high": 2,
+   "along": "y", "from": 158.0, "to": 166.3, "face": -7.7, "side": "west"},
   {"label": "SquareSouthBuses", "model": ["town_bus"], "yaw": 90, "high": 1,
    "along": "x", "from": 8.3, "to": 30.47, "face": 130.3, "side": "south"},
   {"label": "SquareNorthWest", "model": ["town_container_red"], "yaw": 90, "high": 2,
@@ -157,7 +157,7 @@
   {"model": "street_lamp_01", "x": 5.4, "y": 56.5, "note": "the old town's lamps: dead"}, {"model": "street_lamp_01", "x": 5.4, "y": 96.0}, {"model": "street_lamp_01", "x": -7.2, "y": 84.6},
 
   {"model": "town_container_red", "x": -14.5, "y": 59.75, "yaw": 90, "note": "what the alley ends at"},
-  {"model": "main_gantry", "x": 0.0, "y": 12.0, "yaw": 270, "note": "the gallows: the freeway gantry across the road, twelve metres inside the gate, its signs to the town"},
+  {"model": "main_gantry", "x": 0.0, "y": 12.0, "yaw": 270, "legs": true, "note": "the gallows: the freeway gantry across the road, twelve metres inside the gate, its signs to the town. 'legs': it is walked under between its two legs; as one box it shut the whole road (25 November)"},
   {"model": "floodlight_wagon", "x": -9.4, "y": 25.0, "yaw": 20, "note": "the Gate Yard's own light, west"},
   {"model": "floodlight_flatbed", "x": 9.2, "y": 28.5, "yaw": 100, "note": "and east"},
   {"model": "square_table", "x": 5.3, "y": 8.3, "yaw": 90, "note": "the tally desk, at the head of the foot lane"},

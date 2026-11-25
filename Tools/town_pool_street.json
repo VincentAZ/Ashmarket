@@ -14,7 +14,8 @@
  "arrivals": [
   {"name": "from_square", "x": 5.6, "y": 176.4, "facing": 90},
   {"name": "from_yard", "x": 78.0, "y": 199.4, "facing": 180},
-  {"name": "from_row", "x": 4.6, "y": 175.2, "facing": 90}
+  {"name": "from_row", "x": 4.6, "y": 175.2, "facing": 90},
+  {"name": "from_scrappers", "x": 108.6, "y": 176.2, "facing": 270}
  ],
 
  "errand": [
@@ -81,7 +82,7 @@
  "runs": [
   {"label": "HoardingLine", "model": "street_hoarding", "from": [47.0, 171.4], "to": [112.0, 171.4], "turn": 180},
   {"label": "SquareFence", "model": "modular_chainlink_fence", "from": [8.6, 171.75], "to": [38.5, 171.75]},
-  {"label": "ScrappersGate", "model": "street_gate", "from": [112.0, 174.0], "to": [112.0, 178.2], "turn": 180},
+  
   {"label": "PublicGate", "model": "street_gate", "from": [82.0, 199.2], "to": [82.0, 203.2], "turn": 180},
   {"label": "AlleyEnd", "model": "modular_chainlink_fence", "from": [75.6, 203.2], "to": [82.0, 203.2]}
  ],
@@ -207,7 +208,8 @@
  "doors": [
   {"prompt": "Go in at the fighters' door", "x": 95.0, "y": 179.4, "deed": "fight"},
   {"prompt": "Try the public gate", "x": 81.2, "y": 201.2, "shut": "Chained. It opens to the public on fight nights."},
-  {"prompt": "Try the Scrappers' gate", "x": 110.9, "y": 176.1, "shut": "Shut for the night. The yard beyond is dark."},
+  {"prompt": "In at the Scrappers' gate", "x": 111.6, "y": 176.1, "deed": "go", "to": "/Game/Town/Lvl_ScrappersYard", "arrive": "from_pool_street", "walk_through": true,
+   "mouth": {"x": [111.5, 112.4], "y": [174.2, 178.1]}},
   {"prompt": "Down the lane to Block Square", "x": 5.3, "y": 171.75, "deed": "go", "to": "/Game/Town/Lvl_BlockSquare", "arrive": "from_pool_street", "walk_through": true, "mouth": {"x": [2.0, 8.4], "y": [171.3, 172.4]}},
   {"prompt": "West, under the overpass, to Rotgut Row", "x": 2.2, "y": 175.2, "deed": "go", "to": "/Game/Town/Lvl_RotgutRow", "arrive": "from_pool_street", "walk_through": true,
    "mouth": {"x": [1.5, 2.5], "y": [172.8, 177.9]}}

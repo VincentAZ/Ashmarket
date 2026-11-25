@@ -138,6 +138,8 @@ bool FTownMainStreetTest::RunTest(const FString& Parameters)
 		StandAt(Came, 180.0f);
 		Notes->WalkTime = 0.0f;
 		Notes->Still = 0.0f;
+
+		GetTown()->bWaysHeld = true;
 	}, InStreet });
 
 	// east, south and west from the middle of the road until something is in the way: each time it is something that stands
@@ -162,6 +164,19 @@ bool FTownMainStreetTest::RunTest(const FString& Parameters)
 			for (const AGutFighter* Person : Town->GetPeople())
 			{
 				Nearest = FMath::Min(Nearest, Person ? FVector::Dist2D(Person->GetActorLocation(), Here) - 40.0f : Nearest);
+			}
+
+			// and so is a way out of the place, which is walked into, or a door that says why it is shut. (The ways are held
+			// while this walks at the edges: it would be in the next place otherwise, as it was on 25 November when the
+			// Velvet Tin and the Scrappers' yard were opened off the square and the street.)
+			GetTown()->bWaysHeld = true;
+
+			for (const FTownDoor& Door : Town->GetPlace()->Doors)
+			{
+				if ((Door.bWalkedThrough && Door.IsEntered(Here, 110.0f)) || FVector::Dist2D(Door.Place, Here) < 150.0f)
+				{
+					Nearest = 0.0f;
+				}
 			}
 
 			TestTrue(*FString::Printf(TEXT("Going %s, what stops the walker is something standing there (the nearest thing is %.0f cm off)"), WayNames[Way], Nearest),
@@ -200,6 +215,7 @@ bool FTownMainStreetTest::RunTest(const FString& Parameters)
 		const UTownPlaceData* Place = Town->GetPlace();
 
 		Town->GetWalker()->SetJogging(false);
+		Town->bWaysHeld = false;
 
 		if (!TestTrue(TEXT("Somebody walks a round"), Town->GetPeople().IsValidIndex(Notes->Rounder) && Town->GetPeople()[Notes->Rounder]))
 		{
@@ -298,11 +314,19 @@ bool FTownMainStreetTest::RunTest(const FString& Parameters)
 		Town->CloseShop();
 		Town->OpenShop(Needle);
 
-		TestTrue(TEXT("A Dog is told armor is sold from Butcher rank"), Town->GetShopSaid().Contains(TEXT("Butcher")));
-		TestFalse(TEXT("And cannot buy it, whatever it holds"), Town->BuyAtShop(0));
-		TestEqual(TEXT("And still holds what it held"), Run->Ladder.Water, 60.0f);
+		// (Until 25 November nobody under Butcher rank was sold any. Now anybody is: what the cage does not yet let them
+		// wear goes into the bag, to give to a fighter of theirs or to keep until they are let.)
+		const TArray<FGutBagItem> BagBefore = Run->Bag;
+		const float VestPrice = Town->GetShopLines().IsEmpty() ? 0.0f : Town->GetShopLines()[0].Price;
 
-		// a Butcher with sixty litres
+		TestTrue(TEXT("A Dog is told the cage lets armor in from Butcher rank, and that what is bought goes in the bag"), Town->GetShopSaid().Contains(TEXT("Butcher")) && Town->GetShopSaid().Contains(TEXT("your bag")));
+		TestTrue(TEXT("And is sold it all the same"), Town->BuyAtShop(0));
+		TestEqual(TEXT("It is paid for"), Run->Ladder.Water, 60.0f - VestPrice);
+		TestTrue(TEXT("And is in the bag, not on the Dog's back"), Run->Ladder.Armor.IsEmpty() && Run->Bag.Num() == BagBefore.Num() + 1);
+
+		// a Butcher with sixty litres, and the bag as it was
+		Run->Bag = BagBefore;
+		Run->Ladder.Water = 60.0f;
 		Run->Ladder.Rank = 2;
 		Run->LadderAtRungStart = Run->Ladder;
 

@@ -30,6 +30,12 @@
    "x": 0.5,
    "y": 133.2,
    "facing": 0
+  },
+  {
+   "name": "from_tin",
+   "x": -3.0,
+   "y": 154.6,
+   "facing": 90
   }
  ],
  "errand": [
@@ -38,7 +44,8 @@
   "To buy a fighter: Margin, at the table.",
   "To borrow or pay: Mother Ledger.",
   "Back to the Gut: north, up the lane.",
-  "Main Street: south, past the Warden."
+  "Main Street: south, past the Warden.",
+  "The Velvet Tin: west, between the buses and the stack."
  ],
  "surfaces": {
   "Road": {
@@ -88,6 +95,7 @@
    "z": 4.5,
    "surface": "Road"
   },
+  {"label": "TinLane", "x": [-24.0, -10.0], "y": [152.6, 156.6], "z": 4.5, "surface": "Yard"},
   {
    "label": "MainStreet",
    "x": [
@@ -193,18 +201,21 @@
   },
   {
    "label": "WestStacks",
+   "note": "the stack north of the mouth of Tin Lane: a red one stood south of it until the way west was opened (25 November)",
    "model": [
-    "town_container_red",
     "town_container_blue"
    ],
    "yaw": 0,
    "high": 2,
    "along": "y",
-   "from": 151.5,
+   "from": 158.0,
    "to": 166.3,
    "face": -7.7,
    "side": "west"
   },
+  {"label": "TinLaneSouth", "note": "Tin Lane, going west out of the square between the buses and the stack: its two sides and its far end, seen from the square and not walked", "model": ["town_container_blue", "town_container_red"], "yaw": 90, "high": 2, "along": "x", "from": -24.0, "to": -10.4, "face": 152.6, "side": "south"},
+  {"label": "TinLaneNorth", "model": ["town_container_red", "town_container_blue"], "yaw": 90, "high": 2, "along": "x", "from": -24.0, "to": -10.4, "face": 156.6, "side": "north"},
+  {"label": "TinLaneEnd", "model": ["town_container_red"], "yaw": 0, "high": 2, "along": "y", "from": 150.0, "to": 159.2, "face": -24.0, "side": "west"},
   {
    "label": "PoolStreetFar",
    "model": [
@@ -719,6 +730,7 @@
  ],
  "bulbs_about": "Candelas. The camera is set for the floodlit cage (see NightExposure in Tools/build_gut_content.py), so a bulb that is to light a wall three metres off wants some thousands.",
  "bulbs": [
+  {"x": -18.0, "y": 154.6, "up": 2.8, "candela": 1400, "reach": 9, "hung": true, "note": "a bulb hung over Tin Lane, part way along"},
   {
    "x": 23.6,
    "y": 162.4,
@@ -1226,8 +1238,29 @@
      129.7
     ]
    }
+  },
+  {
+   "prompt": "West along Tin Lane, to the Velvet Tin",
+   "x": -7.4,
+   "y": 154.6,
+   "deed": "go",
+   "to": "/Game/Town/Lvl_VelvetTin",
+   "arrive": "from_block_square",
+   "walk_through": true,
+   "mouth": {
+    "x": [
+     -7.9,
+     -7.0
+    ],
+    "y": [
+     152.6,
+     156.6
+    ]
+   }
   }
  ],
+ "bidding_about": "What Caller Strand says while a lot is bid for at the table, in the pieces it is recorded in: every figure a bid can come to (4 to 160), each buyer, each turn of phrase. A call has a figure in it, so none can be recorded whole: the game says the pieces end to end (ATownGameMode::SayAuction). Each is a recording bid_<name> beside his other calls. 25 November.",
+ "bidding": {"speaker": "Caller Strand", "clips": {"num_4": "Four!", "num_5": "Five!", "num_6": "Six!", "num_7": "Seven!", "num_8": "Eight!", "num_9": "Nine!", "num_10": "Ten!", "num_11": "Eleven!", "num_12": "Twelve!", "num_13": "Thirteen!", "num_14": "Fourteen!", "num_15": "Fifteen!", "num_16": "Sixteen!", "num_17": "Seventeen!", "num_18": "Eighteen!", "num_19": "Nineteen!", "num_20": "Twenty!", "num_21": "Twenty-one!", "num_22": "Twenty-two!", "num_23": "Twenty-three!", "num_24": "Twenty-four!", "num_25": "Twenty-five!", "num_26": "Twenty-six!", "num_27": "Twenty-seven!", "num_28": "Twenty-eight!", "num_29": "Twenty-nine!", "num_30": "Thirty!", "num_31": "Thirty-one!", "num_32": "Thirty-two!", "num_33": "Thirty-three!", "num_34": "Thirty-four!", "num_35": "Thirty-five!", "num_36": "Thirty-six!", "num_37": "Thirty-seven!", "num_38": "Thirty-eight!", "num_39": "Thirty-nine!", "num_40": "Forty!", "num_41": "Forty-one!", "num_42": "Forty-two!", "num_43": "Forty-three!", "num_44": "Forty-four!", "num_45": "Forty-five!", "num_46": "Forty-six!", "num_47": "Forty-seven!", "num_48": "Forty-eight!", "num_49": "Forty-nine!", "num_50": "Fifty!", "num_51": "Fifty-one!", "num_52": "Fifty-two!", "num_53": "Fifty-three!", "num_54": "Fifty-four!", "num_55": "Fifty-five!", "num_56": "Fifty-six!", "num_57": "Fifty-seven!", "num_58": "Fifty-eight!", "num_59": "Fifty-nine!", "num_60": "Sixty!", "num_61": "Sixty-one!", "num_62": "Sixty-two!", "num_63": "Sixty-three!", "num_64": "Sixty-four!", "num_65": "Sixty-five!", "num_66": "Sixty-six!", "num_67": "Sixty-seven!", "num_68": "Sixty-eight!", "num_69": "Sixty-nine!", "num_70": "Seventy!", "num_71": "Seventy-one!", "num_72": "Seventy-two!", "num_73": "Seventy-three!", "num_74": "Seventy-four!", "num_75": "Seventy-five!", "num_76": "Seventy-six!", "num_77": "Seventy-seven!", "num_78": "Seventy-eight!", "num_79": "Seventy-nine!", "num_80": "Eighty!", "num_81": "Eighty-one!", "num_82": "Eighty-two!", "num_83": "Eighty-three!", "num_84": "Eighty-four!", "num_85": "Eighty-five!", "num_86": "Eighty-six!", "num_87": "Eighty-seven!", "num_88": "Eighty-eight!", "num_89": "Eighty-nine!", "num_90": "Ninety!", "num_91": "Ninety-one!", "num_92": "Ninety-two!", "num_93": "Ninety-three!", "num_94": "Ninety-four!", "num_95": "Ninety-five!", "num_96": "Ninety-six!", "num_97": "Ninety-seven!", "num_98": "Ninety-eight!", "num_99": "Ninety-nine!", "num_100": "A hundred!", "num_101": "A hundred and one!", "num_102": "A hundred and two!", "num_103": "A hundred and three!", "num_104": "A hundred and four!", "num_105": "A hundred and five!", "num_106": "A hundred and six!", "num_107": "A hundred and seven!", "num_108": "A hundred and eight!", "num_109": "A hundred and nine!", "num_110": "A hundred and ten!", "num_111": "A hundred and eleven!", "num_112": "A hundred and twelve!", "num_113": "A hundred and thirteen!", "num_114": "A hundred and fourteen!", "num_115": "A hundred and fifteen!", "num_116": "A hundred and sixteen!", "num_117": "A hundred and seventeen!", "num_118": "A hundred and eighteen!", "num_119": "A hundred and nineteen!", "num_120": "A hundred and twenty!", "num_121": "A hundred and twenty-one!", "num_122": "A hundred and twenty-two!", "num_123": "A hundred and twenty-three!", "num_124": "A hundred and twenty-four!", "num_125": "A hundred and twenty-five!", "num_126": "A hundred and twenty-six!", "num_127": "A hundred and twenty-seven!", "num_128": "A hundred and twenty-eight!", "num_129": "A hundred and twenty-nine!", "num_130": "A hundred and thirty!", "num_131": "A hundred and thirty-one!", "num_132": "A hundred and thirty-two!", "num_133": "A hundred and thirty-three!", "num_134": "A hundred and thirty-four!", "num_135": "A hundred and thirty-five!", "num_136": "A hundred and thirty-six!", "num_137": "A hundred and thirty-seven!", "num_138": "A hundred and thirty-eight!", "num_139": "A hundred and thirty-nine!", "num_140": "A hundred and forty!", "num_141": "A hundred and forty-one!", "num_142": "A hundred and forty-two!", "num_143": "A hundred and forty-three!", "num_144": "A hundred and forty-four!", "num_145": "A hundred and forty-five!", "num_146": "A hundred and forty-six!", "num_147": "A hundred and forty-seven!", "num_148": "A hundred and forty-eight!", "num_149": "A hundred and forty-nine!", "num_150": "A hundred and fifty!", "num_151": "A hundred and fifty-one!", "num_152": "A hundred and fifty-two!", "num_153": "A hundred and fifty-three!", "num_154": "A hundred and fifty-four!", "num_155": "A hundred and fifty-five!", "num_156": "A hundred and fifty-six!", "num_157": "A hundred and fifty-seven!", "num_158": "A hundred and fifty-eight!", "num_159": "A hundred and fifty-nine!", "num_160": "A hundred and sixty!", "lot_1": "Lot one!", "lot_2": "Lot two!", "lot_3": "Lot three!", "lot_4": "Lot four!", "lot_5": "Lot five!", "lot_6": "Lot six!", "lot_7": "Lot seven!", "lot_8": "Lot eight!", "lot_9": "Lot nine!", "lot_10": "Lot ten!", "lot_11": "Lot eleven!", "lot_12": "Lot twelve!", "who_opens": "Who opens? Who starts me at", "at_the_table": "At the table!", "house_0": "Mr Rask, of the Gut!", "house_1": "The Velvet Tin!", "house_2": "The Pump office!", "house_3": "The Scrappers' guild!", "house_4": "The man at the rope!", "house_5": "The woman at the back!", "any_more": "Any more? Any more?", "against_you": "Against you, at the table.", "nobody_at": "Nobody? Nobody at", "once": "Once.", "twice": "Twice.", "going_once": "Going once, at", "going_twice": "Going twice, at", "sold": "Sold!", "to_the_table": "To the table. Mark it.", "no_bid": "No bid. Back on the book."}},
  "calls_about": "What Caller Strand calls from the Block, round and round. Nobody speaks it: there is no voice for it, so it is written up on the screen. 'stirs' is a lot knocked down, which gets something out of the crowd. Prices follow the numbers pass: 18 L and 6 L for each skill, before bidding. 'lot' is the lot a call is about, from its being put up to the clerk's writing it down: none of them is called once the player has bought that lot and led it away. 'sells' is the lot a call knocks down: it is walked off the Block, down the ramp, to the file kept in the Holding Yard. 'brings_up' walks every lot that is kept back up to its number.",
  "calls": [
   {

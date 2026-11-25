@@ -106,11 +106,16 @@ NEW_MEAT = _new_meat()
 # the bars of Rotgut Row. Each is made as the deck's mixes are (one preset's body and hair, another's skin, a face between
 # the two), so that nobody else in the town has their face: until now they wore the trial people's. Added after the deck
 # and the new meat have been drawn, so that neither lot is changed by them, and they are not put on the deck.
-TOWN = {"Rook": ("Walter", "Isaiah"), "Wynn": ("Celeste", "Etta"), "Mash": ("Tuya", "Zuri"), "Lottie": ("Grace", "Asha"), "Fen": ("Aoi", "Kelvin")}
+TOWN = {"Rook": ("Walter", "Isaiah"), "Wynn": ("Celeste", "Etta"), "Mash": ("Tuya", "Zuri"), "Lottie": ("Grace", "Asha"), "Fen": ("Aoi", "Kelvin"),
+        # the Wardens' third piece of work: the Captain, the Tin's owner, the Guildmaster, the man who tapped the line, his partner, and a crew boss
+        "Voss": ("Jelena", "Grace"), "Corazon": ("Sunita", "Ada"), "OkaforReyes": ("Victor", "Omari"), "Brandt": ("Mateo", "Trey"), "Maren": ("Aera", "Zuri"),
+        "CrewBoss": ("Cameron", "Mikel")}
 MIXES.update(TOWN)
 
 # a medic four days off the salt does not have Celeste's dyed bob: her hair is tied back
 GROOMING["Wynn"] = {"Hair": GROOMS + "Hair/WI_Hair_S_LowPonytail"}
+GROOMING["Voss"] = {"Hair": GROOMS + "Hair/WI_Hair_S_PulledBack"}
+GROOMING["Corazon"] = {"Hair": GROOMS + "Hair/WI_Hair_S_Updo"}
 
 # People dressed out of what Vincent has from Fab (2026-11-19; unpacked into Content/Outfits by Tools/unpack_fab_outfits.py,
 # and never in the repository). Each is (the preset it is, the wardrobe items it wears): one whole outfit, or pieces worn
@@ -183,6 +188,12 @@ DRESSED = {
     "Mash": (None, [SWEATER, JEANS, BOOTS]),                   # who distils, and keeps Detention
     "Lottie": (None, [SURVIVOR]),                              # Big Lottie, who keeps The Sump
     "Fen": (None, [HOODIE, JEANS_SLIM, HIGHTOPS]),             # the fence, at Tarp Nine
+    "Voss": (None, [SOLDIER]),                                 # Captain Voss, of the Wardens
+    "Corazon": (None, [WRAPPED]),                              # Madam Corazon, who owns the Velvet Tin
+    "OkaforReyes": (None, [SWEATER, CARGO, BOOTS]),            # the Scrappers' Guildmaster
+    "Brandt": (None, [TEE, JEANS, BOOTS]),                     # Ilya Brandt, who tapped the Pump's line
+    "Maren": (None, [TEE_LONG, JEANS_ANKLE, FLATS]),           # Maren Brandt
+    "CrewBoss": (None, [HOODIE, CARGO, BOOTS]),                # who has the crew that is hiding him
 
     # the first people the wardrobe was tried on, kept for the pictures of them
     "Try01": ("Vivian", [SCAVENGER]),

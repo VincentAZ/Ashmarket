@@ -47,7 +47,7 @@
      {"id": "w2_skim_clean", "words": "Twenty-one, then. Short weeks happen. Forty-five for the walk.",
       "does": "water+45 st.wardens+10 w2=100", "log": "Rook took 21 L for the Row's cut and paid 45 L for the walk."},
 
-     {"id": "w2_after", "opens": true, "when": "w2>=100 st.wardens>=0", "words": "Captain Voss wants a man brought in from the Bones. That is his to ask, not mine, and he does his asking at a back table in the Velvet Tin. Not tonight."},
+     {"id": "w2_after", "opens": true, "when": "w2>=100 st.wardens>=0 !w3", "words": "Captain Voss wants a man brought in. That is the Captain's to ask, not mine, and the Captain does the asking at a back table in the Velvet Tin: west out of Block Square, through the red curtain."},
      {"id": "w2_cold", "opens": true, "when": "w2>=100 st.wardens<0", "words": "You counted my water short to my face. The lane is that way, and the street is the other."}
     ],
     "Lane Warden": [

@@ -70,6 +70,12 @@ def lines_of(listed):
         if call.get("words") and call.get("speaker") and "{" not in call["words"]:
             found.append(("{}/{}".format(place, call["speaker"]), "call_{:02d}".format(index), call["words"]))
 
+    # what a caller says while a lot is bid for, in the pieces it is said in: each a recording of its own
+    bidding = listed.get("bidding") or {}
+
+    for key, words in (bidding.get("clips") or {}).items():
+        found.append(("{}/{}".format(place, bidding["speaker"]), "bid_" + key, words))
+
     return place, found
 
 

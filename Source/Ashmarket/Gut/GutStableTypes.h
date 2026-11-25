@@ -43,6 +43,14 @@ struct FGutStableFighter
 	UPROPERTY(BlueprintReadOnly, Category="Stable")
 	TObjectPtr<UGutWeaponData> Weapon;
 
+	/**
+	 *  What it has been given to wear, by the names of the pieces. Armor is bought at Needle's by anybody who holds the
+	 *  water, carried in the bag and given to a fighter (25 November: "what if I want to buy armor for my slaves?"). The
+	 *  cage lets it in from the rank it is sold at, up: in a fight under that it stays off (AGutGameMode::IsArmorLetIn).
+	 */
+	UPROPERTY()
+	TArray<FName> Armor;
+
 	/** The three things it can be trained in, each from 0 to the most a fighter can be taught */
 	UPROPERTY(BlueprintReadOnly, Category="Stable")
 	int32 Strength = 0;
@@ -140,6 +148,15 @@ struct FGutStableState
 
 	UPROPERTY(BlueprintReadOnly, Category="Stable")
 	float Debt = 0.0f;
+
+	/**
+	 *  What has happened to the yard that its owner has not been told: somebody on a wage who went unpaid and walked, a
+	 *  day written down as owed. Said when the owner next stands in the yard, and then forgotten. Until 25 November
+	 *  nothing said it: a fighter died, the day could not be paid, the other walked, and the yard was simply empty ("I
+	 *  had two fighters in the yard - one died in a fight - now there is no one in the yard").
+	 */
+	UPROPERTY()
+	FString News;
 
 	/** Which day it is, from one. Training, a fight and waiting each take one. */
 	UPROPERTY(BlueprintReadOnly, Category="Stable")
@@ -297,6 +314,9 @@ namespace GutStableLines
 		DenyTag = 17,
 		Sell = 18,
 
+		/** Everything the fighter has on, back into the bag */
+		TakeArmor = 23,
+
 		/** Out of the yard gate to the street, with this one walking behind */
 		WalkOut = 19,
 
@@ -309,6 +329,9 @@ namespace GutStableLines
 
 		/** Plus the place on today's list at the Block */
 		Buy = 200,
+
+		/** Plus which of the pieces of armor in the bag: put on the fighter */
+		GiveArmor = 300,
 
 		/** Plus the place on today's bill */
 		TakeFight = 300,

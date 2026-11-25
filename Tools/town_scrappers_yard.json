@@ -1,0 +1,129 @@
+{
+ "about": "The Scrappers' yard, its first corner (for-review/design/map-of-ashmarket.md, 'The Scrappers' yard'): the weighbridge just inside the Pool Street gate, the Guildmaster's office in an old truck cab, the vote chalked on a freeway exit sign behind it, and a crew's sleeping place in the north-east corner. Read by Tools/build_town_level.py (GUT_TOWN_LIST=$PWD/Tools/town_scrappers_yard.json Tools/build_town_level.sh). Places are in the map's own metres (x east, y north). BUILT SHORT: the map's yard is 110 by 150 m under the fallen end of the overpass, with five sorting bays and the Skip; this is 26 by 38 m of it. The cab office, the scrap heaps and the sign were made in Mixar for this place (ArtSource/mixar/yard_*). Nothing lights it that is not seen to burn.",
+
+ "name": "The Scrappers' Yard",
+ "level": "/Game/Town/Lvl_ScrappersYard",
+ "data": "/Game/Town/DA_Town_ScrappersYard",
+ "origin": {"x": 95.0, "y": 208.0, "z": 3.0},
+
+ "street_height": 5.25,
+ "alley": {"from_y": 1000.0, "rise_per_metre": 0.0},
+ "sky": {"x": 125.0, "y": 195.0, "z": 2.0, "size": 800},
+
+ "start": {"x": 114.4, "y": 176.2, "facing": 90},
+ "arrivals": [
+  {"name": "from_pool_street", "x": 114.4, "y": 176.2, "facing": 90}
+ ],
+
+ "beds": ["market"],
+
+ "errand": [
+  "THE SCRAPPERS' YARD",
+  "The Guild's: everything in or out crosses the weighbridge.",
+  "Guildmaster Okafor-Reyes, at the cab on the weighbridge.",
+  "A crew sleeps under the tarp in the far corner.",
+  "The gate, south-west: Pool Street."
+ ],
+
+ "surfaces": {
+  "Yard": {"from": "dirty_concrete", "size": 300},
+  "Earth": {"from": "dry_ground_01", "size": 360},
+  "Sheet": {"from": "rusty_corrugated_iron", "size": 200},
+  "Blockwork": {"from": "concrete_block_wall", "size": 200},
+  "Plate": {"existing": "MI_Gut_Plate"}
+ },
+
+ "ground": [
+  {"label": "Beyond", "x": [40.0, 220.0], "y": [110.0, 290.0], "z": 5.2, "surface": "Earth"},
+  {"label": "YardFloor", "x": [111.0, 141.0], "y": [173.0, 214.0], "z": 5.25, "surface": "Yard"},
+  {"label": "Weighbridge", "x": [116.0, 134.0], "y": [193.6, 196.4], "z": 5.3, "surface": "Plate"}
+ ],
+
+ "walk": [
+  {"x": [112.3, 138.0], "y": [174.4, 212.0]}
+ ],
+
+ "walls": [
+  {"label": "SouthSheet", "x": [111.6, 139.0], "y": [173.7, 174.1], "height": 3.2, "surface": "Sheet", "stained": ["north"]},
+  {"label": "WestSheet", "x": [111.6, 112.0], "y": [178.2, 213.0], "height": 3.2, "surface": "Sheet", "stained": ["east"]},
+  {"label": "NorthSheet", "x": [111.6, 139.0], "y": [212.3, 212.7], "height": 3.2, "surface": "Sheet", "stained": ["south"]},
+  {"label": "GatePier", "x": [111.4, 112.0], "y": [173.4, 174.4], "height": 3.2, "surface": "Blockwork"}
+ ],
+
+ "rows": [
+  {"label": "EastStacks", "model": ["town_container_blue", "town_container_red"], "yaw": 180, "high": 2, "along": "y", "from": 174.0, "to": 212.3, "face": 138.3, "side": "east"}
+ ],
+
+ "runs": [],
+
+ "things": [
+  {"model": "yard_cab_office", "x": 127.2, "y": 198.6, "yaw": 90, "scale": 1.2, "note": "the guild weigh-house: the scale office in an old cab"},
+  {"model": "yard_exit_sign", "x": 127.2, "y": 202.6, "yaw": 90, "scale": 1.24, "note": "the freeway exit sign the vote is chalked on"},
+  {"model": "yard_scrap_heap", "x": 117.0, "y": 209.6, "yaw": 90, "note": "bay A: plate"},
+  {"model": "yard_scrap_heap", "x": 123.6, "y": 209.6, "yaw": 90},
+  {"model": "yard_scrap_heap", "x": 135.6, "y": 184.0, "yaw": 180},
+  {"model": "yard_scrap_heap", "x": 114.8, "y": 186.4, "yaw": 0},
+  {"model": "row_tarp_stall", "x": 133.4, "y": 208.6, "yaw": 90, "note": "the crew's sleeping place"},
+
+  {"model": "main_fire_drum", "x": 131.4, "y": 204.3, "yaw": 40, "light": {"candela": 2600, "reach": 10, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "shadows": true, "note": "the crew's fire"}},
+  {"model": "main_fire_drum", "x": 120.6, "y": 191.2, "yaw": 100, "light": {"candela": 2200, "reach": 9, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "note": "a fire by the weighbridge"}},
+  {"model": "main_lamp_mast", "x": 136.6, "y": 197.6, "yaw": 270, "light": {"kind": "spot", "candela": 6000, "reach": 18, "cone": 60, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "the work lamp over the weighbridge"}},
+  {"model": "street_lamp_01", "x": 113.6, "y": 180.4, "lamp": true},
+
+  {"model": "main_fire_drum", "x": 120.4, "y": 205.6, "yaw": 70, "light": {"candela": 2400, "reach": 10, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "note": "a fire at the plate bay"}},
+  {"model": "old_tyre", "x": 121.9, "y": 206.6},
+  {"model": "old_tyre", "x": 122.5, "y": 205.9},
+  {"model": "Barrel_01", "x": 113.2, "y": 196.5},
+  {"model": "barrel_03", "x": 113.3, "y": 197.5},
+  {"model": "wooden_crate_02", "x": 136.6, "y": 191.0, "yaw": 30},
+  {"model": "wooden_crate_02", "x": 130.2, "y": 198.2, "yaw": 70},
+  {"model": "metal_jerrycan", "x": 129.3, "y": 197.6, "yaw": 10},
+  {"model": "plastic_crate_02", "x": 118.6, "y": 199.8, "yaw": 40},
+  {"model": "metal_stool_02", "x": 132.6, "y": 203.0, "yaw": 0},
+  {"model": "propane_tank", "x": 137.0, "y": 203.0},
+  {"model": "can_rusted", "x": 124.4, "y": 187.6, "yaw": 30},
+  {"model": "trashbag", "x": 113.4, "y": 207.0, "yaw": 0}
+ ],
+
+ "pictures": [
+  {"picture": "vote_chalk_by_hand", "x": 127.2, "y": 201.75, "faces": "south", "up": 2.78, "tall": 1.4, "deep": 0.3, "note": "the yearly vote, chalked on the sign"}
+ ],
+ "pasted": [],
+
+ "bulbs": [
+  {"x": 127.5, "y": 197.0, "up": 2.0, "candela": 1500, "reach": 8, "hung": true, "shadows": true, "note": "at the cab's door"}
+ ],
+
+ "bystanders": [
+  {"label": "TheCrew", "count": 4, "x": [129.8, 133.2], "y": [202.6, 206.0], "apart": 1.1, "look": [131.4, 204.3]},
+  {"label": "AtThePlate", "count": 2, "x": [119.2, 122.0], "y": [189.6, 192.6], "apart": 1.1, "look": [120.6, 191.2]}
+ ],
+
+ "people": [
+  {
+   "name": "Guildmaster Okafor-Reyes", "prompt": "Talk to the Guildmaster", "body": "OkaforReyes", "cloth": [0.06, 0.055, 0.05],
+   "x": 126.2, "y": 196.6, "facing": 180, "stand": "stand",
+   "lines": [
+    {"id": "plate", "words": "Guildmaster. Not boss. Everything that comes into this yard crosses that plate, and what the plate says is what it weighs. If you have nothing to weigh, you have nothing to sell me."}
+   ]
+  },
+  {
+   "name": "Pike", "prompt": "Talk to the crew boss", "body": "CrewBoss", "cloth": [0.055, 0.06, 0.05],
+   "x": 132.9, "y": 206.5, "facing": 215, "stand": "crossed",
+   "lines": [
+    {"id": "crew", "words": "Pike's crew. We pull plate out of the Bones and we sleep where we pull it to. If you are not weighing something, you are standing where I look."}
+   ]
+  }
+ ],
+
+ "doors": [
+  {"prompt": "Out of the gate, to Pool Street", "x": 112.4, "y": 176.2, "deed": "go", "to": "/Game/Town/Lvl_PoolStreet", "arrive": "from_scrappers", "walk_through": true,
+   "mouth": {"x": [111.9, 112.9], "y": [174.4, 178.15]}},
+  {"prompt": "Look in at the cab", "x": 127.9, "y": 196.9, "shut": "A scale's dial, a bundle of tickets on a spike, and a necklace of car keys hung on the mirror: sixty of them, more or less."}
+ ],
+
+ "finds": [
+  {"good": "scrap", "x": 116.4, "y": 203.4, "facing": 60},
+  {"good": "scrap", "x": 135.9, "y": 189.2, "facing": 190}
+ ]
+}

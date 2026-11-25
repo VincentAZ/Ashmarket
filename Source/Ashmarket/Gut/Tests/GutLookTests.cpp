@@ -792,16 +792,27 @@ bool FGutFitShieldTest::RunTest(const FString& Parameters)
 			return;
 		}
 
-		if (!Butcher->Body.IsNull())
+		// -GutFitBody=Ada wears it on somebody else, unarmored: a woman's arm is not the Butcher's
+		FString Other;
+
+		if (FParse::Value(FCommandLine::Get(), TEXT("GutFitBody="), Other))
 		{
-			Fight.Player->SetBody(Butcher->Body, Fight.Player->GetBodyRetargeter());
+			Fight.Player->SetBody(TSoftClassPtr<AActor>(FSoftObjectPath(FString::Printf(TEXT("/Game/Gut/Art/MetaHumans/%s/BP_%s.BP_%s_C"), *Other, *Other, *Other))), Fight.Player->GetBodyRetargeter());
+			Fight.Player->ClearArmor();
 		}
-
-		Fight.Player->ClearArmor();
-
-		for (UGutArmorData* Piece : Butcher->Armor)
+		else
 		{
-			Fight.Player->WearArmor(Piece);
+			if (!Butcher->Body.IsNull())
+			{
+				Fight.Player->SetBody(Butcher->Body, Fight.Player->GetBodyRetargeter());
+			}
+
+			Fight.Player->ClearArmor();
+
+			for (UGutArmorData* Piece : Butcher->Armor)
+			{
+				Fight.Player->WearArmor(Piece);
+			}
 		}
 
 		Fight.Player->EquipWeapon(Butcher->Weapon);

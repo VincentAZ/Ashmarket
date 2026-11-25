@@ -69,6 +69,11 @@
   "first_said": "Wagon lane. Nothing on wheels comes up after dark, so I am guarding a hole. Foot lane is the other side of the barrier.",
   "generated_voice_id": "6ChqpftjCEEiCcjg3e4F"
  },
+ "Main Street/Maren Brandt": {
+  "description": "A woman of about thirty, just over a fever, standing under a gallows at night where her husband hangs. Hollow, level, emptied out: she is not crying and not shouting, and that is worse. A thin, hoarse voice. Plain American speech. Not an actress and not a narrator: close, flat, real.",
+  "first_said": "That is Ilya. Three days, they leave him up. I had the fever, and he had the wrench. I have twenty litres in the world, and all of it is on the board at the Last Call, against your name.",
+  "generated_voice_id": "od1ffJEgWXFqACsILmHN"
+ },
  "Main Street/Needle": {
   "description": "A woman in her late thirties who fits armor at a workshop counter in a desert shanty town. Low for a woman, level and sharp, sizing you up while she talks, and she says a thing once. Dry, a little smoky, practical, faintly scornful of anybody who has not been hit yet. Plain working American speech. Not a narrator: close, matter-of-fact, real.",
   "first_said": "Arms up. Turn. You stand like somebody who gets hit on the left. We cut ring armor for the Gut: tire rubber for what is swung at you, road sign for what is edged. Water in hand. Nothing here goes on a slate. Rubber takes the weight out of a club or a chain. Sign plate turns an edge. Nothing does both. Find out who you are fighting, and then find out what they carry.",
@@ -147,5 +152,30 @@
   "description": "A woman of thirty-eight who distils rough liquor and runs a bar out of an old school bus in a desert shanty town. Hoarse, flat and practical, with a smoker's roughness; she has not slept properly in years and misses nothing. Dry humour, no warmth wasted. Plain working American speech with a trace of Mexican Spanish. Not a narrator: close, tired, real.",
   "first_said": "Detention. Everything anybody drinks in this town came out of my tubs, the Last Call's included, whatever she tells you it is. Sit down or move along. The bus is full. Twelve, on the counter. Detention pays on the night. I cannot afford a Warden who does not like me. You will find Tarp Nine lighter than you want it. That was not Fen's doing. Who robbed Fen? I see the whole west lip from this bus, and I do not sleep. Boots, not sandals. A vest with plates in it. Heavy, and breathing like the walk up the cut was the most he had done all week. Whoever stands at your gate with nothing to do.",
   "generated_voice_id": "ndqYaFovuLx8dg086ugx"
+ },
+ "The Scrappers' Yard/Guildmaster Okafor-Reyes": {
+  "description": "A thick-set man of fifty-eight, the elected head of a salvage guild in a desert shanty town, once a merchant who went broke. A deep, slow, careful voice, a little hoarse; fair-minded and tired of having to be; a trace of Nigerian English in plain speech. He weighs every word as he weighs scrap. Not an announcer and not a narrator: close, grave, real.",
+  "first_said": "Guildmaster. Not boss. Everything that comes into this yard crosses that plate, and what the plate says is what it weighs. If you have nothing to weigh, you have nothing to sell me. Brandt. I know the name. The Guild does not hand its people to the gate. The Guild also has a crew that has not pulled a load in three days, because it is sitting on a wanted man. Forty litres, for the crew's trouble, and I do not see who walks out of my gate. His partner had the fever. A litre of clean costs what it costs, and he fits the pipe it runs in. You would have done it, and so would I. North-east corner, behind the tarp. Tell Pike I said so. And tell nobody else, ever, what forty litres bought you here. You would do that. To sixty families, for one fitter. North-east corner, behind the tarp. The Guild keeps a ledger too, and you have just gone in it.",
+  "generated_voice_id": "qv6mCQ73S3pvQV1oXazN"
+ },
+ "The Scrappers' Yard/Ilya Brandt": {
+  "description": "A pipe fitter of about thirty who has been hiding for three days from a hanging. A quiet, worn-out, steady voice: he has thought it through and is past pleading, and says what he did plainly. A faint Eastern European accent. Decent, frightened, very tired. Not an actor and not a narrator: close, low, real.",
+  "first_said": "Fitter, it says on the card. Six for the skill. The Pump's man looked me over and went away to ask what a rope is worth against a pair of hands. I do not know which answer I am hoping for. You are from the gate. Then listen first. Maren was burning up, three days. The Pump wanted eleven litres for two of clean, and I fit their pipes: I know what runs in the east branch. So I took two litres out of forty thousand. That is the hanging. Tell Maren it was quick. It will not be, but tell her. Why? No. I am not asking. There is a drain under the wall that nobody is paid to watch. If you ever need it opened, once, find me. A collar. For two litres of water. It is longer than the rope, I will say that for it.",
+  "generated_voice_id": "Ct27k5wqJ1w58Go602mZ"
+ },
+ "The Scrappers' Yard/Pike": {
+  "description": "A salvage crew boss in his thirties, short of sleep and short of patience, standing guard over his sleeping crew at night. A hard, flat, clipped voice, low so as not to wake anybody, with a threat left unsaid in it. Plain working American speech. Not a narrator: close, curt, real.",
+  "first_said": "Pike's crew. We pull plate out of the Bones and we sleep where we pull it to. If you are not weighing something, you are standing where I look. Nobody here by that name. Look all you like. My people are asleep, and they wake up badly. So the Guildmaster said. Then take him, and get out from where I look.",
+  "generated_voice_id": "m607Lf4oEr3u7IQDg5As"
+ },
+ "The Velvet Tin/Captain Voss": {
+  "description": "A woman of forty-seven who commands the gate guards of a desert shanty town and has a price for every part of the job. A flat, tired, low voice, dry as paper, with a rasp from old smoke; she says every price out loud and never raises it. A former raider: no warmth, no anger, only arithmetic. Plain American speech. Not a villain in a film and not a narrator: close, quiet, transactional, real.",
+  "first_said": "The Toll. That is what they call me past the gate, and they are right to. Everything on that wall has a price, and I know all of them. You have nothing I am selling tonight. Rook says you count straight. Ilya Brandt. A Pump fitter. He tapped the east branch and ran, and Law Five says what happens next. A Guild crew has him in their yard off Pool Street, and the Guild will tell you it has never heard the name. Bring him to the gate. Fifty litres. I do not care how. I did not ask. The price is the same either way. To the gate, not here. Rook takes him off you and counts out the fifty. Corazon does not care for that sort of business in her court, and I pay her to be let sit in it. The gate. Not this table. He was up before the bell. The Pump has stopped asking, which is what the Pump pays me for. You will be asked for again. Fifty litres of mine walked out of this town on its own legs, and your name is on it. I price everything. I have priced that.",
+  "generated_voice_id": "xtMm7wKfOHxFZJGYuUUq"
+ },
+ "The Velvet Tin/Madam Corazon": {
+  "description": "A woman of forty-nine who owns the one house in a desert shanty town where nobody is owned. Solid, unhurried, warm on the surface and iron under it; a rich low voice with a Mexican Spanish accent, amused, missing nothing. She calls everybody corazon. Not an actress and not a narrator: close, easy, real.",
+  "first_said": "Corazon. Everybody is corazon here, so you may as well start. The house is full tonight, and nobody inside it is here because of a collar. That is the whole of what I sell. The Captain. Twenty litres a week of mine goes across that table, and I smile when it goes. If the Captain has work for you, take it at the table and do it somewhere else.",
+  "generated_voice_id": "6lavnvuZOReT8EbijUPM"
  }
 }

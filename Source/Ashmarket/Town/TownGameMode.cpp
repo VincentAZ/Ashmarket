@@ -384,6 +384,7 @@ void ATownGameMode::Tick(float DeltaTime)
 
 	UpdateCalls(DeltaTime);
 	UpdateAuction(DeltaTime);
+	UpdateAuctionVoice(DeltaTime);
 	UpdateSoundsDue();
 	UpdateLed(DeltaTime);
 	UpdateBeats(DeltaTime);
@@ -540,7 +541,7 @@ void ATownGameMode::Tick(float DeltaTime)
 		{
 			for (const FTownDoor& Door : PlaceData->Doors)
 			{
-				if (Door.bWalkedThrough && Door.Deed == ETownDeed::Go && Holds(Door.When) && Door.IsEntered(Walker->GetActorLocation(), WayReach))
+				if (!bWaysHeld && Door.bWalkedThrough && Door.Deed == ETownDeed::Go && Holds(Door.When) && Door.IsEntered(Walker->GetActorLocation(), WayReach))
 				{
 					const FTownDoor Through = Door;
 
@@ -961,6 +962,15 @@ AGutFighter* ATownGameMode::StandOwned(const FGutStableFighter& Fighter, const F
 	Body->SetCollared(Fighter.bOwned);
 	Body->SetAtEase(true);
 	Body->GetCharacterMovement()->DisableMovement();
+
+	// what it has been given to wear, on it
+	for (const FName& Name : Fighter.Armor)
+	{
+		if (UGutArmorData* Piece = FindArmor(Name))
+		{
+			Body->WearArmor(Piece);
+		}
+	}
 
 	return Body;
 }
@@ -1583,8 +1593,10 @@ void ATownGameMode::FindReach(const AGutFighter* Walker)
 	{
 		const float Distance = FVector::Dist2D(Here, PlaceData->Doors[i].Place);
 
-		// an open way is walked through, not used
-		if (Distance < Nearest && !PlaceData->Doors[i].bWalkedThrough)
+		// an open way is walked through, not used; and something that is only there for a reason is not there without it
+		const bool bThere = !PlaceData->Doors[i].Shut.IsEmpty() || Holds(PlaceData->Doors[i].When);
+
+		if (Distance < Nearest && !PlaceData->Doors[i].bWalkedThrough && bThere)
 		{
 			Nearest = Distance;
 			DoorInReach = i;
@@ -1624,10 +1636,26 @@ void ATownGameMode::Interact()
 	{
 		const FTownDoor& Door = PlaceData->Doors[DoorInReach];
 
-		if (Door.Deed == ETownDeed::None || !Holds(Door.When))
+		if (!Holds(Door.When) || (Door.Deed == ETownDeed::None && Door.Does.IsEmpty() && Door.Said.IsEmpty()))
 		{
 			Notice = Door.Shut;
 			NoticeUntil = GetWorld()->GetTimeSeconds() + TownConstants::NoticeTime;
+		}
+		else if (Door.Deed == ETownDeed::None)
+		{
+			// it leads nowhere: using it does something, and what came of it is told
+			const FTownDoor Used = Door;
+			const FString Came = Apply(Used.Does);
+
+			WriteLog(Used.Log);
+
+			ShowNotice(Used.Said.IsEmpty() ? Came : (Came.IsEmpty() ? Used.Said : Used.Said + TEXT("   ") + Came));
+			NoticeUntil = GetWorld()->GetTimeSeconds() + TownConstants::GivenTime + 2.0f;
+
+			if (UGutGameInstance* GameInstance = GetGutGameInstance())
+			{
+				GameInstance->SaveRun();
+			}
 		}
 		else
 		{
@@ -2452,6 +2480,8 @@ void ATownGameMode::Lend(bool bBorrow)
 			Page.Water += LoanGiven;
 			Page.Debt += LoanOwed;
 
+			GameInstance->WriteDebt(TEXT("lent at her table"), LoanGiven, LoanOwed, Page.Debt);
+
 			Dealt = FString::Printf(TEXT("%.0f litres counted out. %.0f written down."), LoanGiven, LoanOwed);
 			DealtId = TEXT("lent");
 
@@ -2479,6 +2509,8 @@ void ATownGameMode::Lend(bool bBorrow)
 		{
 			Page.Water -= Paid;
 			Page.Debt -= Paid;
+
+			GameInstance->WriteDebt(TEXT("paid at her table"), -Paid, -Paid, Page.Debt);
 
 			Dealt = FString::Printf(TEXT("%.0f litres, struck off."), Paid);
 			DealtId = TEXT("paid");
@@ -2516,8 +2548,8 @@ FString ATownGameMode::Told(const FString& Words) const
 
 void ATownGameMode::UpdateCalls(float DeltaTime)
 {
-	// while a lot is up for the player the caller is calling that, and nothing else
-	if (!PlaceData || PlaceData->Calls.IsEmpty() || Auction.bOn)
+	// while a lot is up for the player the caller is calling that, and nothing else: and he finishes saying it sold
+	if (!PlaceData || PlaceData->Calls.IsEmpty() || Auction.bOn || IsAuctionSpeaking())
 	{
 		return;
 	}
@@ -3033,7 +3065,183 @@ bool ATownGameMode::HasFighter() const
 
 float ATownGameMode::GetShopWater() const
 {
+	// whatever the player holds, in whichever way they came by it: an owner or a gambler buys at the counter too
+	if (const float* Held = GetMarketWater())
+	{
+		return *Held;
+	}
+
 	return HasFighter() ? GetGutGameInstance()->Ladder.Water : 0.0f;
+}
+
+UGutArmorData* ATownGameMode::FindArmor(const FName& Name) const
+{
+	for (const UGutLadderData* Rank = LadderData; Rank; Rank = Rank->NextLadder)
+	{
+		for (UGutArmorData* Piece : Rank->ArmorShop)
+		{
+			if (Piece && Piece->GetFName() == Name)
+			{
+				return Piece;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+TArray<FName> ATownGameMode::GetBagArmor() const
+{
+	TArray<FName> Pieces;
+
+	for (const FGutBagItem& Item : GetGutGameInstance() ? GetGutGameInstance()->Bag : TArray<FGutBagItem>())
+	{
+		if (Item.Count > 0 && FindArmor(Item.Good))
+		{
+			Pieces.Add(Item.Good);
+		}
+	}
+
+	return Pieces;
+}
+
+FString ATownGameMode::GetArmorDetail(const UGutArmorData* Piece)
+{
+	static const TCHAR* Parts[] = { TEXT("body"), TEXT("arms"), TEXT("legs") };
+
+	return Piece ? FString::Printf(TEXT("%s:  %.0f%% off a club, %.0f%% off a blade"), Parts[FMath::Clamp<int32>(static_cast<int32>(Piece->Slot), 0, 2)],
+		(1.0f - Piece->BluntScale) * 100.0f, (1.0f - Piece->BladedScale) * 100.0f) : FString();
+}
+
+FString ATownGameMode::GetArmorWords(const TArray<FName>& Pieces) const
+{
+	TArray<FString> Names;
+
+	for (const FName& Name : Pieces)
+	{
+		if (const UGutArmorData* Piece = FindArmor(Name))
+		{
+			Names.Add(TEXT("the ") + Piece->DisplayName.ToString().ToLower());
+		}
+	}
+
+	FString Words;
+
+	for (int32 i = 0; i < Names.Num(); ++i)
+	{
+		Words += (i == 0 ? TEXT("") : (i == Names.Num() - 1 ? TEXT(" and ") : TEXT(", "))) + Names[i];
+	}
+
+	return Words;
+}
+
+void ATownGameMode::DressOwned(int32 Fighter)
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance || !GameInstance->Stable.Fighters.IsValidIndex(Fighter))
+	{
+		return;
+	}
+
+	const auto Dress = [this, &Worn = GameInstance->Stable.Fighters[Fighter].Armor](AGutFighter* Body)
+	{
+		if (!Body)
+		{
+			return;
+		}
+
+		Body->ClearArmor();
+
+		for (const FName& Name : Worn)
+		{
+			if (UGutArmorData* Piece = FindArmor(Name))
+			{
+				Body->WearArmor(Piece);
+			}
+		}
+	};
+
+	for (int32 i = 0; i < Tow.Num(); ++i)
+	{
+		if (Tow[i].Fighter == Fighter && TowBodies.IsValidIndex(i))
+		{
+			Dress(TowBodies[i]);
+		}
+	}
+
+	for (int32 i = 0; i < YardFighters.Num(); ++i)
+	{
+		if (YardFighters[i] == Fighter && YardBodies.IsValidIndex(i))
+		{
+			Dress(YardBodies[i]);
+		}
+	}
+}
+
+bool ATownGameMode::PutArmorOn(int32 Fighter, const FName& Good, FString& OutSaid)
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+	const UGutArmorData* Piece = FindArmor(Good);
+
+	const bool bSelf = Fighter == INDEX_NONE;
+
+	if (!GameInstance || !Piece || GameInstance->GetBagCount(Good) <= 0 || (bSelf ? !GameInstance->bLadderStarted : !GameInstance->Stable.Fighters.IsValidIndex(Fighter)))
+	{
+		return false;
+	}
+
+	TArray<FName>& Worn = bSelf ? GameInstance->Ladder.Armor : GameInstance->Stable.Fighters[Fighter].Armor;
+
+	const FString Name = bSelf ? FString(TEXT("You")) : GameInstance->Stable.Fighters[Fighter].FighterName.ToString();
+	const FString What = Piece->DisplayName.ToString().ToLower();
+
+	if (Worn.Contains(Good))
+	{
+		OutSaid = bSelf ? FString::Printf(TEXT("You have a %s on already."), *What) : FString::Printf(TEXT("%s has a %s on already."), *Name, *What);
+		return false;
+	}
+
+	// what it goes on in place of comes back to the bag
+	FString Off;
+
+	for (int32 i = Worn.Num() - 1; i >= 0; --i)
+	{
+		if (const UGutArmorData* Other = FindArmor(Worn[i]); Other && Other->Slot == Piece->Slot)
+		{
+			Off = Other->DisplayName.ToString().ToLower();
+
+			GameInstance->AddToBag(Worn[i], 1);
+			Worn.RemoveAt(i);
+		}
+	}
+
+	Worn.Add(Good);
+
+	GameInstance->AddToBag(Good, -1);
+
+	if (bSelf)
+	{
+		GameInstance->LadderAtRungStart.Armor = GameInstance->Ladder.Armor;
+	}
+	else
+	{
+		DressOwned(Fighter);
+	}
+
+	const UGutLadderData* Shelf = LadderData;
+
+	while (Shelf && Shelf->ArmorShop.IsEmpty())
+	{
+		Shelf = Shelf->NextLadder;
+	}
+
+	OutSaid = FString::Printf(TEXT("%s %s the %s on%s. The cage lets armor in from %s rank up: in a fight under that it stays off."), *Name, bSelf ? TEXT("have") : TEXT("has"), *What,
+		Off.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(", and the %s is back in your bag"), *Off), Shelf ? *Shelf->RankName.ToString() : TEXT("Butcher"));
+
+	GameInstance->SaveRun();
+
+	return true;
 }
 
 FString ATownGameMode::GetShopKeeper() const
@@ -3100,16 +3308,13 @@ TArray<FTownShopLine> ATownGameMode::GetShopLines() const
 			(1.0f - Piece->BluntScale) * 100.0f, (1.0f - Piece->BladedScale) * 100.0f);
 
 		Line.bWorn = bFighter && GetGutGameInstance()->Ladder.Armor.Contains(Piece->GetFName());
+		Line.Detail = GetArmorDetail(Piece);
 
-		if (!bFighter)
-		{
-			Line.Why = TEXT("no fighter");
-		}
-		else if (Own != Shelf)
-		{
-			Line.Why = FString::Printf(TEXT("%s rank"), *Shelf->RankName.ToString());
-		}
-		else if (Line.bWorn)
+		// Sold to anybody who holds the water. Until 25 November only to somebody fighting, themselves, at the rank that
+		// wears it: so an owner could buy nothing for the fighters they own ("so I personally have to up my rank via me
+		// fighting?? what if I want to buy armor for my slaves?"). Whoever does fight at that rank has it on at once,
+		// as before; from anybody else it goes into the bag, to be given.
+		if (Line.bWorn && Own == Shelf)
 		{
 			Line.Why = TEXT("worn");
 		}
@@ -3145,13 +3350,10 @@ void ATownGameMode::OpenShop(int32 Keeper)
 	{
 		ShopSaid = TEXT("There is nothing on the counter.");
 	}
-	else if (!HasFighter())
+	else if (!HasFighter() || Own != Shelf)
 	{
-		ShopSaid = TEXT("This is ring armor, cut for the Gut's fighters, and you are not one yet: go in at the fighters' door first.");
-	}
-	else if (Own != Shelf)
-	{
-		ShopSaid = FString::Printf(TEXT("Armor is worn in the Gut from %s rank up, and sold to nobody below it. You are fighting at %s rank."), *Shelf->RankName.ToString(), Own ? *Own->RankName.ToString() : TEXT("no"));
+		ShopSaid = FString::Printf(TEXT("The cage lets armor in from %s rank up. What you buy here goes in your bag, to give to a fighter of yours: he or she has it on in any fight at that rank or over, and it stays off in a fight under it."),
+			*Shelf->RankName.ToString());
 	}
 	else
 	{
@@ -3276,6 +3478,45 @@ bool ATownGameMode::BuyAtShop(int32 Line)
 		{
 			Off = Other->DisplayName.ToString().ToLower();
 		}
+	}
+
+	// Bought by somebody who does not fight at the rank that wears it: into the bag, to be given
+	if (const UGutLadderData* Own = GetFighterRank(); !HasFighter() || Own != Shelf)
+	{
+		float* From = GetMarketWater();
+
+		if (!From)
+		{
+			From = &GameInstance->Ladder.Water;
+		}
+
+		if (*From < Piece->Price)
+		{
+			return false;
+		}
+
+		*From -= Piece->Price;
+
+		if (From == &GameInstance->Ladder.Water)
+		{
+			GameInstance->LadderAtRungStart.Water -= Piece->Price;
+		}
+
+		GameInstance->AddToBag(Piece->GetFName(), 1);
+		GameInstance->ShareWater();
+		GameInstance->SaveRun();
+
+		ShopSaid = FString::Printf(TEXT("Bought: the %s, %.0f L. It is in your bag (I, or D-pad right): give it there to a fighter of yours who is with you, or put it on one in your yard."),
+			*Lines[Line].Name.ToLower(), Piece->Price);
+
+		if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
+		{
+			Sounds->Play(FName("cash"), FVector::ZeroVector);
+		}
+
+		UE_LOG(LogTown, Log, TEXT("Street: %s"), *ShopSaid);
+
+		return true;
 	}
 
 	// with water in hand: the armorers keep no slate
@@ -4376,6 +4617,7 @@ void ATownGameMode::ToggleBag()
 	bAtStall = false;
 	bAtBag = true;
 	bBagAsking = false;
+	SheetPage = -1;
 
 	ShopSaid.Reset();
 
@@ -4546,6 +4788,45 @@ TArray<FTownBagLine> ATownGameMode::GetBagLines() const
 		Lines.Add(MoveTemp(Line));
 	}
 
+	// armor bought and not yet on anybody
+	for (const FGutBagItem& Item : GameInstance->Bag)
+	{
+		const UGutArmorData* Piece = Item.Count > 0 ? FindArmor(Item.Good) : nullptr;
+
+		if (!Piece)
+		{
+			continue;
+		}
+
+		FTownBagLine Line;
+
+		Line.Kind = ETownBagKind::Good;
+		Line.Part = TEXT("ARMOR");
+		Line.Name = Piece->DisplayName.ToString();
+		Line.Count = FString::Printf(TEXT("x %d"), Item.Count);
+		Line.Detail = GetArmorDetail(Piece);
+		Line.Picture = FName("bag_armor");
+		Line.Good = Item.Good;
+		Line.Verb = TEXT("give it");
+
+		Line.About.Add(TEXT("Armor, to give to a fighter of yours: whoever is walking with you, or anybody standing in your yard while you are in it. One piece to a part of the body: a second for the same part takes the first one's place, and the first comes back to the bag."));
+		Line.About.Add(TEXT("The cage lets armor in from Butcher rank up. In a fight at that rank or over, he or she has it on. In a fight under it both corners go in bare, and it stays off."));
+
+		const TArray<FTownBagTaker> Takers = GetBagTakers(Item.Good);
+
+		for (const FTownBagTaker& Taker : Takers)
+		{
+			Line.bCanUse |= Taker.bCan;
+		}
+
+		if (!Line.bCanUse)
+		{
+			Line.Why = Takers.IsEmpty() ? FString(TEXT("nobody with you")) : FString(TEXT("worn already"));
+		}
+
+		Lines.Add(MoveTemp(Line));
+	}
+
 	// whoever the player owns, or pays: the paper that says so
 	const float Whole = Walker ? Walker->GetMaxLimbHealth() : 0.0f;
 
@@ -4661,8 +4942,34 @@ TArray<FTownBagLine> ATownGameMode::GetBagLines() const
 		Line.Count = FString::Printf(TEXT("you owe %.0f L"), GameInstance->Window.Debt);
 		Line.Detail = FString::Printf(TEXT("her terms: %.0f lent is written as %.0f"), LoanGiven, LoanOwed);
 
-		// the paper has no figure on it (bag_note_owed): the one it had, her terms, was read as the debt
-		Line.Picture = FName("bag_note_owed");
+		// the paper is a leaf of her book, and what is on it is written by the game: each thing lent, paid and kept, with
+		// what was owed after it ("THE NOTE is incomplete - I need to see what I borrowed and what I owe and what I paid
+		// back - transaction by transaction on the sheet", 25 November)
+		Line.Picture = FName("bag_note_book");
+
+		for (const FGutDebtLine& Written : GameInstance->DebtBook)
+		{
+			FTownSheetRow Row;
+
+			Row.Day = FString::Printf(TEXT("day %d"), Written.Day);
+			Row.What = Written.Counted > 0.5f ? FString::Printf(TEXT("%s: %.0f L counted out"), *Written.What, Written.Counted) : Written.What;
+			Row.Sum = FString::Printf(TEXT("%s%.0f"), Written.Written >= 0.0f ? TEXT("+") : TEXT("-"), FMath::Abs(Written.Written));
+			Row.Owed = FString::Printf(TEXT("%.0f"), Written.After);
+
+			Line.Sheet.Add(MoveTemp(Row));
+		}
+
+		// a debt from before the book was kept has the one line
+		if (Line.Sheet.IsEmpty())
+		{
+			FTownSheetRow Row;
+
+			Row.What = TEXT("owed from before this page");
+			Row.Sum = FString::Printf(TEXT("+%.0f"), GameInstance->Window.Debt);
+			Row.Owed = FString::Printf(TEXT("%.0f"), GameInstance->Window.Debt);
+
+			Line.Sheet.Add(MoveTemp(Row));
+		}
 
 		// what the paper means, in plain words: he could not make head or tail of it (24 November)
 		Line.About.Add(FString::Printf(TEXT("You owe Mother Ledger %.0f L. That is the whole of it. Her terms: each time she lends she counts out %.0f L and writes down %.0f. The 10 is her price. It does not grow after that."),
@@ -4749,6 +5056,43 @@ TArray<FTownBagTaker> ATownGameMode::GetBagTakers(const FName& Good) const
 
 	const UGutGameInstance* GameInstance = GetGutGameInstance();
 	const AGutFighter* Walker = GetWalker();
+
+	// armor: the player's own fighter if they have one, whoever of theirs walks with them, and in their yard anybody of
+	// theirs who stands there
+	if (GameInstance && FindArmor(Good))
+	{
+		if (GameInstance->bLadderStarted)
+		{
+			FTownBagTaker Taker;
+
+			Taker.Name = TEXT("Yourself");
+			Taker.bCan = !GameInstance->Ladder.Armor.Contains(Good);
+			Taker.Why = Taker.bCan ? TEXT("") : TEXT("worn already");
+
+			Takers.Add(MoveTemp(Taker));
+		}
+
+		for (int32 i = 0; i < GameInstance->Stable.Fighters.Num(); ++i)
+		{
+			const FGutStableFighter& Fighter = GameInstance->Stable.Fighters[i];
+
+			if (!Fighter.bInTow && !IsYard())
+			{
+				continue;
+			}
+
+			FTownBagTaker Taker;
+
+			Taker.Name = Fighter.FighterName.ToString();
+			Taker.Fighter = i;
+			Taker.bCan = !Fighter.Armor.Contains(Good);
+			Taker.Why = Taker.bCan ? TEXT("") : TEXT("worn already");
+
+			Takers.Add(MoveTemp(Taker));
+		}
+
+		return Takers;
+	}
 
 	if (!GameInstance || !TownConstants::FindGood(Good))
 	{
@@ -4876,6 +5220,13 @@ bool ATownGameMode::UseFromBag(int32 Line)
 
 	const TArray<FTownBagTaker> Takers = GetBagTakers(Thing.Good);
 
+	if (Takers.IsEmpty() && FindArmor(Thing.Good))
+	{
+		ShopSaid = TEXT("Nobody of yours is with you to put it on. In your yard it can be put on anybody who stands there.");
+
+		return false;
+	}
+
 	if (Takers.IsEmpty())
 	{
 		const TownConstants::FGood* Good = TownConstants::FindGood(Thing.Good);
@@ -4931,6 +5282,21 @@ bool ATownGameMode::GiveFromBag(const FName& Good, int32 Fighter)
 
 	const bool bSelf = Fighter == INDEX_NONE;
 	const float Whole = Walker ? Walker->GetMaxLimbHealth() : 0.0f;
+
+	// armor: put on whoever it is given to
+	if (FindArmor(Good))
+	{
+		if (!PutArmorOn(Fighter, Good, ShopSaid))
+		{
+			return false;
+		}
+
+		bBagAsking = false;
+
+		UE_LOG(LogTown, Log, TEXT("Street: %s"), *ShopSaid);
+
+		return true;
+	}
 
 	// what was found: water poured into one's own, or smokes handed to somebody who is owned
 	if (const TownConstants::FGood* Found = TownConstants::FindGood(Good); Found && Found->Price <= 0.0f && Taker->bCan)
@@ -5143,6 +5509,18 @@ void ATownGameMode::SettleYard()
 	}
 
 	UE_LOG(LogTown, Log, TEXT("Yard: %d of the player's people stand in it, day %d, %.0f L held"), YardBodies.Num(), GameInstance->Stable.Day, GameInstance->Stable.Water);
+
+	// what has happened to the yard that its owner was not there to see: said now, once
+	if (UGutGameInstance* Run = GetGutGameInstance(); Run && !Run->Stable.News.IsEmpty())
+	{
+		ShowNotice(Run->Stable.News.TrimEnd());
+		NoticeUntil = GetWorld()->GetTimeSeconds() + 16.0f;
+
+		UE_LOG(LogTown, Log, TEXT("Yard: told: %s"), *Run->Stable.News);
+
+		Run->Stable.News.Reset();
+		Run->SaveRun();
+	}
 }
 
 void ATownGameMode::OpenYardPage(int32 Which)
@@ -5187,6 +5565,11 @@ void ATownGameMode::OpenYardPage(int32 Which)
 
 	ShopSaid = FString::Printf(TEXT("A %s, about %d. Strength %d, speed %d, nerve %d, each out of %d; fights with %s. "), Sex.Man(), GetAgeOf(Who), Who.Strength, Who.Speed, Who.Nerve,
 		GetCageRules() ? GetCageRules()->GetStableMostTaught() : 5, Who.Weapon ? *(TEXT("the ") + Who.Weapon->DisplayName.ToString().ToLower()) : TEXT("bare hands"));
+
+	if (!Who.Armor.IsEmpty())
+	{
+		ShopSaid += FString::Printf(TEXT("Has %s. "), *GetArmorWords(Who.Armor));
+	}
 
 	ShopSaid += Who.Billing.ToString() + (Who.Wins > 0 ? FString::Printf(TEXT(" %d %s for you."), Who.Wins, Who.Wins == 1 ? TEXT("fight won") : TEXT("fights won")) : FString()) + Mood;
 
@@ -5253,14 +5636,14 @@ void ATownGameMode::GetYardPage(TArray<FTownShopLine>& OutLines, TArray<int32>& 
 
 	for (int32 i = 0; i < 3; ++i)
 	{
-		Add(TrainStrength + i, FString::Printf(TEXT("Train %s"), Taught[i]), FString::Printf(TEXT("%d of %d now  \u00B7  takes the day"), Has[i], Most),
+		Add(TrainStrength + i, FString::Printf(TEXT("Train %s"), Taught[i]), FString::Printf(TEXT("%d of %d now  \u00B7  today is over when it is done, and the day's %.0f L falls due"), Has[i], Most, GetDayDue()),
 			Rules->GetTrainingCost(), FString(), Has[i] < Most, TEXT("taught"));
 
 		// The warning is under the list, where there is room for it: on the line it ran on under the price (24 November)
 		OutLines.Last().About = bShortAfter
-			? FString::Printf(TEXT("Training is %.0f L and takes the day. That would leave you %.0f L, and the day's feed and wages are %.0f L: the day would go unpaid, and whoever is on a wage walks."),
+			? FString::Printf(TEXT("Training is %.0f L, and it is all that is done today: the day ends with it. That would leave you %.0f L, and the day's feed and wages are %.0f L: the day would go unpaid, and whoever is on a wage walks."),
 				Rules->GetTrainingCost(), FMath::Max(State.Water - Rules->GetTrainingCost(), 0.0f), GetDayDue())
-			: FString::Printf(TEXT("Training is %.0f L and takes the day. Feed and wages for the day, %.0f L, come out of what is left."), Rules->GetTrainingCost(), GetDayDue());
+			: FString::Printf(TEXT("Training is %.0f L, and it is all that is done today: the day ends with it, and feed and wages for the day, %.0f L, come out of what is left."), Rules->GetTrainingCost(), GetDayDue());
 	}
 
 	if (Who.IsCrippled())
@@ -5281,6 +5664,22 @@ void ATownGameMode::GetYardPage(TArray<FTownShopLine>& OutLines, TArray<int32>& 
 		{
 			Add(Promise, TEXT("Promise a tag"), FString::Printf(TEXT("for %d wins: %s fights harder for it"), Rules->GetWinsForTag(), Sex.He()), 0.0f, TEXT("a promise"), true, FString());
 		}
+	}
+
+	// armor out of the bag, and what is on taken back
+	const TArray<FName> InBag = GetBagArmor();
+
+	for (int32 i = 0; i < InBag.Num(); ++i)
+	{
+		const UGutArmorData* Piece = FindArmor(InBag[i]);
+
+		Add(GiveArmor + i, FString::Printf(TEXT("Put the %s on %s"), *Piece->DisplayName.ToString().ToLower(), Sex.Him()), GetArmorDetail(Piece) + TEXT("  \u00B7  out of your bag"), 0.0f, TEXT(" "),
+			!Who.Armor.Contains(InBag[i]), TEXT("worn"));
+	}
+
+	if (!Who.Armor.IsEmpty())
+	{
+		Add(TakeArmor, FString::Printf(TEXT("Take %s armor off"), Sex.His()), GetArmorWords(Who.Armor) + TEXT(": back to your bag"), 0.0f, TEXT(" "), true, FString());
 	}
 
 	Add(WalkOut, TEXT("Come with me"), FString::Printf(TEXT("%s walks behind you, out to the street"), Sex.He()), 0.0f, TEXT(" "), true, FString());
@@ -5321,6 +5720,39 @@ bool ATownGameMode::DoYardLine(int32 Line)
 	}
 
 	const int32 Code = Codes[Line];
+
+	// armor, to and from the bag: none of the cage's rules in it, and no day gone
+	if (Code == TakeArmor || Code >= GiveArmor)
+	{
+		FGutStableFighter& Theirs = GameInstance->Stable.Fighters[YardFocus];
+
+		if (Code == TakeArmor)
+		{
+			ShopSaid = FString::Printf(TEXT("%s has %s off, and it is in your bag."), *Name, *GetArmorWords(Theirs.Armor));
+
+			for (const FName& Piece : Theirs.Armor)
+			{
+				GameInstance->AddToBag(Piece, 1);
+			}
+
+			Theirs.Armor.Reset();
+
+			DressOwned(YardFocus);
+
+			GameInstance->SaveRun();
+		}
+		else if (const TArray<FName> InBag = GetBagArmor(); !InBag.IsValidIndex(Code - GiveArmor) || !PutArmorOn(YardFocus, InBag[Code - GiveArmor], ShopSaid))
+		{
+			return false;
+		}
+
+		ShopChoice = FMath::Min(ShopChoice, GetShopLines().Num());
+
+		UE_LOG(LogTown, Log, TEXT("Yard: %s"), *ShopSaid);
+
+		return true;
+	}
+
 	const int32 DayBefore = GameInstance->Stable.Day;
 	const float WaterBefore = GameInstance->Stable.Water;
 	const float DebtBefore = GameInstance->Stable.Debt;
@@ -5579,9 +6011,22 @@ void ATownGameMode::HandleBagInput(EGutMenuInput Input)
 	if (Input == EGutMenuInput::Up || Input == EGutMenuInput::Down)
 	{
 		ShopChoice = (ShopChoice + (Input == EGutMenuInput::Up ? Things : 1)) % (Things + 1);
+		SheetPage = -1;
 
 		// what was said was about the thing the player was on
 		ShopSaid.Reset();
+	}
+	else if (Input == EGutMenuInput::Left || Input == EGutMenuInput::Right)
+	{
+		// a paper with more written on it than one page holds is turned
+		const TArray<FTownBagLine> Lines = GetBagLines();
+
+		if (Lines.IsValidIndex(ShopChoice) && Lines[ShopChoice].Sheet.Num() > SheetRows)
+		{
+			const int32 Rows = Lines[ShopChoice].Sheet.Num();
+
+			SheetPage = FMath::Clamp(GetSheetPage(Rows) + (Input == EGutMenuInput::Left ? -1 : 1), 0, GetSheetPages(Rows) - 1);
+		}
 	}
 	else if (Input == EGutMenuInput::Confirm)
 	{
@@ -5811,6 +6256,9 @@ FString ATownGameMode::SettleAfterDay(const TArray<FGutStableFighter>& Before, f
 	{
 		return FString();
 	}
+
+	// (what this says is said here and now: it is not kept to be said again at the yard's gate)
+	GameInstance->Stable.News.Reset();
 
 	const TArray<FGutStableFighter>& Now = GameInstance->Stable.Fighters;
 

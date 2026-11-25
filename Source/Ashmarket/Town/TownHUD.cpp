@@ -1,6 +1,10 @@
 // Ashmarket: the town outside the cage.
 
 #include "TownHUD.h"
+
+#if WITH_EDITOR
+#include "TextureCompiler.h"
+#endif
 #include "CanvasItem.h"
 #include "Engine/Canvas.h"
 #include "Engine/TextureRenderTarget2D.h"
@@ -17,6 +21,22 @@ void ATownHUD::DrawHUD()
 	AHUD::DrawHUD();
 
 	const ATownGameMode* Town = GetWorld()->GetAuthGameMode<ATownGameMode>();
+
+	// Until everybody has been stood where they stand (a frame each, and their clothes a few more to hang), the place is
+	// not shown: only its name. For a few seconds at most: a place that never comes to be settled is not left dark.
+	if (Canvas && Town && !Town->IsSettled() && GetWorld()->GetTimeSeconds() < 6.0f)
+	{
+		UIScale = Canvas->SizeY / 1080.0f;
+
+		DrawRect(FLinearColor::Black, 0.0f, 0.0f, Canvas->SizeX, Canvas->SizeY);
+
+		if (const UTownPlaceData* Place = Town->GetPlace())
+		{
+			DrawLabelAtScreen(Place->Name, Canvas->SizeX * 0.5f, Canvas->SizeY * 0.47f, 26, GutHUDColors::DimText, true);
+		}
+
+		return;
+	}
 
 	if (!Canvas || !Town || !Town->IsSettled())
 	{
@@ -690,9 +710,39 @@ UTexture2D* ATownHUD::GetBagPicture(const FName& Name)
 	// looked for once, found or not
 	UTexture2D* Picture = LoadObject<UTexture2D>(nullptr, *FString::Printf(TEXT("/Game/Gut/Art/UI/%s.%s"), *Name.ToString(), *Name.ToString()), nullptr, LOAD_NoWarn | LOAD_Quiet);
 
+#if WITH_EDITOR
+	// shown whole the first time it is looked at: a picture not yet made ready is drawn as the engine's grey squares, which
+	// is what the note was for its first moments (25 November)
+	if (Picture)
+	{
+		FTextureCompilingManager::Get().FinishCompilation({ Picture });
+	}
+#endif
+
 	BagPictures.Add(Name, Picture);
 
 	return Picture;
+}
+
+/** Where on Mother Ledger's leaf (bag_note_book) its ruled lines and columns are, as parts of the picture's width and height */
+namespace TownSheet
+{
+	/**
+	 *  The ruled line under its head ("OWED TO M. LEDGER."), and how far each line is under the last: measured from the
+	 *  picture, which has twelve lines from 0.106 to 0.834 of its height. The heads of the two columns of figures sit on
+	 *  the first, and a row on each of the eleven under it.
+	 */
+	inline constexpr float First = 0.106f;
+	inline constexpr float Pitch = 0.0662f;
+
+	/**
+	 *  Where the day and the words begin, and where the two columns of figures end: what it did to the debt, up to the
+	 *  first of the paper's two red rules (0.808 of its width), and what was owed after, beyond the second (0.849)
+	 */
+	inline constexpr float Day = 0.045f;
+	inline constexpr float What = 0.15f;
+	inline constexpr float Sum = 0.795f;
+	inline constexpr float Owed = 0.965f;
 }
 
 void ATownHUD::DrawBag(const ATownGameMode* Town, float CenterX)
@@ -787,8 +837,11 @@ void ATownHUD::DrawBag(const ATownGameMode* Town, float CenterX)
 
 	UTexture2D* Picture = bOnThing ? GetBagPicture(Things[Choice].Picture) : Satchel;
 
-	const float BoxTop = Top + 116.0f;
-	const float BoxHigh = 430.0f;
+	// a paper with a book written on it has most of the page, so that its rows can be read; its name goes over it
+	const bool bSheet = bOnThing && !Things[Choice].Sheet.IsEmpty();
+
+	const float BoxTop = Top + (bSheet ? 124.0f : 116.0f);
+	const float BoxHigh = bSheet ? 552.0f : 430.0f;
 
 	if (Picture && Picture->GetResource())
 	{
@@ -797,27 +850,79 @@ void ATownHUD::DrawBag(const ATownGameMode* Town, float CenterX)
 		const float PictureWide = Picture->GetSizeX() * Fit;
 		const float PictureHigh = Picture->GetSizeY() * Fit;
 
-		DrawPiece(Picture, PageLeft + ((PageWide - PictureWide) * 0.5f), BoxTop + ((BoxHigh - PictureHigh) * 0.5f), PictureWide, PictureHigh, FVector2D(0.0f, 0.0f), FVector2D(1.0f, 1.0f), FLinearColor::White, true);
+		const float PictureLeft = PageLeft + ((PageWide - PictureWide) * 0.5f);
+		const float PictureTop = BoxTop + ((BoxHigh - PictureHigh) * 0.5f);
+
+		DrawPiece(Picture, PictureLeft, PictureTop, PictureWide, PictureHigh, FVector2D(0.0f, 0.0f), FVector2D(1.0f, 1.0f), FLinearColor::White, true);
+
+		// a paper with a book kept on it: its rows written on it by hand, a page of them at a time, oldest first, so that the
+		// last line of the last page is what is owed now. Where on the paper its lines are is measured from the picture
+		// (bag_note_book: a leaf of a ledger, ruled, with its head and her mark already on it).
+		if (bOnThing && !Things[Choice].Sheet.IsEmpty())
+		{
+			const TArray<FTownSheetRow>& Rows = Things[Choice].Sheet;
+
+			const int32 Pages = ATownGameMode::GetSheetPages(Rows.Num());
+			const int32 Page = Town->GetSheetPage(Rows.Num());
+
+			const float Pitch = PictureHigh * TownSheet::Pitch;
+			const float Size = Pitch * 0.56f;
+			const FLinearColor Ink(0.035f, 0.03f, 0.05f, 0.92f);
+			const FLinearColor Faint(0.035f, 0.03f, 0.05f, 0.6f);
+
+			const float DayX = PictureLeft + (PictureWide * TownSheet::Day);
+			const float WhatX = PictureLeft + (PictureWide * TownSheet::What);
+			const float SumX = PictureLeft + (PictureWide * TownSheet::Sum);
+			const float OwedX = PictureLeft + (PictureWide * TownSheet::Owed);
+
+			// each row sits on a ruled line: its words end a little above it
+			float RowY = PictureTop + (PictureHigh * TownSheet::First) - (Size * 1.5f);
+
+			DrawHand(TEXT("written"), SumX, RowY, Size * 0.8f, Faint, true);
+			DrawHand(TEXT("owed"), OwedX, RowY, Size * 0.8f, Faint, true);
+
+			for (int32 i = Page * ATownGameMode::SheetRows; i < FMath::Min(Rows.Num(), (Page + 1) * ATownGameMode::SheetRows); ++i)
+			{
+				RowY += Pitch;
+
+				DrawHand(Rows[i].Day, DayX, RowY, Size, Faint);
+				DrawHand(Rows[i].What, WhatX, RowY, Size, Ink, false, SumX - WhatX - (PictureWide * 0.09f));
+				DrawHand(Rows[i].Sum, SumX, RowY, Size, Ink, true);
+				DrawHand(Rows[i].Owed, OwedX, RowY, Size, i == Rows.Num() - 1 ? FLinearColor(0.45f, 0.03f, 0.03f, 0.95f) : Ink, true);
+			}
+
+			if (Pages > 1)
+			{
+				DrawLabel(FString::Printf(TEXT("page %d of %d  ·  A / D or D-pad left / right: turn the page"), Page + 1, Pages), PageLeft + (PageWide * 0.5f), BoxTop + BoxHigh + 6.0f, 16, GutHUDColors::Warning, true);
+			}
+		}
 	}
 
-	float PageY = BoxTop + BoxHigh + 22.0f;
+	float PageY = BoxTop + BoxHigh + (bSheet ? 34.0f : 22.0f);
 
 	if (bOnThing)
 	{
 		const FTownBagLine& Thing = Things[Choice];
 
-		DrawLabel(Thing.Name.ToUpper(), PageLeft, PageY, 28, GutHUDColors::Warning, false, PageWide - 200.0f);
+		// (over the paper, where it is a sheet)
+		const float NameY = bSheet ? Top + 70.0f : PageY;
+
+		DrawLabel(Thing.Name.ToUpper(), PageLeft, NameY, 28, GutHUDColors::Warning, false, PageWide - 200.0f);
 
 		if (!Thing.Count.IsEmpty())
 		{
-			DrawLabel(Thing.Count, PageLeft + PageWide - MeasureLabel(Thing.Count, 24), PageY + 4.0f, 24, GutHUDColors::Text);
+			DrawLabel(Thing.Count, PageLeft + PageWide - MeasureLabel(Thing.Count, 24), NameY + 4.0f, 24, GutHUDColors::Text);
 		}
 
-		PageY += 48.0f;
+		PageY += bSheet ? 0.0f : 48.0f;
 
-		DrawLabel(Thing.Detail, PageLeft, PageY, 18, GutHUDColors::DimText, false, PageWide);
+		// (a sheet says its own terms in what is written under it, and has no room for them twice)
+		if (!bSheet)
+		{
+			DrawLabel(Thing.Detail, PageLeft, PageY, 18, GutHUDColors::DimText, false, PageWide);
 
-		PageY += 36.0f;
+			PageY += 36.0f;
+		}
 
 		// what there is to know about it: stood back while who it is for is being asked in its place
 		for (const FString& About : Town->IsBagAsking() ? TArray<FString>() : Thing.About)

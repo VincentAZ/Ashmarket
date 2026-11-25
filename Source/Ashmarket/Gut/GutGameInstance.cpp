@@ -149,6 +149,38 @@ void UGutGameInstance::AddToBag(FName Good, int32 Count)
 	Bag.RemoveAll([](const FGutBagItem& One) { return One.Count <= 0; });
 }
 
+void UGutGameInstance::WriteDebt(const FString& What, float Counted, float Written, float After)
+{
+	FGutDebtLine Line;
+
+	Line.Day = Stable.Day;
+	Line.What = What;
+	Line.Counted = Counted;
+	Line.Written = Written;
+	Line.After = FMath::Max(0.0f, After);
+
+	// a debt there was before the book was kept (a run from before 25 November) is carried in at its head
+	if (DebtBook.IsEmpty() && After - Written > 0.5f)
+	{
+		FGutDebtLine Carried;
+
+		Carried.Day = Stable.Day;
+		Carried.What = TEXT("owed from before this page");
+		Carried.Written = After - Written;
+		Carried.After = After - Written;
+
+		DebtBook.Add(Carried);
+	}
+
+	DebtBook.Add(Line);
+
+	// she keeps a long book, and not an endless one
+	if (DebtBook.Num() > 240)
+	{
+		DebtBook.RemoveAt(0, DebtBook.Num() - 240);
+	}
+}
+
 void UGutGameInstance::ShareWater()
 {
 	static const bool bApart = FParse::Param(FCommandLine::Get(), TEXT("GutThreePurses"));
@@ -244,6 +276,7 @@ bool UGutGameInstance::SaveRun()
 	Save->BlockSold = BlockSold;
 	Save->BlockSoldTo = BlockSoldTo;
 	Save->BlockSoldDay = BlockSoldDay;
+	Save->DebtBook = DebtBook;
 	Save->BlockSoldSeed = BlockSoldSeed;
 
 	return UGameplayStatics::SaveGameToSlot(Save, SaveSlotName, 0);
@@ -282,6 +315,7 @@ bool UGutGameInstance::LoadRun()
 	BlockSold = Save->BlockSold;
 	BlockSoldTo = Save->BlockSoldTo;
 	BlockSoldDay = Save->BlockSoldDay;
+	DebtBook = Save->DebtBook;
 	BlockSoldSeed = Save->BlockSoldSeed;
 	bPurseSeen = false;
 

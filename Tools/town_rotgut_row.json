@@ -62,8 +62,12 @@
 
  "things_about": "'z' is the height a thing stands at where that is not the furrow's floor: the lips are at 10.2. A model made facing Blender -Y faces east at yaw 0 and west at yaw 180; its long way then lies north and south.",
  "things": [
-  {"model": "row_tail", "x": -45.0, "y": 286.4, "yaw": 0, "note": "the Last Call's tail and fin, at the furrow's south end: the rest of the wreck is beyond it and is not built"},
-  {"model": "row_wing", "x": -45.0, "y": 309.0, "z": 10.2, "yaw": 0, "hollow": true, "note": "the starboard wing on its oil-drum pillars, roofing the furrow's first stretch"},
+  {"model": "row_tail", "x": -45.0, "y": 280.4, "yaw": 0, "scale": 2.0, "note": "the Last Call's tail and fin, at the furrow's south end: the rest of the wreck is beyond it and is not built. Twice the size it was made: at its own size it was a light aircraft's (his note of 25 November: 'is that a super small plane?'); at this the body is four metres through and the fin twelve high, an airliner's"},
+  {"model": "main_lamp_mast", "x": -38.4, "y": 284.6, "z": 10.2, "yaw": 270, "light": {"kind": "spot", "candela": 9000, "reach": 26, "cone": 75, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "a work lamp on the east bank, on the tail: so that the wreck is seen for what it is"}},
+  {"model": "main_lamp_mast", "x": -51.8, "y": 285.4, "z": 10.2, "yaw": 90, "light": {"kind": "spot", "candela": 9000, "reach": 26, "cone": 75, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "and one on the west bank, on its other side"}},
+  {"model": "main_lantern", "x": -44.0, "y": 292.9, "yaw": 30, "light": {"candela": 1500, "reach": 8, "colour": "lantern", "flicker": true, "off": 0.0, "note": "a lantern on the furrow's floor under the tail's tip"}},
+  {"model": "main_fire_drum", "x": -49.4, "y": 289.4, "z": 10.2, "yaw": 60, "light": {"candela": 3000, "reach": 14, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "note": "a fire on the west bank by the tail"}},
+  {"model": "row_wing", "x": -45.0, "y": 309.0, "z": 10.2, "yaw": 0, "hollow": true, "legs": true, "note": "the starboard wing on its oil-drum pillars, roofing the furrow's first stretch"},
   {"model": "town_bus", "x": -45.0, "y": 339.7, "yaw": 90, "note": "Detention: the school bus across the north end"},
 
   {"model": "row_drum_bar", "x": -49.7, "y": 307.9, "z": 10.2, "yaw": 0, "note": "The Sump, under the wing, between the second and third of its west pillars (the pillars stand at y 299.5, 304.7 and 311.1 on both lips)"},

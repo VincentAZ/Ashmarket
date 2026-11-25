@@ -21,6 +21,7 @@ class UGutGameInstance;
 struct FGutStableFighter;
 struct FGutStableState;
 class UGutLadderData;
+class UGutArmorData;
 class UIKRetargeter;
 class USoundBase;
 class UAnimSequenceBase;
@@ -188,9 +189,25 @@ enum class ETownBagKind : uint8
 	Note
 };
 
+/** One row of a written sheet: Mother Ledger's note has a row for each thing lent, paid or kept */
+struct FTownSheetRow
+{
+	FString Day;
+	FString What;
+
+	/** What it did to what is owed: "+35", "-12" */
+	FString Sum;
+
+	/** What was owed after it */
+	FString Owed;
+};
+
 /** One thing in the bag, as the bag's screen shows it */
 struct FTownBagLine
 {
+	/** Where it is a paper with a book kept on it: the rows, oldest first, written on the paper a page at a time */
+	TArray<FTownSheetRow> Sheet;
+
 	ETownBagKind Kind = ETownBagKind::Good;
 
 	/** The part of the bag it is in, which is written over the first thing of each part */
@@ -500,6 +517,9 @@ protected:
 
 	/** True while the bag is asking who a thing is for, which thing, and which of the answers the player is on */
 	bool bBagAsking = false;
+
+	/** Which page of a written sheet is open in the bag: under nought is its last */
+	int32 SheetPage = -1;
 	FName BagAsked;
 	int32 BagAskChoice = 0;
 
@@ -692,8 +712,40 @@ protected:
 	/** The lot is knocked down: to the player, to somebody else, or to nobody */
 	void EndAuction();
 
-	/** Has the caller call something, and waits so long before he goes on */
-	void CallAuction(const FString& Words, float Wait);
+	/**
+	 *  Has the caller call something, and waits so long before he goes on. Parts is the same call in the pieces it was
+	 *  recorded in, which are spoken one after another: "36", "house_1", "any_more". See SayAuction.
+	 */
+	void CallAuction(const FString& Words, float Wait, const TArray<FString>& Parts = TArray<FString>());
+
+	/**
+	 *  Speaks a call of the bidding, in Caller Strand's voice. What he calls has figures in it, so no one call can be
+	 *  recorded: every figure, every buyer and every turn of phrase is recorded apart (Tools/town_block_square.json,
+	 *  "bidding") and they are said end to end, as a caller barks them. Until 25 November the bidding was only written
+	 *  ("cannot hear the auctioneer do the bids and all his chatter"). A part that was never recorded (a figure over
+	 *  what was recorded) leaves the whole call unsaid: half a call is worse than a written one.
+	 */
+	void SayAuction(const TArray<FString>& Parts);
+
+	/** Says the next part when the last is said */
+	void UpdateAuctionVoice(float DeltaTime);
+
+	/** True while a call of the bidding is still being said */
+	bool IsAuctionSpeaking() const { return AuctionPart < AuctionParts.Num() || AuctionPartLeft > 0.0f; }
+
+	/** The recorded part of that name, or none: "num_36" */
+	USoundBase* GetAuctionSound(const FString& Part);
+
+	/** The name of a figure's recording, or nothing if no such figure was recorded */
+	static FString GetFigurePart(float Figure);
+
+	/** The parts of the call being said, which of them is next, and how long the one being said has to run */
+	TArray<FString> AuctionParts;
+	int32 AuctionPart = 0;
+	float AuctionPartLeft = 0.0f;
+
+	UPROPERTY()
+	TMap<FName, TObjectPtr<USoundBase>> AuctionSounds;
 
 	/** The sums that can be bid just now, as lines of the book's panel */
 	TArray<FTownShopLine> GetAuctionLines() const;
@@ -757,6 +809,27 @@ protected:
 	/** Stands somebody who is owned or signed in the place: collared and tied if they are owned */
 	AGutFighter* StandOwned(const FGutStableFighter& Fighter, const FTransform& Where);
 
+	/** The piece of armor of that name, off whichever rank's shelf it is on: or none, if the name is not a piece of armor */
+	UGutArmorData* FindArmor(const FName& Name) const;
+
+	/** The pieces of armor in the bag, by name */
+	TArray<FName> GetBagArmor() const;
+
+	/** What a piece takes off a blow, as the counter says it: "body:  30% off a club, 5% off a blade" */
+	static FString GetArmorDetail(const UGutArmorData* Piece);
+
+	/** The pieces of that list by their names, as words: "the tire-rubber vest and the road-sign greaves" */
+	FString GetArmorWords(const TArray<FName>& Pieces) const;
+
+	/**
+	 *  Puts a piece from the bag on one of the stable's fighters, or on the player's own (INDEX_NONE). What it takes the
+	 *  place of goes back into the bag. Says what was done.
+	 */
+	bool PutArmorOn(int32 Fighter, const FName& Good, FString& OutSaid);
+
+	/** Has the bodies of that fighter that are stood in the place wear what the fighter now owns */
+	void DressOwned(int32 Fighter);
+
 	/** Has somebody come along behind the player from now on: by Way first, if they have to get down from somewhere */
 	void TakeInTow(AGutFighter* Body, int32 Fighter, int32 Offer, TArray<FVector> Way = TArray<FVector>(), float Wait = 0.0f);
 
@@ -798,6 +871,9 @@ public:
 	 */
 	bool bBids = true;
 
+	/** A test that walks at a place's edges until it is stopped is not taken out of the place by a way it walks into */
+	bool bWaysHeld = false;
+
 	bool IsBidding() const { return bShopping && bAtBook && Auction.bOn; }
 
 	const FTownAuction& GetAuction() const { return Auction; }
@@ -836,7 +912,9 @@ public:
 	/**
 	 *  Does what Does says, a term at a time: "st.wardens+10 water-30 wynn=2 bag.tag+1 w1.roll=?4 walk:through". A mark
 	 *  is set (=), raised (+) or lowered (-) by a whole number, or set to a throw of a die ("=?4" is one to four).
-	 *  "walk:" and a way's name walks whoever is being talked to along that way of theirs. "sound:gate_bell*3" makes a
+	 *  "walk:" and a way's name walks whoever is being talked to along that way of theirs. A term with something asked
+	 *  in brackets before it is done only if that holds as things stand when it is come to: "w3.roll=?3
+	 *  (w3.roll=1)st.scrappers-15" loses standing one time in three. "sound:gate_bell*3" makes a
 	 *  sound of that kind (Tools/gut_sounds.json) so many times, a little apart. Standing is kept between -100
 	 *  and 100, trust and fear between 0 and 100, heat between 0 and 5, and water is never taken below what is held.
 	 *  @return what it came to, in words for the player ("Wardens +10 · 30 L paid: you hold 12"), or nothing
@@ -956,6 +1034,13 @@ public:
 
 	/** Which of them the player is on, and what was last said about any of them */
 	int32 GetBagChoice() const { return ShopChoice; }
+
+	/** How many rows of a written sheet go on one page of it */
+	static constexpr int32 SheetRows = 11;
+
+	/** How many pages a sheet of so many rows runs to, and which of them is open: the last, until it is turned back */
+	static int32 GetSheetPages(int32 Rows) { return FMath::Max(1, (Rows + SheetRows - 1) / SheetRows); }
+	int32 GetSheetPage(int32 Rows) const { return SheetPage < 0 ? GetSheetPages(Rows) - 1 : FMath::Min(SheetPage, GetSheetPages(Rows) - 1); }
 	FString GetBagSaid() const { return ShopSaid; }
 
 	/**
