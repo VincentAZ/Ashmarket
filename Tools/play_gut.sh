@@ -4,6 +4,7 @@
 #   Tools/play_gut.sh                              Pool Street, outside the cage: walk it, talk, and go in to fight, to own or to bet
 #   GUT_MODE=square Tools/play_gut.sh              Block Square on a sale night, which is otherwise a walk west along Pool Street and down the lane
 #   GUT_MODE=main Tools/play_gut.sh                Main Street, which is otherwise a walk south out of Block Square
+#   GUT_MODE=row Tools/play_gut.sh                 Rotgut Row, which is otherwise a walk west off the end of Pool Street
 #   GUT_RANK=butcher GUT_MODE=main Tools/play_gut.sh   the same as a Butcher holding 60 L, to buy armor at Hide & Plate: a fighter made up
 #                                                  for the sitting, with nothing read from or written to the run kept on disk
 #   GUT_MODE=card Tools/play_gut.sh                the street as the card it was before it was a place, with the ways in listed on it
@@ -36,6 +37,8 @@ elif [[ "${GUT_MODE:-}" == "square" && -f "$PROJECT_DIR/Content/Town/Lvl_BlockSq
 	MAP="/Game/Town/Lvl_BlockSquare"
 elif [[ "${GUT_MODE:-}" == "main" && -f "$PROJECT_DIR/Content/Town/Lvl_MainStreet.umap" ]]; then
 	MAP="/Game/Town/Lvl_MainStreet"
+elif [[ "${GUT_MODE:-}" == "row" && -f "$PROJECT_DIR/Content/Town/Lvl_RotgutRow.umap" ]]; then
+	MAP="/Game/Town/Lvl_RotgutRow"
 elif [[ "${GUT_MODE:-}" == "card" || ( -z "${GUT_MODE:-}" && -z "${GUT_WEAPONS:-}" && "${GUT_NEW:-0}" != "1" ) ]]; then
 	MAP="$MAP?Door=1"
 elif [[ "${GUT_MODE:-}" == "window" ]]; then
