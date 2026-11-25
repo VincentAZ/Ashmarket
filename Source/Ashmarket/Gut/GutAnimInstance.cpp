@@ -3,6 +3,7 @@
 #include "GutAnimInstance.h"
 #include "Animation/AnimSequenceBase.h"
 #include "AnimationRuntime.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GutFighter.h"
 
@@ -61,6 +62,72 @@ namespace GutAnimConstants
 	const float IdleChangeTime = 0.3f;
 
 	/** A walking clip is never played slower or faster than this, however fast the fighter goes */
+	// a foot is down when its ankle is within this of where it stands at rest, and lifted when it is this far above it
+	const float FootDownAt = 2.6f;
+	const float FootLiftedAt = 5.0f;
+
+	// and it is put down, not swinging through, if it goes no faster over the floor than this, or this share of the body's own speed
+	const float FootStillSpeed = 26.0f;
+	const float FootStillShare = 0.45f;
+
+	// walking on its own legs faster than this, a held foot that goes over the ground at this share of the body's speed is being swung
+	const float FootWalking = 30.0f;
+	const float FootSwungShare = 0.85f;
+
+	// a step taken to catch up: how fast the foot travels (so how long the step is, within limits), how high it is lifted
+	// for how far it goes, how far ahead of the body it lands for how fast the body is carried, and how far behind the
+	// second foot may fall before it steps while the first is still in the air
+	const float FootStepSpeed = 230.0f;
+	const float FootStepShortest = 0.1f;
+	const float FootStepLongest = 0.2f;
+	const float FootStepLiftShare = 0.22f;
+	const float FootStepLiftLeast = 1.5f;
+	const float FootStepLiftMost = 9.0f;
+	const float FootStepLead = 0.09f;
+	const float FootMostLead = 26.0f;
+	const float FootBothStep = 1.7f;
+
+	// the furthest a held foot is left turned from the way the clip has it before it steps round, and how fast a step turns it
+	const float FootMostTurned = 32.0f;
+	const float FootStepTurnSpeed = 260.0f;
+
+	// a body carried no faster than this is at rest; after this long at rest a held foot that is further than this from
+	// where the standing clip has it steps there
+	const float FootRestSpeed = 10.0f;
+	const float FootSettleAfter = 0.18f;
+	const float FootSettleOff = 3.5f;
+
+	// how high a foot that the clip slides forward along the floor is picked up, and how fast it comes up and goes down
+	const float FootShuffleLift = 4.0f;
+	const float FootLiftRate = 26.0f;
+
+	// the furthest a held foot is kept from where the clip has it before it is let go, how fast it then comes back, and how
+	// near it has to be before it can be put down again
+	const float FootMostHeld = 20.0f;
+	const float FootReturnRate = 16.0f;
+	const float FootTakenAgain = 3.0f;
+
+	// looking: how far round and up and down a head goes, past what angle to the side it is not tried at all, how the turn is
+	// shared between the top of the back, the neck and the head, and how fast it comes on and goes round
+	const float LookMostRound = 62.0f;
+	const float LookMostUp = 24.0f;
+	const float LookMostDown = 30.0f;
+	const float LookGivenUp = 105.0f;
+	const float LookShare[3] = { 0.14f, 0.3f, 0.56f };
+	const float LookRate = 5.0f;
+
+	// how much of the way from where the clip has the face to where it is to look the head is taken: not all of it, so
+	// that what the clip does with the head still shows
+	const float LookHowMuch = 0.9f;
+
+	// how somebody at ease carries their head (degrees above level), how much of a clip's hanging of it is taken out, the
+	// most it is raised by, and how fast what the clip does with it is averaged
+	const float HeadCarried = -3.0f;
+	const float HeadRaisedShare = 0.8f;
+	const float HeadMostRaised = 26.0f;
+	const float HeadHangRate = 1.2f;
+	const float LookTurnSpeed = 150.0f;
+
 	const float SlowestStep = 0.6f;
 	const float FastestStep = 1.5f;
 
@@ -138,7 +205,9 @@ void UGutAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	const FGutStanceAnimations& Stance = Fighter->GetStanceAnimations();
 
 	Inputs.Idle = Stance.Idle;
+	Inputs.bIdleFromStart = Fighter->IsStandingInFamily();
 	Inputs.Block = Stance.Block;
+	Inputs.BlockHold = Stance.BlockHold;
 	Inputs.Locomotion = Fighter->GetLocomotionAnimations();
 	Inputs.bKeepUpperBodyWhileMoving = Stance.bKeepUpperBodyWhileMoving;
 	Inputs.bBlocking = Fighter->IsBlocking();
@@ -162,6 +231,44 @@ void UGutAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	// a fighter that is suddenly somewhere else was put there, and did not get there by itself
 	const FVector Place = Fighter->GetActorLocation();
 
+	// on its feet on the ground, and not thrown across it: then a foot that is put down stays where it was put
+	static const bool bNoFootHold = FParse::Param(FCommandLine::Get(), TEXT("GutNoFootHold"));
+
+	const EGutFighterState Doing = Fighter->GetFighterState();
+
+	Inputs.bHoldFeet = !bNoFootHold && Fighter->IsAlive() && !Fighter->IsBeast() && Movement && Movement->IsMovingOnGround()
+		&& Doing != EGutFighterState::Dodging && Doing != EGutFighterState::Staggered && Doing != EGutFighterState::Finishing && !Fighter->IsBeingFinished();
+
+	// somebody at ease walks a walk a person performed (Tools/make_style_motion.py), or jogs one: its feet are its own
+	Inputs.bFeetFree = Fighter->IsAtEase();
+
+	static const bool bHeadsHang = FParse::Param(FCommandLine::Get(), TEXT("GutHeadsHang"));
+
+	Inputs.bHeadUp = !bHeadsHang && Fighter->IsAtEase() && Fighter->IsAlive() && !Fighter->IsBeast() && !Fighter->HangsHead();
+
+	Inputs.bLook = Fighter->GetLookAt(Inputs.LookAt);
+
+	Inputs.bSlotUpperOnly = Fighter->IsFidgeting();
+	Inputs.bSlotKeepsHead = Fighter->IsFidgeting() && Fighter->DoesGestureKeepHead();
+
+	Inputs.ArmsIn[0] = Fighter->GetArmIn(0);
+	Inputs.ArmsIn[1] = Fighter->GetArmIn(1);
+	Inputs.bCarried = Fighter->IsCarriedPose();
+
+	Inputs.BlowReach = Fighter->GetBlowReach();
+	Inputs.BlowLimb = Fighter->GetBlowLimb();
+
+	Inputs.FloorHeight = Place.Z - Fighter->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() - ((Movement && Movement->CurrentFloor.bBlockingHit) ? Movement->CurrentFloor.GetDistanceToFloor() : 0.0f);
+	Inputs.CarriedWay = DeltaSeconds > UE_SMALL_NUMBER ? FVector(Place.X - LastPlace.X, Place.Y - LastPlace.Y, 0.0) / DeltaSeconds : FVector::ZeroVector;
+
+	// put somewhere, not carried there
+	if (Inputs.CarriedWay.SizeSquared() > FMath::Square(1500.0))
+	{
+		Inputs.CarriedWay = FVector::ZeroVector;
+	}
+
+	Inputs.Carried = static_cast<float>(Inputs.CarriedWay.Size());
+
 	if (FVector::DistSquared(Place, LastPlace) > FMath::Square(120.0f))
 	{
 		Placed();
@@ -175,6 +282,7 @@ void UGutAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	// the weapon in the fist, if it is the kind that is gripped, and where the stance points it
 	Inputs.bWeaponLine = Fighter->GetWeaponLine(Inputs.WeaponBase, Inputs.WeaponTip, Inputs.WeaponRadius);
+	Inputs.bFingersShutForIt = Fighter->AreFingersShutForIt();
 
 	// how much further from the hand the neck and the head of the body that is seen are than those of the skeleton that fights
 	Inputs.NeckShift = FVector::ZeroVector;
@@ -243,11 +351,21 @@ void UGutAnimInstance::Placed()
 	++Inputs.PlaceSerial;
 }
 
-void UGutAnimInstance::SetIdle(UAnimSequenceBase* Idle, float StartTime, float PlayRate)
+void UGutAnimInstance::SetLook(bool bLook, const FVector& At)
+{
+	Inputs.bLook = bLook;
+	Inputs.LookAt = At;
+
+	// somebody standing in a crowd, with nothing just now to look at: head up, as anybody at ease carries it
+	Inputs.bHeadUp = true;
+}
+
+void UGutAnimInstance::SetIdle(UAnimSequenceBase* Idle, float StartTime, float PlayRate, bool bFollowsOn)
 {
 	Inputs.Idle = Idle;
 	Inputs.IdleStart = StartTime;
 	Inputs.IdleRate = PlayRate;
+	Inputs.bIdleFromStart = bFollowsOn;
 }
 
 FAnimInstanceProxy* UGutAnimInstance::CreateAnimInstanceProxy()
@@ -291,11 +409,23 @@ void FGutAnimInstanceProxy::UpdateAnimationNode(const FAnimationUpdateContext& I
 		}
 
 		PreviousIdle = CurrentIdle;
+		PreviousIdleTime = IdleTime;
 		CurrentIdle = Inputs.Idle;
 		IdleChange = PreviousIdle ? 0.0f : 1.0f;
+
+		// one of a family of standing clips follows on from the last: it begins at its beginning, and the last runs on to its
+		// end underneath while it is left, which takes a little longer than a change of weapon
+		IdleChangeLength = IdleChangeTime;
+
+		if (Inputs.bIdleFromStart && PreviousIdle)
+		{
+			IdleTime = 0.0f;
+			IdleChangeLength = 0.55f;
+		}
 	}
 
-	IdleChange = FMath::Min(1.0f, IdleChange + (DeltaTime / IdleChangeTime));
+	IdleChange = FMath::Min(1.0f, IdleChange + (DeltaTime / IdleChangeLength));
+	PreviousIdleTime += DeltaTime * Inputs.IdleRate;
 
 	if (CurrentIdle && CurrentIdle->GetPlayLength() > 0.0f)
 	{
@@ -304,7 +434,7 @@ void FGutAnimInstanceProxy::UpdateAnimationNode(const FAnimationUpdateContext& I
 
 	if (Inputs.Block && Inputs.Block->GetPlayLength() > 0.0f)
 	{
-		BlockTime = FMath::Fmod(BlockTime + DeltaTime, Inputs.Block->GetPlayLength());
+		BlockTime = Inputs.BlockHold >= 0.0f ? FMath::Min(Inputs.BlockHold, Inputs.Block->GetPlayLength()) : FMath::Fmod(BlockTime + DeltaTime, Inputs.Block->GetPlayLength());
 	}
 
 	Elapsed += DeltaTime;
@@ -423,6 +553,9 @@ void FGutAnimInstanceProxy::UpdateAnimationNode(const FAnimationUpdateContext& I
 	float WalkTime = 0.0f;
 	float RunTime = 0.0f;
 
+	// and flat out, where there is a clip for it: forward only
+	const FGutMoveClip& Sprint = Inputs.Locomotion.Sprint;
+
 	for (int32 i = 0; i < 4; ++i)
 	{
 		const FGutMoveClip& Walk = Inputs.Locomotion.GetWalk(i);
@@ -430,28 +563,40 @@ void FGutAnimInstanceProxy::UpdateAnimationNode(const FAnimationUpdateContext& I
 
 		WalkSpeed += WayAmount[i] * Walk.Speed;
 		RunSpeed += WayAmount[i] * Run.Speed;
-		WalkTime += WayAmount[i] * (Walk.Animation ? Walk.Animation->GetPlayLength() : 1.0f);
-		RunTime += WayAmount[i] * (Run.Animation ? Run.Animation->GetPlayLength() : 1.0f);
+		WalkTime += WayAmount[i] * Walk.GetCycleTime();
+		RunTime += WayAmount[i] * Run.GetCycleTime();
 	}
 
-	const float WantedRun = RunSpeed > WalkSpeed + 1.0f ? FMath::Clamp((Inputs.Speed - WalkSpeed) / (RunSpeed - WalkSpeed), 0.0f, 1.0f) : 0.0f;
+	// 0 a walk, 1 a run, 2 flat out, and anywhere between
+	float WantedRun = RunSpeed > WalkSpeed + 1.0f ? FMath::Clamp((Inputs.Speed - WalkSpeed) / (RunSpeed - WalkSpeed), 0.0f, 1.0f) : 0.0f;
+
+	if (Sprint.Animation && Sprint.Speed > RunSpeed + 1.0f && Inputs.Speed > RunSpeed)
+	{
+		WantedRun = 1.0f + FMath::Clamp((Inputs.Speed - RunSpeed) / (Sprint.Speed - RunSpeed), 0.0f, 1.0f);
+	}
 
 	RunAmount = FMath::FInterpTo(RunAmount, WantedRun, DeltaTime, 7.0f);
 
-	const float ClipSpeed = FMath::Lerp(WalkSpeed, RunSpeed, RunAmount);
-	const float StepTime = FMath::Lerp(WalkTime, RunTime, RunAmount);
+	const float Faster = FMath::Clamp(RunAmount - 1.0f, 0.0f, 1.0f);
+	const float ClipSpeed = FMath::Lerp(FMath::Lerp(WalkSpeed, RunSpeed, FMath::Min(RunAmount, 1.0f)), Sprint.Speed, Faster);
+	const float StepTime = FMath::Lerp(FMath::Lerp(WalkTime, RunTime, FMath::Min(RunAmount, 1.0f)), Sprint.GetCycleTime(), Faster);
 
 	// a fighter that sets off from standing sets off on the foot the walking clips begin on, which is the one its stance has forward
 	if (MoveAmount < 0.02f)
 	{
 		StepPhase = 0.0f;
+		StepCount = 0.0f;
 	}
 
 	if (ClipSpeed > 1.0f && StepTime > UE_SMALL_NUMBER)
 	{
 		const float Rate = FMath::Clamp(Inputs.Speed / ClipSpeed, SlowestStep, FastestStep);
 
-		StepPhase = FMath::Frac(StepPhase + (DeltaTime * Rate / StepTime));
+		const float Next = StepPhase + (DeltaTime * Rate / StepTime);
+
+		// which cycle it is on, for a clip that holds more than one: its second is not always its first again
+		StepCount = FMath::Fmod(StepCount + FMath::FloorToFloat(Next), 64.0f);
+		StepPhase = FMath::Frac(Next);
 	}
 }
 
@@ -526,12 +671,66 @@ const TArray<float>& FGutAnimInstanceProxy::GetUpperBody(const FBoneContainer& B
 	Named.Forearm = Find(TEXT("lowerarm_r"));
 	Named.Hand = Find(TEXT("hand_r"));
 
+	Named.Leg[0][0] = Find(TEXT("thigh_l"));
+	Named.Leg[0][1] = Find(TEXT("calf_l"));
+	Named.Leg[0][2] = Find(TEXT("foot_l"));
+	Named.Leg[1][0] = Find(TEXT("thigh_r"));
+	Named.Leg[1][1] = Find(TEXT("calf_r"));
+	Named.Leg[1][2] = Find(TEXT("foot_r"));
+
+	Named.Ball[0] = Find(TEXT("ball_l"));
+	Named.Ball[1] = Find(TEXT("ball_r"));
+
+	// how high its ankle stands off the floor, and the ball of its foot
+	if (const int32 Ankle = Skeleton.FindBoneIndex(FName(TEXT("foot_l"))); Ankle != INDEX_NONE)
+	{
+		AnkleRest = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Ankle).GetLocation().Z;
+	}
+
+	// which way the head's own bone has the face, found from how it stands at rest: whichever of its axes points most
+	// nearly the way the body faces
+	if (const int32 Head = Skeleton.FindBoneIndex(FName(TEXT("head"))); Head != INDEX_NONE)
+	{
+		const FQuat AtRest = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Head).GetRotation();
+
+		float Best = -2.0f;
+
+		for (const FVector& Axis : { FVector::ForwardVector, FVector::RightVector, FVector::UpVector, -FVector::ForwardVector, -FVector::RightVector, -FVector::UpVector })
+		{
+			if (const float Along = static_cast<float>(FVector::DotProduct(AtRest.RotateVector(Axis), FVector(0.0, 1.0, 0.0))); Along > Best)
+			{
+				Best = Along;
+				HeadFaces = Axis;
+			}
+		}
+	}
+
+	if (const int32 Ball = Skeleton.FindBoneIndex(FName(TEXT("ball_l"))); Ball != INDEX_NONE)
+	{
+		BallRest = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Ball).GetLocation().Z;
+	}
+
 	Named.Arm[0][0] = Find(TEXT("upperarm_l"));
 	Named.Arm[0][1] = Find(TEXT("lowerarm_l"));
 	Named.Arm[0][2] = Find(TEXT("hand_l"));
 	Named.Arm[1][0] = Find(TEXT("upperarm_r"));
 	Named.Arm[1][1] = Find(TEXT("lowerarm_r"));
 	Named.Arm[1][2] = Find(TEXT("hand_r"));
+
+	// everything below a wrist
+	Fingers.Reset();
+
+	for (const FCompactPoseBoneIndex Bone : Bones.ForEachCompactPoseBoneIndex())
+	{
+		for (FCompactPoseBoneIndex Up = Bones.GetParentBoneIndex(Bone); Up.GetInt() >= 0; Up = Bones.GetParentBoneIndex(Up))
+		{
+			if (Up == Named.Arm[0][2] || Up == Named.Arm[1][2])
+			{
+				Fingers.Add(Bone);
+				break;
+			}
+		}
+	}
 
 	return UpperBody;
 }
@@ -546,6 +745,338 @@ FTransform FGutAnimInstanceProxy::InBody(const FCompactPose& Pose, FCompactPoseB
 	}
 
 	return Result;
+}
+
+void FGutAnimInstanceProxy::LookToward(FPoseContext& Output, float DeltaTime)
+{
+	using namespace GutAnimConstants;
+
+	if (Named.Head.GetInt() < 0 || Named.Neck.GetInt() < 0 || DeltaTime <= 0.0f)
+	{
+		return;
+	}
+
+	// straight ahead for the body, in the space of its own mesh
+	const FVector Ahead(0.0f, 1.0f, 0.0f);
+
+	// The performer whose walk and standing the town has looked at the floor of the room he was recorded in, in nearly
+	// everything: a street of people all studying their feet. Somebody at ease carries their head up. How far the clip
+	// hangs it is taken over a second or so, and most of that is given back, so that what the head does from moment to
+	// moment in the clip (a nod, a glance) is still done, from a head held level.
+	if (Inputs.bHeadUp)
+	{
+		const FVector Hung = InBody(Output.Pose, Named.Head).GetRotation().RotateVector(HeadFaces).GetSafeNormal(UE_SMALL_NUMBER, Ahead);
+		const float Hangs = FMath::RadiansToDegrees(FMath::Asin(FMath::Clamp(Hung.Z, -1.0f, 1.0f)));
+
+		HeadHangs = bHeadKnown ? FMath::FInterpTo(HeadHangs, Hangs, DeltaTime, HeadHangRate) : Hangs;
+		bHeadKnown = true;
+	}
+	else
+	{
+		bHeadKnown = false;
+	}
+
+	const float Raise = Inputs.bHeadUp ? FMath::Clamp((HeadCarried - HeadHangs) * HeadRaisedShare, 0.0f, HeadMostRaised) * (1.0f - FMath::Clamp(SlotWeight, 0.0f, 1.0f)) : 0.0f;
+
+	HeadRaised = FMath::FInterpTo(HeadRaised, Raise, DeltaTime, LookRate);
+
+	if (HeadRaised > 0.1f)
+	{
+		// about the body's own right-to-left line, which lifts the face
+		const FQuat Lift(FVector(1.0f, 0.0f, 0.0f), FMath::DegreesToRadians(HeadRaised));
+		const FCompactPoseBoneIndex Lifted[3] = { Named.Spine[4], Named.Neck, Named.Head };
+
+		for (int32 i = 0; i < 3; ++i)
+		{
+			if (Lifted[i].GetInt() < 0)
+			{
+				continue;
+			}
+
+			const FQuat Part = FQuat::Slerp(FQuat::Identity, Lift, LookShare[i]);
+			const FQuat Parent = InBody(Output.Pose, Output.Pose.GetParentBoneIndex(Lifted[i])).GetRotation();
+			const FQuat Own = InBody(Output.Pose, Lifted[i]).GetRotation();
+
+			Output.Pose[Lifted[i]].SetRotation((Parent.Inverse() * Part * Own).GetNormalized());
+		}
+	}
+
+	FVector Wanted = Ahead;
+	bool bLooking = false;
+
+	if (Inputs.bLook)
+	{
+		const FTransform& InWorld = GetComponentTransform();
+		const FVector Eyes = InWorld.TransformPosition(InBody(Output.Pose, Named.Head).GetLocation());
+
+		FVector Way = InWorld.InverseTransformVectorNoScale(Inputs.LookAt - Eyes);
+
+		if (Way.Normalize())
+		{
+			// round to the side, and up or down, each no further than a neck goes
+			const float Round = FMath::RadiansToDegrees(FMath::Atan2(-Way.X, Way.Y));
+			const float Raised = FMath::RadiansToDegrees(FMath::Asin(FMath::Clamp(Way.Z, -1.0f, 1.0f)));
+
+			// behind the body: nobody's head goes round that far, and it is left alone
+			if (FMath::Abs(Round) < LookGivenUp)
+			{
+				const float Yaw = FMath::DegreesToRadians(FMath::Clamp(Round, -LookMostRound, LookMostRound));
+				const float Pitch = FMath::DegreesToRadians(FMath::Clamp(Raised, -LookMostDown, LookMostUp));
+
+				Wanted = FVector(-FMath::Sin(Yaw) * FMath::Cos(Pitch), FMath::Cos(Yaw) * FMath::Cos(Pitch), FMath::Sin(Pitch));
+				bLooking = true;
+			}
+		}
+	}
+
+	// not while something is playing over the body: a head that is knocked back is not held on its target
+	const float Amount = bLooking ? 1.0f - FMath::Clamp(SlotWeight, 0.0f, 1.0f) : 0.0f;
+
+	LookAmount = FMath::FInterpTo(LookAmount, Amount, DeltaTime, LookRate);
+
+	if (bLooking)
+	{
+		LookWay = FMath::VInterpNormalRotationTo(LookWay, Wanted, DeltaTime, LookTurnSpeed);
+	}
+
+	if (LookAmount < 0.01f)
+	{
+		return;
+	}
+
+	// from the way the clip has the face turned now, whichever way that is, to the way it is to look: a clip that hangs
+	// its head, as the ones made for watching a pit from above do, does not go on hanging it at somebody's knees
+	const FVector Faces = InBody(Output.Pose, Named.Head).GetRotation().RotateVector(HeadFaces).GetSafeNormal(UE_SMALL_NUMBER, Ahead);
+	const FQuat Whole = FQuat::FindBetweenNormals(Faces, LookWay.GetSafeNormal(UE_SMALL_NUMBER, Ahead));
+
+	// shared out up the back of the neck, most of it in the head itself
+	const FCompactPoseBoneIndex Bones[3] = { Named.Spine[4], Named.Neck, Named.Head };
+
+	for (int32 i = 0; i < 3; ++i)
+	{
+		if (Bones[i].GetInt() < 0)
+		{
+			continue;
+		}
+
+		const FQuat Part = FQuat::Slerp(FQuat::Identity, Whole, LookShare[i] * LookAmount * LookHowMuch);
+
+		const FQuat Parent = InBody(Output.Pose, Output.Pose.GetParentBoneIndex(Bones[i])).GetRotation();
+		const FQuat Own = InBody(Output.Pose, Bones[i]).GetRotation();
+
+		Output.Pose[Bones[i]].SetRotation((Parent.Inverse() * Part * Own).GetNormalized());
+	}
+}
+
+void FGutAnimInstanceProxy::HoldFeet(FPoseContext& Output, float DeltaTime)
+{
+	using namespace GutAnimConstants;
+
+	if (!Inputs.bHoldFeet || Named.Leg[0][2].GetInt() < 0 || Named.Leg[1][2].GetInt() < 0 || Named.Leg[0][0].GetInt() < 0 || Named.Leg[1][0].GetInt() < 0 || DeltaTime <= 0.0f)
+	{
+		// off its feet, or just put somewhere: nothing is held, and nothing is owed
+		bFootKnown = false;
+		bFootHeld[0] = bFootHeld[1] = false;
+		bFootStepping[0] = bFootStepping[1] = false;
+		FootLift[0] = FootLift[1] = 0.0f;
+		FootTurn[0] = FootTurn[1] = 0.0f;
+		FootOff[0] = FootOff[1] = FVector::ZeroVector;
+		return;
+	}
+
+	const FTransform& InWorld = GetComponentTransform();
+
+	if (FeetPlaceSerial != Inputs.PlaceSerial)
+	{
+		FeetPlaceSerial = Inputs.PlaceSerial;
+		bFootKnown = false;
+		bFootHeld[0] = bFootHeld[1] = false;
+		bFootStepping[0] = bFootStepping[1] = false;
+		FootLift[0] = FootLift[1] = 0.0f;
+		FootTurn[0] = FootTurn[1] = 0.0f;
+		FootOff[0] = FootOff[1] = FVector::ZeroVector;
+	}
+
+	// walking on its own legs the clip does the stepping, and says which foot is down by which is still against the floor.
+	// Carried any other way (the push of a lunge, a shove from a blow, the reach of a strike) the clip's feet stay where
+	// they are under the body, and both are down.
+	const bool bOwnLegs = Inputs.Speed > FootWalking;
+
+	// a step lands a little ahead of where the body is, the way it is going, so that it is not behind again at once
+	const FVector Lead = (Inputs.CarriedWay * FootStepLead).GetClampedToMaxSize2D(FootMostLead);
+
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		const FTransform Foot = InBody(Output.Pose, Named.Leg[Side][2]);
+
+		// where the clip has the foot, in the world: its ankle, and the ball of it. A foot stands on whichever of the two is
+		// nearer the floor: somebody in a fighting stance has the back heel up and stands on the ball of that foot, and it is
+		// planted all the same. How high that is, and how fast it is going over the ground.
+		const FVector Ankle = InWorld.TransformPosition(Foot.GetLocation());
+		const FVector Ball = Named.Ball[Side].GetInt() >= 0 ? InWorld.TransformPosition(InBody(Output.Pose, Named.Ball[Side]).GetLocation()) : Ankle;
+
+		const float AnkleUp = Ankle.Z - Inputs.FloorHeight - AnkleRest;
+		const float BallUp = Named.Ball[Side].GetInt() >= 0 ? Ball.Z - Inputs.FloorHeight - BallRest : UE_BIG_NUMBER;
+
+		// with a little to spare, so that a flat foot does not go from one to the other and back
+		const bool bOnBall = BallUp < AnkleUp - (bFootOnBall[Side] ? 0.3f : 1.2f);
+		const FVector Stood = bOnBall ? Ball : Ankle;
+
+		const float Up = FMath::Min(AnkleUp, BallUp);
+		const float Going = (bFootKnown && bOnBall == bFootOnBall[Side]) ? FVector::Dist2D(Stood, FootWas[Side]) / DeltaTime : (bFootKnown ? FootWent[Side] : UE_BIG_NUMBER);
+		const bool bLow = Up < FootDownAt;
+
+		// and which way the clip has it turned, in the world: a body that turns to keep facing somebody turns its feet with
+		// it, and a planted foot swivelling on the floor is sliding as much as one that is dragged
+		const FQuat Turned = InWorld.GetRotation() * Foot.GetRotation();
+
+		// held by the one, and now standing on the other: held where that one is seen to be
+		if (bOnBall != bFootOnBall[Side] && bFootHeld[Side])
+		{
+			FootHeldAt[Side] = Stood + FVector(FootOff[Side].X, FootOff[Side].Y, 0.0f);
+		}
+
+		bFootOnBall[Side] = bOnBall;
+		FootWas[Side] = Stood;
+		FootWent[Side] = Going;
+
+		// everything below is said of the point the foot stands on; the leg is bent to the ankle, which goes with it
+		const FVector Asked = Stood;
+
+		// A walk performed by a person plants its own feet, and rolls each from the heel to the toe as it does: held by the
+		// ankle, that roll was taken for sliding and stopped, and the foot stepped three times a stride to catch up
+		// (measured 21 November). Such a walk is let alone: whatever a foot was held back by dies away as it sets off.
+		const bool bFree = Inputs.bFeetFree && bOwnLegs;
+
+		if (bFree)
+		{
+			bFootHeld[Side] = false;
+			bFootStepping[Side] = false;
+		}
+
+		if (bFootStepping[Side])
+		{
+			// in the air, from where it was held to where the clip has it now: up and over, never along the floor
+			FootStepTime[Side] += DeltaTime / FootStepLength[Side];
+
+			const float Done = FMath::Clamp(FootStepTime[Side], 0.0f, 1.0f);
+			const FVector To = FVector(Asked.X + Lead.X, Asked.Y + Lead.Y, Asked.Z);
+
+			FVector Now = FMath::Lerp(FootStepFrom[Side], To, FMath::SmoothStep(0.0f, 1.0f, Done));
+
+			Now.Z = Asked.Z + (FootStepLift[Side] * FMath::Sin(Done * UE_PI));
+
+			FootOff[Side] = Now - Asked;
+
+			// and round to the way the clip has it turned, while it is in the air
+			FootTurn[Side] = FootStepTurn[Side] * (1.0f - FMath::SmoothStep(0.0f, 1.0f, Done));
+
+			if (Done >= 1.0f)
+			{
+				// down, and held where it came down, turned as it came down
+				bFootStepping[Side] = false;
+				bFootHeld[Side] = Up < FootLiftedAt;
+				FootHeldAt[Side] = To;
+				FootHeldTurned[Side] = Turned;
+				FootOff[Side] = To - Asked;
+				FootTurn[Side] = 0.0f;
+			}
+		}
+		else if (bFootHeld[Side])
+		{
+			FootOff[Side] = FootHeldAt[Side] - Asked;
+			FootOff[Side].Z = 0.0f;
+
+			const float Behind = FootOff[Side].Size2D();
+
+			// how far the clip has turned it since it was put down, about the upright: that much is taken back off
+			FQuat Tilted;
+			FQuat Round;
+
+			(Turned * FootHeldTurned[Side].Inverse()).ToSwingTwist(FVector::UpVector, Tilted, Round);
+
+			FootTurn[Side] = -FRotator::NormalizeAxis(FMath::RadiansToDegrees(Round.GetTwistAngle(FVector::UpVector)));
+
+			// a foot the clip is swinging forward along the floor, as a shuffling step does without ever lifting it:
+			// walking on its own legs, a foot that goes over the ground about as fast as the body does is not planted
+			const bool bSwung = bOwnLegs && Going > FMath::Max(FootStillSpeed * 2.0f, Inputs.Speed * FootSwungShare);
+
+			// come to rest with a foot still where the last step left it: nobody stands like that. Once the body has been
+			// still a moment, each foot in turn is brought under it, where the standing clip has it.
+			FootRest[Side] = (!bOwnLegs && Inputs.Carried < FootRestSpeed) ? FootRest[Side] + DeltaTime : 0.0f;
+
+			const bool bSettling = FootRest[Side] > FootSettleAfter && Behind > FootSettleOff;
+
+			if (Up > FootLiftedAt)
+			{
+				// lifted by the clip: let go, and what it was held back by dies away while it is in the air
+				bFootHeld[Side] = false;
+			}
+			else if ((Behind > FootMostHeld || FMath::Abs(FootTurn[Side]) > FootMostTurned || bSettling || (bSwung && Behind > FootTakenAgain)) && (!bFootStepping[1 - Side] || Behind > FootMostHeld * FootBothStep))
+			{
+				// the leg would have to stretch: it takes a step. One foot at a time, unless this one is left too far behind.
+				bFootHeld[Side] = false;
+				bFootStepping[Side] = true;
+				FootStepFrom[Side] = FVector(FootHeldAt[Side].X, FootHeldAt[Side].Y, Asked.Z);
+				FootStepTurn[Side] = FootTurn[Side];
+				FootStepTime[Side] = 0.0f;
+				FootRest[Side] = 0.0f;
+				FootStepLength[Side] = FMath::Clamp(FMath::Max(Behind / FootStepSpeed, FMath::Abs(FootTurn[Side]) / FootStepTurnSpeed), FootStepShortest, FootStepLongest);
+				FootStepLift[Side] = FMath::Clamp(Behind * FootStepLiftShare, FootStepLiftLeast, FootStepLiftMost);
+			}
+			else if (bSwung)
+			{
+				// swung from where the clip has it anyway: nothing to catch up
+				bFootHeld[Side] = false;
+			}
+		}
+		else
+		{
+			// what it was let go with dies away: that is the foot coming back to where the clip has it, in the air
+			FootOff[Side] *= FMath::Exp(-FootReturnRate * DeltaTime);
+			FootOff[Side].Z = 0.0f;
+			FootTurn[Side] *= FMath::Exp(-FootReturnRate * DeltaTime);
+
+			// down, and either the body is not on its own legs or the foot is all but still against the floor: it is put down here
+			if (!bFree && bLow && (!bOwnLegs || Going < FMath::Max(FootStillSpeed, Inputs.Speed * FootStillShare)) && FootOff[Side].Size() < FootTakenAgain)
+			{
+				bFootHeld[Side] = true;
+				FootHeldAt[Side] = Asked + FootOff[Side];
+
+				// turned as it is seen now, which is the clip's way and whatever is still owed
+				FootHeldTurned[Side] = FQuat(FVector::UpVector, FMath::DegreesToRadians(FootTurn[Side])) * Turned;
+			}
+		}
+
+		// a fighting shuffle swings its feet forward along the floor without lifting them, which reads as skating: a foot
+		// that is free, low and going over the ground is picked up a little while it goes
+		const bool bSkating = !bFree && !bFootHeld[Side] && !bFootStepping[Side] && bLow && bOwnLegs && Going > FootStillSpeed * 2.0f;
+
+		FootLift[Side] = FMath::FInterpTo(FootLift[Side], bSkating ? FootShuffleLift : 0.0f, DeltaTime, bSkating ? FootLiftRate : FootLiftRate * 0.7f);
+
+		if (!bFootStepping[Side])
+		{
+			FootOff[Side].Z = FootLift[Side];
+		}
+
+		if (FootOff[Side].Size() < 0.2f && FMath::Abs(FootTurn[Side]) < 0.3f)
+		{
+			continue;
+		}
+
+		// bend the leg to it, and keep the foot turned as the clip has it, less what the body has turned under it
+		if (FootOff[Side].Size() >= 0.2f)
+		{
+			ReachTo(Output.Pose, Named.Leg[Side], InWorld.InverseTransformPosition(Ankle + FootOff[Side]));
+		}
+
+		const FQuat Calf = InBody(Output.Pose, Named.Leg[Side][1]).GetRotation();
+		const FQuat Kept = InWorld.GetRotation().Inverse() * FQuat(FVector::UpVector, FMath::DegreesToRadians(FootTurn[Side])) * Turned;
+
+		Output.Pose[Named.Leg[Side][2]].SetRotation((Calf.Inverse() * Kept).GetNormalized());
+	}
+
+	bFootKnown = true;
 }
 
 const FGutTurnClip* FGutAnimInstanceProxy::ChooseTurn(float Offset) const
@@ -996,7 +1527,7 @@ bool FGutAnimInstanceProxy::Evaluate(FPoseContext& Output)
 		FPoseContext Before(Output);
 		FPoseContext Mixed(Output);
 
-		Sample(Before, PreviousIdle, FMath::Fmod(IdleTime, FMath::Max(PreviousIdle->GetPlayLength(), 0.01f)));
+		Sample(Before, PreviousIdle, FMath::Fmod(PreviousIdleTime, FMath::Max(PreviousIdle->GetPlayLength(), 0.01f)));
 
 		Mix(Before, Standing, 1.0f - IdleChange, Mixed);
 
@@ -1018,10 +1549,12 @@ bool FGutAnimInstanceProxy::Evaluate(FPoseContext& Output)
 
 		for (int32 i = 0; i < 4; ++i)
 		{
-			for (int32 Pace = 0; Pace < 2; ++Pace)
+			for (int32 Pace = 0; Pace < 3; ++Pace)
 			{
-				const UAnimSequenceBase* Clip = (Pace == 0 ? Inputs.Locomotion.GetWalk(i) : Inputs.Locomotion.GetRun(i)).Animation;
-				const float Amount = WayAmount[i] * (Pace == 0 ? 1.0f - RunAmount : RunAmount);
+				// a walk, a run, and flat out: the share of each falls off either side of its own pace
+				const FGutMoveClip& Move = Pace == 0 ? Inputs.Locomotion.GetWalk(i) : (Pace == 1 ? Inputs.Locomotion.GetRun(i) : Inputs.Locomotion.Sprint);
+				const UAnimSequenceBase* Clip = Move.Animation;
+				const float Amount = WayAmount[i] * FMath::Clamp(1.0f - FMath::Abs(RunAmount - Pace), 0.0f, 1.0f);
 
 				if (!Clip || Amount < 0.005f)
 				{
@@ -1030,7 +1563,10 @@ bool FGutAnimInstanceProxy::Evaluate(FPoseContext& Output)
 
 				FPoseContext One(Output);
 
-				Sample(One, Clip, StepPhase * Clip->GetPlayLength());
+				// the phase is of one cycle: a clip that holds two is half way through when the cycle comes round
+				const int32 Cycles = FMath::Max(Move.Cycles, 1);
+
+				Sample(One, Clip, FMath::Fmod(StepPhase + Move.Phase + (FMath::FloorToInt(StepCount) % Cycles), static_cast<float>(Cycles)) * Clip->GetPlayLength() / Cycles);
 
 				if (Total <= 0.0f)
 				{
@@ -1123,9 +1659,71 @@ bool FGutAnimInstanceProxy::Evaluate(FPoseContext& Output)
 		FAnimationPoseData OutputData(Output);
 
 		SlotEvaluatePose(SlotName, BaseData, SlotSourceWeight, OutputData, SlotWeight, SlotTotalWeight);
+
+		// a hand to the back of the neck is done with the arm and the head. The legs go on standing as they stood: the
+		// clip of it was made on other feet, and laid over the whole body it shuffled them apart and back every time.
+		if (Inputs.bSlotUpperOnly)
+		{
+			FPoseContext Whole(Output);
+
+			Whole = Output;
+
+			if (Inputs.bSlotKeepsHead && Arms.Num() == Upper.Num())
+			{
+				// with the arms, and only a third of what the performer's trunk did: one of the clips bows from the waist
+				Scratch.SetNumUninitialized(Upper.Num(), EAllowShrinking::No);
+
+				for (int32 i = 0; i < Upper.Num(); ++i)
+				{
+					Scratch[i] = FMath::Lerp(Arms[i], Upper[i], 0.3f);
+				}
+
+				MixByBone(Base, Whole, Scratch, Output);
+			}
+			else
+			{
+				MixByBone(Base, Whole, Upper, Output);
+			}
+
+			// Talking with the hands is done with the hands: the head stays the head of somebody looking at whoever they
+			// are talking to. The clips carry their performer's head, and one of them took the Gate Warden's down to his
+			// chest a second into his line.
+			if (Inputs.bSlotKeepsHead && Named.Head.GetInt() >= 0 && Named.Neck.GetInt() >= 0)
+			{
+				for (FCompactPoseBoneIndex Bone = Named.Head; Bone.GetInt() >= 0; Bone = Output.Pose.GetParentBoneIndex(Bone))
+				{
+					Output.Pose[Bone].SetRotation(Base.Pose[Bone].GetRotation());
+
+					if (Bone == Named.Neck)
+					{
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	// a clip the performer travels in: the body is moved along it by the fighter, so the travel is not in the pose as well
+	if (Inputs.bCarried)
+	{
+		Output.Pose[Named.Root] = Output.Pose.GetBoneContainer().GetRefPoseTransform(Named.Root);
 	}
 
 	BindArms(Output);
+
+	// hands that are shut for the body that is seen are handed over open, as they rest: see bFingersShutForIt
+	if (Inputs.bFingersShutForIt)
+	{
+		const FBoneContainer& Bones = Output.Pose.GetBoneContainer();
+
+		for (const FCompactPoseBoneIndex Finger : Fingers)
+		{
+			if (Output.Pose.IsValidIndex(Finger))
+			{
+				Output.Pose[Finger] = Bones.GetRefPoseTransform(Finger);
+			}
+		}
+	}
 
 	if (Inputs.bFighter && Named.Hand.GetInt() >= 0)
 	{
@@ -1141,6 +1739,59 @@ bool FGutAnimInstanceProxy::Evaluate(FPoseContext& Output)
 		CarryOver(Output);
 		ClearWeapon(Output);
 	}
+
+	// arms at ease are brought in to the sides of the body that wears the clip
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		const FCompactPoseBoneIndex* Arm = Named.Arm[Side];
+
+		if (FMath::Abs(Inputs.ArmsIn[Side]) < 0.2f || Arm[0].GetInt() < 0 || Arm[2].GetInt() < 0 || Named.Spine[0].GetInt() < 0)
+		{
+			continue;
+		}
+
+		const FTransform Shoulder = InBody(Output.Pose, Arm[0]);
+		const FVector Wrist = InBody(Output.Pose, Arm[2]).GetLocation();
+		const FVector Middle = InBody(Output.Pose, Named.Spine[0]).GetLocation();
+
+		const FVector Hangs = (Wrist - Shoulder.GetLocation()).GetSafeNormal();
+		const FVector Inward = FVector(Middle.X - Wrist.X, Middle.Y - Wrist.Y, 0.0f).GetSafeNormal();
+
+		if (Hangs.IsNearlyZero() || Inward.IsNearlyZero())
+		{
+			continue;
+		}
+
+		// about the shoulder, the way that takes the wrist toward the middle of the body
+		const FQuat In(FQuat::FindBetweenNormals(Hangs, Inward).GetRotationAxis(), FMath::DegreesToRadians(Inputs.ArmsIn[Side] * (1.0f - FMath::Clamp(SlotWeight, 0.0f, 1.0f))));
+
+		const FQuat Parent = InBody(Output.Pose, Output.Pose.GetParentBoneIndex(Arm[0])).GetRotation();
+
+		Output.Pose[Arm[0]].SetRotation((Parent.Inverse() * In * Shoulder.GetRotation()).GetNormalized());
+	}
+
+	LookToward(Output, Elapsed);
+
+	// a blow on its way in is taken the rest of the way onto the body it is thrown at
+	if (Inputs.BlowLimb >= 0 && Inputs.BlowLimb < 4 && !Inputs.BlowReach.IsNearlyZero(0.1f))
+	{
+		const FCompactPoseBoneIndex* Limb = Inputs.BlowLimb < 2 ? Named.Arm[Inputs.BlowLimb] : Named.Leg[Inputs.BlowLimb - 2];
+
+		if (Limb[0].GetInt() >= 0 && Limb[1].GetInt() >= 0 && Limb[2].GetInt() >= 0)
+		{
+			const FTransform End = InBody(Output.Pose, Limb[2]);
+
+			ReachTo(Output.Pose, Limb, End.GetLocation() + GetComponentTransform().InverseTransformVector(Inputs.BlowReach));
+
+			// the fist or the foot stays turned as the clip has it, and so does whatever is in it
+			const FQuat Lower = InBody(Output.Pose, Limb[1]).GetRotation();
+
+			Output.Pose[Limb[2]].SetRotation((Lower.Inverse() * End.GetRotation()).GetNormalized());
+		}
+	}
+
+	// last of all, so that nothing done to the body above can move a foot that is held
+	HoldFeet(Output, Elapsed);
 
 	Elapsed = 0.0f;
 

@@ -167,6 +167,17 @@ public:
 	/** Who in the cage is dead, who has come in since, and what each has won: the same for all three */
 	UPROPERTY()
 	FGutRosterState Roster;
+
+	/** What has been picked up in the town and is not lying there any more: the place's name, a colon, and which of its finds */
+	UPROPERTY()
+	TArray<FName> Found;
+
+	/** The one purse, and whether there is one yet: see UGutGameInstance::ShareWater */
+	UPROPERTY()
+	float Purse = 0.0f;
+
+	UPROPERTY()
+	bool bOnePurse = false;
 };
 
 /**
@@ -275,6 +286,16 @@ public:
 	/** If true the owner has come to the cage by the Block's clerk, and the first thing it is shown is who is for sale */
 	bool bStableAtBlock = false;
 
+	/** True if the cage is to open, as an owner's, on the pit boss's bill: come to by the hatch in a yard that is walked about in */
+	bool bStableAtBill = false;
+
+	/**
+	 *  True if the owner came into the cage by the hatch of a yard that is walked about in. The cage's own yard card is then
+	 *  never shown: wherever it would be (a fight over, the bill backed out of, a body seen to), the player is stood back in
+	 *  the yard itself. He was shown the old card after a fight, took "out with both", and was put in the yard with nobody.
+	 */
+	bool bStableFromYard = false;
+
 	/** How loud the game is, in thirds: 3 is as it was mixed, 0 is silent. Set from the menu that stops the game, and kept between sittings. */
 	UPROPERTY(BlueprintReadWrite, Category="Gut")
 	int32 Loudness = 3;
@@ -288,6 +309,13 @@ public:
 	int32 Speech = 0;
 
 	bool HearsSpeech() const { return Speech != 1; }
+
+	/**
+	 *  The street's camera, locked: it stays as high and as steep as it was when it was locked, in every place, and only
+	 *  turns. Kept here so that it is the same from one place to the next.
+	 */
+	bool bCameraLocked = false;
+	float CameraLockedPitch = -6.0f;
 	bool ReadsSpeech() const { return Speech != 2; }
 
 	/** If true the run is kept on disk */
@@ -319,6 +347,9 @@ public:
 	/** Leaves for the street's own level. The run is written down first. */
 	void GoToStreet(const UObject* WorldContext);
 
+	/** True from the moment the street is asked for until a level has begun: the cage's screens are not drawn while it is */
+	bool bGoingToStreet = false;
+
 	/** Applies how loud the game is to whatever world this is */
 	void ApplyLoudness(const UObject* WorldContext) const;
 
@@ -337,9 +368,60 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Gut")
 	void ResetLadder(float StartingWater);
 
+	/**
+	 *  One purse. The player is one person and holds one lot of water, whichever way they come to the cage: as a fighter,
+	 *  to bet, or as an owner. (Until 21 November there were three purses that never mixed, and Vincent could not buy
+	 *  anybody with a fighter's winnings in hand, or tell why.)
+	 *
+	 *  The rules of each way still keep their own figure and are left as they were written. This is what makes the three
+	 *  one: whatever any of them has gained or spent since it was last called is put on the purse, and all three are set
+	 *  to the purse. It is called all the time in the town and whenever the run is written down.
+	 *  -GutThreePurses on the command line leaves the three apart, as they were.
+	 */
+	void ShareWater();
+
+	/** True if the player holds one purse: after the first time Share Water has run */
+	bool IsOnePurse() const { return bOnePurse; }
+
+	/** What the player holds, where there is one purse */
+	float GetPurse() const { return Purse; }
+
+	/**
+	 *  What somebody who starts one of the three ways comes to it with: the way's own starting water where the three are
+	 *  kept apart, and what they already hold where there is one purse.
+	 */
+	float GetStartingWater(float Own) const { return bOnePurse ? Purse : Own; }
+
+	/** What a new player holds before they have been anywhere, where there is one purse */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Gut", meta=(ClampMin=0))
+	float FirstWater = 40.0f;
+
+	/** What has been picked up in the town and is not lying there any more: the place's name, a colon, and which of its finds */
+	UPROPERTY(BlueprintReadOnly, Category="Gut")
+	TArray<FName> Found;
+
+	/** Lets Share Water run under the automation tests, which otherwise keep the three purses their rules were tested with */
+	bool bSharesWaterInTests = false;
+
+	/** Forgets the purse: the three are apart again until Share Water next runs. For tests. */
+	void ForgetPurse() { bOnePurse = false; bPurseSeen = false; Purse = 0.0f; }
+
 	/** Writes the run to disk as the player came to the fight it is on. Returns false if saving is off or failed. */
 	UFUNCTION(BlueprintCallable, Category="Gut")
 	bool SaveRun();
+
+protected:
+
+	/** The one purse: what the player holds */
+	float Purse = 0.0f;
+	bool bOnePurse = false;
+
+	/** What each way's own figure stood at when Share Water last ran (fighter, bettor, owner), and whether that is known in this sitting */
+	float PurseSeen[3] = { 0.0f, 0.0f, 0.0f };
+	bool bPurseSeen = false;
+
+public:
+
 
 	/** Reads the run from disk. Returns false if saving is off or there is nothing there. */
 	UFUNCTION(BlueprintCallable, Category="Gut")

@@ -346,13 +346,25 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation|At Ease")
 	FGutLocomotionAnimations AtEaseLocomotion;
 
+	/** The same for a woman, where there are clips a woman performed */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation|At Ease")
+	FGutLocomotionAnimations AtEaseLocomotionWoman;
+
 	/** Speed at a walk when at ease */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation|At Ease", meta = (ClampMin = 10, ClampMax = 1000, Units = "cm/s"))
-	float AtEaseWalkSpeed = 150.0f;
+	float AtEaseWalkSpeed = 112.0f;
 
 	/** Speed at a jog when at ease */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation|At Ease", meta = (ClampMin = 10, ClampMax = 1000, Units = "cm/s"))
 	float AtEaseJogSpeed = 340.0f;
+
+	/** Speed at a flat-out run when at ease */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation|At Ease", meta = (ClampMin = 10, ClampMax = 1200, Units = "cm/s"))
+	float AtEaseRunSpeed = 500.0f;
+
+	/** The ways there are of standing about at ease. Each body keeps one. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation|At Ease")
+	TArray<FGutStandFamily> AtEaseFamilies;
 
 	/** Where somebody's arms are when their wrists are tied behind their back: a clip the arms are taken from, whatever the rest of them is doing */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Presentation|At Ease")
@@ -652,6 +664,14 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequenceBase> BoundClip;
 
+	bool bFingersShutForIt = false;
+
+	/** The line the face is saying, and when by the world's clock it began */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequenceBase> SpeechFace;
+
+	double SpeechBegan = 0.0;
+
 	float BoundPast = 2.0f;
 
 	/** How fast it is being moved by something other than its own movement, for its legs to keep up with: see SetLedVelocity */
@@ -680,6 +700,8 @@ protected:
 	/** The grey-box plates of the armor, fixed to the body */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UStaticMeshComponent>> ArmorPlates;
+
+	bool bChestPiece = false;
 
 	/** The links of a chain in the hand. They hang and swing on their own, tied to the fighter only at the handle. */
 	UPROPERTY(Transient)
@@ -715,6 +737,9 @@ protected:
 	/** The frame the feet were last listened to in: a body can be posed more than once in a frame */
 	uint64 FeetHeardFrame = 0;
 
+	/** When each foot was last heard to land, by the world's clock */
+	double FootHeardAt[2] = { -10.0, -10.0 };
+
 	/** Whether the swing of the attack in hand has been heard yet */
 	bool bSwingHeard = false;
 
@@ -723,6 +748,120 @@ protected:
 
 	/** How much of each of those the face is showing now, from 0 to 1 */
 	float FaceHurtShown = 0.0f;
+
+	/** How much of the fighting face is on: all of it in a fight, a trace of it at ease */
+	float FaceFightShown = 1.0f;
+
+	/** When, by the world's clock, this face next blinks, at ease: the fighting face has its own blinks in it */
+	double BlinkAt = 0.0;
+
+	/**
+	 *  How far each arm is brought in toward the body from where the clip hangs it, in degrees, left then right.
+	 *  The clips hang the arms as their one skeleton hangs them, a hand's length out from the hips of anybody slighter:
+	 *  each body's arms are brought in until its own wrists are beside its own hips. See HangArms.
+	 */
+	float ArmsIn[2] = { 0.0f, 0.0f };
+
+	/**
+	 *  A clip in which the performer travels, and the body is taken along: where the body stood as it began, which way the
+	 *  clip's own space lay in the world, how far through it is, and how far from where it should have begun the body was
+	 *  (made up over the first third of a second, not at a jump).
+	 */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> CarriedClip;
+
+	FVector CarriedFrom = FVector::ZeroVector;
+	FVector CarriedSlip = FVector::ZeroVector;
+	FVector CarriedRootAtStart = FVector::ZeroVector;
+	FQuat CarriedTurn = FQuat::Identity;
+	float CarriedTime = 0.0f;
+
+	/** True while what plays on the body is such a clip, to its last frame of fading out: its own travel is left out of the pose */
+	bool bCarriedPose = false;
+
+	/** Plays the clip at its own speed from its start and takes the body along it, from the given place */
+	void BeginCarried(UAnimSequenceBase* Clip, const FVector& From);
+	void UpdateCarried(float DeltaTime);
+	void EndCarried();
+
+	/** Brings the arms of somebody standing at ease in to their own sides */
+	void HangArms();
+
+	/** A level slice of the dressed body's trunk, in the space of the spine bone it starts at: where it is and how far it reaches */
+	struct FTrunkSection
+	{
+		FName Bone;
+		float Height = 0.0f;
+
+		/** How far below the bone the slice begins: the hips are measured down from the pelvis, where there is no bone to begin at */
+		float Below = 0.0f;
+		FVector Along = FVector::ZeroVector;
+		FVector Across = FVector::ZeroVector;
+		FVector Front = FVector::ZeroVector;
+		FVector2D Middle = FVector2D::ZeroVector;
+		FVector2D Half = FVector2D::ZeroVector;
+
+		/** How far an arm may lie into this slice: all of ArmGive where it is skin or a shirt, none where what is worn stands a finger's breadth and more off the body */
+		float Give = 0.0f;
+	};
+
+	/** Measuring, only the body itself is read and not what it wears: for telling how thick what it wears is */
+	mutable bool bMeasureBodyOnly = false;
+
+	/** The trunk of the body that is seen, with what it wears, measured once as it stands at rest */
+	TArray<FTrunkSection> Trunk;
+	bool bTrunkMeasured = false;
+
+	/** How thick each upper arm is with its sleeve, as a radius */
+	float ArmRadius[2] = { 4.5f, 4.5f };
+
+	/** Half the width and the depth of a piece of armor worn round the chest, if one is */
+	FVector2D ChestPieceHalf = FVector2D::ZeroVector;
+
+	/** How thick each forearm and each thigh is with what is worn on it, as a radius */
+	float ForearmRadius[2] = { 3.4f, 3.4f };
+	float ThighRadius[2] = { 8.5f, 8.5f };
+
+	/** What is held in each hand, as places along it in the hand bone's space with how thick it is at each: see FGutClearShape */
+	TArray<FVector4> HeldPlaces[2];
+
+	/** Reads what is in the hands off the weapon's own shape, where it has been put on the body */
+	void MeasureHeld();
+
+	/**
+	 *  Turns the eyes to whoever the head is turned toward, with the small shifts and the glances away that eyes have, and
+	 *  writes it over whatever the face's expression or the line it is saying had the eyes doing. -GutNoEyes leaves them.
+	 */
+	void AimEyes(TMap<FName, float>& Shown, float DeltaTime);
+
+	TWeakObjectPtr<USkeletalMeshComponent> FaceSeen;
+
+	/** Where the eyes are turned, in degrees to its own right and up; the shift on top of where they are aimed; when they shift next; how much they are aimed at all */
+	FVector2D EyesShown = FVector2D::ZeroVector;
+	FVector2D EyesOff = FVector2D::ZeroVector;
+	double EyesShiftAt = 0.0;
+	float EyesAimed = 0.0f;
+
+	/** The body as it is dressed, set down where it stands now, to be asked how far in a place is: false if there is nothing to ask */
+	bool GetClearBodyNow(struct FGutClearShape& OutShape, struct FGutClearBody& OutWhere);
+
+	/** -GutClearLog: how deep a hand, a forearm or what is held has been in this body's own trunk or thighs since it was last said */
+	void LogOwnCuts();
+
+	float DeepestHand = 0.0f;
+	float DeepestHeld = 0.0f;
+	float DeepestSaid = 0.0f;
+
+	/** How much hanging arms are being brought in to the body's side just now: see FGutClearShape::HangIn */
+	float HangInShown = 0.0f;
+	float HeldSince = 0.0f;
+
+	/** Measures the trunk and the upper arms of the body that is seen */
+	void MeasureTrunk();
+
+	/** Somebody too deep through the trunk for hands clasped in front of it to meet stands plainly instead */
+	void KeepFromClasping();
+
 	float FaceAfraidShown = 0.0f;
 
 	/** Runs out when a body that is dying on its feet goes limp */
@@ -814,6 +953,104 @@ protected:
 	FVector StrikeWay = FVector::ForwardVector;
 	float StrikeGoal = 0.0f;
 	float StrikeShift = 0.0f;
+
+	/**
+	 *  How far the limb that strikes is being taken off the clip's own path to meet the body it is thrown at, in the world,
+	 *  and which limb: left arm, right arm, left leg, right leg. See SteerBlow.
+	 */
+	FVector BlowReach = FVector::ZeroVector;
+	int32 BlowLimb = INDEX_NONE;
+
+	/** When, by the world's clock, the stop that a landed blow puts on this fighter is over. Zero for none. */
+	float BlowStopEnds = 0.0f;
+
+	/**
+	 *  In the last moments before a blow is due, takes the fist, the weapon or the foot the rest of the way onto the body
+	 *  it is thrown at. The clips were made by one body alone and the bodies are of every build: a blow the rules count
+	 *  can pass a hand's width off the skin, and that is what "does not make contact" is. Seen only: the rules never ask.
+	 */
+	void SteerBlow();
+
+	/** Stops this fighter dead for a few hundredths of a second, as a blow that lands stops both the arm and the body it lands on */
+	void StopForBlow(float Seconds);
+
+	/** Somebody this body has been told to look at */
+	TWeakObjectPtr<const AGutFighter> LookTarget;
+
+	/** True if this body was given its own way of standing at ease where it was placed */
+	bool bIdlePlaced = false;
+
+	/** Seconds until the next small thing it does while standing about (below zero: not yet drawn), which it did last, and how long the one it is doing has left */
+	float FidgetIn = -1.0f;
+	int32 FidgetLast = INDEX_NONE;
+	float FidgetLeft = 0.0f;
+
+	/** Does the small things somebody standing about does */
+	void UpdateFidget(float DeltaTime);
+
+	/** The fighter's own clips with the walking and running of what it holds put in, and what that was made for */
+	mutable FGutLocomotionAnimations HeldLocomotion;
+	mutable TWeakObjectPtr<const UGutWeaponData> HeldLocomotionFor;
+
+	/** Which of the families it stands in at ease (none: one clip, as before there were families), which clip of it, and how long that has left */
+	int32 Family = INDEX_NONE;
+	int32 FamilyLoop = INDEX_NONE;
+	float FamilyLeft = 0.0f;
+
+	/** A family asked for by name before the body was at ease */
+	FName FamilyAsked;
+
+	/** Moves on through the family's ways of standing */
+	void UpdateStanding(float DeltaTime);
+
+	bool bRunning = false;
+
+	/** True once it has been given a walk of its own, which is then walked whoever it is */
+	bool bOwnWalk = false;
+
+	/** How much longer it is busy with something it was handed, and whether its wrists are to be tied again after */
+	float TakingLeft = 0.0f;
+	bool bBoundAfterTaking = false;
+
+	/**
+	 *  How far the seen body is lowered (below zero) or raised to stand on the floor, in centimetres. The clips were made
+	 *  for one skeleton and are worn by bodies of every build, and a body whose legs are a little shorter than the clip
+	 *  supposes hangs that much above the ground: see GroundBody.
+	 */
+	float GroundShift = 0.0f;
+
+	/** What Ground Shift is being brought to */
+	float GroundWanted = 0.0f;
+
+	/** How far above the floor the sole of each foot of the seen body is when it stands in its own reference pose: ankle, then ball */
+	float SoleRest[2][2] = { { 0.0f, 0.0f }, { 0.0f, 0.0f } };
+
+	/** The seen mesh those were measured on */
+	TWeakObjectPtr<const USkeletalMesh> SoleMesh;
+
+	uint64 GroundedFrame = 0;
+
+	/** For -GutGroundLog: the sum and the worst of how far off the floor the lower foot was since the last line, as posed and as seen */
+	float GroundLogSum[2] = { 0.0f, 0.0f };
+	float GroundLogWorst[2] = { 0.0f, 0.0f };
+	int32 GroundLogCount = 0;
+
+	/** For -GutGroundLog: where each of the seen body's feet was last, whether it was down, how far feet that were down slid, and how far the body went */
+	FVector GroundPartWas[2][2] = { { FVector::ZeroVector, FVector::ZeroVector }, { FVector::ZeroVector, FVector::ZeroVector } };
+	bool bGroundFootDown[2] = { false, false };
+	float GroundLogSlid = 0.0f;
+	float GroundLogSlow = 0.0f;
+	float GroundLogOwnSlid = 0.0f;
+	float GroundLogApart[2] = { UE_BIG_NUMBER, 0.0f };
+	float GroundLogBalls[2] = { 0.0f, 0.0f };
+	FVector GroundBallWas[2][2] = { { FVector::ZeroVector, FVector::ZeroVector }, { FVector::ZeroVector, FVector::ZeroVector } };
+	FVector GroundOwnWas[2] = { FVector::ZeroVector, FVector::ZeroVector };
+	bool bGroundOwnDown[2] = { false, false };
+	float GroundLogWent = 0.0f;
+	FVector GroundLogPlace = FVector::ZeroVector;
+
+	/** Measures how far off the floor the seen body's lower foot is, and sets what the body is to be lowered or raised by */
+	void GroundBody();
 	bool bStrikeMeasured = false;
 
 	/** For -GutBlowLog: the nearest the blow being thrown has come to the body it is thrown at, and where */
@@ -1212,6 +1449,12 @@ public:
 
 	const TArray<TObjectPtr<UGutArmorData>>& GetArmor() const { return Armor; }
 
+	/** The shapes of the armor worn, as they are on the body */
+	const TArray<TObjectPtr<UStaticMeshComponent>>& GetArmorPlates() const { return ArmorPlates; }
+
+	/** True while a made piece of armor is worn round the chest: the arms are then hung and held clear of it */
+	bool HasChestPiece() const { return bChestPiece; }
+
 	/** Returns the number of limbs that are crippled */
 	UFUNCTION(BlueprintPure, Category="Gut")
 	int32 GetCrippledLimbCount() const;
@@ -1224,7 +1467,33 @@ public:
 	FGutStanceAnimations GetStanceAnimations() const;
 
 	/** Returns the clips of the fighter moving in its stance, or of its walk and jog when it is at ease and has them */
-	const FGutLocomotionAnimations& GetLocomotionAnimations() const { return (bAtEase && AtEaseLocomotion.WalkForward.Animation) ? AtEaseLocomotion : Locomotion; }
+	const FGutLocomotionAnimations& GetLocomotionAnimations() const
+	{
+		if (bAtEase && bWoman && !bOwnWalk && AtEaseLocomotionWoman.WalkForward.Animation)
+		{
+			return AtEaseLocomotionWoman;
+		}
+
+		return (bAtEase && AtEaseLocomotion.WalkForward.Animation) ? AtEaseLocomotion : GetFightLocomotion();
+	}
+
+	/** The fighter's own walking and running in a fight, or with the clips of what it holds where that has its own */
+	const FGutLocomotionAnimations& GetFightLocomotion() const;
+
+	/** True while it stands at ease in one of the families, whose clips are each begun at their beginning */
+	bool IsStandingInFamily() const { return bAtEase && Family != INDEX_NONE; }
+
+	/** At ease: stands the way this family does (FGutStandFamily::Name), not the one it would have been dealt */
+	void SetAtEaseFamily(const FName& Name);
+
+	/** The ways of standing there are to choose from */
+	const TArray<FGutStandFamily>& GetAtEaseFamilies() const { return AtEaseFamilies; }
+
+	/** At ease: a flat-out run while this is set, whatever jogging is */
+	UFUNCTION(BlueprintCallable, Category="Gut")
+	void SetRunning(bool bNewRunning);
+
+	bool IsRunning() const { return bRunning; }
 
 	/**
 	 *  Puts the fighter at ease, as somebody is in the street, or back on its guard. At ease it cannot fight, stands and
@@ -1235,6 +1504,79 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Gut")
 	bool IsAtEase() const { return bAtEase; }
+
+private:
+	bool bHangsHead = false;
+	bool bLeftOutOfPicture = false;
+
+	/** What was hidden when it was left out of the picture, to be shown again */
+	TArray<TWeakObjectPtr<AActor>> LeftOut;
+
+public:
+
+	/** How far the striking limb is being taken off its clip to land the blow, in the world, and which limb. See SteerBlow. */
+	const FVector& GetBlowReach() const { return BlowReach; }
+	int32 GetBlowLimb() const { return BlowLimb; }
+
+	/** Left out of the picture, body, clothes and all, while the camera is right up against it: see AGutCameraManager */
+	void SetLeftOutOfPicture(bool bLeftOut);
+	bool IsLeftOutOfPicture() const { return bLeftOutOfPicture; }
+
+	/** True for the instant it is held still by a blow that has just landed, its own or the other's */
+	bool IsStoppedForBlow() const { return BlowStopEnds > 0.0f; }
+
+	/** Somebody who hangs their head and is meant to: a lot on the Block, somebody led by the wrists. Everybody else at ease carries theirs up. */
+	void SetHangsHead(bool bHangs) { bHangsHead = bHangs; }
+	bool HangsHead() const { return bHangsHead || IsBound(); }
+
+	/** True while it is doing one of the small things somebody standing about does: only its upper body does it */
+	bool IsFidgeting() const { return FidgetLeft > 0.0f; }
+
+	bool bGestureKeepsHead = false;
+
+	/** How far the given arm (0 left, 1 right) is brought in toward the body from where the clip hangs it, in degrees */
+	float GetArmIn(int32 Side) const { return ArmsIn[Side & 1]; }
+
+	/** True while the body is being taken along a clip its performer travelled in: the clip's own travel is left out of the pose */
+	bool IsCarriedPose() const { return bCarriedPose; }
+
+	/**
+	 *  The body as it is dressed and what is in its hands, for keeping its own arms, hands and weapon out of it: see
+	 *  FGutClearOp, which asks every frame. False for somebody it is not to be done to (no body of their own, dead, a beast).
+	 */
+	bool GetClearShape(struct FGutClearShape& OutShape);
+
+	/**
+	 *  What this body's head is turned toward, if anything: in a fight the head of whoever it is fighting, and out of one
+	 *  whoever is walking the street when they come near (or whoever is looking on, where nobody is walking).
+	 *  @return false for nothing to look at
+	 */
+	bool GetLookAt(FVector& OutPlace) const;
+
+	/** Somebody for this body to look at in particular, before anybody it would look at by itself: whoever it is talking to. None to clear. */
+	void SetLookTarget(const AGutFighter* Whom) { LookTarget = Whom; }
+
+	/**
+	 *  Ways of standing at ease, for anybody who was not given one of their own where they were placed: each body takes
+	 *  one of these and keeps it.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Fighter|At ease")
+	TArray<TObjectPtr<UAnimSequenceBase>> AtEaseIdles;
+
+	/**
+	 *  Small things somebody standing about does without thinking: a hand to the back of the neck, a look over the
+	 *  shoulder, a shift of the feet. One is laid over the standing every so often, and nobody does them in step.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Fighter|At ease")
+	TArray<TObjectPtr<UAnimSequenceBase>> AtEaseFidgets;
+
+	/** The shortest and the longest that somebody stands before the next of them, in seconds */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Fighter|At ease", meta = (ClampMin = 1, Units = "s"))
+	FVector2D FidgetEvery = FVector2D(14.0, 38.0);
+
+	/** How near somebody has to come before a body at ease turns its head to them */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Fighter|At ease", meta = (ClampMin = 0, Units = "cm"))
+	float LookRange = 520.0f;
 
 	/** At ease: a jog while this is set, a walk otherwise */
 	UFUNCTION(BlueprintCallable, Category="Gut")
@@ -1249,12 +1591,50 @@ public:
 	UFUNCTION(BlueprintPure, Category="Gut")
 	bool IsBound() const { return BoundClip != nullptr; }
 
+	/** True while the hands of the body that is seen are shut for it, round what it holds or into fists or half shut when tied: the clips' own fingers are then not used */
+	bool AreFingersShutForIt() const { return bFingersShutForIt; }
+
 	UAnimSequenceBase* GetBoundArms() const { return BoundClip; }
 
 	float GetBoundPast() const { return BoundPast; }
 
+	/**
+	 *  Something done with the arms and the head over whatever way it is standing, as the small things it does by itself
+	 *  are: somebody talking with their hands as they say a line, somebody listening. Dropped if it has somewhere to go.
+	 */
+	void Gesture(UAnimSequenceBase* Clip, bool bWithHead = true);
+
+	/** True while the gesture going on is of the hands only: the head is left to look where it was looking */
+	bool DoesGestureKeepHead() const { return bGestureKeepsHead; }
+
+	/** Lets go of that, back to standing as it stood */
+	void StopGesture();
+
+	/**
+	 *  Has the face say a line: a performance of the face made from the line's own recording (Epic's speech-to-face), begun
+	 *  as the recording is. Nothing for no performance. He said of a Warden that he was "like a narrator": a voice came
+	 *  from a face that did not move.
+	 */
+	void Speak(UAnimSequenceBase* Face);
+
+	/**
+	 *  Has it take something it is handed and do with it what this clip does (put it to the mouth, light it). Somebody whose
+	 *  wrists are tied has them let go for as long as the clip lasts, and tied again after.
+	 */
+	void TakeInHand(UAnimSequenceBase* Taking);
+
 	/** At ease: stands in this clip, not the one every fighter has. For the people of the street, who do not all stand alike. */
-	void SetAtEaseIdle(UAnimSequenceBase* Idle) { AtEaseStance.Idle = Idle; }
+	void SetAtEaseIdle(UAnimSequenceBase* Idle) { AtEaseStance.Idle = Idle; bIdlePlaced = Idle != nullptr; }
+
+	/** Gives this body a walk of its own for when it is at ease: a loop of whole steps in place, and the speed it was walked at */
+	void SetAtEaseWalk(UAnimSequenceBase* Walk, float Speed)
+	{
+		if (Walk)
+		{
+			AtEaseLocomotion.WalkForward = AtEaseLocomotion.WalkRight = AtEaseLocomotion.WalkBack = AtEaseLocomotion.WalkLeft = FGutMoveClip{ Walk, Speed };
+			bOwnWalk = true;
+		}
+	}
 
 	/**
 	 *  Has the fighter's legs walk at the speed something else is moving it at: somebody led across a deck that is no
@@ -1277,10 +1657,10 @@ public:
 	 *  The end of whatever this fighter is hitting with, on the body that is seen: toward the end of a club or a blade, the
 	 *  boss of a shield, or the fist or foot that is furthest out. False for a chain, which finds its own way, and for an animal.
 	 */
-	bool GetStrikingPoint(FVector& OutPoint) const;
+	bool GetStrikingPoint(FVector& OutPoint, int32* OutLimb = nullptr) const;
 
 	/** How far a point is from the skin of the body that is seen, less than nought inside it, and which part of it is nearest */
-	float GetBodyGapFrom(const FVector& Point, FName* OutPart = nullptr) const;
+	float GetBodyGapFrom(const FVector& Point, FName* OutPart = nullptr, FVector* OutNearest = nullptr) const;
 
 	/**
 	 *  How far in front of its own middle the end of what this fighter hits with lands, by what it is holding and nothing
@@ -1515,6 +1895,14 @@ protected:
 	/** The clip for reeling from this blow: by the limb it landed on, or by where it came in from */
 	UAnimSequenceBase* ChooseReaction(const FGutAttackDef& Attack, const FVector& FromAttacker, bool bOnLimb, EGutLimb Limb) const;
 
+	/** That clip or another that does the same thing, if the stance has others for it: not the one it gave last time */
+	UAnimSequenceBase* Vary(const FGutStanceAnimations& Clips, UAnimSequenceBase* Clip) const;
+
+	mutable TWeakObjectPtr<const UAnimSequenceBase> LastVaried;
+
+	/** The clip the last blow was thrown with */
+	TWeakObjectPtr<const UAnimSequenceBase> LastThrown;
+
 	/** Interrupts whatever the fighter is doing and leaves it helpless, waiting to be finished */
 	void EnterStagger();
 
@@ -1544,6 +1932,25 @@ protected:
 
 	/** Rebuilds the plates on the body to match the armor worn */
 	void UpdateArmorPlates();
+
+	/**
+	 *  Measures the dressed body, as it stands at rest, round the stretch of it a piece of armor covers: from one bone toward
+	 *  another, the middle Share of the way. The answer is in that bone's own space: which way the stretch runs, which way
+	 *  is the body's front, and how far the body reaches across (X) and front to back (Y) from the line between the bones.
+	 *  False if the body cannot be measured there.
+	 */
+	bool MeasureRound(const FName& Bone, const FName& TowardBone, float Share, float Reach, FVector& OutToward, FVector& OutFront, FBox2D& OutBody,
+		float Below = 0.0f, float PastShoulders = 0.5f, const AActor* Dressed = nullptr, const USkeletalMeshComponent* DressedBody = nullptr) const;
+
+public:
+
+	/**
+	 *  The dressed shape of a body that is nobody's fighter: somebody standing in a crowd. Measured once for each kind of
+	 *  body and kept, as a fighter's is, and with arms that hang brought in to its own sides. False if it cannot be measured.
+	 */
+	static bool MeasureShapeOf(const AActor* Dressed, const USkeletalMeshComponent* DressedBody, struct FGutClearShape& OutShape);
+
+protected:
 
 	/** Shows or hides the weapon shape to match the weapon in hand */
 	void UpdateWeaponMesh();

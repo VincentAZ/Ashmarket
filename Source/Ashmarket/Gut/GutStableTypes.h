@@ -191,6 +191,14 @@ struct FGutStableState
 	UPROPERTY(BlueprintReadOnly, Category="Stable")
 	FText BodyOf;
 
+	/** If true whoever lies there was a woman */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	bool bBodyWoman = false;
+
+	/** The day it died on */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 BodySince = 0;
+
 	/** If true it lost a limb before it died, and Doc Stitch pays for what is still good */
 	UPROPERTY(BlueprintReadOnly, Category="Stable")
 	bool bBodyBroken = false;
@@ -210,6 +218,9 @@ struct FGutStableSettlement
 	bool bWon = false;
 
 	FText FighterName;
+
+	/** If true the one who fought is a woman: she, and not he, in what is read out */
+	bool bWoman = false;
 
 	float Purse = 0.0f;
 
@@ -303,6 +314,13 @@ namespace GutStableLines
 		TakeFight = 300,
 
 		/** Plus the fighter's place in the stable */
-		SendFighter = 400
+		SendFighter = 400,
+
+		/** Out of the yard gate with all of them behind */
+		WalkOutAll = 23,
+
+		/** Out of the yard gate with one of them behind: plus the fighter's place in the stable. On the yard's own page, so that
+		 *  nobody has to open a fighter's page to find that they can be brought along. */
+		WalkWith = 500
 	};
 }

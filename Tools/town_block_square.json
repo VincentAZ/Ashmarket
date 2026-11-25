@@ -545,7 +545,29 @@
    "x": 23.8,
    "y": 132.0,
    "yaw": 0
-  }
+  },
+  {"model": "plastic_bottle_gallon", "x": 12.68, "y": 164.97, "yaw": 130, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 18.95, "y": 165.26, "yaw": 155, "scattered": true},
+  {"model": "trashbag", "x": 19.62, "y": 164.63, "yaw": 280, "scattered": true},
+  {"model": "trashbag", "x": -5.79, "y": 164.56, "yaw": 215, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 17.53, "y": 164.99, "yaw": 115, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 17.04, "y": 165.4, "yaw": 155, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 18.03, "y": 131.39, "yaw": 315, "scattered": true},
+  {"model": "oil_tin", "x": 18.6, "y": 131.53, "yaw": 30, "scattered": true},
+  {"model": "oil_tin", "x": 18.78, "y": 132.05, "yaw": 285, "scattered": true},
+  {"model": "cardboard_box_01", "x": -0.25, "y": 164.72, "yaw": 305, "scattered": true},
+  {"model": "plastic_jerrycan", "x": 15.3, "y": 164.62, "yaw": 170, "scattered": true},
+  {"model": "trashbag", "x": -1.97, "y": 131.41, "yaw": 235, "scattered": true},
+  {"model": "can_rusted", "x": -1.45, "y": 130.9, "yaw": 265, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": -0.62, "y": 165.53, "yaw": 55, "scattered": true},
+  {"model": "can_rusted", "x": -4.13, "y": 132.45, "yaw": 35, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 2.57, "y": 132.24, "yaw": 350, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 2.47, "y": 132.74, "yaw": 5, "scattered": true},
+  {"model": "plastic_jerrycan", "x": 2.23, "y": 131.6, "yaw": 310, "scattered": true},
+  {"model": "cement_bag", "x": 11.53, "y": 131.15, "yaw": 70, "scattered": true},
+  {"model": "plastic_monobloc_chair_01", "x": 21.68, "y": 164.93, "yaw": 60, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 25.42, "y": 131.69, "yaw": 175, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 25.65, "y": 130.94, "yaw": 295, "scattered": true}
  ],
  "pictures": [
   {
@@ -948,7 +970,7 @@
    "x": 27.75,
    "y": 143.6,
    "facing": 270,
-   "idle": "crowd_watch_relaxed",
+   "stand": "stand_f",
    "lines": [
     {
      "id": "table",
@@ -993,11 +1015,12 @@
    "x": 27.75,
    "y": 157.6,
    "facing": 250,
-   "idle": "crowd_watch_relaxed",
+   "stand": "hip_r",
    "lines": [
     {
      "id": "book",
-     "words": "{dealt} Your page says {owed} litres owed, and you are holding {held}. I lend twenty-five and I write thirty-five. I like to begin with the figures.",
+     "words": "I lend twenty-five and I write thirty-five. I like to begin with the figures.",
+     "note": "Her page for you: {owed} L owed. You are holding {held} L.",
      "answers": [
       {
        "words": "Lend me twenty-five.",
@@ -1018,6 +1041,12 @@
       }
      ]
     },
+    {"id": "lent", "words": "Twenty-five litres, counted out. Thirty-five written down.", "note": "Her page for you: {owed} L owed. You are holding {held} L."},
+    {"id": "limit", "words": "No. A hundred and five litres is as much as I let anybody owe me, and you know where debts are paid here.", "note": "Her page for you: {owed} L owed. You are holding {held} L."},
+    {"id": "clean", "words": "Your page is clean. I take nothing I am not owed.", "note": "Her page for you: {owed} L owed. You are holding {held} L."},
+    {"id": "empty", "words": "With what? You are holding nothing.", "note": "Her page for you: {owed} L owed. You are holding {held} L."},
+    {"id": "paid", "words": "Struck off. I have written it down.", "note": "{dealt} Her page for you: {owed} L owed. You are holding {held} L."},
+    {"id": "nopage", "words": "I have no page for you. Put water on a fight at Chalk's window first, and then I will know your face."},
     {
      "id": "signed",
      "words": "People who signed. I have never collared anybody. People sign. I only remember it for them."
@@ -1036,7 +1065,7 @@
    "x": 27.45,
    "y": 146.3,
    "facing": 270,
-   "idle": "crowd_watch_hands_on_hips",
+   "stand": "hips",
    "lines": []
   },
   {
@@ -1048,10 +1077,10 @@
     0.04,
     0.055
    ],
-   "x": 12.0,
-   "y": 131.7,
+   "x": 9.3,
+   "y": 131.4,
    "facing": 0,
-   "idle": "crowd_watch_arms_crossed",
+   "stand": "clasp",
    "lines": [
     {
      "id": "open",
@@ -1070,7 +1099,7 @@
    "x": 29.6,
    "y": 146.5,
    "facing": 270,
-   "idle": "crowd_watch_relaxed",
+   "stand": "stand",
    "on": true,
    "collared": true,
    "lines": [],
@@ -1087,7 +1116,7 @@
    "x": 29.6,
    "y": 147.75,
    "facing": 270,
-   "idle": "crowd_watch_hands_behind",
+   "stand": "stand",
    "on": true,
    "collared": true,
    "lines": [],
@@ -1104,7 +1133,7 @@
    "x": 29.6,
    "y": 149.0,
    "facing": 270,
-   "idle": "crowd_watch_neck",
+   "stand": "stand",
    "on": true,
    "collared": true,
    "lines": [],
@@ -1121,7 +1150,7 @@
    "x": 29.6,
    "y": 150.25,
    "facing": 270,
-   "idle": "crowd_watch_tense",
+   "stand": "stand",
    "on": true,
    "collared": true,
    "lines": [],
@@ -1138,7 +1167,7 @@
    "x": 29.6,
    "y": 151.5,
    "facing": 270,
-   "idle": "crowd_watch_relaxed",
+   "stand": "stand",
    "on": true,
    "collared": true,
    "lines": [],
@@ -1155,7 +1184,7 @@
    "x": 29.6,
    "y": 152.75,
    "facing": 270,
-   "idle": "crowd_watch_hands_behind",
+   "stand": "stand",
    "on": true,
    "collared": true,
    "lines": [],
@@ -1171,7 +1200,7 @@
    "to": "/Game/Town/Lvl_PoolStreet",
    "arrive": "from_square",
    "walk_through": true,
-   "reach": 3.3
+   "mouth": {"x": [2.0, 8.2], "y": [169.7, 170.9]}
   },
   {
    "prompt": "Look through the Holding Yard's fence",
@@ -1432,5 +1461,10 @@
   "y": 150.0,
   "z": 2.0,
   "size": 600
- }
+ },
+ "finds_about": "What lies about to be found and picked up (E, or X): a good by the name the town knows it by, where it lies on the map, and which way it is turned. Each is there once: picked up, it is in the bag and gone from the street for good.",
+ "finds": [
+  {"good": "smokes", "x": 27.9, "y": 161.7, "facing": 30},
+  {"good": "scrap", "x": 24.6, "y": 132.7, "facing": 80}
+ ]
 }

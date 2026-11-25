@@ -3,9 +3,12 @@
 #include "GutCrowd.h"
 #include "Components/AudioComponent.h"
 #include "GutSound.h"
+#include "Kismet/GameplayStatics.h"
 #include "Animation/AnimInstance.h"
 #include "GutAnimInstance.h"
 #include "GutGameMode.h"
+#include "GutFighter.h"
+#include "GameFramework/PlayerController.h"
 #include "Animation/AnimSequenceBase.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -25,6 +28,9 @@ namespace GutCrowdConstants
 	/** The body mesh stands with its feet at its origin and faces along its right */
 	const float MeshYawOffset = -90.0f;
 
+	/** How near somebody walking about has to come before one of the crowd turns to them */
+	const float TurnsToWalker = 420.0f;
+
 	/** Spectators are adults of ordinary heights */
 	const float MinScale = 0.95f;
 	const float MaxScale = 1.08f;
@@ -38,8 +44,110 @@ AGutCrowd::AGutCrowd()
 	SetRootComponent(Root);
 }
 
+void AGutCrowd::TurnHeads()
+{
+	static const bool bOff = FParse::Param(FCommandLine::Get(), TEXT("GutNoLook"));
+
+	if (bOff || Spectators.IsEmpty())
+	{
+		return;
+	}
+
+	// at a fight: the two who are fighting, between them, at about the height of their chests
+	TOptional<FVector> Seen = Watched;
+
+	if (const AGutGameMode* GameMode = GetWorld()->GetAuthGameMode<AGutGameMode>())
+	{
+		const AGutFighter* One = GameMode->GetPlayerFighter();
+		const AGutFighter* Other = GameMode->GetEnemyFighter();
+
+		if (One && Other)
+		{
+			Seen = ((One->GetActorLocation() + Other->GetActorLocation()) * 0.5f) + FVector(0.0f, 0.0f, 20.0f);
+		}
+	}
+
+	// and whoever is walking about, when they come near
+	const APlayerController* Viewer = GetWorld()->GetFirstPlayerController();
+	const AGutFighter* Walker = Viewer ? Cast<AGutFighter>(Viewer->GetPawn()) : nullptr;
+
+	const bool bWalking = Walker && Walker->IsAtEase();
+	const FVector WalkersHead = bWalking ? Walker->GetActorLocation() + FVector(0.0f, 0.0f, 65.0f) : FVector::ZeroVector;
+
+	for (const FSpectator& Spectator : Spectators)
+	{
+		UGutAnimInstance* Driver = Spectator.Body.IsValid() ? Cast<UGutAnimInstance>(Spectator.Body->GetAnimInstance()) : nullptr;
+
+		if (!Driver)
+		{
+			continue;
+		}
+
+		if (bWalking && FVector::DistSquared2D(Spectator.Body->GetComponentLocation(), Walker->GetActorLocation()) < FMath::Square(GutCrowdConstants::TurnsToWalker))
+		{
+			Driver->SetLook(true, WalkersHead);
+		}
+		else if (Seen.IsSet())
+		{
+			Driver->SetLook(true, Seen.GetValue());
+		}
+		else
+		{
+			Driver->SetLook(false);
+		}
+	}
+}
+
+int32 AGutCrowd::CountNear(const FVector& Where, float Radius, float* OutNearest) const
+{
+	int32 Count = 0;
+	float Nearest = TNumericLimits<float>::Max();
+
+	for (const FSpectator& Spectator : Spectators)
+	{
+		if (const USkeletalMeshComponent* Body = Spectator.Body.Get())
+		{
+			const float Distance = FVector::Dist2D(Body->GetComponentLocation(), Where);
+
+			Count += Distance < Radius ? 1 : 0;
+			Nearest = FMath::Min(Nearest, Distance);
+		}
+	}
+
+	if (OutNearest)
+	{
+		*OutNearest = Nearest;
+	}
+
+	return Count;
+}
+
 void AGutCrowd::Tick(float DeltaTime)
 {
+	TurnHeads();
+
+	// People standing about a street are heard by how near they are: among them their talk is all round, and from the far
+	// end of the street it is a little of the night. Heard the same everywhere, somebody spoken to in the middle of them
+	// was spoken to in a silence (22 November: "his voice is perfectly heard - wait - he's in a crowd").
+	if (bMurmurByNearness && Murmur != INDEX_NONE)
+	{
+		const APawn* Listener = UGameplayStatics::GetPlayerPawn(this, 0);
+
+		float Nearest = TNumericLimits<float>::Max();
+
+		const int32 Close = Listener ? CountNear(Listener->GetActorLocation(), 650.0f, &Nearest) : 0;
+
+		// from a fifth of it far off to all of it at three metres, and more than all of it with several of them close round
+		const float Wanted = FMath::GetMappedRangeValueClamped(FVector2f(300.0f, 2400.0f), FVector2f(1.0f, 0.2f), Nearest) * (1.0f + (0.25f * FMath::Min(Close, 6)));
+
+		MurmurShare = FMath::FInterpTo(MurmurShare, Wanted, DeltaTime, 1.5f);
+
+		if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
+		{
+			Sounds->SetBedShare(Murmur, MurmurShare);
+		}
+	}
+
 	// the noise of people standing about, for as long as there are people: louder the more of them there are
 	if (Spectators.Num() != HeardSpectators)
 	{
@@ -50,7 +158,8 @@ void AGutCrowd::Tick(float DeltaTime)
 		{
 			Sounds->StopBed(Murmur, 1.0f);
 
-			Murmur = HeardSpectators > 0 ? Sounds->StartBed(FName("crowd_bed"), FMath::Clamp(HeardSpectators / 40.0f, 0.3f, 1.2f), 1.5f) : INDEX_NONE;
+			// a few people standing about a street are heard as a few people, when they are near: not as the least of a deck
+			Murmur = HeardSpectators > 0 ? Sounds->StartBed(FName("crowd_bed"), FMath::Clamp(HeardSpectators / 40.0f, bMurmurByNearness ? 0.45f : 0.3f, 1.2f), 1.5f) : INDEX_NONE;
 		}
 	}
 
@@ -157,6 +266,42 @@ void AGutCrowd::Tick(float DeltaTime)
 		if (!Body)
 		{
 			continue;
+		}
+
+		// on to the next way of standing in its family, a little before the one it is in runs out
+		if (Families.IsValidIndex(Spectator.Family))
+		{
+			Spectator.FamilyLeft -= DeltaTime;
+
+			const FGutStandFamily& Mine = Families[Spectator.Family];
+
+			if (Spectator.FamilyLeft <= 0.0f && !Mine.Loops.IsEmpty())
+			{
+				int32 Next = FMath::RandRange(0, Mine.Loops.Num() - 1);
+
+				if (Next == Spectator.FamilyLoop && Mine.Loops.Num() > 1)
+				{
+					Next = (Next + 1) % Mine.Loops.Num();
+				}
+
+				Spectator.FamilyLoop = Next;
+
+				UAnimSequenceBase* Clip = Mine.Loops[Next];
+				UGutAnimInstance* Driver = Cast<UGutAnimInstance>(Body->GetAnimInstance());
+
+				if (Clip && Driver)
+				{
+					const float Length = FMath::Max(Clip->GetPlayLength(), 0.5f);
+
+					Driver->SetIdle(Clip, 0.0f, Spectator.FamilyRate, true);
+
+					Spectator.FamilyLeft = ((Length * FMath::CeilToFloat(6.0f / Length)) / Spectator.FamilyRate) - 0.4f;
+				}
+				else
+				{
+					Spectator.FamilyLeft = 5.0f;
+				}
+			}
 		}
 
 		// a cheer that has been asked for starts when its turn comes
@@ -294,18 +439,50 @@ void AGutCrowd::Populate(int32 FighterName)
 
 		UAnimSequenceBase* Watching = IdleAnimations.Num() > 0 ? IdleAnimations[(FirstDeal + (i * 3)) % IdleAnimations.Num()].Get() : IdleAnimation.Get();
 
+		// Nobody in a crowd stands with their hands clasped in front of them. Which body a place in the crowd gets is not
+		// known here, and on a body that is deep through the trunk the two arms cannot reach a place in front of it where
+		// the hands would meet: they stop short, one on each thigh (24 November). The next way of standing instead.
+		for (int32 Next = 1; Watching && Watching->GetName().Contains(TEXT("handsclasp")) && Next < IdleAnimations.Num(); ++Next)
+		{
+			Watching = IdleAnimations[(FirstDeal + (i * 3) + Next) % IdleAnimations.Num()].Get();
+		}
+
+		FSpectator Spectator;
+		Spectator.Body = Body;
+
+		// a family of clips from one stance, where there are families: gone through one after another from here on
+		if (!Families.IsEmpty())
+		{
+			Spectator.Family = (FirstDeal + (i * 3)) % Families.Num();
+			Spectator.FamilyRate = FMath::FRandRange(0.9f, 1.1f);
+
+			const FGutStandFamily& Mine = Families[Spectator.Family];
+
+			if (!Mine.Loops.IsEmpty())
+			{
+				Spectator.FamilyLoop = FMath::RandRange(0, Mine.Loops.Num() - 1);
+				Watching = Mine.Loops[Spectator.FamilyLoop];
+			}
+			else
+			{
+				Spectator.Family = INDEX_NONE;
+			}
+		}
+
 		if (Watching)
 		{
 			Body->SetAnimInstanceClass(UGutAnimInstance::StaticClass());
 
 			if (UGutAnimInstance* Driver = Cast<UGutAnimInstance>(Body->GetAnimInstance()))
 			{
-				Driver->SetIdle(Watching, FMath::FRandRange(0.0f, Watching->GetPlayLength()), FMath::FRandRange(0.85f, 1.15f));
+				// come upon part way through, so that they are not all at the beginning of something
+				const float Start = FMath::FRandRange(0.0f, Watching->GetPlayLength());
+
+				Driver->SetIdle(Watching, Start, Spectator.Family != INDEX_NONE ? Spectator.FamilyRate : FMath::FRandRange(0.85f, 1.15f), Spectator.Family != INDEX_NONE);
+
+				Spectator.FamilyLeft = ((Watching->GetPlayLength() - Start) / Spectator.FamilyRate) - 0.4f;
 			}
 		}
-
-		FSpectator Spectator;
-		Spectator.Body = Body;
 
 		// a real person is seen in the placeholder's place as soon as that person has been fetched
 		if (SpectatorRetargeter && SpectatorClasses.Num() > 0)
@@ -439,15 +616,51 @@ bool AGutCrowd::GivePerson(FSpectator& Spectator)
 				{
 					if (Part != PersonBody)
 					{
+						// -GutCrowdLog writes down what each piece of each person is and how it is made to follow
+						static const bool bLog = FParse::Param(FCommandLine::Get(), TEXT("GutCrowdLog"));
+
+						if (bLog && Part->GetSkeletalMeshAsset())
+						{
+							const FReferenceSkeleton& Bones = Part->GetSkeletalMeshAsset()->GetRefSkeleton();
+
+							int32 Missing = 0;
+							FString Which;
+
+							for (int32 Bone = 0; Bone < Bones.GetNum(); ++Bone)
+							{
+								if (PersonBody->GetBoneIndex(Bones.GetBoneName(Bone)) == INDEX_NONE)
+								{
+									if (++Missing <= 6)
+									{
+										Which += Bones.GetBoneName(Bone).ToString() + TEXT(" ");
+									}
+								}
+							}
+
+							UE_LOG(LogTemp, Log, TEXT("[crowd] %s: piece %s, mesh %s, %d bones of which %d are not the body's (%s), anim %s, after-anim %s, leader before %s"),
+								*GetNameSafe(PersonClass), *Part->GetName(), *GetNameSafe(Part->GetSkeletalMeshAsset()), Bones.GetNum(), Missing, *Which,
+								*GetNameSafe(Part->GetAnimClass()), *GetNameSafe(Part->GetSkeletalMeshAsset()->GetPostProcessAnimBlueprint()), *GetNameSafe(Part->LeaderPoseComponent.Get()));
+						}
+
 						Part->SetAnimInstanceClass(nullptr);
 						Part->SetLeaderPoseComponent(PersonBody);
+
+						// What hangs loose on bought clothes hangs as it was cut: nothing of a crowd's is worked out as cloth.
+						// (Tried on 24 November against the dark shapes that stand out from the hands of some people in
+						// the hooded and the soldier's outfits in a crowd. It did not cure them: their cause is not found.)
+						Part->bDisableClothSimulation = true;
 					}
 
 					Part->bEnableUpdateRateOptimizations = true;
 				}
 				else if (ULODSyncComponent* Sync = Cast<ULODSyncComponent>(Component))
 				{
-					Sync->MinLOD = 1;
+					Sync->MinLOD = []() { int32 Least = 1; FParse::Value(FCommandLine::Get(), TEXT("GutCrowdMinLod="), Least); return FMath::Clamp(Least, 0, 7); }();
+
+					// and never coarser than the third: at the fourth, a bought jacket's sleeves are left standing out from
+					// arms that hang (see where a fighter's body is made, and what holding them at the second cost)
+					Sync->NumLODs = []() { int32 Levels = 3; FParse::Value(FCommandLine::Get(), TEXT("GutCrowdLods="), Levels); return FMath::Clamp(Levels, 1, 8); }();
+					Sync->RefreshSyncComponents();
 				}
 			}
 

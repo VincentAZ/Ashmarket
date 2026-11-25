@@ -100,7 +100,7 @@ void AGutGameMode::EnterStable(int32 Seed)
 	GameInstance->Stable = FGutStableState();
 	GameInstance->Stable.bStarted = true;
 	GameInstance->PendingStory = EGutStory::Owner;
-	GameInstance->Stable.Water = StableStartingWater;
+	GameInstance->Stable.Water = FMath::Max(GameInstance->GetStartingWater(StableStartingWater), 0.0f);
 	GameInstance->Stable.Seed = Seed != 0 ? Seed : FMath::RandRange(1, 1000000);
 
 	UE_LOG(LogGut, Log, TEXT("Stable: an owner comes to the cage with %.0f L"), StableStartingWater);
@@ -138,7 +138,11 @@ void AGutGameMode::BeginStableState(FGutStableState& State, int32 Seed) const
 {
 	State = FGutStableState();
 	State.bStarted = true;
-	State.Water = StableStartingWater;
+
+	// what an owner comes with: the yard's own stake, or with one purse what the player already holds
+	const UGutGameInstance* Run = GetGutGameInstance();
+
+	State.Water = Run ? FMath::Max(Run->GetStartingWater(StableStartingWater), 0.0f) : StableStartingWater;
 	State.Seed = Seed != 0 ? Seed : FMath::RandRange(1, 1000000);
 }
 
@@ -340,7 +344,7 @@ bool AGutGameMode::SpendStableWater(float Amount)
 
 bool AGutGameMode::BuyFighter(int32 OfferIndex)
 {
-	if (Phase != EGutFightPhase::Card || !IsAtStable())
+	if (!IsYardOpen())
 	{
 		return false;
 	}
@@ -367,7 +371,7 @@ bool AGutGameMode::BuyFighter(int32 OfferIndex)
 
 bool AGutGameMode::SellFighter(int32 FighterIndex)
 {
-	if (Phase != EGutFightPhase::Card || !IsAtStable())
+	if (!IsYardOpen())
 	{
 		return false;
 	}
@@ -405,7 +409,7 @@ bool AGutGameMode::SellFighter(int32 FighterIndex)
 
 bool AGutGameMode::TrainFighter(int32 FighterIndex, EGutTraining What)
 {
-	if (Phase != EGutFightPhase::Card || !IsAtStable())
+	if (!IsYardOpen())
 	{
 		return false;
 	}
@@ -438,7 +442,7 @@ bool AGutGameMode::TrainFighter(int32 FighterIndex, EGutTraining What)
 
 bool AGutGameMode::PatchFighter(int32 FighterIndex)
 {
-	if (Phase != EGutFightPhase::Card || !IsAtStable())
+	if (!IsYardOpen())
 	{
 		return false;
 	}
@@ -470,7 +474,7 @@ bool AGutGameMode::PatchFighter(int32 FighterIndex)
 
 bool AGutGameMode::DopeFighter(int32 FighterIndex)
 {
-	if (Phase != EGutFightPhase::Card || !IsAtStable())
+	if (!IsYardOpen())
 	{
 		return false;
 	}
@@ -506,7 +510,7 @@ bool AGutGameMode::IsTagDue(int32 FighterIndex) const
 
 bool AGutGameMode::PromiseTag(int32 FighterIndex)
 {
-	if (Phase != EGutFightPhase::Card || !IsAtStable())
+	if (!IsYardOpen())
 	{
 		return false;
 	}
@@ -537,7 +541,7 @@ bool AGutGameMode::PromiseTag(int32 FighterIndex)
 
 bool AGutGameMode::GiveTag(int32 FighterIndex)
 {
-	if (Phase != EGutFightPhase::Card || !IsAtStable() || !IsTagDue(FighterIndex) || !SpendStableWater(TagPrice))
+	if (!IsYardOpen() || !IsTagDue(FighterIndex) || !SpendStableWater(TagPrice))
 	{
 		return false;
 	}
@@ -577,7 +581,7 @@ bool AGutGameMode::GiveTag(int32 FighterIndex)
 
 bool AGutGameMode::BreakPromise(int32 FighterIndex)
 {
-	if (Phase != EGutFightPhase::Card || !IsAtStable() || !IsTagDue(FighterIndex))
+	if (!IsYardOpen() || !IsTagDue(FighterIndex))
 	{
 		return false;
 	}
@@ -614,7 +618,7 @@ float AGutGameMode::GetBodyPrice(EGutBodyGoesTo Where) const
 
 bool AGutGameMode::SendBodyTo(EGutBodyGoesTo Where)
 {
-	if (Phase != EGutFightPhase::Card || !IsAtStable() || !GetStableState().bBodyWaiting)
+	if (!IsYardOpen() || !GetStableState().bBodyWaiting)
 	{
 		return false;
 	}
@@ -672,7 +676,7 @@ bool AGutGameMode::SendBodyTo(EGutBodyGoesTo Where)
 
 void AGutGameMode::RestDay()
 {
-	if (Phase == EGutFightPhase::Card && IsAtStable())
+	if (IsYardOpen())
 	{
 		AdvanceStableDay();
 	}
@@ -894,6 +898,31 @@ void AGutGameMode::MakeStableFighter(AGutFighter* Fighter, const FGutStableFight
 	}
 }
 
+bool AGutGameMode::BackToWalkedYard()
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance || LentTo || !GameInstance->bStableFromYard || StablePage != EGutStablePage::Yard || !GameInstance->IsStreetOpen() || GameInstance->bGoingToStreet)
+	{
+		return false;
+	}
+
+	UE_LOG(LogGut, Log, TEXT("Stable: back out by the hatch to the yard"));
+
+	// nothing of the cage's card is drawn from here on, and the level is left once this one has finished what it is doing
+	GameInstance->bGoingToStreet = true;
+
+	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		if (UGutGameInstance* Run = GetGutGameInstance())
+		{
+			Run->GoToStreet(this);
+		}
+	}));
+
+	return true;
+}
+
 void AGutGameMode::BeginStableCard()
 {
 	UGutGameInstance* GameInstance = GetGutGameInstance();
@@ -903,7 +932,7 @@ void AGutGameMode::BeginStableCard()
 		GameInstance->Stable = FGutStableState();
 		GameInstance->Stable.bStarted = true;
 		GameInstance->PendingStory = EGutStory::Owner;
-		GameInstance->Stable.Water = StableStartingWater;
+		GameInstance->Stable.Water = FMath::Max(GameInstance->GetStartingWater(StableStartingWater), 0.0f);
 		GameInstance->Stable.Seed = FMath::RandRange(1, 1000000);
 	}
 
@@ -920,6 +949,25 @@ void AGutGameMode::BeginStableCard()
 	}
 
 	GameInstance->bStableAtBlock = false;
+
+	// and somebody who came in by the pit boss's hatch, out of a yard they walk about in, is shown the fights there are to be had
+	if (GameInstance->bStableAtBill && StablePage == EGutStablePage::Yard)
+	{
+		StablePage = EGutStablePage::Bill;
+	}
+
+	// The dead come first, but the fights are still what they came for: once the body is seen to, the bill is the next
+	// page. It was the yard's, which for a yard that is walked about in is the way out, so whoever came to make a fight
+	// was put back outside with nobody in tow (24 November: "the screen crashed and took me back").
+	bBillAfterBody = GameInstance->bStableAtBill && StablePage == EGutStablePage::Body;
+
+	GameInstance->bStableAtBill = false;
+
+	// and somebody whose yard is a place is never shown the card of it: a fight over, they are stood back in the yard
+	if (BackToWalkedYard())
+	{
+		return;
+	}
 
 	StableFocus = 0;
 	bStableLayDown = false;
@@ -954,6 +1002,19 @@ void AGutGameMode::UpdateYardBodies()
 	// only while the yard's own pages are up: at the Block it is other people who are looked at, and nobody stands about over the dead
 	const bool bWanted = IsAtStable() && Phase == EGutFightPhase::Card && SpectatorCamera && bSpectatorPlaced && PlayerFighter
 		&& StablePage != EGutStablePage::Block && StablePage != EGutStablePage::Body;
+
+	// The two the cage keeps standing ready are nobody's on any of the owner's pages: they are not the owner's people and not
+	// yet anybody's opponent. Left in the picture they stood in their guard at either side of the owner's own, and the yard
+	// looked like four strangers staring (22 November). They are back the moment a fight is made.
+	const bool bCageOut = IsAtStable() && Phase == EGutFightPhase::Card;
+
+	for (AGutFighter* Ready : { PlayerFighter.Get(), EnemyFighter.Get() })
+	{
+		if (Ready)
+		{
+			Ready->SetLeftOutOfPicture(bCageOut);
+		}
+	}
 
 	FString Wanted;
 
@@ -1068,6 +1129,7 @@ void AGutGameMode::SettleStableFight(const AGutFighter* DeadFighter)
 	FGutStableFighter& Fighter = State.Fighters[State.Matched];
 
 	StableSettlement.FighterName = Fighter.FighterName;
+	StableSettlement.bWoman = UGutSoundSubsystem::WhoIs(this, Fighter.Body).bWoman;
 
 	// the window pays whoever backed the one still standing, the owner like anybody else
 	if (StableSettlement.Backed == (StableSettlement.bWon ? 0 : 1))
@@ -1123,6 +1185,8 @@ void AGutGameMode::SettleStableFight(const AGutFighter* DeadFighter)
 		// a collared fighter's body is its owner's, like the rest of it. Somebody with a tag goes home to whoever is waiting.
 		State.bBodyWaiting = Fighter.bOwned;
 		State.BodyOf = Fighter.bOwned ? Fighter.FighterName : FText();
+		State.bBodyWoman = UGutSoundSubsystem::WhoIs(this, Fighter.Body).bWoman;
+		State.BodySince = State.Day;
 		State.bBodyBroken = Fighter.IsCrippled();
 
 		for (int32 i = 0; i < GutNumLimbs; ++i)
@@ -1279,6 +1343,22 @@ void AGutGameMode::GetStableCardItems(TArray<FGutCardItem>& Items) const
 		}
 
 		Line(Wait);
+
+		// the street, from the yard's own page: with any one of them behind, with all of them, or (the door's own line, added
+		// after these) alone
+		if (const UGutGameInstance* GameInstance = GetGutGameInstance(); CameByDoor() && GameInstance && GameInstance->IsStreetOpen())
+		{
+			for (int32 i = 0; i < State.Fighters.Num(); ++i)
+			{
+				Line(WalkWith + i);
+			}
+
+			if (State.Fighters.Num() > 1)
+			{
+				Line(WalkOutAll);
+			}
+		}
+
 		break;
 	}
 }
@@ -1292,6 +1372,11 @@ void AGutGameMode::ActivateStableLine(int32 Code)
 		StablePage = Page;
 		CardSelection = FGutCardItem();
 
+		if (BackToWalkedYard())
+		{
+			return;
+		}
+
 		// the first line of the new page
 		TArray<FGutCardItem> Items;
 		GetStableCardItems(Items);
@@ -1301,6 +1386,27 @@ void AGutGameMode::ActivateStableLine(int32 Code)
 			CardSelection = Items[0];
 		}
 	};
+
+	if (Code >= WalkWith || Code == WalkOutAll)
+	{
+		// they follow whoever holds their paper, or pays them, until they are brought back in at the Gut
+		if (UGutGameInstance* GameInstance = GetGutGameInstance())
+		{
+			for (int32 i = 0; i < GameInstance->Stable.Fighters.Num(); ++i)
+			{
+				if (Code == WalkOutAll || i == Code - WalkWith)
+				{
+					GameInstance->Stable.Fighters[i].bInTow = true;
+
+					UE_LOG(LogGut, Log, TEXT("Stable: out of the yard gate with %s"), *GameInstance->Stable.Fighters[i].FighterName.ToString());
+				}
+			}
+
+			GoToDoor();
+		}
+
+		return;
+	}
 
 	if (Code >= SendFighter)
 	{
@@ -1411,7 +1517,9 @@ void AGutGameMode::ActivateStableLine(int32 Code)
 
 		if (SendBodyTo(Code == BodyToParts ? EGutBodyGoesTo::Parts : (Code == BodyToGrill ? EGutBodyGoesTo::Grill : EGutBodyGoesTo::Ground)))
 		{
-			GoTo(EGutStablePage::Yard);
+			GoTo(bBillAfterBody ? EGutStablePage::Bill : EGutStablePage::Yard);
+
+			bBillAfterBody = false;
 		}
 
 		break;

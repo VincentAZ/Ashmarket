@@ -38,6 +38,12 @@ struct FGutAnimInputs
 	float IdleStart = 0.0f;
 	float IdleRate = 1.0f;
 
+	/** Where in the block clip the guard is held still, in seconds: less than nought if the clip is a loop */
+	float BlockHold = -1.0f;
+
+	/** True if a new idle is begun at its beginning: one of a family of standing clips, each of which follows on from the last */
+	bool bIdleFromStart = false;
+
 	/** True for a fighter: its body is kept from jerking, and it steps round on the spot when it is turned. Somebody watching needs neither. */
 	bool bFighter = false;
 
@@ -53,6 +59,14 @@ struct FGutAnimInputs
 
 	/** Goes up each time the fighter is put somewhere else: nothing is carried over */
 	int32 PlaceSerial = 0;
+
+	/**
+	 *  True while the body that is seen has its hands shut for it (round a handle, into fists, half shut when tied): the
+	 *  fingers are then left as the skeleton has them at rest, whatever the clip does with them. The bought clips carry
+	 *  their performers' fingers, and the shutting was laid over those: a hand already closed on a sword was closed again,
+	 *  and came out with its fingers through the handle.
+	 */
+	bool bFingersShutForIt = false;
 
 	/** A weapon gripped in the right fist: its two ends in the space of the hand's bone, and how thick it is. Kept out of the neck and head. */
 	bool bWeaponLine = false;
@@ -80,6 +94,45 @@ struct FGutAnimInputs
 
 	/** How far past the middle of the two each wrist is taken toward the other's side, in centimetres: see AGutFighter::BoundPast */
 	float BoundPast = 2.0f;
+
+	/**
+	 *  True while the body stands on its feet on the ground: a foot that the clip has put down is then held where it was
+	 *  put, in the world, for as long as the clip keeps it down, whatever carries the body meanwhile. See HoldFeet.
+	 */
+	bool bHoldFeet = false;
+
+	/** True if its walking clips plant their own feet, as a performed walk does: nothing is held while it walks */
+	bool bFeetFree = false;
+
+	/** True if it carries its head up whatever its clips do with it: see LookToward */
+	bool bHeadUp = false;
+
+	/** Somewhere in the world for the head to be turned toward, and how much of the turning to do: none while a blow is being thrown or taken */
+	bool bLook = false;
+	FVector LookAt = FVector::ZeroVector;
+
+	/** How far the limb that strikes is taken off the clip's own path to land its blow, in the world, and which: left arm, right arm, left leg, right leg */
+	FVector BlowReach = FVector::ZeroVector;
+	int32 BlowLimb = INDEX_NONE;
+
+	/** How far each arm is brought in toward the body from where the clip hangs it, in degrees, left then right */
+	float ArmsIn[2] = { 0.0f, 0.0f };
+
+	/** True while the body is being taken along a clip its performer travelled in: the clip's own travel is left out of the pose, since the body itself is moved */
+	bool bCarried = false;
+
+	/** True if what plays on the animation slot is for the upper body only: the legs go on with whatever they were doing */
+	bool bSlotUpperOnly = false;
+
+	/** True while what plays on the slot is a gesture of the hands: the neck and the head are left as they were under it */
+	bool bSlotKeepsHead = false;
+
+	/** The height of the floor under the body, in the world */
+	float FloorHeight = 0.0f;
+
+	/** How fast the body is being carried over the ground by anything at all, its own legs or not, and which way, in the world */
+	float Carried = 0.0f;
+	FVector CarriedWay = FVector::ZeroVector;
 };
 
 /**
@@ -119,6 +172,12 @@ private:
 		FCompactPoseBoneIndex Forearm = FCompactPoseBoneIndex(INDEX_NONE);
 		FCompactPoseBoneIndex Hand = FCompactPoseBoneIndex(INDEX_NONE);
 
+		/** Each leg from the hip down, left then right: thigh, calf, foot */
+		FCompactPoseBoneIndex Leg[2][3] = { { FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE) }, { FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE) } };
+
+		/** The ball of each foot, left then right */
+		FCompactPoseBoneIndex Ball[2] = { FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE) };
+
 		/** Each arm from the shoulder down, left then right: upper arm, forearm, hand */
 		FCompactPoseBoneIndex Arm[2][3] = { { FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE) }, { FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE), FCompactPoseBoneIndex(INDEX_NONE) } };
 	};
@@ -150,12 +209,74 @@ private:
 	/** Bends one arm at the elbow, on the side it is bent already, until its wrist is at a place in the space of the whole body */
 	static void ReachTo(FCompactPose& Pose, const FCompactPoseBoneIndex Arm[3], const FVector& Target);
 
+	/**
+	 *  Holds each foot that the clip has put down where it was put, in the world, until the clip lifts it.
+	 *
+	 *  The clips walk and strike on the spot and the game moves the body, at a speed that is the game's own: wherever the
+	 *  two disagree (a sidestep slower than its clip, the carry of a lunge, a shove from a blow) the feet slid over the
+	 *  floor. A held foot does not. The leg is bent to it; when it would have to stretch too far the foot takes a step:
+	 *  up, over and down ahead of the body, one foot at a time. A foot is always either planted or in the air.
+	 */
+	void HoldFeet(FPoseContext& Output, float DeltaTime);
+
+	/**
+	 *  Turns the head, with a little of the neck and the top of the back, toward what the body is looking at: whoever it is
+	 *  fighting, or whoever has walked up to it. Nobody alive stares at one spot in front of them while somebody comes past.
+	 */
+	void LookToward(FPoseContext& Output, float DeltaTime);
+
 	/** The turning clip for a body that many degrees behind where the fighter faces */
 	const FGutTurnClip* ChooseTurn(float Offset) const;
 
 	FGutAnimInputs Inputs;
 
 	FName SlotName = FName("DefaultSlot");
+
+	/** Each foot, left then right: whether it is held, where in the world, how far it is from where the clip has it, and where the clip had it last */
+	bool bFootHeld[2] = { false, false };
+	FVector FootHeldAt[2] = { FVector::ZeroVector, FVector::ZeroVector };
+	FVector FootOff[2] = { FVector::ZeroVector, FVector::ZeroVector };
+	FVector FootWas[2] = { FVector::ZeroVector, FVector::ZeroVector };
+	bool bFootKnown = false;
+	int32 FeetPlaceSerial = 0;
+
+	/** A step being taken to catch the body up: where from, how far through it is, how long it takes and how high it goes */
+	bool bFootStepping[2] = { false, false };
+	FVector FootStepFrom[2] = { FVector::ZeroVector, FVector::ZeroVector };
+	float FootStepTime[2] = { 0.0f, 0.0f };
+	float FootStepLength[2] = { 0.15f, 0.15f };
+	float FootStepLift[2] = { 5.0f, 5.0f };
+
+	/** Which way each held foot was turned, in the world, when it was put down; how far it is now turned back from the way the clip has it, in degrees; and how far it was when its step began */
+	FQuat FootHeldTurned[2] = { FQuat::Identity, FQuat::Identity };
+	float FootTurn[2] = { 0.0f, 0.0f };
+	float FootStepTurn[2] = { 0.0f, 0.0f };
+
+	/** How long each held foot's body has been at rest */
+	float FootRest[2] = { 0.0f, 0.0f };
+
+	/** How far each foot is picked up off the floor while the clip slides it forward */
+	float FootLift[2] = { 0.0f, 0.0f };
+
+	/** Which of the head bone's own axes the face is on */
+	FVector HeadFaces = FVector::RightVector;
+
+	/** Which way the head is turned from straight ahead by looking, in the space of the whole body, and how much of it is on */
+	FVector LookWay = FVector(0.0f, 1.0f, 0.0f);
+	float LookAmount = 0.0f;
+
+	// how far down the clip has had the face over the last second or so, and how far it is being lifted
+	float HeadHangs = 0.0f;
+	float HeadRaised = 0.0f;
+	bool bHeadKnown = false;
+
+	/** How high the fighting skeleton's ankle is off the floor when it stands in its reference pose, and the ball of its foot */
+	float AnkleRest = 8.0f;
+	float BallRest = 2.0f;
+
+	/** Whether each foot is standing on the ball of it and not on its heel, and how fast the point it stands on was last going */
+	bool bFootOnBall[2] = { false, false };
+	float FootWent[2] = { 0.0f, 0.0f };
 
 	/** The idle before the weapon changed, and how far the change to the new one has got */
 	TObjectPtr<UAnimSequenceBase> PreviousIdle;
@@ -165,8 +286,13 @@ private:
 	float IdleTime = 0.0f;
 	float BlockTime = 0.0f;
 
+	/** Where the idle before had got to, which it goes on from while it is left, and how long the leaving of it takes */
+	float PreviousIdleTime = 0.0f;
+	float IdleChangeLength = 0.3f;
+
 	/** How far through its step the fighter is, 0 to 1. Every walking clip is read at this, so their feet agree. */
 	float StepPhase = 0.0f;
+	float StepCount = 0.0f;
 
 	/** How much of the pose is walking, how much of the walking is running, and how much each way: forward, right, back, left */
 	float MoveAmount = 0.0f;
@@ -188,6 +314,9 @@ private:
 	/** How much each bone belongs to an arm: all of it from the collarbone down, none of it anywhere else */
 	TArray<float> Arms;
 	TArray<float> Scratch;
+
+	/** Every bone below a wrist */
+	TArray<FCompactPoseBoneIndex> Fingers;
 	uint16 UpperBodySerial = 0;
 	bool bUpperBodyBuilt = false;
 
@@ -258,7 +387,10 @@ public:
 	 *  For a body that is not a fighter, such as somebody watching from the deck: it stands in the given clip,
 	 *  and whatever is played on the animation slot is laid over that and blends in and out.
 	 */
-	void SetIdle(UAnimSequenceBase* Idle, float StartTime = 0.0f, float PlayRate = 1.0f);
+	void SetIdle(UAnimSequenceBase* Idle, float StartTime = 0.0f, float PlayRate = 1.0f, bool bFollowsOn = false);
+
+	/** For a body that is not a fighter: somewhere in the world for its head to be turned toward, or nowhere. A fighter's is found by itself. */
+	void SetLook(bool bLook, const FVector& At = FVector::ZeroVector);
 
 	/** Something is about to start or stop on the animation slot: carry the body over from what it is doing now, in this long */
 	void SmoothOver(float Seconds);

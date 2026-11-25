@@ -2400,5 +2400,246 @@
   "blend": 6,
   "role": "civil",
   "pick": 3
+ },
+ {
+  "name": "street_stand_wait",
+  "prompt": "A person stands waiting in a street, relaxed, with the weight on one leg and the arms hanging loosely at the sides, head up, looking straight ahead and slowly around.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 9301,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "street",
+  "pick": 0
+ },
+ {
+  "name": "street_stand_crossed",
+  "prompt": "A person stands upright with the arms crossed over the chest, head up, looking straight ahead, shifting weight slowly from one foot to the other.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 9302,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "street",
+  "pick": 0
+ },
+ {
+  "name": "street_stand_hips",
+  "prompt": "A person stands upright with both hands resting on the hips and the elbows out, head up, looking straight ahead and slowly from side to side.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 9303,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "street",
+  "pick": 0
+ },
+ {
+  "name": "street_stand_guard",
+  "prompt": "A guard stands upright and still with the feet apart, the chest out and the arms hanging straight down at the sides, head up, watching straight ahead.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 9304,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "street",
+  "pick": 0
+ },
+ {
+  "name": "street_stand_tired",
+  "prompt": "A tired, hungry person stands slouched with the shoulders dropped and the arms hanging, the head a little lowered, swaying slightly and shifting weight.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 9305,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "street",
+  "pick": 0
+ },
+ {
+  "name": "street_stand_trader",
+  "prompt": "A market trader stands behind a stall with both hands resting forward at waist height, upright, looking straight ahead at a customer and nodding a little.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 9306,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "street",
+  "pick": 0
+ },
+ {
+  "name": "fidget_neck",
+  "prompt": "A person standing still rubs the back of the neck with the right hand for a moment, then drops the arm back to the side and stands still.",
+  "seconds": 5.0,
+  "samples": 4,
+  "seed": 9307,
+  "path": "stay",
+  "face": true,
+  "role": "fidget",
+  "pick": 0
+ },
+ {
+  "name": "fidget_look_back",
+  "prompt": "A person standing still turns the head and shoulders to look back over the left shoulder, holds it a moment, then turns back to face forward and stands still.",
+  "seconds": 5.0,
+  "samples": 4,
+  "seed": 9308,
+  "path": "stay",
+  "face": true,
+  "role": "fidget",
+  "pick": 0
+ },
+ {
+  "name": "fidget_shoulders",
+  "prompt": "A person standing still rolls both shoulders backward and tilts the head from side to side to stretch the neck, then relaxes and stands still.",
+  "seconds": 5.0,
+  "samples": 4,
+  "seed": 9309,
+  "path": "stay",
+  "face": true,
+  "role": "fidget",
+  "pick": 0
+ },
+ {
+  "name": "fidget_wipe",
+  "prompt": "A person standing still in the heat wipes the forehead with the back of the right forearm, then drops the arm back to the side and stands still.",
+  "seconds": 5.0,
+  "samples": 4,
+  "seed": 9310,
+  "path": "stay",
+  "face": true,
+  "role": "fidget",
+  "pick": 0
+ },
+ {
+  "name": "fidget_scratch",
+  "prompt": "A person standing still scratches the left upper arm with the right hand, then lets both arms hang and stands still.",
+  "seconds": 5.0,
+  "samples": 4,
+  "seed": 9311,
+  "path": "stay",
+  "face": true,
+  "role": "fidget",
+  "pick": 0
+ },
+ {
+  "name": "fidget_shift",
+  "prompt": "A person standing still shifts the weight from one leg to the other and moves one foot a little to stand more comfortably, arms hanging.",
+  "seconds": 5.0,
+  "samples": 4,
+  "seed": 9312,
+  "path": "stay",
+  "face": true,
+  "role": "fidget",
+  "pick": 0
+ },
+ {
+  "name": "fidget_look_around",
+  "prompt": "A person standing still looks slowly to the left, then slowly to the right, then straight ahead again, with the arms hanging at the sides.",
+  "seconds": 5.0,
+  "samples": 4,
+  "seed": 9313,
+  "path": "stay",
+  "face": true,
+  "role": "fidget",
+  "pick": 0
+ },
+ {
+  "name": "fidget_cough",
+  "prompt": "A person standing still raises the right fist to the mouth and coughs twice into it, then drops the arm back to the side and stands still.",
+  "seconds": 5.0,
+  "samples": 4,
+  "seed": 9314,
+  "path": "stay",
+  "face": true,
+  "role": "fidget",
+  "pick": 0
+ },
+ {
+  "name": "street_stand_slouch",
+  "prompt": "A person stands still facing straight ahead with the feet side by side under the hips, shoulders slumped and head slightly bowed, both arms hanging straight down at the sides, swaying very slightly.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 9401,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "street",
+  "pick": 0
+ },
+ {
+  "name": "street_stand_weight",
+  "prompt": "A person stands still facing straight ahead with the feet side by side under the hips, slowly shifting weight from one leg to the other, both arms hanging straight down at the sides, head up.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 9402,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "street",
+  "pick": 1
+ },
+ {
+  "name": "street_stand_lean",
+  "prompt": "A person stands still facing straight ahead with the feet side by side, weight on the right leg, the right hand resting on the right hip and the left arm hanging straight down at the side, head up.",
+  "seconds": 9,
+  "samples": 4,
+  "seed": 9403,
+  "path": "own",
+  "loop": true,
+  "cycle": [
+   4.0,
+   8.0
+  ],
+  "blend": 15,
+  "face": true,
+  "role": "street",
+  "pick": 1
  }
 ]

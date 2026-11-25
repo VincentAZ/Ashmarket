@@ -1,12 +1,17 @@
 // Ashmarket prototype: the Gut.
 
 #include "GutFighter.h"
+#include "Components/LODSyncComponent.h"
 #include "GutBeast.h"
 #include "EngineUtils.h"
 #include "GutOpponentController.h"
 #include "GutAnimInstance.h"
 #include "Animation/AnimInstance.h"
 #include "AnimationRuntime.h"
+#include "Animation/AnimSequence.h"
+#include "GutCameraManager.h"
+#include "PhysicsEngine/PhysicsAsset.h"
+#include "PhysicsEngine/SkeletalBodySetup.h"
 #include "Animation/AnimSequenceBase.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -34,6 +39,7 @@
 #include "NiagaraSystem.h"
 #include "Rendering/SkeletalMeshLODRenderData.h"
 #include "Rendering/SkeletalMeshRenderData.h"
+#include "GutClearOp.h"
 #include "RetargetComponent.h"
 #include "Retargeter/IKRetargeter.h"
 #include "StaticMeshResources.h"
@@ -43,6 +49,12 @@ DEFINE_LOG_CATEGORY(LogGut);
 
 namespace GutFighterConstants
 {
+	/** How many of a seen body's levels of detail are ever used, finest first: see where the body is made */
+	// Three: at the fourth a bought jacket's sleeves are left standing out from arms that hang, and at the third they are
+	// not (looked at on the yard hand with each forced, 23 November). It was two for a day, which took Block Square from
+	// about 75 frames a second to 46: fifty-six bystanders posed at the second level. -GutBodyLods=N tries another.
+	const int32 BodyLevelsOfDetail = []() { int32 Levels = 3; FParse::Value(FCommandLine::Get(), TEXT("GutBodyLods="), Levels); return FMath::Clamp(Levels, 1, 8); }();
+
 	/** Name shared by every push so a new one always replaces the last */
 	const FName PushSourceName("GutPush");
 
@@ -54,6 +66,60 @@ namespace GutFighterConstants
 
 	/** -GutNoStrikeShift leaves every blow where its own clip and the old step put it, to compare */
 	const bool bStrikesSeenToLand = !FParse::Param(FCommandLine::Get(), TEXT("GutNoStrikeShift"));
+
+	// blows are taken the rest of the way onto the body they are thrown at: from this long before one is due until this long
+	// after, from no further off than this, this much of what is left each time the body is posed, and back this fast after
+	const bool bBlowsSteered = !FParse::Param(FCommandLine::Get(), TEXT("GutNoBlowSteer"));
+	const float BlowSteerLead = 0.14f;
+	const float BlowSteerAfter = 0.05f;
+	const float BlowSteerMost = 36.0f;
+	const float BlowSteerGain = 0.7f;
+	const float BlowSteerBack = 10.0f;
+
+	// a blow that lands stops both fighters for a moment: how nearly, and for how long by how hard it was
+	const bool bBlowsStop = !FParse::Param(FCommandLine::Get(), TEXT("GutNoBlowStop"));
+	const float BlowStopRate = 0.04f;
+	const float BlowStopLeast = 0.045f;
+	const float BlowStopMost = 0.11f;
+	const float BlowStopPerDamage = 0.0028f;
+	const float BlowStopBlocked = 0.035f;
+
+	// arms at ease hang by the body's own sides: the wrist this far from the hip, counted as hanging if it is below the hips
+	// by this and within this of them, the arm brought in or let out this fast and no further than these
+	const bool bArmsHang = !FParse::Param(FCommandLine::Get(), TEXT("GutNoArmHang"));
+	// (the bodies' own shapes are fuller than the bodies: a wrist that reads as this far from them is beside the hip)
+	// the deepest a dressed trunk can be at the ribs, in cm, for hands clasped in front of it to meet: Bo in his vest is 43, Jorge 41
+	const float DeepestToClasp = 33.5f;
+
+	const float ArmHangGap = []() { float Gap = 2.5f; FParse::Value(FCommandLine::Get(), TEXT("GutArmGap="), Gap); return Gap; }();
+	const float ArmHangBelow = 4.0f;
+	const float ArmHangNear = 30.0f;
+	const float ArmHangGain = 22.0f;
+	const float ArmHangMostIn = 30.0f;
+	const float ArmHangMostOut = 10.0f;
+
+	// finishers that two people performed together are played as pairs; -GutNoPairedFinishers plays each as one body acting on another, as before
+	const bool bPairedFinishers = !FParse::Param(FCommandLine::Get(), TEXT("GutNoPairedFinishers"));
+
+	// Everybody's own arms, hands and what they hold are kept out of their own body as it is dressed (FGutClearOp, which
+	// runs on the body that is seen). -GutNoArmClear leaves them where the clips have them.
+	const bool bArmsClear = !FParse::Param(FCommandLine::Get(), TEXT("GutNoArmClear"));
+
+	// how far an upper arm may lie into a trunk that is skin or a shirt, in cm: -GutArmGive=0 holds every arm wholly clear
+	const float ArmGive = []() { float Give = 2.5f; FParse::Value(FCommandLine::Get(), TEXT("GutArmGive="), Give); return Give; }();
+
+	// armor is made to the body that wears it, this far clear of it all round; -GutArmorOneSize is the one size it was
+	const bool bArmorFitted = !FParse::Param(FCommandLine::Get(), TEXT("GutArmorOneSize"));
+	const float ArmorClearOfChest = []() { float Clear = 2.2f; FParse::Value(FCommandLine::Get(), TEXT("GutArmorClear="), Clear); return Clear; }();
+	const float ArmorClearOfLimb = 1.3f;
+
+	// and with a piece round the chest the arms hang this much further from the body's sides than they do without
+	const float ArmHangClearOfChest = []() { float Clear = 5.0f; FParse::Value(FCommandLine::Get(), TEXT("GutArmorArmGap="), Clear); return Clear; }();
+
+	// the furthest the seen body is lowered onto the floor and raised out of it, and how fast it is brought there
+	const float MostLowered = 14.0f;
+	const float MostRaised = 12.0f;
+	const float GroundRate = 16.0f;
 
 	/** How far in front of a body each clip's blow ends, as the last body to throw it found: where a body starts from */
 	TMap<FName, float> StrikeReachKnownToAnybody;
@@ -281,7 +347,17 @@ void AGutFighter::Tick(float DeltaTime)
 		ListenToFeet();
 	}
 
+	// a blow's stop is over by the world's clock, not the fighter's own, which is all but stopped
+	if (BlowStopEnds > 0.0f && GetWorld()->GetTimeSeconds() >= BlowStopEnds)
+	{
+		BlowStopEnds = 0.0f;
+		CustomTimeDilation = 1.0f;
+	}
+
+	UpdateCarried(DeltaTime);
 	UpdateStrikeShift(DeltaTime);
+	UpdateStanding(DeltaTime);
+	UpdateFidget(DeltaTime);
 	Bleed(DeltaTime);
 
 	// tied wrists: where those of the body that is seen have come to, across the body, and so how much further to bring them
@@ -412,7 +488,7 @@ void AGutFighter::Tick(float DeltaTime)
 
 			if (const FGutStanceAnimations Clips = GetStanceAnimations(); Clips.Stagger)
 			{
-				PlaySlotAnimation(Clips.Stagger, 1.0f, 0.0f, 0.2f, 0.3f, 100);
+				PlaySlotAnimation(Vary(Clips, Clips.Stagger), 1.0f, 0.0f, 0.2f, 0.3f, 100);
 			}
 		}
 
@@ -421,7 +497,7 @@ void AGutFighter::Tick(float DeltaTime)
 		{
 			RecoverFromStagger();
 		}
-		else if (bBeingTaken)
+		else if (bBeingTaken && !CarriedClip)
 		{
 			// what is done to it is done from in front
 			TurnToward(Finisher->GetActorLocation(), DeltaTime, TrackingTurnRate * 0.5f);
@@ -466,7 +542,7 @@ void AGutFighter::Tick(float DeltaTime)
 			break;
 		}
 
-		if (Target && !bFinisherLanded)
+		if (Target && !bFinisherLanded && CurrentFinisher.PairApart <= 0.0f)
 		{
 			TurnToward(Target->GetActorLocation(), DeltaTime, TrackingTurnRate);
 		}
@@ -496,8 +572,14 @@ void AGutFighter::Tick(float DeltaTime)
 
 		if (StateTime >= CurrentFinisher.Windup + CurrentFinisher.Recovery)
 		{
+			if (Target && CurrentFinisher.PairApart > 0.0f)
+			{
+				GetCapsuleComponent()->IgnoreActorWhenMoving(Target, false);
+			}
+
 			FinisherTarget = nullptr;
 
+			EndCarried();
 			StopSlotAnimation();
 			SetState(EGutFighterState::Idle);
 		}
@@ -804,6 +886,150 @@ UGutArmorData* AGutFighter::GetArmorOn(EGutArmorSlot Slot) const
 	return nullptr;
 }
 
+bool AGutFighter::MeasureRound(const FName& Bone, const FName& TowardBone, float Share, float Reach, FVector& OutToward, FVector& OutFront, FBox2D& OutBody, float Below, float PastShoulders,
+	const AActor* Dressed, const USkeletalMeshComponent* DressedBody) const
+{
+	// its own body, or one it is handed: somebody in a crowd is measured the same way
+	const AActor* Measured = Dressed ? Dressed : BodyActor.Get();
+	const USkeletalMeshComponent* Shown = Dressed ? DressedBody : GetShownMesh();
+	const USkeletalMesh* Model = (Measured && Shown) ? Shown->GetSkeletalMeshAsset() : nullptr;
+
+	if (!Model)
+	{
+		return false;
+	}
+
+	const FReferenceSkeleton& Skeleton = Model->GetRefSkeleton();
+
+	const int32 From = Skeleton.FindBoneIndex(Bone);
+	const int32 To = Skeleton.FindBoneIndex(TowardBone);
+
+	if (From == INDEX_NONE || To == INDEX_NONE)
+	{
+		return false;
+	}
+
+	// everything here is the body standing as it was made, arms away from its sides: nothing it is doing now comes into it
+	const FTransform Rest = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, From);
+	const FVector Start = Rest.GetLocation();
+	const FVector Line = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, To).GetLocation() - Start;
+	const float Length = Line.Size();
+
+	if (Length < 1.0f)
+	{
+		return false;
+	}
+
+	// the frame the piece is laid in: along the stretch, the body's front (the mesh faces +Y), and across
+	const FVector Along = Line / Length;
+	const FVector Front = (FVector::YAxisVector - (Along * FVector::DotProduct(FVector::YAxisVector, Along))).GetSafeNormal();
+	const FVector Across = FVector::CrossProduct(Front, Along);
+
+	if (Front.IsNearlyZero())
+	{
+		return false;
+	}
+
+	const float Lowest = (Length * (0.5f - (Share * 0.5f))) - Below;
+	const float Highest = Length * (0.5f + (Share * 0.5f));
+
+	// A chest is measured between the arms: no further out than the shoulder joints, so that the arms themselves are not
+	// taken for ribs. A limb is measured on its own side of the body, so that one thigh is not taken for part of the other.
+	const bool bTrunk = FMath::Abs(Start.X) < 3.0f;
+
+	float Widest = Reach;
+
+	if (bTrunk)
+	{
+		if (const int32 Shoulder = Skeleton.FindBoneIndex(FName("upperarm_l")); Shoulder != INDEX_NONE)
+		{
+			Widest = FMath::Abs(FVector::DotProduct(FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Shoulder).GetLocation() - Start, Across)) + PastShoulders;
+		}
+	}
+
+	TArray<float> Sideways;
+	TArray<float> Forward;
+
+	for (UActorComponent* Component : Measured->GetComponents())
+	{
+		const USkeletalMeshComponent* Part = Cast<USkeletalMeshComponent>(Component);
+		const USkeletalMesh* Shape = Part ? Part->GetSkeletalMeshAsset() : nullptr;
+
+		// the body and what it is dressed in: not the head, and not hair
+		if (!Shape || !Part->IsVisible() || Part->GetFName() == FaceComponentName || Shape->GetName().Contains(TEXT("Hair")) || Shape->GetName().Contains(TEXT("Beard")))
+		{
+			continue;
+		}
+
+		if (bMeasureBodyOnly && !Dressed && Part->GetFName() != BodyComponentName)
+		{
+			continue;
+		}
+
+		const FSkeletalMeshRenderData* Data = Shape->GetResourceForRendering();
+
+		if (!Data)
+		{
+			continue;
+		}
+
+		for (const FSkeletalMeshLODRenderData& Detail : Data->LODRenderData)
+		{
+			const FPositionVertexBuffer& Points = Detail.StaticVertexBuffers.PositionVertexBuffer;
+
+			// the finest level of detail that is in memory to be read
+			if (Points.GetNumVertices() == 0 || !Points.GetVertexData())
+			{
+				continue;
+			}
+
+			for (uint32 i = 0; i < Points.GetNumVertices(); ++i)
+			{
+				const FVector Point(Points.VertexPosition(i));
+				const FVector Off = Point - Start;
+				const float Up = FVector::DotProduct(Off, Along);
+
+				if (Up < Lowest || Up > Highest || (!bTrunk && Point.X * Start.X < 0.0f))
+				{
+					continue;
+				}
+
+				const float Side = FVector::DotProduct(Off, Across);
+				const float Fore = FVector::DotProduct(Off, Front);
+
+				if (bTrunk ? FMath::Abs(Side) > Widest : FMath::Square(Side) + FMath::Square(Fore) > FMath::Square(Reach))
+				{
+					continue;
+				}
+
+				Sideways.Add(Side);
+				Forward.Add(Fore);
+			}
+
+			break;
+		}
+	}
+
+	if (Sideways.Num() < 40)
+	{
+		return false;
+	}
+
+	// all but the odd point that stands out of it: a strap end, a pocket flap
+	Sideways.Sort();
+	Forward.Sort();
+
+	const int32 Trim = Sideways.Num() / 100;
+
+	OutBody = FBox2D(FVector2D(Sideways[Trim], Forward[Trim]), FVector2D(Sideways[Sideways.Num() - 1 - Trim], Forward[Forward.Num() - 1 - Trim]));
+
+	// said in the bone's own space, as the piece is fixed to the bone
+	OutToward = Rest.GetRotation().UnrotateVector(Line);
+	OutFront = Rest.GetRotation().UnrotateVector(Front);
+
+	return true;
+}
+
 void AGutFighter::UpdateArmorPlates()
 {
 	for (UStaticMeshComponent* Plate : ArmorPlates)
@@ -815,6 +1041,11 @@ void AGutFighter::UpdateArmorPlates()
 	}
 
 	ArmorPlates.Reset();
+
+	bChestPiece = false;
+	ChestPieceHalf = FVector2D::ZeroVector;
+
+	using namespace GutFighterConstants;
 
 	for (const UGutArmorData* Piece : Armor)
 	{
@@ -847,11 +1078,49 @@ void AGutFighter::UpdateArmorPlates()
 				const FVector Size = Bounds.GetSize().ComponentMax(FVector(1.0f));
 				const FVector Front = BoneTransform.GetRotation().UnrotateVector(FVector::YAxisVector);
 
-				const float Width = PlateDef.Thickness * Piece->ModelWidthScale;
-				const FVector Scale(Length / Size.X, Width / Size.Y, (Width * Piece->ModelDepthShare) / Size.Z);
-				const FQuat Turn = FRotationMatrix::MakeFromXZ(Toward, Front).ToQuat();
+				float Width = PlateDef.Thickness * Piece->ModelWidthScale;
+				float Depth = Width * Piece->ModelDepthShare;
 
-				Plate->SetRelativeTransform(FTransform(Turn, (Toward * 0.5f) - Turn.RotateVector(Bounds.GetCenter() * Scale), Scale));
+				FVector Line = Toward;
+				FVector Faces = Front;
+				FVector2D Middle = FVector2D::ZeroVector;
+
+				// Made to the body that wears it. One size was put on everybody: a vest 54 cm across on a woman 28 cm across
+				// the ribs stood out past her arms, and they hung through its sides.
+				const bool bChest = Piece->Slot == EGutArmorSlot::Torso;
+
+				FVector MeasuredToward, MeasuredFront;
+				FBox2D Round(ForceInit);
+
+				if (bArmorFitted && MeasureRound(PlateDef.Bone, PlateDef.TowardBone, PlateDef.LengthShare, bChest ? Width : PlateDef.Thickness * 0.62f, MeasuredToward, MeasuredFront, Round))
+				{
+					const float Clear = bChest ? ArmorClearOfChest : ArmorClearOfLimb;
+
+					Line = MeasuredToward;
+					Faces = MeasuredFront;
+					Middle = Round.GetCenter();
+
+					UE_LOG(LogGut, Log, TEXT("%s: %s on %s is made %.0f cm across and %.0f deep for a body %.0f by %.0f there (it was %.0f by %.0f)"), *GetName(), *Piece->GetName(),
+						*PlateDef.Bone.ToString(), Round.GetSize().X + (Clear * 2.0f), Round.GetSize().Y + (Clear * 2.0f), Round.GetSize().X, Round.GetSize().Y, Width, Depth);
+
+					Width = Round.GetSize().X + (Clear * 2.0f);
+					Depth = Round.GetSize().Y + (Clear * 2.0f);
+				}
+
+				bChestPiece = bChestPiece || bChest;
+
+				if (bChest)
+				{
+					ChestPieceHalf = FVector2D(Width, Depth) * 0.5f;
+				}
+
+				const FVector Scale(Line.Size() * PlateDef.LengthShare / Size.X, Width / Size.Y, Depth / Size.Z);
+				const FQuat Turn = FRotationMatrix::MakeFromXZ(Line, Faces).ToQuat();
+
+				// its middle on the middle of the body there, which is not always on the line between the bones
+				const FVector Off = Turn.RotateVector(FVector(0.0f, Middle.X, Middle.Y));
+
+				Plate->SetRelativeTransform(FTransform(Turn, (Line * 0.5f) + Off - Turn.RotateVector(Bounds.GetCenter() * Scale), Scale));
 			}
 			else
 			{
@@ -1004,7 +1273,7 @@ EGutHitResult AGutFighter::ReceiveAttack(AGutFighter* Attacker, const FGutAttack
 		// the guard holds, and the one behind it is jolted
 		if (const FGutStanceAnimations Clips = GetStanceAnimations(); Clips.BlockHit)
 		{
-			PlaySlotAnimation(Clips.BlockHit, 1.3f, 0.0f, 0.05f, 0.2f);
+			PlaySlotAnimation(Vary(Clips, Clips.BlockHit), 1.3f, 0.0f, 0.05f, 0.2f);
 		}
 	}
 	else
@@ -1647,7 +1916,26 @@ void AGutFighter::SetBody(TSoftClassPtr<AActor> NewBodyClass, UIKRetargeter* New
 		Params.Owner = this;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+		bTrunkMeasured = false;
+		Trunk.Reset();
+
 		BodyActor = GetWorld()->SpawnActor<AActor>(Class, GetMesh()->GetComponentTransform(), Params);
+
+		// Never drawn coarser than the second of its levels of detail. Coarser than that the body stops posing the small
+		// bones along its arms, and a bought jacket, which is one mesh at every distance and hangs its sleeves on those
+		// bones, is left with its sleeves standing out as it was modelled while the arms hang (22 November: "his clothes are
+		// off"). On a screen twice as wide as it is tall a body a few metres off already counted as small enough for that.
+		if (BodyActor)
+		{
+			for (UActorComponent* Component : BodyActor->GetComponents())
+			{
+				if (ULODSyncComponent* Sync = Cast<ULODSyncComponent>(Component))
+				{
+					Sync->NumLODs = GutFighterConstants::BodyLevelsOfDetail;
+					Sync->RefreshSyncComponents();
+				}
+			}
+		}
 	}
 
 	if (BodyActor)
@@ -2553,7 +2841,7 @@ void AGutFighter::UpdateMovementForState()
 	}
 
 	// at ease nobody hurries as a fighter does: a walk, or a jog
-	const float Pace = bAtEase ? (bJogging ? AtEaseJogSpeed : AtEaseWalkSpeed) : WalkSpeed;
+	const float Pace = bAtEase ? (bRunning ? AtEaseRunSpeed : (bJogging ? AtEaseJogSpeed : AtEaseWalkSpeed)) : WalkSpeed;
 
 	GetCharacterMovement()->MaxWalkSpeed = Pace * SpeedScale * GetLegSpeedScale() * MoveSpeedScale * WadeSpeedScale * (bWoman ? WomanPaceScale : 1.0f);
 	GetCharacterMovement()->bOrientRotationToMovement = bFaceMovement;
@@ -2568,6 +2856,50 @@ void AGutFighter::SetAtEase(bool bNewAtEase)
 
 	bAtEase = bNewAtEase;
 	bJogging = false;
+	bRunning = false;
+
+	// One of the families of standing, where there are any: the one asked for, or one dealt by the body's own name from those
+	// that suit it. Whoever was given a single clip of their own where they were placed keeps that.
+	Family = INDEX_NONE;
+
+	if (bAtEase && !AtEaseFamilies.IsEmpty() && (!bIdlePlaced || !FamilyAsked.IsNone()))
+	{
+		Family = AtEaseFamilies.IndexOfByPredicate([this](const FGutStandFamily& One) { return One.Name == FamilyAsked && !One.Loops.IsEmpty(); });
+
+		if (Family == INDEX_NONE)
+		{
+			TArray<int32> Dealt;
+
+			for (int32 i = 0; i < AtEaseFamilies.Num(); ++i)
+			{
+				if ((AtEaseFamilies[i].DealtTo & (bWoman ? 2 : 1)) != 0 && !AtEaseFamilies[i].Loops.IsEmpty())
+				{
+					Dealt.Add(i);
+				}
+			}
+
+			Family = Dealt.IsEmpty() ? INDEX_NONE : Dealt[GetTypeHash(GetName()) % Dealt.Num()];
+		}
+
+		FamilyLoop = INDEX_NONE;
+		FamilyLeft = 0.0f;
+
+		KeepFromClasping();
+
+		if (Family != INDEX_NONE)
+		{
+			UpdateStanding(0.0f);
+		}
+	}
+
+	// somebody who was given no way of standing where they were placed takes one of the common ones, and keeps it
+	if (bAtEase && Family == INDEX_NONE && !bIdlePlaced && !AtEaseIdles.IsEmpty())
+	{
+		if (UAnimSequenceBase* Idle = AtEaseIdles[GetTypeHash(GetName()) % AtEaseIdles.Num()])
+		{
+			AtEaseStance.Idle = Idle;
+		}
+	}
 
 	if (bAtEase)
 	{
@@ -2588,6 +2920,142 @@ void AGutFighter::SetBound(bool bNewBound)
 	UpdateWeaponMesh();
 }
 
+const FGutLocomotionAnimations& AGutFighter::GetFightLocomotion() const
+{
+	const UGutWeaponData* Armament = GetArmament();
+
+	if (!Armament || !Armament->Moves.WalkForward.Animation)
+	{
+		return Locomotion;
+	}
+
+	if (HeldLocomotionFor.Get() != Armament)
+	{
+		HeldLocomotionFor = Armament;
+		HeldLocomotion = Locomotion;
+
+		HeldLocomotion.WalkForward = Armament->Moves.WalkForward;
+		HeldLocomotion.WalkRight = Armament->Moves.WalkRight;
+		HeldLocomotion.WalkBack = Armament->Moves.WalkBack;
+		HeldLocomotion.WalkLeft = Armament->Moves.WalkLeft;
+		HeldLocomotion.RunForward = Armament->Moves.RunForward;
+		HeldLocomotion.RunRight = Armament->Moves.RunRight;
+		HeldLocomotion.RunBack = Armament->Moves.RunBack;
+		HeldLocomotion.RunLeft = Armament->Moves.RunLeft;
+
+		// The fighter's own steps round on the spot are stepped from its own stance, which this weapon is not held in: turned
+		// with them, the feet changed places. Without them a foot is lifted and put down again as the body comes round.
+		HeldLocomotion.TurnLeft = HeldLocomotion.TurnRight = HeldLocomotion.TurnLeftFar = HeldLocomotion.TurnRightFar = FGutTurnClip();
+	}
+
+	return HeldLocomotion;
+}
+
+void AGutFighter::SetRunning(bool bNewRunning)
+{
+	if (bRunning != bNewRunning)
+	{
+		bRunning = bNewRunning;
+
+		UpdateMovementForState();
+	}
+}
+
+void AGutFighter::SetAtEaseFamily(const FName& Name)
+{
+	FamilyAsked = Name;
+
+	if (bAtEase)
+	{
+		// taken up at once
+		bAtEase = false;
+		SetAtEase(true);
+	}
+}
+
+void AGutFighter::KeepFromClasping()
+{
+	static const FName Clasp(TEXT("clasp"));
+	static const FName Plain(TEXT("stand"));
+
+	if (!AtEaseFamilies.IsValidIndex(Family) || AtEaseFamilies[Family].Name != Clasp || !HasBody())
+	{
+		return;
+	}
+
+	if (!bTrunkMeasured)
+	{
+		MeasureTrunk();
+	}
+
+	// Hands clasped in front are held where the performer's arms reach, in front of the belt. A body that is deep through
+	// the trunk, with a belly or a vest of plates, has nowhere in front of it that both its arms reach: each hand stopped
+	// short on its own thigh, and the Warden at the Block stood with his fists in his groin ("do you think this stance is
+	// unnatural?", 24 November: yes). Such a body stands plainly instead.
+	if (!Trunk.IsEmpty() && Trunk.Last().Half.Y * 2.0f > GutFighterConstants::DeepestToClasp)
+	{
+		if (const int32 Stand = AtEaseFamilies.IndexOfByPredicate([](const FGutStandFamily& One) { return One.Name == Plain && !One.Loops.IsEmpty(); }); Stand != INDEX_NONE)
+		{
+			UE_LOG(LogGut, Log, TEXT("%s: %.0f cm deep through the trunk as dressed, too deep to clasp hands in front of: stands plainly"), *GetName(), Trunk.Last().Half.Y * 2.0f);
+
+			Family = Stand;
+			FamilyLoop = INDEX_NONE;
+			FamilyLeft = 0.0f;
+		}
+	}
+}
+
+void AGutFighter::UpdateStanding(float DeltaTime)
+{
+	// a body that was not there to be measured when its way of standing was chosen is looked at again once it is
+	if (bAtEase && !bTrunkMeasured)
+	{
+		KeepFromClasping();
+	}
+
+	if (!bAtEase || !AtEaseFamilies.IsValidIndex(Family))
+	{
+		return;
+	}
+
+	const FGutStandFamily& Mine = AtEaseFamilies[Family];
+
+	FamilyLeft -= DeltaTime;
+
+	if (FamilyLeft > 0.0f || Mine.Loops.IsEmpty())
+	{
+		return;
+	}
+
+	// the next of them, by the body's own name and the time, and not the one it has just done
+	FRandomStream Draw(GetTypeHash(GetName()) + FMath::FloorToInt32(GetWorld()->GetTimeSeconds() * 10.0f));
+
+	int32 Next = Draw.RandRange(0, Mine.Loops.Num() - 1);
+
+	if (Next == FamilyLoop && Mine.Loops.Num() > 1)
+	{
+		Next = (Next + 1) % Mine.Loops.Num();
+	}
+
+	FamilyLoop = Next;
+
+	if (UAnimSequenceBase* Clip = Mine.Loops[Next])
+	{
+		AtEaseStance.Idle = Clip;
+
+		// a short one is gone round until six seconds are up; the change to the next begins a little before the end
+		const float Length = FMath::Max(Clip->GetPlayLength(), 0.5f);
+
+		FamilyLeft = (Length * FMath::CeilToFloat(6.0f / Length)) - 0.4f;
+
+		// the first of all is come upon part way through, so that a street of people is not all at the start of something
+		if (DeltaTime <= 0.0f)
+		{
+			FamilyLeft *= Draw.FRandRange(0.3f, 1.0f);
+		}
+	}
+}
+
 void AGutFighter::SetJogging(bool bNewJogging)
 {
 	if (bJogging != bNewJogging)
@@ -2606,6 +3074,35 @@ bool AGutFighter::StartAttack(const FGutAttackDef& Attack, EGutAttackType Type)
 	SpendStamina(Attack.StaminaCost);
 
 	CurrentAttack = Attack;
+
+	// thrown one of the ways there are of throwing it: not the way the last blow was thrown
+	static const bool bOneWay = FParse::Param(FCommandLine::Get(), TEXT("GutOneWay"));
+
+	if (!bOneWay && !Attack.Others.IsEmpty())
+	{
+		for (int32 Try = 0; Try < 4; ++Try)
+		{
+			const int32 Which = FMath::RandHelper(Attack.Others.Num() + 1);
+			const UAnimSequenceBase* Chosen = Which == 0 ? Attack.Animation.Get() : Attack.Others[Which - 1].Animation.Get();
+
+			if (!Chosen || Chosen == LastThrown.Get())
+			{
+				continue;
+			}
+
+			if (Which > 0)
+			{
+				CurrentAttack.Animation = Attack.Others[Which - 1].Animation;
+				CurrentAttack.AnimStartTime = Attack.Others[Which - 1].AnimStartTime;
+				CurrentAttack.AnimImpactTime = Attack.Others[Which - 1].AnimImpactTime;
+			}
+
+			break;
+		}
+	}
+
+	LastThrown = CurrentAttack.Animation.Get();
+	CurrentAttack.Others.Reset();
 
 	// a woman's blow carries less than a man's, and comes and goes sooner
 	if (bWoman)
@@ -2786,11 +3283,11 @@ bool AGutFighter::StartDodge(const FVector& WorldDirection)
 
 	if (Step)
 	{
-		PlaySlotAnimation(Step, StepLength / DodgeDuration, 0.0f, 0.05f, 0.15f);
+		PlaySlotAnimation(Vary(Clips, Step), StepLength / DodgeDuration, 0.0f, 0.05f, 0.15f);
 	}
 	else if (Clips.Dodge)
 	{
-		PlaySlotAnimation(Clips.Dodge, Clips.DodgeLength / DodgeDuration, 0.0f, 0.05f, 0.15f);
+		PlaySlotAnimation(Vary(Clips, Clips.Dodge), Clips.DodgeLength / DodgeDuration, 0.0f, 0.05f, 0.15f);
 	}
 
 	// feet scuffing off the tile
@@ -2916,6 +3413,41 @@ void AGutFighter::BufferAction(EBufferedAction Action, const FVector& DodgeDirec
 	BufferedDodgeDirection = DodgeDirection;
 }
 
+UAnimSequenceBase* AGutFighter::Vary(const FGutStanceAnimations& Clips, UAnimSequenceBase* Clip) const
+{
+	static const bool bOff = FParse::Param(FCommandLine::Get(), TEXT("GutOneWay"));
+
+	if (!Clip || bOff)
+	{
+		return Clip;
+	}
+
+	for (const FGutOtherWays& Other : Clips.Others)
+	{
+		if (Other.For != Clip || Other.Ways.IsEmpty())
+		{
+			continue;
+		}
+
+		// one of them all, the first among them, and not what was given last
+		for (int32 Try = 0; Try < 4; ++Try)
+		{
+			const int32 Which = FMath::RandHelper(Other.Ways.Num() + 1);
+
+			UAnimSequenceBase* Chosen = Which == 0 ? Clip : Other.Ways[Which - 1].Get();
+
+			if (Chosen && Chosen != LastVaried.Get())
+			{
+				LastVaried = Chosen;
+
+				return Chosen;
+			}
+		}
+	}
+
+	return Clip;
+}
+
 UAnimSequenceBase* AGutFighter::ChooseReaction(const FGutAttackDef& Attack, const FVector& FromAttacker, bool bOnLimb, EGutLimb Limb) const
 {
 	const FGutStanceAnimations Clips = GetStanceAnimations();
@@ -2976,7 +3508,7 @@ UAnimSequenceBase* AGutFighter::ChooseReaction(const FGutAttackDef& Attack, cons
 		}
 	}
 
-	return Reaction ? Reaction : Clips.Stun.Get();
+	return Vary(Clips, Reaction ? Reaction : Clips.Stun.Get());
 }
 
 void AGutFighter::EnterStun(float Duration, UAnimSequenceBase* Reaction)
@@ -3024,7 +3556,25 @@ void AGutFighter::Die(AGutFighter* InKiller, const FVector& ImpulseDirection)
 	Health = 0.0f;
 	CreditedKiller = InKiller;
 
-	InterruptAction();
+	// Killed in the middle of something two people performed together, it goes on in its own half of it, down to the floor
+	const bool bGoesOn = bKilledByFinisher && InKiller && InKiller->CurrentFinisher.PairApart > 0.0f && CarriedClip;
+	const float GoesOnFor = bGoesOn ? FMath::Max(InKiller->CurrentFinisher.DeathLimpTime - CarriedTime, 0.1f) : 0.0f;
+
+	TObjectPtr<UAnimSequence> GoingOnIn = bGoesOn ? CarriedClip : nullptr;
+	const float GoneThrough = CarriedTime;
+	const FVector GoingFrom = CarriedFrom;
+	const FVector GoingSlip = CarriedSlip;
+	const FVector GoingRoot = CarriedRootAtStart;
+	const FQuat GoingTurn = CarriedTurn;
+
+	if (bGoesOn)
+	{
+		CancelPush();
+	}
+	else
+	{
+		InterruptAction();
+	}
 
 	// nobody is finishing this fighter any more, and it is done holding things
 	Finisher = nullptr;
@@ -3060,7 +3610,22 @@ void AGutFighter::Die(AGutFighter* InKiller, const FVector& ImpulseDirection)
 	bBeingTaken = false;
 	bLimp = false;
 
-	if (DeathClip && LimpTime > 0.05f && GetMesh()->GetAnimInstance())
+	if (bGoesOn)
+	{
+		// nothing that was done on the way here has stopped it: taken along as before, and limp when its clip has it down
+		CarriedClip = GoingOnIn;
+		CarriedTime = GoneThrough;
+		CarriedFrom = GoingFrom;
+		CarriedSlip = GoingSlip;
+		CarriedRootAtStart = GoingRoot;
+		CarriedTurn = GoingTurn;
+		bCarriedPose = true;
+
+		LimpTime = GoesOnFor;
+
+		GetWorldTimerManager().SetTimer(LimpTimer, FTimerDelegate::CreateWeakLambda(this, [this]() { GoLimp(FVector::ZeroVector); }), LimpTime, false);
+	}
+	else if (DeathClip && LimpTime > 0.05f && GetMesh()->GetAnimInstance())
 	{
 		PlaySlotAnimation(DeathClip, 1.0f, 0.0f, 0.1f, 0.0f);
 
@@ -3130,7 +3695,11 @@ void AGutFighter::TryCelebrate()
 
 	GetWorldTimerManager().ClearTimer(VictoryTimer);
 
-	if (UAnimSequenceBase* Clip = Locomotion.Victory[FMath::RandHelper(Locomotion.Victory.Num())])
+	// the way of whoever holds this, if there is one: somebody with a blade in the hand does not win as a boxer does
+	const UGutWeaponData* Held = GetArmament();
+	const TArray<TObjectPtr<UAnimSequenceBase>>& Ways = (Held && !Held->Stance.Victory.IsEmpty()) ? Held->Stance.Victory : Locomotion.Victory;
+
+	if (UAnimSequenceBase* Clip = Ways[FMath::RandHelper(Ways.Num())])
 	{
 		PlaySlotAnimation(Clip, 1.0f, 0.0f, 0.3f, 0.4f);
 
@@ -3238,6 +3807,8 @@ void AGutFighter::GoLimp(const FVector& ImpulseDirection)
 
 	bLimp = true;
 
+	EndCarried();
+
 	GetWorldTimerManager().ClearTimer(LimpTimer);
 
 	// an animal dies as its own clip has it die
@@ -3314,6 +3885,10 @@ void AGutFighter::PlaySlotAnimation(UAnimSequenceBase* Animation, float PlayRate
 		return;
 	}
 
+	// whatever is played next is not carried unless it is begun as such
+	EndCarried();
+	bCarriedPose = false;
+
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
 		// the fighter's own animation takes the body up from wherever it was and at the speed it was going, which a cross-fade
@@ -3361,6 +3936,27 @@ bool AGutFighter::HasLiveOpponent() const
 void AGutFighter::HandleAttackLanded(AGutFighter* Target, EGutHitResult Result, const FGutAttackDef& Attack)
 {
 	LastStrikeResult = Result;
+
+	// what makes a blow look as if it met something: the two of them stop for an instant where it met
+	if (Target && (Result == EGutHitResult::Hit || Result == EGutHitResult::Blocked || Result == EGutHitResult::GuardBroken))
+	{
+		const float Stop = Result == EGutHitResult::Blocked ? GutFighterConstants::BlowStopBlocked
+			: FMath::Clamp(Attack.Damage * GutFighterConstants::BlowStopPerDamage, GutFighterConstants::BlowStopLeast, GutFighterConstants::BlowStopMost);
+
+		// Everybody in the fight stops, not only the two the blow was between. Held alone, they gave whoever else was in
+		// the cage that instant for nothing: the Kennel Master's dog, the other two of three. Twelve runs of the ladder
+		// each way on 21 November: the Kennel Master took 118 tries with only the two held, and 58 with nobody held.
+		for (TActorIterator<AGutFighter> It(GetWorld()); It; ++It)
+		{
+			if (It->IsCombatEnabled())
+			{
+				It->StopForBlow(Stop);
+			}
+		}
+
+		// and whoever is watching feels it
+		AGutCameraManager::JarViewers(this, Result == EGutHitResult::Blocked ? 0.2f : FMath::Clamp(Attack.Damage / 34.0f, 0.3f, 1.0f));
+	}
 
 	switch (Result)
 	{
@@ -3489,7 +4085,7 @@ void AGutFighter::EnterStagger()
 	if (const FGutStanceAnimations Clips = GetStanceAnimations(); Clips.Stagger)
 	{
 		// a loop at its own speed, round and round until the stagger ends or somebody ends it
-		PlaySlotAnimation(Clips.Stagger, 1.0f, 0.0f, 0.2f, 0.3f, 100);
+		PlaySlotAnimation(Vary(Clips, Clips.Stagger), 1.0f, 0.0f, 0.2f, 0.3f, 100);
 	}
 	else if (StaggerAnimation)
 	{
@@ -3533,6 +4129,18 @@ void AGutFighter::StartFinisher(AGutFighter* Target, EGutFinisherStyle Style)
 	Target->Finisher = this;
 
 	// hands and a shield's rim do not reach as far as a finisher can be started from: the fighter walks the rest first
+	// One that two people performed together is begun from as far apart as they stood: nearer than that the two are stood
+	// off as it begins, further and the fighter walks in.
+	// (two people performed it: it is not done to a dog, or by one)
+	if (CurrentFinisher.PairApart > 0.0f && GutFighterConstants::bPairedFinishers && CurrentFinisher.Animation && CurrentFinisher.TakenAnimation && !Beast && !Target->IsBeast())
+	{
+		CurrentFinisher.Reach = FMath::Max(CurrentFinisher.PairApart - Target->GetCapsuleComponent()->GetScaledCapsuleRadius() + 4.0f, 1.0f);
+	}
+	else
+	{
+		CurrentFinisher.PairApart = 0.0f;
+	}
+
 	bFinisherClosing = CurrentFinisher.Reach > 0.0f && GetGapTo(Target) > CurrentFinisher.Reach;
 
 	SetState(EGutFighterState::Finishing);
@@ -3547,8 +4155,122 @@ void AGutFighter::StartFinisher(AGutFighter* Target, EGutFinisherStyle Style)
 	BP_OnFinisherStarted(Target, Style);
 }
 
+void AGutFighter::BeginCarried(UAnimSequenceBase* Clip, const FVector& From)
+{
+	UAnimSequence* Performed = Cast<UAnimSequence>(Clip);
+
+	if (!Performed)
+	{
+		return;
+	}
+
+	PlaySlotAnimation(Performed, 1.0f, 0.0f, 0.15f, 0.25f);
+
+	CarriedClip = Performed;
+	CarriedTime = 0.0f;
+	CarriedFrom = FVector(From.X, From.Y, GetActorLocation().Z);
+	CarriedSlip = GetActorLocation() - CarriedFrom;
+	CarriedRootAtStart = Performed->ExtractRootTrackTransform(FAnimExtractContext(0.0), nullptr).GetLocation();
+	CarriedTurn = GetMesh()->GetComponentQuat();
+	bCarriedPose = true;
+}
+
+void AGutFighter::UpdateCarried(float DeltaTime)
+{
+	if (!CarriedClip)
+	{
+		// the pose is held to its place until the clip has faded right out
+		if (bCarriedPose)
+		{
+			const UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+			if (!AnimInstance || !AnimInstance->IsSlotActive(AnimSlotName))
+			{
+				bCarriedPose = false;
+			}
+		}
+
+		return;
+	}
+
+	CarriedTime = FMath::Min(CarriedTime + DeltaTime, CarriedClip->GetPlayLength());
+
+	// where the performer had got to by now, laid out from where this body began
+	const FVector Gone = CarriedClip->ExtractRootTrackTransform(FAnimExtractContext(static_cast<double>(CarriedTime)), nullptr).GetLocation() - CarriedRootAtStart;
+	const FVector Slip = CarriedSlip * (1.0f - FMath::SmoothStep(0.0f, 0.35f, CarriedTime));
+	const FVector Place = CarriedFrom + CarriedTurn.RotateVector(FVector(Gone.X, Gone.Y, 0.0f)) + FVector(Slip.X, Slip.Y, 0.0f);
+
+	// somebody alive is stopped by a wall; a body is put where its clip has it
+	SetActorLocation(FVector(Place.X, Place.Y, GetActorLocation().Z), IsAlive());
+
+	if (CarriedTime >= CarriedClip->GetPlayLength())
+	{
+		EndCarried();
+	}
+}
+
+void AGutFighter::EndCarried()
+{
+	CarriedClip = nullptr;
+}
+
 void AGutFighter::BeginFinisherWindup(AGutFighter* Target)
 {
+	// One that two people performed together. The two are stood as far apart as the performers stood, facing, and each is
+	// played as it was performed and taken along its own clip.
+	if (CurrentFinisher.PairApart > 0.0f)
+	{
+		const FVector There = Target->GetActorLocation();
+
+		FVector Line = (GetActorLocation() - There).GetSafeNormal2D();
+
+		if (Line.IsNearlyZero())
+		{
+			Line = -GetActorForwardVector().GetSafeNormal2D();
+		}
+
+		// the fighter is stood off, or brought in. With a wall at its back, the other is stood off instead for what is left.
+		const float Now = FVector::Dist2D(GetActorLocation(), There);
+		float Mine = CurrentFinisher.PairApart - Now;
+		float Theirs = 0.0f;
+
+		if (Mine > 1.0f)
+		{
+			FCollisionQueryParams Query(SCENE_QUERY_STAT(GutPairStandsOff), false, this);
+			Query.AddIgnoredActor(Target);
+
+			FHitResult Wall;
+
+			if (GetWorld()->SweepSingleByChannel(Wall, GetActorLocation(), GetActorLocation() + (Line * Mine), FQuat::Identity, GetCapsuleComponent()->GetCollisionObjectType(),
+				GetCapsuleComponent()->GetCollisionShape(), Query))
+			{
+				const float Free = FMath::Max(Wall.Distance - 2.0f, 0.0f);
+
+				Theirs = Mine - Free;
+				Mine = Free;
+			}
+		}
+
+		const FVector MyStart = GetActorLocation() + (Line * Mine);
+		const FVector TheirStart = There - (Line * Theirs);
+
+		// the two pass through one another's space as the performers did
+		GetCapsuleComponent()->IgnoreActorWhenMoving(Target, true);
+		Target->GetCapsuleComponent()->IgnoreActorWhenMoving(this, true);
+
+		SetActorRotation(FRotator(0.0f, (-Line).Rotation().Yaw, 0.0f));
+		Target->SetActorRotation(FRotator(0.0f, Line.Rotation().Yaw, 0.0f));
+
+		Target->bBeingTaken = true;
+		Target->BeginCarried(CurrentFinisher.TakenAnimation, TheirStart);
+
+		BeginCarried(CurrentFinisher.Animation, MyStart);
+
+		UE_LOG(LogGut, Log, TEXT("%s and %s are stood %.0f cm apart for it (they were %.0f): performed by two"), *GetName(), *Target->GetName(), CurrentFinisher.PairApart, Now);
+
+		return;
+	}
+
 	// the one it is done to acts out what is being done to it, so that its part of the blow comes as the blow does
 	if (CurrentFinisher.TakenAnimation && CurrentFinisher.TakenImpactTime > 0.0f)
 	{
@@ -3568,6 +4290,7 @@ void AGutFighter::BeginFinisherWindup(AGutFighter* Target)
 void AGutFighter::InterruptAction()
 {
 	CancelPush();
+	EndCarried();
 	StopSlotAnimation(0.05f);
 
 	bFinisherClosing = false;
@@ -3575,6 +4298,15 @@ void AGutFighter::InterruptAction()
 	// a finisher that is cut short lets its target go
 	if (AGutFighter* Target = FinisherTarget.Get())
 	{
+		// and the two are in one another's way again
+		GetCapsuleComponent()->IgnoreActorWhenMoving(Target, false);
+		Target->GetCapsuleComponent()->IgnoreActorWhenMoving(this, false);
+
+		if (Target->IsAlive())
+		{
+			Target->EndCarried();
+		}
+
 		if (Target->Finisher == this)
 		{
 			Target->Finisher = nullptr;
@@ -3778,6 +4510,1087 @@ void AGutFighter::OnBodyPosed()
 	UpdateTie();
 	ListenToFeet();
 	MeasureStrike();
+	SteerBlow();
+	HangArms();
+	LogOwnCuts();
+	GroundBody();
+}
+
+bool AGutFighter::MeasureShapeOf(const AActor* Dressed, const USkeletalMeshComponent* DressedBody, FGutClearShape& OutShape)
+{
+	static const FName Spine[] = { FName("pelvis"), FName("spine_01"), FName("spine_02"), FName("spine_03"), FName("spine_04"), FName("spine_05") };
+	static const FName Arms[2][2] = { { FName("upperarm_l"), FName("lowerarm_l") }, { FName("upperarm_r"), FName("lowerarm_r") } };
+	static const FName Hands[2] = { FName("hand_l"), FName("hand_r") };
+	static const FName Legs[2][2] = { { FName("thigh_l"), FName("calf_l") }, { FName("thigh_r"), FName("calf_r") } };
+
+	// as MeasureTrunk has them
+	static const float Below[] = { 16.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+	static const float PastShoulders[] = { 14.0f, 12.0f, 8.0f, 3.0f, 0.5f };
+
+	// each kind of body once: the answer is the same for everybody who is seen as it
+	static TMap<FName, FGutClearShape> Measured;
+
+	if (!Dressed || !DressedBody || !DressedBody->GetSkeletalMeshAsset())
+	{
+		return false;
+	}
+
+	const FName Kind = Dressed->GetClass()->GetFName();
+
+	if (const FGutClearShape* Known = Measured.Find(Kind))
+	{
+		OutShape = *Known;
+
+		return !OutShape.Trunk.IsEmpty();
+	}
+
+	// its clothes have to be there to be measured: asked again until they are
+	if (!DressedBody->GetSkeletalMeshAsset()->GetResourceForRendering())
+	{
+		return false;
+	}
+
+	const AGutFighter* Rule = GetDefault<AGutFighter>();
+
+	FGutClearShape Shape;
+
+	bool bStiff = false;
+
+	for (const UActorComponent* Component : Dressed->GetComponents())
+	{
+		const USkeletalMeshComponent* Part = Cast<USkeletalMeshComponent>(Component);
+
+		for (const UMaterialInterface* Drawn : (Part && Part->IsVisible()) ? Part->GetMaterials() : TArray<UMaterialInterface*>())
+		{
+			const FString From = Drawn ? Drawn->GetPathName() : FString();
+
+			bStiff |= From.Contains(TEXT("Tactical_Vest")) || From.Contains(TEXT("Soldier_Outfit"));
+		}
+	}
+
+	for (int32 i = 0; i + 1 < UE_ARRAY_COUNT(Spine); ++i)
+	{
+		FVector Toward, Front;
+		FBox2D Round(ForceInit);
+
+		if (!Rule->MeasureRound(Spine[i], Spine[i + 1], 1.0f, 40.0f, Toward, Front, Round, Below[i], PastShoulders[i], Dressed, DressedBody))
+		{
+			continue;
+		}
+
+		FGutClearShape::FSection& Section = Shape.Trunk.AddDefaulted_GetRef();
+
+		Section.Bone = Spine[i];
+		Section.Below = Below[i];
+		Section.Height = Toward.Size();
+		Section.Along = Toward.GetSafeNormal();
+		Section.Front = Front;
+		Section.Across = FVector::CrossProduct(Front, Section.Along);
+		Section.Middle = Round.GetCenter();
+		Section.Half = Round.GetExtent();
+		Section.Give = bStiff ? 0.0f : GutFighterConstants::ArmGive;
+	}
+
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		FVector Toward, Front;
+		FBox2D Round(ForceInit);
+
+		Shape.UpperArm[Side] = Rule->MeasureRound(Arms[Side][0], Arms[Side][1], 0.5f, 7.5f, Toward, Front, Round, 0.0f, 0.5f, Dressed, DressedBody) ? FMath::Clamp((Round.GetExtent().X + Round.GetExtent().Y) * 0.5f, 3.5f, 6.5f) : 4.5f;
+		Shape.Forearm[Side] = Rule->MeasureRound(Arms[Side][1], Hands[Side], 0.5f, 6.5f, Toward, Front, Round, 0.0f, 0.5f, Dressed, DressedBody) ? FMath::Clamp((Round.GetExtent().X + Round.GetExtent().Y) * 0.5f, 2.8f, 5.5f) : 3.4f;
+		Shape.Thigh[Side] = Rule->MeasureRound(Legs[Side][0], Legs[Side][1], 0.6f, 13.0f, Toward, Front, Round, 0.0f, 0.5f, Dressed, DressedBody) ? FMath::Clamp((Round.GetExtent().X + Round.GetExtent().Y) * 0.5f, 6.0f, 12.0f) : 8.5f;
+	}
+
+	// somebody in a crowd stands with their hands their own and empty
+	Shape.HangIn = 1.0f;
+	Shape.HangGap = GutFighterConstants::ArmHangGap;
+	Shape.bBound = false;
+	Shape.bOn = !Shape.Trunk.IsEmpty();
+
+	Measured.Add(Kind, Shape);
+
+	OutShape = Shape;
+
+	return !OutShape.Trunk.IsEmpty();
+}
+
+void AGutFighter::MeasureTrunk()
+{
+	static const FName Spine[] = { FName("pelvis"), FName("spine_01"), FName("spine_02"), FName("spine_03"), FName("spine_04"), FName("spine_05") };
+	static const FName Arms[2][2] = { { FName("upperarm_l"), FName("lowerarm_l") }, { FName("upperarm_r"), FName("lowerarm_r") } };
+	static const FName Hands[2] = { FName("hand_l"), FName("hand_r") };
+	static const FName Legs[2][2] = { { FName("thigh_l"), FName("calf_l") }, { FName("thigh_r"), FName("calf_r") } };
+
+	// The hips are measured from the pelvis down as well as up. And lower on the body the arms of a body at rest are
+	// further from it, so more of it can be taken for trunk: a belly is wider than the shoulder joints are apart.
+	static const float Below[] = { 16.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+	static const float PastShoulders[] = { 14.0f, 12.0f, 8.0f, 3.0f, 0.5f };
+
+	Trunk.Reset();
+	bTrunkMeasured = true;
+
+	bool bStiff = false;
+
+	for (UActorComponent* Component : BodyActor ? BodyActor->GetComponents() : TSet<UActorComponent*>())
+	{
+		const USkeletalMeshComponent* Part = Cast<USkeletalMeshComponent>(Component);
+
+		if (!Part || !Part->IsVisible())
+		{
+			continue;
+		}
+
+		for (const UMaterialInterface* Drawn : Part->GetMaterials())
+		{
+			const FString From = Drawn ? Drawn->GetPathName() : FString();
+
+			bStiff |= From.Contains(TEXT("Tactical_Vest")) || From.Contains(TEXT("Soldier_Outfit"));
+		}
+	}
+
+	for (int32 i = 0; i + 1 < UE_ARRAY_COUNT(Spine); ++i)
+	{
+		FVector Toward, Front;
+		FBox2D Round(ForceInit);
+
+		if (!MeasureRound(Spine[i], Spine[i + 1], 1.0f, 40.0f, Toward, Front, Round, Below[i], PastShoulders[i]))
+		{
+			continue;
+		}
+
+		FTrunkSection Section;
+
+		Section.Bone = Spine[i];
+		Section.Below = Below[i];
+		Section.Height = Toward.Size();
+		Section.Along = Toward.GetSafeNormal();
+		Section.Front = Front;
+		Section.Across = FVector::CrossProduct(Front, Section.Along);
+		Section.Middle = Round.GetCenter();
+		Section.Half = Round.GetExtent();
+
+		// An arm at rest lies against the ribs, and both give. Held wholly clear of them, arms stood off every body like a
+		// doll's. Skin, a shirt, a coat give; a vest of plates and a soldier's rig do not, and that is what he saw an arm
+		// go through. Which it is, is told from where what is worn comes from: the outfits' own folders.
+		Section.Give = bStiff ? 0.0f : GutFighterConstants::ArmGive;
+
+		Trunk.Add(Section);
+	}
+
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		FVector Toward, Front;
+		FBox2D Round(ForceInit);
+
+		// no further from the bone than an arm reaches: at rest the trunk is a hand's breadth from it, and was being taken for arm
+		ArmRadius[Side] = MeasureRound(Arms[Side][0], Arms[Side][1], 0.5f, 7.5f, Toward, Front, Round) ? FMath::Clamp((Round.GetExtent().X + Round.GetExtent().Y) * 0.5f, 3.5f, 6.5f) : 4.5f;
+
+		// the forearm with its sleeve, and the thigh with its trouser leg
+		ForearmRadius[Side] = MeasureRound(Arms[Side][1], Hands[Side], 0.5f, 6.5f, Toward, Front, Round) ? FMath::Clamp((Round.GetExtent().X + Round.GetExtent().Y) * 0.5f, 2.8f, 5.5f) : 3.4f;
+		ThighRadius[Side] = MeasureRound(Legs[Side][0], Legs[Side][1], 0.6f, 13.0f, Toward, Front, Round) ? FMath::Clamp((Round.GetExtent().X + Round.GetExtent().Y) * 0.5f, 6.0f, 12.0f) : 8.5f;
+	}
+
+	if (!Trunk.IsEmpty())
+	{
+		UE_LOG(LogGut, Log, TEXT("%s: the trunk of %s as it is dressed is %.0f cm across and %.0f deep at the ribs, its upper arms %.1f and %.1f cm thick, forearms %.1f and %.1f, thighs %.1f and %.1f; an arm may lie %.1f cm into its ribs"), *GetName(),
+			*GetNameSafe(BodyActor ? BodyActor->GetClass() : nullptr), Trunk.Last().Half.X * 2.0f, Trunk.Last().Half.Y * 2.0f, ArmRadius[0] * 2.0f, ArmRadius[1] * 2.0f,
+			ForearmRadius[0] * 2.0f, ForearmRadius[1] * 2.0f, ThighRadius[0] * 2.0f, ThighRadius[1] * 2.0f, Trunk.Last().Give);
+	}
+}
+
+bool AGutFighter::GetClearShape(FGutClearShape& OutShape)
+{
+	using namespace GutFighterConstants;
+
+	OutShape.Trunk.Reset();
+	OutShape.Held[0].Reset();
+	OutShape.Held[1].Reset();
+
+	// somebody alive with a body of their own, which is posed from the fighting skeleton. A body that has gone limp is its own business.
+	if (!bArmsClear || !HasBody() || !IsAlive() || Beast)
+	{
+		return false;
+	}
+
+	if (!bTrunkMeasured)
+	{
+		MeasureTrunk();
+	}
+
+	for (const FTrunkSection& Section : Trunk)
+	{
+		FGutClearShape::FSection& One = OutShape.Trunk.AddDefaulted_GetRef();
+
+		One.Bone = Section.Bone;
+		One.Height = Section.Height;
+		One.Below = Section.Below;
+		One.Along = Section.Along;
+		One.Across = Section.Across;
+		One.Front = Section.Front;
+		One.Middle = Section.Middle;
+
+		// a piece of armor round the chest stands out further than the clothes under it
+		One.Half = Section.Half.ComponentMax((Section.Bone == FName("spine_01") || Section.Bone == FName("pelvis")) ? FVector2D::ZeroVector : ChestPieceHalf);
+
+		// and gives nothing
+		One.Give = (ChestPieceHalf.X > 0.0f && One.Half.X > Section.Half.X) ? 0.0f : Section.Give;
+	}
+
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		OutShape.UpperArm[Side] = ArmRadius[Side];
+		OutShape.Forearm[Side] = ForearmRadius[Side];
+		OutShape.Thigh[Side] = ThighRadius[Side];
+		OutShape.Held[Side].Append(HeldPlaces[Side]);
+	}
+
+	OutShape.bBound = BoundClip != nullptr;
+
+	// An arm that hangs is brought in to this body's side: for somebody standing at ease with their hands their own and
+	// empty, and eased off as they set out walking, where the arms swing and are left to.
+	// Through a nod, a shift of weight or a word said with the hands as well: an arm that still hangs in one of those is
+	// still an arm that hangs. This stood down for as long as any small thing was being done, and on a broad body the arms
+	// stood out from the hips until it was over ("the gatekeeper's arms are misaligned, but in a second or two they look
+	// perfect", 24 November). Whether an arm hangs is told from where the arm is, by the op, arm by arm.
+	const bool bHangs = bArmsHang && bAtEase && !bCelebrating && State == EGutFighterState::Idle && !(Weapon && Weapon->Mesh)
+		&& GetVelocity().SizeSquared2D() < FMath::Square(20.0f) && LedVelocity.IsNearlyZero();
+
+	HangInShown = FMath::FInterpConstantTo(HangInShown, bHangs ? 1.0f : 0.0f, GetWorld()->GetDeltaSeconds(), 2.2f);
+
+	OutShape.HangIn = HangInShown;
+	OutShape.HangGap = ArmHangGap;
+
+	return !OutShape.Trunk.IsEmpty();
+}
+
+bool AGutFighter::GetClearBodyNow(FGutClearShape& OutShape, FGutClearBody& OutWhere)
+{
+	static const FName Legs[2][2] = { { FName("thigh_l"), FName("calf_l") }, { FName("thigh_r"), FName("calf_r") } };
+
+	const USkeletalMeshComponent* Seen = GetShownMesh();
+
+	if (!Seen || !HasBody())
+	{
+		return false;
+	}
+
+	if (!bTrunkMeasured)
+	{
+		MeasureTrunk();
+	}
+
+	if (Trunk.IsEmpty())
+	{
+		return false;
+	}
+
+	OutShape.Trunk.Reset();
+	OutWhere.Spine.Reset();
+
+	for (const FTrunkSection& Section : Trunk)
+	{
+		const int32 Bone = Seen->GetBoneIndex(Section.Bone);
+
+		if (Bone == INDEX_NONE)
+		{
+			return false;
+		}
+
+		FGutClearShape::FSection& One = OutShape.Trunk.AddDefaulted_GetRef();
+
+		One.Bone = Section.Bone;
+		One.Height = Section.Height;
+		One.Below = Section.Below;
+		One.Along = Section.Along;
+		One.Across = Section.Across;
+		One.Front = Section.Front;
+		One.Middle = Section.Middle;
+		One.Half = Section.Half.ComponentMax((Section.Bone == FName("spine_01") || Section.Bone == FName("pelvis")) ? FVector2D::ZeroVector : ChestPieceHalf);
+
+		OutWhere.Spine.Add(Seen->GetBoneTransform(Bone));
+	}
+
+	OutWhere.Shape = &OutShape;
+	OutWhere.Clearance = 0.0;
+	OutWhere.bLegs = Seen->GetBoneIndex(Legs[0][0]) != INDEX_NONE && Seen->GetBoneIndex(Legs[1][1]) != INDEX_NONE;
+
+	for (int32 Side = 0; Side < 2 && OutWhere.bLegs; ++Side)
+	{
+		OutShape.Thigh[Side] = ThighRadius[Side];
+		OutWhere.Hip[Side] = Seen->GetBoneLocation(Legs[Side][0]);
+		OutWhere.Knee[Side] = Seen->GetBoneLocation(Legs[Side][1]);
+	}
+
+	if (Seen->GetBoneIndex(FName("head")) != INDEX_NONE && Seen->GetBoneIndex(FName("neck_02")) != INDEX_NONE)
+	{
+		OutWhere.bHead = true;
+		OutWhere.Head = Seen->GetBoneLocation(FName("head")) + ((Seen->GetBoneLocation(FName("head")) - Seen->GetBoneLocation(FName("neck_02"))).GetSafeNormal() * 9.0);
+	}
+
+	return true;
+}
+
+void AGutFighter::LogOwnCuts()
+{
+	static const bool bLog = FParse::Param(FCommandLine::Get(), TEXT("GutClearLog"));
+
+	const USkeletalMeshComponent* Seen = GetShownMesh();
+
+	if (!bLog || !Seen || !HasBody() || !IsAlive() || Beast)
+	{
+		return;
+	}
+
+	static const FName Arms[2][3] = { { FName("lowerarm_l"), FName("hand_l"), FName("middle_01_l") }, { FName("lowerarm_r"), FName("hand_r"), FName("middle_01_r") } };
+
+	// the same shape the arms are kept out of, set down where the body is now, and asked with no air left round it
+	FGutClearShape Shape;
+	FGutClearBody Where;
+
+	const bool bWas = GutFighterConstants::bArmsClear;
+
+	if (!GetClearBodyNow(Shape, Where))
+	{
+		return;
+	}
+
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		if (Seen->GetBoneIndex(Arms[Side][0]) == INDEX_NONE || Seen->GetBoneIndex(Arms[Side][1]) == INDEX_NONE)
+		{
+			continue;
+		}
+
+		const FVector Elbow = Seen->GetBoneLocation(Arms[Side][0]);
+		const FTransform Hand = Seen->GetBoneTransform(Seen->GetBoneIndex(Arms[Side][1]));
+		const FVector Wrist = Hand.GetLocation();
+
+		DeepestHand = FMath::Max3(DeepestHand, static_cast<float>(Where.GetPush(Wrist, FMath::Min(ForearmRadius[Side], 3.2f), Elbow, false).Size()),
+			static_cast<float>(Where.GetPush(FMath::Lerp(Elbow, Wrist, 0.55), ForearmRadius[Side], Elbow, false).Size()));
+
+		for (const FVector4& Held : HeldPlaces[Side])
+		{
+			const float In = static_cast<float>(Where.GetPush(Hand.TransformPositionNoScale(FVector(Held)), Held.W, Wrist, true).Size());
+
+			if (In > DeepestHeld + 1.0f && In > 2.5f)
+			{
+				UE_LOG(LogGut, Log, TEXT("[own] %s: what it holds is %.1f cm in, %s, place %d of %d, wrist %.0f cm from the middle of the head, %.0f above the pelvis"), *GetName(), In, *UEnum::GetValueAsString(State),
+					static_cast<int32>(&Held - HeldPlaces[Side].GetData()), HeldPlaces[Side].Num(), Where.bHead ? FVector::Dist(Wrist, Where.Head) : -1.0f, Wrist.Z - Seen->GetBoneLocation(FName("pelvis")).Z);
+			}
+
+			DeepestHeld = FMath::Max(DeepestHeld, In);
+		}
+	}
+
+	// not while the fighters are being stood up for a fight: for a frame or two a body is as it was made, weapon in hand
+	if (State == EGutFighterState::Idle && !bAtEase && GetWorld()->GetTimeSeconds() - HeldSince < 1.5f)
+	{
+		DeepestHand = 0.0f;
+		DeepestHeld = 0.0f;
+	}
+
+	if (const float Now = GetWorld()->GetTimeSeconds(); Now - DeepestSaid >= 5.0f)
+	{
+		UE_LOG(LogGut, Log, TEXT("[own] %s | %s | %s | hand or forearm %.1f cm into its own body, what it holds %.1f, in the last 5 s%s"), *GetName(), *GetNameSafe(BodyActor ? BodyActor->GetClass() : nullptr),
+			Weapon ? *Weapon->GetName() : TEXT("nothing held"), DeepestHand, DeepestHeld, bWas ? TEXT("") : TEXT(" (not kept clear)"));
+
+		DeepestSaid = Now;
+		DeepestHand = 0.0f;
+		DeepestHeld = 0.0f;
+	}
+}
+
+void AGutFighter::MeasureHeld()
+{
+	HeldPlaces[0].Reset();
+	HeldPlaces[1].Reset();
+
+	HeldSince = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+
+	const USkeletalMeshComponent* Shown = GetShownMesh();
+	const UStaticMesh* Model = WeaponMesh ? WeaponMesh->GetStaticMesh().Get() : nullptr;
+
+	// Something held in a hand of the body that is seen. What is strapped along a forearm (the shield) goes where the
+	// forearm goes, and a chain hangs as it hangs.
+	if (!Weapon || !Model || !Shown || !HasBody() || !WeaponMesh->IsVisible() || WeaponMesh->GetAttachParent() != Shown || Weapon->bStrapToForearm)
+	{
+		return;
+	}
+
+	const FString Bone = WeaponMesh->GetAttachSocketName().ToString();
+	const int32 Side = Bone.EndsWith(TEXT("_l")) ? 0 : (Bone.EndsWith(TEXT("_r")) ? 1 : INDEX_NONE);
+
+	if (Side == INDEX_NONE || !Bone.StartsWith(TEXT("hand")))
+	{
+		return;
+	}
+
+	// along its longest way, from one end to the other, as thick as it is across
+	const FBox Box = Model->GetBoundingBox();
+	const FVector Size = Box.GetSize();
+	const int32 Long = Size.X >= Size.Y ? (Size.X >= Size.Z ? 0 : 2) : (Size.Y >= Size.Z ? 1 : 2);
+
+	const FTransform InHand = WeaponMesh->GetRelativeTransform();
+	const FVector Scale = InHand.GetScale3D().GetAbs();
+
+	const float Thick = FMath::Clamp(FMath::Max(Size[(Long + 1) % 3] * Scale[(Long + 1) % 3], Size[(Long + 2) % 3] * Scale[(Long + 2) % 3]) * 0.4f, 1.2f, 4.5f);
+
+	const int32 Count = FMath::Clamp(FMath::CeilToInt32(Size[Long] * Scale[Long] / 12.0f) + 1, 3, 8);
+
+	for (int32 i = 0; i < Count; ++i)
+	{
+		FVector At = Box.GetCenter();
+
+		At[Long] = FMath::Lerp(Box.Min[Long], Box.Max[Long], static_cast<float>(i) / (Count - 1));
+
+		const FVector Place = InHand.TransformPosition(At);
+
+		HeldPlaces[Side].Add(FVector4(Place.X, Place.Y, Place.Z, Thick));
+	}
+
+	UE_LOG(LogGut, Verbose, TEXT("%s: what is in its %s hand is %.0f cm long and kept out of its own body at %d places"), *GetName(), Side == 0 ? TEXT("left") : TEXT("right"), Size[Long] * Scale[Long], Count);
+}
+
+void AGutFighter::HangArms()
+{
+	using namespace GutFighterConstants;
+
+	static const FName Hands[2] = { FName("hand_l"), FName("hand_r") };
+	static const FName Thighs[2] = { FName("thigh_l"), FName("thigh_r") };
+	static const FName Middles[3] = { FName("pelvis"), FName("spine_01"), FName("spine_02") };
+	static const bool bLog = FParse::Param(FCommandLine::Get(), TEXT("GutArmLog"));
+
+	const USkeletalMeshComponent* Seen = GetShownMesh();
+	const float DeltaTime = GetWorld()->GetDeltaSeconds();
+	const UPhysicsAsset* Shape = (Seen && Seen != GetMesh()) ? Seen->GetPhysicsAsset() : nullptr;
+
+	// only somebody at ease whose arms are their own and are not busy; and only where arms are not kept out of the body
+	// as it is dressed by the step that does that (FGutClearOp), which brings hanging arms in itself: the two chased each other
+	const bool bHanging = !bArmsClear && bArmsHang && Shape && bAtEase && IsAlive() && !Beast && !BoundClip && !bCelebrating && State == EGutFighterState::Idle && FidgetLeft <= 0.0f && !(Weapon && Weapon->Mesh);
+
+	if (!bHanging || DeltaTime <= 0.0f)
+	{
+		ArmsIn[0] = FMath::FInterpTo(ArmsIn[0], 0.0f, DeltaTime, 6.0f);
+		ArmsIn[1] = FMath::FInterpTo(ArmsIn[1], 0.0f, DeltaTime, 6.0f);
+		return;
+	}
+
+	// found standing: walking, the arms swing and the same angle is kept
+	if (GetVelocity().SizeSquared2D() > FMath::Square(20.0f) || !LedVelocity.IsNearlyZero())
+	{
+		return;
+	}
+
+	const int32 Pelvis = Seen->GetBoneIndex(Middles[0]);
+
+	if (Pelvis == INDEX_NONE)
+	{
+		return;
+	}
+
+	const float PelvisHeight = Seen->GetBoneLocation(Middles[0]).Z;
+
+	static const FName Forearms[2] = { FName("lowerarm_l"), FName("lowerarm_r") };
+
+	// the body as it is dressed, where it is now
+	FGutClearShape DressedShape;
+	FGutClearBody Dressed;
+
+	const bool bDressed = GutFighterConstants::bArmsClear && GetClearBodyNow(DressedShape, Dressed);
+
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		if (Seen->GetBoneIndex(Hands[Side]) == INDEX_NONE)
+		{
+			continue;
+		}
+
+		const FVector Wrist = Seen->GetBoneLocation(Hands[Side]);
+
+		// how far the wrist is from the body's own side: its hips, the thigh under it and the small of its back, as the
+		// body's own shapes have them
+		float Gap = UE_BIG_NUMBER;
+
+		for (const FName& Bone : { Middles[0], Middles[1], Middles[2], Thighs[Side] })
+		{
+			const int32 Part = Shape->FindBodyIndex(Bone);
+			const int32 Index = Seen->GetBoneIndex(Bone);
+
+			if (Part != INDEX_NONE && Index != INDEX_NONE && Shape->SkeletalBodySetups.IsValidIndex(Part) && Shape->SkeletalBodySetups[Part])
+			{
+				Gap = FMath::Min(Gap, Shape->SkeletalBodySetups[Part]->GetShortestDistanceToPoint(Wrist, Seen->GetBoneTransform(Index)));
+			}
+		}
+
+		// an arm that is not hanging (folded, on a hip, held out) is left as the clip has it
+		const bool bDown = Wrist.Z < PelvisHeight + ArmHangBelow && Gap < ArmHangNear + FMath::Abs(ArmsIn[Side]) * 1.2f;
+
+		if (Gap >= UE_BIG_NUMBER * 0.5f || !bDown)
+		{
+			ArmsIn[Side] = FMath::FInterpTo(ArmsIn[Side], 0.0f, DeltaTime, 4.0f);
+			continue;
+		}
+
+		float Step = FMath::Clamp((Gap - (ArmHangGap + (bChestPiece ? ArmHangClearOfChest : 0.0f))) * ArmHangGain * DeltaTime, -2.5f, 2.5f);
+
+		// An arm is not brought in further than what the body wears lets it: the hips of a coat are wider than the hips
+		// under it. The arm is kept out of the coat whatever is asked here (FGutClearOp), and asked for more than it could
+		// have this wound itself to its limit in two seconds: an arm that hung thirty degrees inside its body, which the
+		// step that keeps it out then took out behind the back with the hand turned over. So the same shape is asked how
+		// near the arm is, with the gap it is to hang at added to its thickness, and anything inside that lets it back out.
+		if (bDressed)
+		{
+			const FVector Elbow = Seen->GetBoneIndex(Forearms[Side]) != INDEX_NONE ? Seen->GetBoneLocation(Forearms[Side]) : Wrist;
+
+			const float Near = FMath::Max3(
+				static_cast<float>(Dressed.GetPush(Wrist, 3.2 + ArmHangGap, Elbow, false).Size()),
+				static_cast<float>(Dressed.GetPush(FMath::Lerp(Elbow, Wrist, 0.5), ForearmRadius[Side] + (ArmHangGap * 0.5), Elbow, false).Size()),
+				static_cast<float>(Dressed.GetPush(Elbow, ArmRadius[Side] + 1.0, Elbow, false).Size()));
+
+			if (Near > 0.3f)
+			{
+				Step = FMath::Min(Step, FMath::Max(-Near * ArmHangGain * 0.6f * DeltaTime, -2.5f));
+			}
+		}
+
+		ArmsIn[Side] = FMath::Clamp(ArmsIn[Side] + Step, -ArmHangMostOut, ArmHangMostIn);
+
+		if (bLog && GFrameCounter % 90 == 0)
+		{
+			UE_LOG(LogGut, Log, TEXT("Arms: %s (%s) %s wrist %.1f cm from its side, arm brought in %.1f degrees"), *GetName(), *GetNameSafe(Seen->GetSkeletalMeshAsset()),
+				Side == 0 ? TEXT("left") : TEXT("right"), Gap, ArmsIn[Side]);
+		}
+	}
+}
+
+void AGutFighter::SteerBlow()
+{
+	using namespace GutFighterConstants;
+
+	const float DeltaTime = GetWorld()->GetDeltaSeconds();
+	const AGutFighter* Target = Opponent.Get();
+
+	// from a little before the blow is due until just after it: that is when the limb is on its way in
+	const bool bComing = bBlowsSteered && StrikeClip && Target && Target->IsAlive() && !Beast && !Target->IsBeast() && !(Weapon && Weapon->LinkMesh)
+		&& ((State == EGutFighterState::Windup && StateTime >= CurrentAttack.Windup - BlowSteerLead) || State == EGutFighterState::Active || (State == EGutFighterState::Recovery && StateTime <= BlowSteerAfter));
+
+	FVector End;
+	int32 Limb = 1;
+
+	if (bComing && GetStrikingPoint(End, &Limb))
+	{
+		FVector Skin;
+
+		const float Gap = Target->GetBodyGapFrom(End, nullptr, &Skin);
+
+		// a blow that is going to pass within reach of the skin is brought onto it; one that is nowhere near was dodged or
+		// fell short by the rules, and is left to miss
+		if (Gap > 0.0f && Gap < BlowSteerMost)
+		{
+			BlowLimb = Limb;
+			BlowReach = (BlowReach + ((Skin - End) * BlowSteerGain)).GetClampedToMaxSize(BlowSteerMost);
+		}
+
+		// -GutSteerLog says, frame by frame, how far off the blow is and how far it is being taken
+		static const bool bSteerLog = FParse::Param(FCommandLine::Get(), TEXT("GutSteerLog"));
+
+		if (bSteerLog)
+		{
+			UE_LOG(LogGut, Log, TEXT("Steer: %s %s at %.3f, state %d for %.3f s, gap %.1f cm, taken %.1f cm, limb %d"), *GetName(), *CurrentAttack.Label.ToString(),
+				GetWorld()->GetTimeSeconds(), static_cast<int32>(State), StateTime, Gap, BlowReach.Size(), Limb);
+		}
+
+		return;
+	}
+
+	// done: the limb goes back to the clip's own path
+	BlowReach = FMath::VInterpTo(BlowReach, FVector::ZeroVector, DeltaTime, BlowSteerBack);
+
+	if (BlowReach.IsNearlyZero(0.1f))
+	{
+		BlowReach = FVector::ZeroVector;
+		BlowLimb = INDEX_NONE;
+	}
+}
+
+void AGutFighter::SetLeftOutOfPicture(bool bLeftOut)
+{
+	if (bLeftOutOfPicture == bLeftOut)
+	{
+		return;
+	}
+
+	bLeftOutOfPicture = bLeftOut;
+
+	if (!bLeftOut)
+	{
+		// back, and only what was taken out for this: anything that was hidden for a reason of its own stays hidden
+		for (const TWeakObjectPtr<AActor>& One : LeftOut)
+		{
+			if (One.IsValid())
+			{
+				One->SetActorHiddenInGame(false);
+			}
+		}
+
+		LeftOut.Reset();
+		return;
+	}
+
+	// itself, the body that is seen, and whatever either wears or carries
+	TArray<AActor*> All;
+
+	for (AActor* Root : { static_cast<AActor*>(this), GetBodyActor() })
+	{
+		if (Root)
+		{
+			All.AddUnique(Root);
+
+			TArray<AActor*> Worn;
+			Root->GetAttachedActors(Worn, false, true);
+
+			for (AActor* One : Worn)
+			{
+				All.AddUnique(One);
+			}
+		}
+	}
+
+	for (AActor* One : All)
+	{
+		if (!One->IsHidden())
+		{
+			One->SetActorHiddenInGame(true);
+			LeftOut.Add(One);
+		}
+	}
+}
+
+void AGutFighter::StopForBlow(float Seconds)
+{
+	if (!GutFighterConstants::bBlowsStop || Seconds <= 0.0f || !IsAlive())
+	{
+		return;
+	}
+
+	// nearly stopped, not stopped: the world's clock goes on, and the fighter's own takes up again when the time is out
+	CustomTimeDilation = GutFighterConstants::BlowStopRate;
+	BlowStopEnds = FMath::Max(BlowStopEnds, GetWorld()->GetTimeSeconds() + Seconds);
+}
+
+void AGutFighter::TakeInHand(UAnimSequenceBase* Taking)
+{
+	if (!Taking || !IsAlive() || State != EGutFighterState::Idle)
+	{
+		return;
+	}
+
+	bBoundAfterTaking = bBoundAfterTaking || IsBound();
+
+	if (IsBound())
+	{
+		SetBound(false);
+	}
+
+	PlaySlotAnimation(Taking, 1.0f, 0.0f, 0.4f, 0.6f);
+
+	TakingLeft = Taking->GetPlayLength();
+
+	// nothing small is done over the top of it
+	FidgetLeft = 0.0f;
+	FidgetIn = FMath::Max(FidgetIn, TakingLeft + 4.0f);
+}
+
+void AGutFighter::Gesture(UAnimSequenceBase* Clip, bool bWithHead)
+{
+	const bool bStanding = GetVelocity().SizeSquared2D() < FMath::Square(25.0f) && LedVelocity.IsNearlyZero();
+
+	// only with hands that are its own and free
+	if (!Clip || !IsAlive() || Beast || !bAtEase || !bStanding || BoundClip || bCelebrating || TakingLeft > 0.0f || State != EGutFighterState::Idle || (Weapon && Weapon->Mesh))
+	{
+		return;
+	}
+
+	PlaySlotAnimation(Clip, 1.0f, 0.0f, 0.45f, 0.6f);
+
+	// kept as one of the small things it does: over the upper body only, and nothing else small begun on top of it
+	bGestureKeepsHead = !bWithHead;
+	FidgetLeft = Clip->GetPlayLength();
+	FidgetIn = FMath::Max(FidgetIn, FidgetLeft + 3.0f);
+}
+
+void AGutFighter::StopGesture()
+{
+	if (FidgetLeft > 0.0f)
+	{
+		FidgetLeft = 0.0f;
+
+		if (State == EGutFighterState::Idle)
+		{
+			StopSlotAnimation(0.45f);
+		}
+	}
+}
+
+void AGutFighter::UpdateFidget(float DeltaTime)
+{
+	static const bool bOff = FParse::Param(FCommandLine::Get(), TEXT("GutNoFidget"));
+
+	// busy with something it was handed: until it is done, or the body has somewhere to go
+	if (TakingLeft > 0.0f)
+	{
+		TakingLeft -= DeltaTime;
+
+		const bool bGoing = GetVelocity().SizeSquared2D() > FMath::Square(25.0f) || !LedVelocity.IsNearlyZero();
+
+		if (TakingLeft <= 0.0f || bGoing || State != EGutFighterState::Idle)
+		{
+			TakingLeft = 0.0f;
+
+			if (bGoing && State == EGutFighterState::Idle)
+			{
+				StopSlotAnimation(0.3f);
+			}
+
+			if (bBoundAfterTaking)
+			{
+				bBoundAfterTaking = false;
+				SetBound(true);
+			}
+
+			SetLookTarget(nullptr);
+		}
+
+		return;
+	}
+
+	const bool bStanding = GetVelocity().SizeSquared2D() < FMath::Square(25.0f) && LedVelocity.IsNearlyZero();
+
+	// in the middle of one: it is dropped the moment the body has somewhere to go or something else to do
+	if (FidgetLeft > 0.0f)
+	{
+		FidgetLeft -= DeltaTime;
+
+		if (!bAtEase || !bStanding || State != EGutFighterState::Idle)
+		{
+			FidgetLeft = 0.0f;
+
+			if (State == EGutFighterState::Idle)
+			{
+				StopSlotAnimation(0.25f);
+			}
+		}
+
+		return;
+	}
+
+	// only somebody alive, at ease, standing still with their hands their own, and with nothing else playing over them
+	// the small things of the family it stands in, which begin and end as that standing does; without a family, the common ones
+	const bool bFamilys = AtEaseFamilies.IsValidIndex(Family);
+	const TArray<TObjectPtr<UAnimSequenceBase>>& Fidgets = bFamilys ? AtEaseFamilies[Family].Extras : AtEaseFidgets;
+
+	if (bOff || !bAtEase || !bStanding || !IsAlive() || Beast || BoundClip || bCelebrating || State != EGutFighterState::Idle || Fidgets.IsEmpty())
+	{
+		return;
+	}
+
+	// drawn from the body's own name, so that no two keep the same time
+	FRandomStream Draw(GetTypeHash(GetName()) + FMath::FloorToInt32(GetWorld()->GetTimeSeconds() * 10.0f));
+
+	if (FidgetIn < 0.0f)
+	{
+		FidgetIn = Draw.FRandRange(FidgetEvery.X * 0.4f, FidgetEvery.Y);
+	}
+
+	FidgetIn -= DeltaTime;
+
+	if (FidgetIn > 0.0f)
+	{
+		return;
+	}
+
+	// not the one it did last
+	int32 Pick = Draw.RandRange(0, Fidgets.Num() - 1);
+
+	if (Pick == FidgetLast && Fidgets.Num() > 1)
+	{
+		Pick = (Pick + 1) % Fidgets.Num();
+	}
+
+	FidgetLast = Pick;
+	FidgetIn = Draw.FRandRange(FidgetEvery.X, FidgetEvery.Y);
+
+	if (UAnimSequenceBase* Clip = Fidgets[Pick])
+	{
+		PlaySlotAnimation(Clip, 1.0f, 0.0f, 0.5f, 0.6f);
+
+		bGestureKeepsHead = false;
+		FidgetLeft = Clip->GetPlayLength();
+	}
+}
+
+bool AGutFighter::GetLookAt(FVector& OutPlace) const
+{
+	static const bool bOff = FParse::Param(FCommandLine::Get(), TEXT("GutNoLook"));
+
+	if (bOff || !IsAlive() || Beast || State == EGutFighterState::Staggered)
+	{
+		return false;
+	}
+
+	// where their eyes are: on the body that is seen, a hand's breadth above the foot of the skull; or about where a head is on somebody standing
+	const auto HeadOf = [](const AGutFighter* Who)
+	{
+		static const FName Head(TEXT("head"));
+
+		if (const USkeletalMeshComponent* Seen = Who->HasBody() ? Who->GetShownMesh() : nullptr; Seen && Seen->GetBoneIndex(Head) != INDEX_NONE)
+		{
+			return Seen->GetBoneLocation(Head) + FVector(0.0f, 0.0f, 9.0f);
+		}
+
+		return Who->GetActorLocation() + FVector(0.0f, 0.0f, Who->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 0.72f);
+	};
+
+	// whoever it has been told to look at: the one it is talking to
+	if (const AGutFighter* Told = LookTarget.Get(); Told && Told != this && Told->IsAlive())
+	{
+		OutPlace = HeadOf(Told);
+		return true;
+	}
+
+	if (!bAtEase)
+	{
+		// in the cage: the one it is fighting
+		const AGutFighter* Other = GetOpponent();
+
+		if (!Other || Other == this || !Other->IsAlive() || !IsCombatEnabled())
+		{
+			return false;
+		}
+
+		OutPlace = HeadOf(Other);
+		return true;
+	}
+
+	const APlayerController* Viewer = GetWorld()->GetFirstPlayerController();
+
+	if (!Viewer)
+	{
+		return false;
+	}
+
+	// whoever walks the street, when they come near; they themselves look where they are going
+	if (const AGutFighter* Walker = Cast<AGutFighter>(Viewer->GetPawn()))
+	{
+		if (Walker == this || !Walker->IsAtEase() || FVector::DistSquared(Walker->GetActorLocation(), GetActorLocation()) > FMath::Square(LookRange))
+		{
+			return false;
+		}
+
+		OutPlace = HeadOf(Walker);
+		return true;
+	}
+
+	// nobody is walking: looked at from a card, as an owner looks over a yard. They look back.
+	if (Viewer->PlayerCameraManager && FVector::DistSquared(Viewer->PlayerCameraManager->GetCameraLocation(), GetActorLocation()) < FMath::Square(LookRange * 2.0f))
+	{
+		OutPlace = Viewer->PlayerCameraManager->GetCameraLocation();
+		return true;
+	}
+
+	return false;
+}
+
+void AGutFighter::GroundBody()
+{
+	static const FName Feet[2][2] = { { FName("foot_l"), FName("ball_l") }, { FName("foot_r"), FName("ball_r") } };
+	static const bool bOff = FParse::Param(FCommandLine::Get(), TEXT("GutNoGround"));
+	static const bool bLog = FParse::Param(FCommandLine::Get(), TEXT("GutGroundLog"));
+
+	const USkeletalMeshComponent* Seen = GetShownMesh();
+
+	if (!Seen || Seen == GetMesh() || Beast || GroundedFrame == GFrameCounter)
+	{
+		return;
+	}
+
+	GroundedFrame = GFrameCounter;
+
+	// on its feet, and on the ground: a body that is down, dead or in the air is not stood on anything
+	const UCharacterMovementComponent* Movement = GetCharacterMovement();
+
+	const bool bOnFeet = IsAlive() && State != EGutFighterState::Staggered && State != EGutFighterState::Finishing && Movement && Movement->IsMovingOnGround();
+
+	const USkeletalMesh* Mesh = Seen->GetSkeletalMeshAsset();
+
+	if (!bOnFeet || !Mesh || Seen->GetBoneIndex(Feet[0][0]) == INDEX_NONE || Seen->GetBoneIndex(Feet[1][0]) == INDEX_NONE)
+	{
+		GroundWanted = 0.0f;
+		return;
+	}
+
+	// how high each ankle and the ball of each foot are when this body stands in its own reference pose: that is its sole on the floor
+	if (SoleMesh.Get() != Mesh)
+	{
+		SoleMesh = Mesh;
+
+		const FReferenceSkeleton& Skeleton = Mesh->GetRefSkeleton();
+
+		for (int32 Side = 0; Side < 2; ++Side)
+		{
+			for (int32 Part = 0; Part < 2; ++Part)
+			{
+				const int32 Bone = Skeleton.FindBoneIndex(Feet[Side][Part]);
+
+				SoleRest[Side][Part] = Bone != INDEX_NONE ? FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Bone).GetLocation().Z : 0.0f;
+			}
+		}
+	}
+
+	// the floor under the capsule: the engine keeps a walking capsule a couple of centimetres off it
+	const float FloorHeight = GetActorLocation().Z - GetCapsuleComponent()->GetScaledCapsuleHalfHeight() - (Movement->CurrentFloor.bBlockingHit ? Movement->CurrentFloor.GetDistanceToFloor() : 0.0f);
+
+	// the lower of the two feet, by whichever of its ankle and the ball of it is nearer the floor
+	float Lowest = UE_BIG_NUMBER;
+
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		for (int32 Part = 0; Part < 2; ++Part)
+		{
+			if (Seen->GetBoneIndex(Feet[Side][Part]) != INDEX_NONE)
+			{
+				Lowest = FMath::Min(Lowest, Seen->GetBoneLocation(Feet[Side][Part]).Z - FloorHeight - SoleRest[Side][Part]);
+			}
+		}
+	}
+
+	// as the clip and the body's build have it, before anything was done about it
+	const float AsPosed = Lowest - GroundShift;
+
+	// never by more than a hand's breadth: a clip that really leaves the ground is left in the air
+	GroundWanted = bOff ? 0.0f : FMath::Clamp(-AsPosed, -GutFighterConstants::MostLowered, GutFighterConstants::MostRaised);
+
+	if (bLog)
+	{
+		// how far a foot that is down goes over the floor: that is sliding. Down is the sole within two centimetres of the floor,
+		// this time and last.
+		for (int32 Side = 0; Side < 2; ++Side)
+		{
+			float Up = UE_BIG_NUMBER;
+
+			for (int32 Part = 0; Part < 2; ++Part)
+			{
+				if (Seen->GetBoneIndex(Feet[Side][Part]) != INDEX_NONE)
+				{
+					Up = FMath::Min(Up, Seen->GetBoneLocation(Feet[Side][Part]).Z - FloorHeight - SoleRest[Side][Part]);
+				}
+			}
+
+			// whichever of the ankle and the ball of the foot is the one on the floor: a foot rolling forward onto its toes
+			// moves its ankle a hand's length without sliding at all
+			const bool bHasBall = Seen->GetBoneIndex(Feet[Side][1]) != INDEX_NONE;
+			const float AnkleUp = Seen->GetBoneLocation(Feet[Side][0]).Z - FloorHeight - SoleRest[Side][0];
+			const float BallUp = bHasBall ? Seen->GetBoneLocation(Feet[Side][1]).Z - FloorHeight - SoleRest[Side][1] : UE_BIG_NUMBER;
+			const int32 On = BallUp < AnkleUp ? 1 : 0;
+
+			const FVector Now = Seen->GetBoneLocation(Feet[Side][On]);
+
+			// against the lower of the two, not the floor: a body that stands two centimetres up has feet that are down all the same
+			const bool bDown = Up - Lowest < 1.5f && FMath::Abs(Lowest) < 5.0f;
+			const float Moved = FVector::Dist2D(Now, GroundPartWas[Side][On]);
+
+			if (bDown && bGroundFootDown[Side] && Moved < 60.0f)
+			{
+				GroundLogSlid += Moved;
+
+				// slower than a walk: slid, not swung through
+				if (Moved / FMath::Max(GetWorld()->GetDeltaSeconds(), 0.001f) < 140.0f)
+				{
+					GroundLogSlow += Moved;
+				}
+			}
+
+			bGroundFootDown[Side] = bDown;
+			GroundPartWas[Side][0] = Seen->GetBoneLocation(Feet[Side][0]);
+			GroundPartWas[Side][1] = bHasBall ? Seen->GetBoneLocation(Feet[Side][1]) : GroundPartWas[Side][0];
+		}
+
+		// the same on the skeleton that does the fighting, which the seen body is carried from: an ankle that stays within a
+		// few centimetres of where it stands at rest is down. And a foot that is down but going fast is being swung through
+		// low, not slid: only what goes slower than a walk is counted, on both.
+		static const FName OwnFeet[2] = { FName("foot_l"), FName("foot_r") };
+
+		const float DeltaTime = FMath::Max(GetWorld()->GetDeltaSeconds(), 0.001f);
+
+		for (int32 Side = 0; Side < 2; ++Side)
+		{
+			if (GetMesh()->GetBoneIndex(OwnFeet[Side]) == INDEX_NONE)
+			{
+				continue;
+			}
+
+			const FVector Now = GetMesh()->GetBoneLocation(OwnFeet[Side]);
+
+			// and how far the seen body's ankle is from the fighting skeleton's, over the ground: if the one is carried
+			// faithfully from the other that does not change
+			if (Seen->GetBoneIndex(OwnFeet[Side]) != INDEX_NONE)
+			{
+				const float Apart = FVector::Dist2D(Now, Seen->GetBoneLocation(OwnFeet[Side]));
+
+				GroundLogApart[0] = FMath::Min(GroundLogApart[0], Apart);
+				GroundLogApart[1] = FMath::Max(GroundLogApart[1], Apart);
+			}
+
+			const bool bDown = Now.Z - FloorHeight - GroundShift < 11.5f;
+			const float Moved = FVector::Dist2D(Now, GroundOwnWas[Side]);
+
+			// and the ball of that foot, which goes round the ankle when the foot swivels
+			static const FName OwnBalls[2] = { FName("ball_l"), FName("ball_r") };
+
+			const FVector Ball = GetMesh()->GetBoneIndex(OwnBalls[Side]) != INDEX_NONE ? GetMesh()->GetBoneLocation(OwnBalls[Side]) : Now;
+			const FVector SeenBall = Seen->GetBoneIndex(OwnBalls[Side]) != INDEX_NONE ? Seen->GetBoneLocation(OwnBalls[Side]) : Now;
+
+			if (bDown && bGroundOwnDown[Side] && Moved / DeltaTime < 140.0f)
+			{
+				GroundLogOwnSlid += Moved;
+				GroundLogBalls[0] += FVector::Dist2D(Ball, GroundBallWas[Side][0]);
+				GroundLogBalls[1] += FVector::Dist2D(SeenBall, GroundBallWas[Side][1]);
+			}
+
+			bGroundOwnDown[Side] = bDown;
+			GroundOwnWas[Side] = Now;
+			GroundBallWas[Side][0] = Ball;
+			GroundBallWas[Side][1] = SeenBall;
+		}
+
+		if (const float Went = FVector::Dist2D(GetActorLocation(), GroundLogPlace); Went < 200.0f)
+		{
+			GroundLogWent += Went;
+		}
+
+		GroundLogPlace = GetActorLocation();
+
+		GroundLogSum[0] += AsPosed;
+		GroundLogSum[1] += Lowest;
+		GroundLogWorst[0] = FMath::Abs(AsPosed) > FMath::Abs(GroundLogWorst[0]) ? AsPosed : GroundLogWorst[0];
+		GroundLogWorst[1] = FMath::Abs(Lowest) > FMath::Abs(GroundLogWorst[1]) ? Lowest : GroundLogWorst[1];
+
+		if (++GroundLogCount >= 120)
+		{
+			UE_LOG(LogGut, Log, TEXT("Ground: %s (%s, state %d%s) lower sole as posed %.1f cm off the floor on average, worst %.1f; as seen %.1f, worst %.1f; feet that were down slid %.0f cm while the body went %.0f; slowly %.0f, and on the fighting skeleton %.0f; ankles %.1f to %.1f cm apart; while its ankle was down the ball of the foot went %.0f on the fighting skeleton and %.0f on the seen body"), *GetName(), *GetNameSafe(Mesh->GetOuter()),
+				static_cast<int32>(State), bAtEase ? TEXT(", at ease") : TEXT(""), GroundLogSum[0] / GroundLogCount, GroundLogWorst[0], GroundLogSum[1] / GroundLogCount, GroundLogWorst[1], GroundLogSlid, GroundLogWent,
+				GroundLogSlow, GroundLogOwnSlid, GroundLogApart[0], GroundLogApart[1], GroundLogBalls[0], GroundLogBalls[1]);
+
+			GroundLogBalls[0] = GroundLogBalls[1] = 0.0f;
+
+			GroundLogApart[0] = UE_BIG_NUMBER;
+			GroundLogApart[1] = 0.0f;
+
+			GroundLogSlid = GroundLogWent = GroundLogSlow = GroundLogOwnSlid = 0.0f;
+			GroundLogSum[0] = GroundLogSum[1] = GroundLogWorst[0] = GroundLogWorst[1] = 0.0f;
+			GroundLogCount = 0;
+		}
+	}
 }
 
 float AGutFighter::GetStruckDepth() const
@@ -3791,8 +5604,14 @@ float AGutFighter::GetStruckDepth() const
 	return 11.0f;
 }
 
-bool AGutFighter::GetStrikingPoint(FVector& OutPoint) const
+bool AGutFighter::GetStrikingPoint(FVector& OutPoint, int32* OutLimb) const
 {
+	// the right arm, unless found otherwise below
+	if (OutLimb)
+	{
+		*OutLimb = 1;
+	}
+
 	const USkeletalMeshComponent* Seen = GetShownMesh();
 
 	if (!Seen || Beast || (Weapon && Weapon->LinkMesh))
@@ -3824,6 +5643,11 @@ bool AGutFighter::GetStrikingPoint(FVector& OutPoint) const
 			// a shield: its face, a little in front of its middle
 			OutPoint = WeaponMesh->Bounds.Origin + (Way * 12.0f);
 
+			if (OutLimb)
+			{
+				*OutLimb = 0;
+			}
+
 			return true;
 		}
 	}
@@ -3847,13 +5671,18 @@ bool AGutFighter::GetStrikingPoint(FVector& OutPoint) const
 		{
 			Furthest = Out;
 			OutPoint = End;
+
+			if (OutLimb)
+			{
+				*OutLimb = i;
+			}
 		}
 	}
 
 	return Furthest > -UE_BIG_NUMBER;
 }
 
-float AGutFighter::GetBodyGapFrom(const FVector& Point, FName* OutPart) const
+float AGutFighter::GetBodyGapFrom(const FVector& Point, FName* OutPart, FVector* OutNearest) const
 {
 	const USkeletalMeshComponent* Seen = GetShownMesh();
 
@@ -3902,6 +5731,14 @@ float AGutFighter::GetBodyGapFrom(const FVector& Point, FName* OutPart) const
 		if (Gap < Nearest)
 		{
 			Nearest = Gap;
+
+			if (OutNearest)
+			{
+				// on its skin, on the side the point is on
+				const FVector Core = FMath::ClosestPointOnSegment(Point, From, To);
+
+				*OutNearest = Core + ((Point - Core).GetSafeNormal() * Part.Thick);
+			}
 
 			if (OutPart)
 			{
@@ -3964,8 +5801,23 @@ void AGutFighter::UpdateStrikeShift(float DeltaTime)
 {
 	const bool bCarried = GutFighterConstants::bStrikesSeenToLand;
 
-	if (Beast || !HasBody() || State == EGutFighterState::Dead)
+	if (Beast || !HasBody())
 	{
+		return;
+	}
+
+	// down onto the floor or up out of it, quickly but never in a jump
+	GroundShift = FMath::FInterpTo(GroundShift, GroundWanted, DeltaTime, GutFighterConstants::GroundRate);
+
+	if (State == EGutFighterState::Dead)
+	{
+		// Where it fell, and no longer held down or up. A body that has gone limp is where its own weight puts it: moving
+		// it by hand every frame did nothing but have the engine complain 150,000 times a test sitting (21 November).
+		if (!GetMesh()->IsSimulatingPhysics())
+		{
+			GetMesh()->SetRelativeLocation(MeshRestLocation + GetActorQuat().UnrotateVector(StrikeWay * StrikeShift) + FVector(0.0f, 0.0f, GroundShift));
+		}
+
 		return;
 	}
 
@@ -4005,7 +5857,7 @@ void AGutFighter::UpdateStrikeShift(float DeltaTime)
 		StrikeShift = StrikeGoal * (1.0f - FMath::SmoothStep(0.0f, 1.0f, StateTime / FMath::Clamp(CurrentAttack.Recovery, 0.05f, 0.35f)));
 	}
 
-	GetMesh()->SetRelativeLocation(MeshRestLocation + GetActorQuat().UnrotateVector(StrikeWay * StrikeShift));
+	GetMesh()->SetRelativeLocation(MeshRestLocation + GetActorQuat().UnrotateVector(StrikeWay * StrikeShift) + FVector(0.0f, 0.0f, GroundShift));
 }
 
 void AGutFighter::MeasureStrike()
@@ -4457,7 +6309,21 @@ void AGutFighter::MakeSound(FName Kind, float Volume, const FVector* Where, floa
 {
 	if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
 	{
-		Sounds->Play(Kind, Where ? *Where : GetActorLocation() + FVector(0.0f, 0.0f, 30.0f), Volume, Pitch);
+		// its own voice: nobody has the same throat. Each body speaks a little higher or lower than the recordings, always
+		// the same for that body, and has about half of them to itself. (He heard every woman make the same sounds, 21 November.)
+		static const bool bOneVoice = FParse::Param(FCommandLine::Get(), TEXT("GutOneVoice"));
+
+		uint32 Whose = 0;
+
+		if (!bOneVoice && !Beast && !Voice.IsNone() && Kind.ToString().EndsWith(Voice.ToString()) && (Kind == VoiceSound(TEXT("effort")) || Kind == VoiceSound(TEXT("pain")) || Kind == VoiceSound(TEXT("death"))))
+		{
+			Whose = FMath::Max(GetTypeHash(BodyClass.GetAssetName()), 1u);
+
+			// from about a tone and a half down to two tones up
+			Pitch *= FMath::Lerp(0.9f, 1.13f, static_cast<float>(Whose % 1000) / 999.0f);
+		}
+
+		Sounds->Play(Kind, Where ? *Where : GetActorLocation() + FVector(0.0f, 0.0f, 30.0f), Volume, Pitch, Whose);
 	}
 }
 
@@ -4508,7 +6374,12 @@ void AGutFighter::ListenToFeet()
 	const float SlowEnough = bAtEase ? FMath::Max(40.0f, Going * 0.5f) : 40.0f;
 
 	// somebody at ease who has stopped has stopped: feet finding their place under a body that stands still are not footsteps
-	const bool bHeard = !bAtEase || Going > 20.0f;
+	// nor are the feet of somebody who has just let go of walking and is coming to rest: a foot that steps under the body
+	// as it stops is the body settling (he heard one or two steps after stopping, 17 November, and did not want them)
+	const UCharacterMovementComponent* Legs = GetCharacterMovement();
+	const bool bDriven = !LedVelocity.IsNearlyZero() || (Legs && (!Legs->GetCurrentAcceleration().IsNearlyZero(1.0) || Legs->HasRootMotionSources()));
+
+	const bool bHeard = !bAtEase || (Going > 20.0f && bDriven);
 
 	for (int32 i = 0; i < 2; ++i)
 	{
@@ -4539,8 +6410,16 @@ void AGutFighter::ListenToFeet()
 					GetWorld()->GetTimeSeconds(), bHeard ? TEXT("heard") : TEXT("not heard"), FootFastest[i], Speed, Now.Z - FloorHeight, Going);
 			}
 
-			if (bHeard)
+			// nobody's foot comes down twice in a moment, or a moment after their other one. A foot that is held to the floor
+			// and steps to catch the body up can land a second time just after the clip's own step did (measured 21 November:
+			// two left footfalls a tenth of a second apart at the start of every walk): that is one footfall, heard once.
+			const double Time = GetWorld()->GetTimeSeconds();
+			const bool bTwice = Time - FootHeardAt[i] < (bAtEase ? 0.4 : 0.22) || Time - FootHeardAt[1 - i] < (bAtEase ? 0.18 : 0.1);
+
+			if (bHeard && !bTwice)
 			{
+				FootHeardAt[i] = Time;
+
 				// it has come down and stopped: the faster it came, the harder it lands
 				const FVector On(Now.X, Now.Y, FloorHeight);
 
@@ -4591,7 +6470,12 @@ void AGutFighter::FeedFace()
 	// each fighter starts somewhere else in its loops, so two faces do not blink together
 	const double Clock = GetWorld()->GetTimeSeconds() + (GetUniqueID() % 16);
 
-	auto Show = [Driver, Clock](const UAnimSequenceBase* Loop, float Weight)
+	// Everything the face is to show is gathered first and given to it once. Given piece by piece, each piece took the
+	// place of the last on any control they shared: a face at ease had its blinks written and then written over by its
+	// expression in the same frame, and nobody in the town ever blinked.
+	TMap<FName, float> Shown;
+
+	auto Show = [&Shown, Clock](const UAnimSequenceBase* Loop, float Weight)
 	{
 		const float Length = Loop ? Loop->GetPlayLength() : 0.0f;
 
@@ -4603,19 +6487,217 @@ void AGutFighter::FeedFace()
 		FBlendedCurve Expression;
 		Loop->EvaluateCurveData(Expression, FAnimExtractContext(FMath::Fmod(Clock, static_cast<double>(Length))), false);
 
-		Expression.ForEachElement([Driver, Weight](const UE::Anim::FCurveElement& Element)
+		Expression.ForEachElement([&Shown, Weight](const UE::Anim::FCurveElement& Element)
 		{
-			Driver->AddCurveValue(Element.Name, Element.Value * Weight);
+			Shown.FindOrAdd(Element.Name) += Element.Value * Weight;
 		});
 	};
+
+	float LidsShut = 0.0f;
 
 	// the three share the face between them
 	const float Hurt = FaceHurtShown;
 	const float Afraid = FaceAfraidShown * (1.0f - Hurt);
 
-	Show(FaceLoop, 1.0f - Hurt - Afraid);
+	// out of a fight a face is at rest, with a trace of what it wears in one: nobody is glared at for asking the way. The
+	// fighting face has its blinks in it, so a face at rest is given its own.
+	FaceFightShown = FMath::FInterpTo(FaceFightShown, bAtEase ? 0.14f : 1.0f, DeltaTime, 2.5f);
+
+	if (bAtEase)
+	{
+		static const FName Lids[2] = { FName(TEXT("CTRL_expressions_eyeBlinkL")), FName(TEXT("CTRL_expressions_eyeBlinkR")) };
+
+		const double Time = GetWorld()->GetTimeSeconds();
+
+		if (BlinkAt <= 0.0 || Time > BlinkAt + 0.4)
+		{
+			BlinkAt = Time + 1.6 + (static_cast<double>((GetUniqueID() * 7919u + static_cast<uint32>(Time * 13.0)) % 1000u) / 1000.0) * 4.2;
+		}
+
+		// shut in six hundredths of a second and open again in nine
+		const double Since = Time - BlinkAt;
+
+		if (Since >= 0.0 && Since < 0.15)
+		{
+			const float Shut = Since < 0.06 ? static_cast<float>(Since / 0.06) : 1.0f - static_cast<float>((Since - 0.06) / 0.09);
+
+			LidsShut = Shut;
+		}
+	}
+
+	Show(FaceLoop, (1.0f - Hurt - Afraid) * FaceFightShown);
 	Show(FaceHurt, Hurt);
 	Show(FaceAfraid, Afraid);
+
+	// and a line it is saying, as its recording was performed: the mouth, the jaw, the brows. Where the line and the
+	// expression move the same part of the face, the line has it.
+	if (SpeechFace)
+	{
+		const double Said = GetWorld()->GetTimeSeconds() - SpeechBegan;
+
+		if (Said < 0.0 || Said >= SpeechFace->GetPlayLength())
+		{
+			SpeechFace = nullptr;
+		}
+		else
+		{
+			// eased in and out over a fifth of a second, so the mouth does not jump to its first shape or drop from its last
+			const float Weight = FMath::Clamp(FMath::Min(Said, SpeechFace->GetPlayLength() - Said) / 0.2, 0.0, 1.0);
+
+			FBlendedCurve Spoken;
+			SpeechFace->EvaluateCurveData(Spoken, FAnimExtractContext(Said), false);
+
+			Spoken.ForEachElement([&Shown, Weight](const UE::Anim::FCurveElement& Element)
+			{
+				float& Value = Shown.FindOrAdd(Element.Name);
+
+				Value = FMath::Lerp(Value, Element.Value, Weight);
+			});
+		}
+	}
+
+	// The eyes. The head turns part of the way to whoever is looked at and the eyes go the rest: a head turned to somebody
+	// with its eyes left where its expression had them looks past them.
+	AimEyes(Shown, DeltaTime);
+
+	// a blink shuts the lids whatever else the face is doing
+	if (LidsShut > 0.0f)
+	{
+		static const FName Lids[2] = { FName(TEXT("CTRL_expressions_eyeBlinkL")), FName(TEXT("CTRL_expressions_eyeBlinkR")) };
+
+		for (const FName& Lid : Lids)
+		{
+			float& Value = Shown.FindOrAdd(Lid);
+
+			Value = FMath::Max(Value, LidsShut);
+		}
+	}
+
+	for (const TPair<FName, float>& Control : Shown)
+	{
+		Driver->AddCurveValue(Control.Key, Control.Value);
+	}
+}
+
+void AGutFighter::AimEyes(TMap<FName, float>& Shown, float DeltaTime)
+{
+	static const bool bOff = FParse::Param(FCommandLine::Get(), TEXT("GutNoEyes"));
+	static const FName EyeBones[2] = { FName(TEXT("FACIAL_L_Eye")), FName(TEXT("FACIAL_R_Eye")) };
+
+	// to its own left, to its own right, up and down: each eye has its own of each
+	static const FName Controls[4][2] =
+	{
+		{ FName(TEXT("CTRL_expressions_eyeLookLeftL")), FName(TEXT("CTRL_expressions_eyeLookLeftR")) },
+		{ FName(TEXT("CTRL_expressions_eyeLookRightL")), FName(TEXT("CTRL_expressions_eyeLookRightR")) },
+		{ FName(TEXT("CTRL_expressions_eyeLookUpL")), FName(TEXT("CTRL_expressions_eyeLookUpR")) },
+		{ FName(TEXT("CTRL_expressions_eyeLookDownL")), FName(TEXT("CTRL_expressions_eyeLookDownR")) },
+	};
+
+	if (bOff || !BodyActor)
+	{
+		return;
+	}
+
+	if (!FaceSeen.IsValid())
+	{
+		for (UActorComponent* Component : BodyActor->GetComponents())
+		{
+			if (USkeletalMeshComponent* Part = Cast<USkeletalMeshComponent>(Component); Part && Part->GetFName() == FaceComponentName)
+			{
+				FaceSeen = Part;
+			}
+		}
+	}
+
+	const USkeletalMeshComponent* Face = FaceSeen.Get();
+
+	FVector Place;
+	FVector2D Wanted = FVector2D::ZeroVector;
+	bool bAimed = false;
+
+	if (Face && GetLookAt(Place) && Face->GetBoneIndex(EyeBones[0]) != INDEX_NONE && Face->GetBoneIndex(EyeBones[1]) != INDEX_NONE)
+	{
+		const FVector Left = Face->GetBoneLocation(EyeBones[0]);
+		const FVector Right = Face->GetBoneLocation(EyeBones[1]);
+		const FVector Between = (Left + Right) * 0.5f;
+
+		// the head as it is held now: across it from its left eye to its right, up, and the way it faces
+		const FVector Across = (Right - Left).GetSafeNormal();
+		const FVector Up = (FVector::UpVector - (Across * FVector::DotProduct(FVector::UpVector, Across))).GetSafeNormal();
+
+		FVector Ahead = FVector::CrossProduct(Across, Up);
+
+		if (FVector::DotProduct(Ahead, GetActorForwardVector()) < 0.0f)
+		{
+			Ahead = -Ahead;
+		}
+
+		const FVector To = (Place - Between).GetSafeNormal();
+
+		const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(FVector::DotProduct(To, Across), FVector::DotProduct(To, Ahead)));
+		const float Pitch = FMath::RadiansToDegrees(FMath::Asin(FMath::Clamp(FVector::DotProduct(To, Up), -1.0f, 1.0f)));
+
+		// as far as eyes go: past that, somebody is not being looked at, and the eyes are left to the face
+		if (!Across.IsNearlyZero() && FMath::Abs(Yaw) < 48.0f && FMath::Abs(Pitch) < 30.0f)
+		{
+			Wanted = FVector2D(Yaw, Pitch);
+			bAimed = true;
+		}
+	}
+
+	// Eyes do not rest on a point. They shift a little every second or so, and now and then go off somebody altogether
+	// for a moment, down or to one side, and come back: nobody is stared at.
+	const double Now = GetWorld()->GetTimeSeconds();
+
+	if (Now >= EyesShiftAt)
+	{
+		if (bAimed && FMath::FRand() < 0.15f)
+		{
+			EyesOff = FVector2D(FMath::FRandRange(-15.0f, 15.0f), FMath::FRandRange(-11.0f, 2.0f));
+			EyesShiftAt = Now + FMath::FRandRange(0.35f, 0.85f);
+		}
+		else
+		{
+			EyesOff = FVector2D(FMath::FRandRange(-2.0f, 2.0f), FMath::FRandRange(-1.3f, 1.3f));
+			EyesShiftAt = Now + FMath::FRandRange(0.5f, 2.6f);
+		}
+	}
+
+	EyesAimed = FMath::FInterpTo(EyesAimed, bAimed ? 1.0f : 0.0f, DeltaTime, 6.0f);
+
+	if (bAimed)
+	{
+		// eyes move in jumps: there in a few hundredths of a second
+		EyesShown = FMath::Vector2DInterpTo(EyesShown, Wanted + EyesOff, DeltaTime, 22.0f);
+	}
+
+	if (EyesAimed < 0.01f)
+	{
+		return;
+	}
+
+	// a control is at 1 with the eye turned about as far as it goes that way
+	const float Turned[4] =
+	{
+		FMath::Clamp(-EyesShown.X / 40.0f, 0.0f, 1.0f), FMath::Clamp(EyesShown.X / 40.0f, 0.0f, 1.0f),
+		FMath::Clamp(EyesShown.Y / 26.0f, 0.0f, 1.0f), FMath::Clamp(-EyesShown.Y / 30.0f, 0.0f, 1.0f),
+	};
+
+	for (int32 Way = 0; Way < 4; ++Way)
+	{
+		for (const FName& Control : Controls[Way])
+		{
+			float& Value = Shown.FindOrAdd(Control);
+
+			Value = FMath::Lerp(Value, Turned[Way], EyesAimed);
+		}
+	}
+}
+
+void AGutFighter::Speak(UAnimSequenceBase* Face)
+{
+	SpeechFace = Face;
+	SpeechBegan = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 }
 
 bool AGutFighter::GetWeaponLine(FVector& OutBase, FVector& OutTip, float& OutRadius) const
@@ -4802,5 +6884,9 @@ void AGutFighter::UpdateWeaponMesh()
 		}
 
 		BodyRetarget->SetCustomRetargetProfile(Profile);
+
+		MeasureHeld();
+
+		bFingersShutForIt = Profile.bApplyTargetRetargetPose;
 	}
 }

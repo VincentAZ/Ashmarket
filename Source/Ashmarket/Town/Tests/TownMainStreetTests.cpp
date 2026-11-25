@@ -1106,4 +1106,221 @@ bool FTownProbeMainStreetTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+/**
+ *  Ashmarket.Town.Purse    one purse: what a fighter, somebody betting and an owner hold is one lot of water. Whatever any of
+ *                          the three gains or spends is the player's, each of the three is kept at what the player holds, only
+ *                          a fighter stands below nothing, and somebody who starts a new way starts it with what they hold.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownPurseTest, "Ashmarket.Town.Purse", GutTests::Flags)
+
+bool FTownPurseTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+
+	if (!AutomationOpenMap(MainStreetTests::MapPath, true))
+	{
+		AddError(TEXT("Could not open Main Street's level"));
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 0.6f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		// a fighter with ten litres who has also bet, and holds twenty-five to bet with; no yard
+		Run->ForgetPurse();
+		Run->bStreetForced = true;
+		Run->ResetLadder(10.0f);
+		Run->PendingStory = EGutStory::None;
+		Run->Stable = FGutStableState();
+		Run->Window = FGutWindowState();
+		Run->Window.bStarted = true;
+		Run->Window.Water = 25.0f;
+
+		TestFalse(TEXT("Under test the three are kept apart unless asked"), (Town->Tick(0.0f), Run->IsOnePurse()));
+
+		Run->bSharesWaterInTests = true;
+		Town->Tick(0.0f);
+
+		TestTrue(TEXT("The first time, everything held is one purse"), Run->IsOnePurse() && FMath::IsNearlyEqual(Run->GetPurse(), 35.0f));
+		TestTrue(TEXT("And each way holds it"), FMath::IsNearlyEqual(Run->Ladder.Water, 35.0f) && FMath::IsNearlyEqual(Run->Window.Water, 35.0f));
+		TestTrue(TEXT("The street says what is held, once"), Town->GetPurses().Num() == 1 && Town->GetPurses()[0].Contains(TEXT("35")));
+
+		// twenty won at the window, five spent as a fighter
+		Run->Window.Water += 20.0f;
+		Town->Tick(0.0f);
+		Run->Ladder.Water -= 5.0f;
+		Town->Tick(0.0f);
+
+		TestTrue(TEXT("What one way wins and another spends is the same water"), FMath::IsNearlyEqual(Run->GetPurse(), 50.0f) && FMath::IsNearlyEqual(Run->Ladder.Water, 50.0f) && FMath::IsNearlyEqual(Run->Window.Water, 50.0f));
+
+		// onto the pit boss's slate
+		Run->Ladder.Water -= 62.0f;
+		Town->Tick(0.0f);
+
+		TestTrue(TEXT("Only a fighter stands below nothing"), FMath::IsNearlyEqual(Run->GetPurse(), -12.0f) && FMath::IsNearlyEqual(Run->Ladder.Water, -12.0f) && FMath::IsNearlyEqual(Run->Window.Water, 0.0f));
+
+		Run->Window.Water += 30.0f;
+		Town->Tick(0.0f);
+
+		TestTrue(TEXT("And what is won pays the slate first"), FMath::IsNearlyEqual(Run->GetPurse(), 18.0f) && FMath::IsNearlyEqual(Run->Ladder.Water, 18.0f) && FMath::IsNearlyEqual(Run->Window.Water, 18.0f));
+
+		TestTrue(TEXT("Somebody who starts a yard starts it with what they hold"), FMath::IsNearlyEqual(Run->GetStartingWater(70.0f), 18.0f));
+		TestTrue(TEXT("The bag has one water in it"), Town->GetBagLines().FilterByPredicate([](const FTownBagLine& Line) { return Line.Kind == ETownBagKind::Water; }).Num() == 1);
+
+		// and as it was
+		Run->bSharesWaterInTests = false;
+		Run->ForgetPurse();
+		Run->bStreetForced.Reset();
+		Run->Window = FGutWindowState();
+		Run->ResetLadder(0.0f);
+		Run->PendingStory = EGutStory::None;
+
+		TestTrue(TEXT("With no purse, a yard starts with its own stake"), FMath::IsNearlyEqual(Run->GetStartingWater(70.0f), 70.0f));
+	}, []() { return MainStreetTests::IsIn(TEXT("Main Street")); } });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Ashmarket.Town.Finds    what lies about Main Street is there to be picked up once: standing over one offers it, taking it puts
+ *                          it in the bag and it is gone from the street for good, the flask's water can be poured into one's own,
+ *                          and the scrap seller pays for scrap and for a tag.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownFindsTest, "Ashmarket.Town.Finds", GutTests::Flags)
+
+bool FTownFindsTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace MainStreetTests;
+
+	if (!AutomationOpenMap(MainStreetTests::MapPath, true))
+	{
+		AddError(TEXT("Could not open Main Street's level"));
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+
+	// first, from four metres off, as somebody walking the street comes on one: what there is to see of it
+	Steps.Add({ 0.6f, [this]()
+	{
+		const UTownPlaceData* Place = GetTown()->GetPlace();
+
+		if (Place && !Place->Finds.IsEmpty())
+		{
+			GetRun()->Found.Reset();
+
+			StandBy(Place->Finds[0].Place, FVector2D(0.0f, 400.0f));
+		}
+	} });
+
+	Steps.Add({ 1.2f, []() { GutTests::Screenshot(TEXT("82_main_street_something_lying_there")); } });
+
+	Steps.Add({ 0.2f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+		const UTownPlaceData* Place = Town->GetPlace();
+
+		// a fighter with ten litres and an empty bag, who has found nothing yet
+		Run->bStreetForced = true;
+		Run->ResetLadder(10.0f);
+		Run->PendingStory = EGutStory::None;
+		Run->Bag.Reset();
+		Run->Stable = FGutStableState();
+		Run->Window = FGutWindowState();
+
+		if (!TestTrue(TEXT("Main Street has things lying about in its list"), Place && Place->Finds.Num() >= 3))
+		{
+			return;
+		}
+
+		// whichever of them is scrap, and whichever is the flask
+		const int32 Scrap = Place->Finds.IndexOfByPredicate([](const FTownFind& Lying) { return Lying.Good == FName("scrap"); });
+		const int32 Flask = Place->Finds.IndexOfByPredicate([](const FTownFind& Lying) { return Lying.Good == FName("flask"); });
+
+		if (!TestTrue(TEXT("Scrap and a flask are among them"), Scrap != INDEX_NONE && Flask != INDEX_NONE))
+		{
+			return;
+		}
+
+		for (const int32 Which : { Scrap, Flask })
+		{
+			StandBy(Place->Finds[Which].Place, FVector2D(40.0f, 0.0f));
+			Town->Tick(0.0f);
+
+			if (!TestEqual(TEXT("Standing over a find puts it in reach"), Town->GetFindInReach(), Which))
+			{
+				return;
+			}
+
+			TestTrue(TEXT("And it is offered"), Town->GetPrompt().StartsWith(TEXT("Pick up")));
+
+			Town->Interact();
+			Town->Tick(0.0f);
+
+			TestEqual(TEXT("Picked up, it is no longer in reach"), Town->GetFindInReach(), static_cast<int32>(INDEX_NONE));
+		}
+
+		TestTrue(TEXT("Both are in the bag"), Run->GetBagCount(FName("scrap")) == 1 && Run->GetBagCount(FName("flask")) == 1);
+		TestEqual(TEXT("And both are remembered as found"), Run->Found.Num(), 2);
+
+		// the flask: half a litre, poured into one's own
+		const float Before = Run->Ladder.Water;
+
+		Town->ToggleBag();
+
+		const TArray<FTownBagLine> Lines = Town->GetBagLines();
+		const int32 Line = Lines.IndexOfByPredicate([](const FTownBagLine& One) { return One.Good == FName("flask"); });
+
+		TestTrue(TEXT("The flask is a line in the bag, and can be used"), Lines.IsValidIndex(Line) && Lines[Line].bCanUse);
+
+		Town->UseFromBag(Line);
+
+		TestTrue(TEXT("Its water is poured into the player's own"), FMath::IsNearlyEqual(Run->Ladder.Water, Before + 0.5f) && Run->GetBagCount(FName("flask")) == 0);
+
+		Town->ToggleBag();
+
+		// the scrap seller pays a litre for the scrap
+		const int32 Seller = Find(TEXT("Scrap seller"));
+
+		if (!TestTrue(TEXT("The scrap seller is in the street"), Place->People.IsValidIndex(Seller)))
+		{
+			return;
+		}
+
+		Town->OpenStall(Seller);
+
+		const TArray<FTownShopLine> Stall = Town->GetShopLines();
+		const int32 Sell = Stall.IndexOfByPredicate([](const FTownShopLine& One) { return One.Name.StartsWith(TEXT("Sell")); });
+
+		if (TestTrue(TEXT("With scrap in the bag, the scrap seller's stall has a line to sell it"), Stall.IsValidIndex(Sell)))
+		{
+			const float Held = Run->Ladder.Water;
+
+			TestTrue(TEXT("Selling it pays"), Town->BuyAtShop(Sell) && FMath::IsNearlyEqual(Run->Ladder.Water, Held + 1.0f) && Run->GetBagCount(FName("scrap")) == 0);
+			TestFalse(TEXT("And there is nothing left to sell"), Town->GetShopLines().ContainsByPredicate([](const FTownShopLine& One) { return One.Name.StartsWith(TEXT("Sell")); }));
+		}
+
+		Town->HandleBack();
+
+		// as it was
+		Run->Found.Reset();
+		Run->Bag.Reset();
+		Run->bStreetForced.Reset();
+		Run->ResetLadder(0.0f);
+		Run->PendingStory = EGutStory::None;
+	}, []() { return MainStreetTests::IsIn(TEXT("Main Street")); } });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
 #endif

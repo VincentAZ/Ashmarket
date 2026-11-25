@@ -31,7 +31,7 @@ namespace GutRosterConstants
 		TEXT("Fought dogs for a kennel man. The kennel man sold both."),
 		TEXT("Dug the ground behind the pumps. Says the pay here is better."),
 		TEXT("A cook off the grill carts. Knows what goes on the grill."),
-		TEXT("Stood on the Block twice. Nobody kept it long."),
+		TEXT("Stood on the Block twice. Never kept long."),
 		TEXT("Walked out of the Kiln alone. Will not say who did not."),
 		TEXT("Owes Mother Ledger. This is the paying."),
 		TEXT("Stood guard on a convoy that lost its water."),

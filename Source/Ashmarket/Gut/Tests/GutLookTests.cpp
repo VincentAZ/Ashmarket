@@ -20,11 +20,17 @@
 #include "GutOpponentController.h"
 #include "GutBrainController.h"
 #include "GutCrowd.h"
+#include "GutArmorData.h"
 #include "GutLadderData.h"
 #include "Misc/App.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "UnrealClient.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
+#include "Rendering/SkeletalMeshRenderData.h"
+#include "Rendering/SkeletalMeshLODRenderData.h"
+#include "Serialization/JsonSerializer.h"
 
 /**
  *  Not a test of anything: a walk round the cage with a camera, for judging the art.
@@ -1599,7 +1605,8 @@ bool FGutFitBoundTest::RunTest(const FString& Parameters)
 /**
  *  Ashmarket.Fit.Outfit    people dressed out of the wardrobe, seen standing, walking and at a jog from in front, from
  *                          the side, from behind and from three quarters, so that anything that cuts through them is seen.
- *                          -GutFitBodies=Try01+Try02 names who (the folder each was built in).
+ *                          -GutFitBodies=Try01+Try02 names who (the folder each was built in);
+ *                          -GutFitIdle=style_idle_folded stands them that way.
  */
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGutFitOutfitTest, "Ashmarket.Fit.Outfit", GutTests::Flags)
 
@@ -1666,10 +1673,72 @@ bool FGutFitOutfitTest::RunTest(const FString& Parameters)
 			Fight.Player->EquipWeapon(nullptr);
 			Fight.Player->SetAtEase(true);
 			Fight.Player->SetCollared(false);
-			Fight.Player->SetBound(false);
+			Fight.Player->SetBound(FParse::Param(FCommandLine::Get(), TEXT("GutFitBound")));
+
+			// -GutFitWeapon=Club has them stand as a fighter stands with that in the hand, not at ease: for seeing whether
+			// the hand and what is in it are in the wearer's own hip or thigh
+			FString Armed;
+
+			if (FParse::Value(FCommandLine::Get(), TEXT("GutFitWeapon="), Armed))
+			{
+				if (UGutWeaponData* Held = LoadObject<UGutWeaponData>(nullptr, *FString::Printf(TEXT("/Game/Gut/Weapons/DA_Gut_%s.DA_Gut_%s"), *Armed, *Armed)))
+				{
+					Fight.Player->SetAtEase(false);
+					Fight.Player->EquipWeapon(Held);
+				}
+			}
+
+			// -GutFitArmor=RubberVest+RubberSleeves puts those pieces on over the clothes; -GutFitBound ties the wrists
+			FString Worn;
+
+			if (FParse::Value(FCommandLine::Get(), TEXT("GutFitArmor="), Worn))
+			{
+				TArray<FString> Pieces;
+				Worn.ParseIntoArray(Pieces, TEXT("+"), true);
+
+				for (const FString& Piece : Pieces)
+				{
+					if (UGutArmorData* Armor = LoadObject<UGutArmorData>(nullptr, *FString::Printf(TEXT("/Game/Gut/Armor/DA_Gut_Armor_%s.DA_Gut_Armor_%s"), *Piece, *Piece)))
+					{
+						Fight.Player->WearArmor(Armor);
+					}
+				}
+			}
+
+			// -GutFitIdle=style_idle_folded stands them a given way, to see whether arms that are folded or on the hips
+			// go through this body as they do not through the one the clip was looked at on
+			FString Stood;
+
+			if (FParse::Value(FCommandLine::Get(), TEXT("GutFitIdle="), Stood))
+			{
+				Fight.Player->SetAtEaseIdle(LoadObject<UAnimSequenceBase>(nullptr, *FString::Printf(TEXT("/Game/Gut/Art/Motion/%s.%s"), *Stood, *Stood)));
+			}
+
+			// -GutFitFamily=clasp stands them in that family of standing, as a place's list does
+			FString Family;
+
+			if (FParse::Value(FCommandLine::Get(), TEXT("GutFitFamily="), Family))
+			{
+				Fight.Player->SetAtEaseFamily(FName(*Family));
+			}
+
+			// and -GutFitWalk=style_walk_behind -GutFitWalkSpeed=95 walks them that way, at the speed it was walked at
+			FString Walked;
+
+			if (FParse::Value(FCommandLine::Get(), TEXT("GutFitWalk="), Walked))
+			{
+				float Speed = 90.0f;
+				FParse::Value(FCommandLine::Get(), TEXT("GutFitWalkSpeed="), Speed);
+
+				Fight.Player->SetAtEaseWalk(LoadObject<UAnimSequenceBase>(nullptr, *FString::Printf(TEXT("/Game/Gut/Art/Motion/%s.%s"), *Walked, *Walked)), Speed);
+			}
 		} });
 
-		for (const float Pace : { 0.0f, 150.0f, 340.0f })
+		// at the town's own walk (or the asked one's own speed) and its jog
+		float OwnWalk = 112.0f;
+		FParse::Value(FCommandLine::Get(), TEXT("GutFitWalkSpeed="), OwnWalk);
+
+		for (const float Pace : { 0.0f, OwnWalk, 340.0f })
 		{
 			Steps.Add({ 2.0f, [Pace](const FFight& Fight) { Fight.Player->SetLedVelocity(Fight.Player->GetActorForwardVector() * Pace); } });
 
@@ -1687,6 +1756,708 @@ bool FGutFitOutfitTest::RunTest(const FString& Parameters)
 				Steps.Add({ 0.5f, [View, Who, Pace](const FFight& Fight) { Screenshot(FString::Printf(TEXT("outfit_%s_%s_%s"), *Who, Pace <= 0.0f ? TEXT("standing") : (Pace < 200.0f ? TEXT("walked") : TEXT("jogged")), View.Name)); } });
 				Steps.Add({ 0.2f, [](const FFight& Fight) {} });
 			}
+		}
+	}
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScriptCommand(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+namespace GutLookTests
+{
+	/** One part of a dressed body as it is posed at this moment: its points in the world, and for skin which way each faces */
+	struct FPosedPart
+	{
+		FString Name;
+		TArray<FVector> Points;
+		TArray<FVector> Normals;
+		TBitArray<> Drawn;
+	};
+
+	/** Poses one part on the processor, at its finest level of detail whatever is being drawn. False if the part has nothing to pose. */
+	bool PosePart(USkeletalMeshComponent* Part, bool bWithNormals, FPosedPart& Out)
+	{
+		USkeletalMesh* Mesh = Part ? Part->GetSkeletalMeshAsset() : nullptr;
+		FSkeletalMeshRenderData* Data = Mesh ? Mesh->GetResourceForRendering() : nullptr;
+
+		if (!Data || Data->LODRenderData.IsEmpty())
+		{
+			return false;
+		}
+
+		const FSkeletalMeshLODRenderData& Level = Data->LODRenderData[0];
+		const int32 Count = Level.GetNumVertices();
+
+		if (Count <= 0 || !Level.StaticVertexBuffers.PositionVertexBuffer.GetVertexData() || Level.SkinWeightVertexBuffer.GetNumVertices() != static_cast<uint32>(Count))
+		{
+			return false;
+		}
+
+		TArray<FMatrix44f> RefToLocal;
+		TArray<FVector3f> Skinned;
+
+		Part->CacheRefToLocalMatrices(RefToLocal);
+
+		if (RefToLocal.IsEmpty())
+		{
+			return false;
+		}
+
+		USkinnedMeshComponent::ComputeSkinnedPositions(Part, Skinned, RefToLocal, Level, Level.SkinWeightVertexBuffer);
+
+		if (Skinned.Num() != Count)
+		{
+			return false;
+		}
+
+		const FTransform ToWorld = Part->GetComponentTransform();
+
+		Out.Name = Part->GetName();
+		Out.Points.SetNumUninitialized(Count);
+
+		for (int32 i = 0; i < Count; ++i)
+		{
+			Out.Points[i] = ToWorld.TransformPosition(FVector(Skinned[i]));
+		}
+
+		// what of it is drawn: a part's hidden pieces are given a material that draws nothing
+		Out.Drawn.Init(false, Count);
+
+		for (const FSkelMeshRenderSection& Section : Level.RenderSections)
+		{
+			const UMaterialInterface* Material = Part->GetMaterial(Section.MaterialIndex);
+
+			if (Section.bDisabled || !Part->IsMaterialSectionShown(Section.MaterialIndex, 0) || (Material && Material->GetName().Contains(TEXT("NotDrawn"))))
+			{
+				continue;
+			}
+
+			Out.Drawn.SetRange(Section.BaseVertexIndex, FMath::Min<int32>(Section.NumVertices, Count - Section.BaseVertexIndex), true);
+		}
+
+		if (bWithNormals)
+		{
+			TArray<uint32> Corners;
+			Level.MultiSizeIndexContainer.GetIndexBuffer(Corners);
+
+			Out.Normals.Init(FVector::ZeroVector, Count);
+
+			for (int32 i = 0; i + 2 < Corners.Num(); i += 3)
+			{
+				const int32 A = Corners[i], B = Corners[i + 1], C = Corners[i + 2];
+
+				if (A >= Count || B >= Count || C >= Count)
+				{
+					continue;
+				}
+
+				// the engine winds its faces so that this points out of the body
+				const FVector Face = FVector::CrossProduct(Out.Points[C] - Out.Points[A], Out.Points[B] - Out.Points[A]);
+
+				Out.Normals[A] += Face;
+				Out.Normals[B] += Face;
+				Out.Normals[C] += Face;
+			}
+
+			for (FVector& Normal : Out.Normals)
+			{
+				Normal = Normal.GetSafeNormal();
+			}
+		}
+
+		return true;
+	}
+
+	/** Where a garment goes under the skin of the body wearing it */
+	struct FCut
+	{
+		FString Garment;
+		FString Region;
+		int32 Points = 0;
+		float Deepest = 0.0f;
+		FVector Where = FVector::ZeroVector;
+		FVector Outward = FVector::ZeroVector;
+	};
+
+	/** Which part of the body a place is nearest: the limb between two joints, by the name of the upper one */
+	FString RegionOf(const USkeletalMeshComponent* Body, const FVector& Where)
+	{
+		static const TCHAR* Limbs[][2] =
+		{
+			{ TEXT("upperarm_l"), TEXT("lowerarm_l") }, { TEXT("lowerarm_l"), TEXT("hand_l") }, { TEXT("hand_l"), TEXT("middle_01_l") },
+			{ TEXT("upperarm_r"), TEXT("lowerarm_r") }, { TEXT("lowerarm_r"), TEXT("hand_r") }, { TEXT("hand_r"), TEXT("middle_01_r") },
+			{ TEXT("thigh_l"), TEXT("calf_l") }, { TEXT("calf_l"), TEXT("foot_l") }, { TEXT("foot_l"), TEXT("ball_l") },
+			{ TEXT("thigh_r"), TEXT("calf_r") }, { TEXT("calf_r"), TEXT("foot_r") }, { TEXT("foot_r"), TEXT("ball_r") },
+			{ TEXT("pelvis"), TEXT("spine_03") }, { TEXT("spine_03"), TEXT("spine_05") }, { TEXT("spine_05"), TEXT("neck_01") }, { TEXT("neck_01"), TEXT("head") },
+			{ TEXT("clavicle_l"), TEXT("upperarm_l") }, { TEXT("clavicle_r"), TEXT("upperarm_r") },
+		};
+
+		FString Nearest = TEXT("?");
+		double Least = TNumericLimits<double>::Max();
+
+		for (const auto& Limb : Limbs)
+		{
+			if (Body->GetBoneIndex(Limb[0]) == INDEX_NONE || Body->GetBoneIndex(Limb[1]) == INDEX_NONE)
+			{
+				continue;
+			}
+
+			const double Off = FMath::PointDistToSegmentSquared(Where, Body->GetBoneLocation(Limb[0]), Body->GetBoneLocation(Limb[1]));
+
+			if (Off < Least)
+			{
+				Least = Off;
+				Nearest = Limb[0];
+			}
+		}
+
+		return Nearest;
+	}
+
+	/**
+	 *  Measures, on the body as it is posed now, where what it wears is under its skin: that is where skin shows through
+	 *  cloth, or an arm lies inside a vest. Each garment's points are set against the nearest point of the skin that is
+	 *  drawn; one that is behind that skin by more than the tolerance, with the skin over it, is a cut.
+	 */
+	void MeasureCuts(const AGutFighter* Fighter, float Tolerance, TArray<FCut>& Out, TArray<FString>* OutParts = nullptr)
+	{
+		const AActor* Dressed = Fighter->GetBodyActor();
+
+		if (!Dressed)
+		{
+			return;
+		}
+
+		TArray<USkeletalMeshComponent*> Parts;
+		Dressed->GetComponents(Parts);
+
+		const USkeletalMeshComponent* Body = nullptr;
+
+		TArray<FPosedPart> Skin;
+		TArray<FPosedPart> Worn;
+
+		for (USkeletalMeshComponent* Part : Parts)
+		{
+			const USkeletalMesh* Mesh = Part->GetSkeletalMeshAsset();
+
+			if (!Mesh || !Part->IsVisible())
+			{
+				continue;
+			}
+
+			const FString Name = Part->GetName();
+			const bool bSkin = Name == TEXT("Body") || Name == TEXT("Face");
+
+			if (Name == TEXT("Body"))
+			{
+				Body = Part;
+			}
+
+			FPosedPart Posed;
+
+			if (!PosePart(Part, bSkin, Posed))
+			{
+				continue;
+			}
+
+			Posed.Name = FString::Printf(TEXT("%s (%s)"), *Name, *Mesh->GetName());
+
+			if (OutParts)
+			{
+				OutParts->Add(FString::Printf(TEXT("%s, %d points, %s"), *Posed.Name, Posed.Points.Num(), bSkin ? TEXT("skin") : TEXT("worn")));
+			}
+
+			(bSkin ? Skin : Worn).Add(MoveTemp(Posed));
+		}
+
+		if (!Body || Skin.IsEmpty())
+		{
+			return;
+		}
+
+		// the skin's points in boxes four centimetres across, to find the nearest of them to anything quickly
+		const double Box = 4.0;
+
+		auto BoxOf = [Box](const FVector& Point) { return FIntVector(FMath::FloorToInt32(Point.X / Box), FMath::FloorToInt32(Point.Y / Box), FMath::FloorToInt32(Point.Z / Box)); };
+
+		struct FSkinPoint
+		{
+			FVector Point;
+			FVector Normal;
+		};
+
+		TMap<FIntVector, TArray<FSkinPoint, TInlineAllocator<8>>> Boxes;
+
+		for (const FPosedPart& Part : Skin)
+		{
+			for (int32 i = 0; i < Part.Points.Num(); ++i)
+			{
+				if (Part.Drawn[i] && !Part.Normals[i].IsNearlyZero())
+				{
+					Boxes.FindOrAdd(BoxOf(Part.Points[i])).Add({ Part.Points[i], Part.Normals[i] });
+				}
+			}
+		}
+
+		for (const FPosedPart& Part : Worn)
+		{
+			TMap<FString, FCut> ByRegion;
+
+			for (int32 i = 0; i < Part.Points.Num(); ++i)
+			{
+				if (!Part.Drawn[i])
+				{
+					continue;
+				}
+
+				const FVector& Point = Part.Points[i];
+				const FIntVector Middle = BoxOf(Point);
+
+				const FSkinPoint* Nearest = nullptr;
+				double Least = FMath::Square(Box);
+
+				for (int32 X = -1; X <= 1; ++X)
+				{
+					for (int32 Y = -1; Y <= 1; ++Y)
+					{
+						for (int32 Z = -1; Z <= 1; ++Z)
+						{
+							if (const auto* Held = Boxes.Find(Middle + FIntVector(X, Y, Z)))
+							{
+								for (const FSkinPoint& One : *Held)
+								{
+									const double Off = FVector::DistSquared(One.Point, Point);
+
+									if (Off < Least)
+									{
+										Least = Off;
+										Nearest = &One;
+									}
+								}
+							}
+						}
+					}
+				}
+
+				if (!Nearest)
+				{
+					continue;
+				}
+
+				const FVector Off = Point - Nearest->Point;
+				const double Depth = -FVector::DotProduct(Off, Nearest->Normal);
+				const double Aside = (Off + (Nearest->Normal * Depth)).Size();
+
+				// under the skin, with that skin over it and not merely somewhere near its edge
+				if (Depth < Tolerance || Aside > 1.6)
+				{
+					continue;
+				}
+
+				FCut& Cut = ByRegion.FindOrAdd(RegionOf(Body, Point));
+
+				++Cut.Points;
+
+				if (Depth > Cut.Deepest)
+				{
+					Cut.Deepest = Depth;
+					Cut.Where = Point;
+					Cut.Outward = Nearest->Normal;
+				}
+			}
+
+			for (TPair<FString, FCut>& Region : ByRegion)
+			{
+				Region.Value.Garment = Part.Name;
+				Region.Value.Region = Region.Key;
+
+				Out.Add(Region.Value);
+			}
+		}
+	}
+}
+
+/**
+ *  Ashmarket.Fit.Cuts     Not pictures first: a measure. Every body named with -GutFitBodies=A+B+C is stood every way
+ *                         the game stands people (each family of standing its sex is dealt, wrists tied, walking, at a
+ *                         jog, and in a fighter's guard), and in each it is measured where what it wears is under its
+ *                         skin. Each finding is a line "[cuts] who | how stood | garment | where | points | cm", the
+ *                         whole is written to Saved/GutCuts/<who>.json, and whatever is over -GutCutsShown=1.0 cm deep
+ *                         with twenty points or more is photographed from where it shows (for-review/screenshots).
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGutFitCutsTest, "Ashmarket.Fit.Cuts", GutTests::Flags)
+
+bool FGutFitCutsTest::RunTest(const FString& Parameters)
+{
+	using namespace GutTests;
+	using namespace GutLookTests;
+	using FStep = FScriptCommand::FStep;
+
+	FString Named;
+
+	if (!FApp::CanEverRender() || !FParse::Value(FCommandLine::Get(), TEXT("GutFitBodies="), Named))
+	{
+		return true;
+	}
+
+	if (!OpenCage(this))
+	{
+		return false;
+	}
+
+	TArray<FString> Bodies;
+	Named.ParseIntoArray(Bodies, TEXT("+"), true);
+
+	float Shown = 1.0f;
+	FParse::Value(FCommandLine::Get(), TEXT("GutCutsShown="), Shown);
+
+	float Tolerance = 0.35f;
+	FParse::Value(FCommandLine::Get(), TEXT("GutCutsTolerance="), Tolerance);
+
+	struct FFound
+	{
+		FString Who;
+		FString Stood;
+		TArray<TSharedPtr<FJsonValue>> Lines;
+		bool bPicture = false;
+	};
+
+	TSharedRef<FFound> Found = MakeShared<FFound>();
+	TArray<FStep> Steps;
+
+	Steps.Add({ 0.3f, [this](const FFight& Fight)
+	{
+		DisableEnemyBrain(this, Fight);
+
+		Fight.GameMode->SetHazardsEnabled(false);
+		Fight.GameMode->StartFight();
+
+		PlaceAt(Fight.Player, 0.0f, 0.0f, 0.0f);
+		PlaceAt(Fight.Enemy, 600.0f, 420.0f, 180.0f);
+	} });
+
+	// every way of standing there is: which of them a body is stood in is decided when it is known whose body it is
+	static const TCHAR* Ways[] =
+	{
+		TEXT("stand"), TEXT("stand_f"), TEXT("shift_l"), TEXT("shift_r"), TEXT("crossed"), TEXT("crossed_b"), TEXT("hip_l"), TEXT("hip_r"),
+		TEXT("hips"), TEXT("clasp"), TEXT("watch"), TEXT("tied"), TEXT("walk"), TEXT("jog"), TEXT("guard"), TEXT("club"), TEXT("machete"),
+	};
+
+	// -GutCutsWhole: the whole figure photographed in every stance, from in front and to one side and from behind and to
+	// the other (whole_<who>_<stance>_a and _b), for looking at every body by eye and not only by the measure
+	const bool bWhole = FParse::Param(FCommandLine::Get(), TEXT("GutCutsWhole"));
+
+	TArray<FString> OnlyWays;
+
+	if (FString Asked; FParse::Value(FCommandLine::Get(), TEXT("GutCutsWays="), Asked))
+	{
+		Asked.ParseIntoArray(OnlyWays, TEXT("+"), true);
+	}
+
+	for (const FString& Who : Bodies)
+	{
+		Steps.Add({ 0.6f, [this, Who, Found](const FFight& Fight)
+		{
+			const TSoftClassPtr<AActor> Body(FSoftObjectPath(FString::Printf(TEXT("/Game/Gut/Art/MetaHumans/%s/BP_%s.BP_%s_C"), *Who, *Who, *Who)));
+
+			if (TestNotNull(*FString::Printf(TEXT("There is a body called %s"), *Who), Body.LoadSynchronous()))
+			{
+				Fight.Player->SetBody(Body, Fight.Player->GetBodyRetargeter());
+			}
+
+			Fight.Player->ClearArmor();
+			Fight.Player->EquipWeapon(nullptr);
+			Fight.Player->SetCollared(false);
+			Fight.Player->SetBound(false);
+			Fight.Player->SetAtEase(true);
+
+			Found->Who = Who;
+			Found->Lines.Reset();
+
+			// a camera near enough that the body is posed at its finest
+			LookFrom(Fight, { TEXT("near"), FVector(260.0f, 0.0f, 0.0f), FVector(0.0f, 0.0f, 0.0f), 40.0f, FName("pelvis") });
+		} });
+
+		for (const TCHAR* Way : Ways)
+		{
+			const FString Stood(Way);
+
+			// -GutCutsWays=tied+clasp: only those ways of standing
+			if (!OnlyWays.IsEmpty() && !OnlyWays.Contains(Stood))
+			{
+				continue;
+			}
+
+			Steps.Add({ 0.15f, [Stood, Found](const FFight& Fight)
+			{
+				AGutFighter* Body = Fight.Player;
+
+				Found->Stood.Reset();
+				Found->bPicture = false;
+
+				Body->SetLedVelocity(FVector::ZeroVector);
+
+				const bool bFighting = Stood == TEXT("guard") || Stood == TEXT("club") || Stood == TEXT("machete");
+
+				// a fighter's guard with nothing in the hand, with the club and with the machete
+				Body->EquipWeapon(Stood == TEXT("club") ? LoadObject<UGutWeaponData>(nullptr, TEXT("/Game/Gut/Weapons/DA_Gut_Club.DA_Gut_Club"))
+					: (Stood == TEXT("machete") ? LoadObject<UGutWeaponData>(nullptr, TEXT("/Game/Gut/Weapons/DA_Gut_Machete.DA_Gut_Machete")) : nullptr));
+
+				if (Stood == TEXT("tied") || Stood == TEXT("walk") || Stood == TEXT("jog") || bFighting)
+				{
+					Body->SetAtEase(!bFighting);
+					Body->SetBound(Stood == TEXT("tied"));
+
+					if (!bFighting)
+					{
+						Body->SetAtEaseFamily(Body->IsWoman() ? FName("stand_f") : FName("stand"));
+					}
+
+					Body->SetLedVelocity(Body->GetActorForwardVector() * (Stood == TEXT("walk") ? 153.0f : (Stood == TEXT("jog") ? 326.0f : 0.0f)));
+				}
+				else
+				{
+					// only the ways this body's sex is dealt
+					const FGutStandFamily* Family = Body->GetAtEaseFamilies().FindByPredicate([&Stood](const FGutStandFamily& One) { return One.Name == FName(*Stood); });
+
+					// the ways this body's sex is dealt, and the ways that are only ever given by name (a Warden's clasped hands)
+					if (!Family || (Family->DealtTo != 0 && !(Family->DealtTo & (Body->IsWoman() ? 2 : 1))))
+					{
+						return;
+					}
+
+					Body->SetBound(false);
+					Body->SetAtEase(true);
+					Body->SetAtEaseFamily(Family->Name);
+				}
+
+				Found->Stood = Stood;
+
+				// held where it is: somebody walking is looked at in the same place
+				Body->SetActorLocation(FVector(0.0f, 0.0f, Body->GetActorLocation().Z));
+			} });
+
+			// Not until it has stood that way for a second and a half. Until the evening of 23 November this was a third of a
+			// second, which is less than a body takes to ease from one way of standing to the next: what was measured and
+			// photographed under each name was mostly the way before it.
+			Steps.Add({ 1.5f, [Found, Shown, Tolerance](const FFight& Fight)
+			{
+				if (Found->Stood.IsEmpty())
+				{
+					return;
+				}
+
+				TArray<FCut> Cuts;
+				TArray<FString> Parts;
+
+				MeasureCuts(Fight.Player, Tolerance, Cuts, Found->Lines.IsEmpty() ? &Parts : nullptr);
+
+				for (const FString& Part : Parts)
+				{
+					UE_LOG(LogGut, Log, TEXT("[cuts] %s wears: %s"), *Found->Who, *Part);
+				}
+
+				const FCut* Worst = nullptr;
+
+				for (const FCut& Cut : Cuts)
+				{
+					if (Cut.Points < 6 || Cut.Deepest < Tolerance * 1.5f)
+					{
+						continue;
+					}
+
+					UE_LOG(LogGut, Log, TEXT("[cuts] %s | %s | %s | %s | %d | %.1f"), *Found->Who, *Found->Stood, *Cut.Garment, *Cut.Region, Cut.Points, Cut.Deepest);
+
+					TSharedRef<FJsonObject> Line = MakeShared<FJsonObject>();
+
+					Line->SetStringField(TEXT("who"), Found->Who);
+					Line->SetStringField(TEXT("stood"), Found->Stood);
+					Line->SetStringField(TEXT("garment"), Cut.Garment);
+					Line->SetStringField(TEXT("where"), Cut.Region);
+					Line->SetNumberField(TEXT("points"), Cut.Points);
+					Line->SetNumberField(TEXT("deep"), Cut.Deepest);
+
+					Found->Lines.Add(MakeShared<FJsonValueObject>(Line));
+
+					if (Cut.Points >= 20 && Cut.Deepest >= Shown && (!Worst || Cut.Deepest * Cut.Points > Worst->Deepest * Worst->Points))
+					{
+						Worst = &Cut;
+					}
+				}
+
+				if (Found->Lines.IsEmpty())
+				{
+					// so that a body with nothing wrong is told from one that was never measured
+					TSharedRef<FJsonObject> Line = MakeShared<FJsonObject>();
+
+					Line->SetStringField(TEXT("who"), Found->Who);
+					Line->SetStringField(TEXT("stood"), Found->Stood);
+					Line->SetNumberField(TEXT("points"), 0);
+
+					Found->Lines.Add(MakeShared<FJsonValueObject>(Line));
+				}
+
+				FString Text;
+				FJsonSerializer::Serialize(Found->Lines, TJsonWriterFactory<>::Create(&Text));
+				FFileHelper::SaveStringToFile(Text, *(FPaths::ProjectSavedDir() / TEXT("GutCuts") / (Found->Who + TEXT(".json"))));
+
+				if (Worst)
+				{
+					// from where it shows: out from the skin there, level, a metre off
+					FVector Out = Worst->Outward.GetSafeNormal2D();
+
+					if (Out.IsNearlyZero())
+					{
+						Out = Fight.Player->GetActorForwardVector();
+					}
+
+					LookFrom(Fight, { TEXT("cut"), Worst->Where + (Out * 105.0f) + FVector(0.0f, 0.0f, 12.0f), Worst->Where, 34.0f, NAME_None });
+
+					Found->bPicture = true;
+				}
+			} });
+
+			Steps.Add({ 0.3f, [Found](const FFight& Fight)
+			{
+				if (Found->bPicture)
+				{
+					Screenshot(FString::Printf(TEXT("cuts_%s_%s"), *Found->Who, *Found->Stood));
+				}
+			} });
+
+			if (bWhole)
+			{
+				// a picture is of the view that was set the step before it: each view has a step to itself
+				for (int32 Side = 0; Side < 2; ++Side)
+				{
+					Steps.Add({ 0.05f, [Found, Side](const FFight& Fight)
+					{
+						if (!Found->Stood.IsEmpty())
+						{
+							const float Way = Side == 0 ? 1.0f : -1.0f;
+
+							// the field of view is the width of a wide picture: on an upright one this takes in the whole figure
+							LookFrom(Fight, { TEXT("whole"), FVector(330.0f * Way, 190.0f * Way, 25.0f), FVector(0.0f, 0.0f, -3.0f), 58.0f, FName("pelvis") });
+						}
+					} });
+
+					Steps.Add({ 0.3f, [Found, Side](const FFight& Fight)
+					{
+						if (!Found->Stood.IsEmpty())
+						{
+							Screenshot(FString::Printf(TEXT("whole_%s_%s_%s"), *Found->Who, *Found->Stood, Side == 0 ? TEXT("a") : TEXT("b")));
+
+							Found->bPicture = true;
+						}
+					} });
+				}
+			}
+
+			Steps.Add({ 0.05f, [Found](const FFight& Fight)
+			{
+				if (Found->bPicture)
+				{
+					LookFrom(Fight, { TEXT("near"), FVector(260.0f, 0.0f, 0.0f), FVector(0.0f, 0.0f, 0.0f), 40.0f, FName("pelvis") });
+				}
+			} });
+		}
+
+		Steps.Add({ 0.2f, [](const FFight& Fight)
+		{
+			// the last body's own is let go before the next is brought in: seventy of them do not fit in memory at once
+			GEngine->ForceGarbageCollection(true);
+		} });
+	}
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScriptCommand(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Ashmarket.Fit.Blink    Pictures of a face at ease, close, ten a second for seven seconds, to see whether it blinks and
+ *                         its eyes move (for-review/screenshots, blink_<who>_NN). -GutFitBodies=A+B names who.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGutFitBlinkTest, "Ashmarket.Fit.Blink", GutTests::Flags)
+
+bool FGutFitBlinkTest::RunTest(const FString& Parameters)
+{
+	using namespace GutTests;
+	using namespace GutLookTests;
+	using FStep = FScriptCommand::FStep;
+
+	FString Named;
+
+	if (!FApp::CanEverRender() || !FParse::Value(FCommandLine::Get(), TEXT("GutFitBodies="), Named))
+	{
+		return true;
+	}
+
+	if (!OpenCage(this))
+	{
+		return false;
+	}
+
+	TArray<FString> Bodies;
+	Named.ParseIntoArray(Bodies, TEXT("+"), true);
+
+	TArray<FStep> Steps;
+
+	Steps.Add({ 0.3f, [this](const FFight& Fight)
+	{
+		DisableEnemyBrain(this, Fight);
+
+		Fight.GameMode->SetHazardsEnabled(false);
+		Fight.GameMode->StartFight();
+
+		PlaceAt(Fight.Player, 0.0f, 0.0f, 0.0f);
+		PlaceAt(Fight.Enemy, 600.0f, 420.0f, 180.0f);
+	} });
+
+	for (const FString& Who : Bodies)
+	{
+		Steps.Add({ 2.5f, [this, Who](const FFight& Fight)
+		{
+			const TSoftClassPtr<AActor> Body(FSoftObjectPath(FString::Printf(TEXT("/Game/Gut/Art/MetaHumans/%s/BP_%s.BP_%s_C"), *Who, *Who, *Who)));
+
+			if (TestNotNull(*FString::Printf(TEXT("There is a body called %s"), *Who), Body.LoadSynchronous()))
+			{
+				Fight.Player->SetBody(Body, Fight.Player->GetBodyRetargeter());
+			}
+
+			Fight.Player->ClearArmor();
+			Fight.Player->EquipWeapon(nullptr);
+			Fight.Player->SetCollared(false);
+			Fight.Player->SetBound(false);
+			Fight.Player->SetAtEase(true);
+
+			LookFrom(Fight, { TEXT("face"), FVector(62.0f, 10.0f, 2.0f), FVector(0.0f, 0.0f, 3.0f), 24.0f, FName("head") });
+		} });
+
+		// -GutFitSpeak=/Game/Town/Voices/main_street/Faces/warden_loop_face has the face say that line as the pictures begin
+		Steps.Add({ 0.05f, [](const FFight& Fight)
+		{
+			FString Line;
+
+			if (FParse::Value(FCommandLine::Get(), TEXT("GutFitSpeak="), Line))
+			{
+				const FString Name = FPaths::GetBaseFilename(Line);
+
+				Fight.Player->Speak(LoadObject<UAnimSequenceBase>(nullptr, *FString::Printf(TEXT("%s.%s"), *Line, *Name)));
+
+				// from in front of where the face is turned, wide enough to hold the whole of it
+				const USkeletalMeshComponent* Seen = Fight.Player->GetShownMesh();
+				const FTransform Head = Seen->GetBoneTransform(Seen->GetBoneIndex(FName("head")));
+				const FVector Middle = Head.GetLocation() + (Fight.Player->GetActorForwardVector() * 6.0f) + FVector(0.0f, 0.0f, 16.0f);
+
+				LookFrom(Fight, { TEXT("mouth"), Middle + (Fight.Player->GetActorForwardVector() * 70.0f), Middle, 22.0f, NAME_None });
+			}
+		} });
+
+		for (int32 i = 0; i < 70; ++i)
+		{
+			Steps.Add({ 0.1f, [Who, i](const FFight& Fight) { Screenshot(FString::Printf(TEXT("blink_%s_%02d"), *Who, i)); } });
 		}
 	}
 

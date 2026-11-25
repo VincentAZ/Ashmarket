@@ -7,6 +7,7 @@
 # Set GUT_ARGS to pass more to the engine, for example GUT_ARGS=-GutNoBodies to fight as the placeholder skeletons.
 # Set GUT_CVARS to set renderer variables for a rendered run, for example GUT_CVARS=r.Lumen.DiffuseIndirect.Allow=0.
 # Set GUT_SOUND=1 to have sound in a rendered run (worked out with the game, not played aloud).
+# Set GUT_RESX and GUT_RESY for a picture of another shape, for example 2560 and 720 for a 32:9 screen.
 # Set GUT_TESTS to run only some of them, for example GUT_TESTS=Ashmarket.Gut.Hazard for the three hazard tests.
 set -uo pipefail
 
@@ -20,7 +21,7 @@ if [[ "${1:-}" == "--render" ]]; then
 	# slows the run down without changing what happens in it
 	# strand hair stalls the off-screen renderer in this engine build and simulated hair flies apart in it,
 	# so hair is drawn here as cards that do not move
-	RENDER_ARGS="-RenderOffscreen -windowed -ResX=1600 -ResY=900 -DPCVars=r.HairStrands.Strands=0,r.HairStrands.Simulation=0${GUT_CVARS:+,$GUT_CVARS} -UseFixedTimeStep -FPS=60"
+	RENDER_ARGS="-RenderOffscreen -windowed -ResX=${GUT_RESX:-1600} -ResY=${GUT_RESY:-900} -DPCVars=r.HairStrands.Strands=0,r.HairStrands.Simulation=0${GUT_CVARS:+,$GUT_CVARS} -UseFixedTimeStep -FPS=60"
 fi
 
 # no sound, unless GUT_SOUND=1: then the sound is worked out frame by frame with the game, not played, so that a run
@@ -31,10 +32,11 @@ if [[ -n "${GUT_SOUND:-}" ]]; then
 	SOUND_ARGS="-DeterministicAudio"
 fi
 
-LOG="$PROJECT_DIR/Saved/Logs/gut_tests.log"
+# GUT_LOG names another log, so that a rendered run and a plain one can go on at the same time
+LOG="${GUT_LOG:-$PROJECT_DIR/Saved/Logs/gut_tests.log}"
 
 # what the process itself printed, kept in case it dies without finishing its log
-OUT="$PROJECT_DIR/Saved/Logs/gut_tests.out"
+OUT="${LOG%.log}.out"
 
 "$UE_ROOT/Engine/Binaries/Linux/UnrealEditor-Cmd" "$PROJECT_DIR/Ashmarket.uproject" /Game/Gut/Lvl_Gut -game $RENDER_ARGS \
 	-unattended -nosplash $SOUND_ARGS -nopause -forcelogflush -GutNoSave ${GUT_ARGS:-} \

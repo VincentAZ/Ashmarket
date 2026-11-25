@@ -102,7 +102,9 @@ bool UGutGameInstance::BuyArmor(const UGutLadderData* Rank, int32 ShopIndex, flo
 void UGutGameInstance::ResetLadder(float StartingWater)
 {
 	Ladder = FGutLadderState();
-	Ladder.Water = StartingWater;
+
+	// with one purse a fighter starts with what the player already holds
+	Ladder.Water = GetStartingWater(StartingWater);
 
 	LadderAtRungStart = Ladder;
 
@@ -147,11 +149,81 @@ void UGutGameInstance::AddToBag(FName Good, int32 Count)
 	Bag.RemoveAll([](const FGutBagItem& One) { return One.Count <= 0; });
 }
 
+void UGutGameInstance::ShareWater()
+{
+	static const bool bApart = FParse::Param(FCommandLine::Get(), TEXT("GutThreePurses"));
+
+	// a sitting that is running the automation tests: the engine's own flag for that is only up while a test is being
+	// started, not while its steps run
+	static const bool bUnderTest = FString(FCommandLine::Get()).Contains(TEXT("Automation RunTests"));
+
+	if (bApart || (bUnderTest && !bSharesWaterInTests))
+	{
+		return;
+	}
+
+	float* Held[3] = { &Ladder.Water, &Window.Water, &Stable.Water };
+	const bool bBegun[3] = { bLadderStarted, Window.bStarted, Stable.bStarted };
+
+	if (!bOnePurse)
+	{
+		// the first time: everything the player holds, whichever way they came by it, is what they hold
+		bool bAny = false;
+
+		Purse = 0.0f;
+
+		for (int32 i = 0; i < 3; ++i)
+		{
+			if (bBegun[i])
+			{
+				Purse += *Held[i];
+				bAny = true;
+			}
+		}
+
+		if (!bAny)
+		{
+			Purse = FirstWater;
+		}
+
+		bOnePurse = true;
+
+		UE_LOG(LogGut, Log, TEXT("Purse: one purse from now on, holding %.0f L"), Purse);
+	}
+	else if (bPurseSeen)
+	{
+		// whatever any of the three has gained or spent since
+		for (int32 i = 0; i < 3; ++i)
+		{
+			Purse += *Held[i] - PurseSeen[i];
+		}
+	}
+
+	// and each of them holds what the player holds. Only a fighter can be in the pit boss's debt on the slate: nobody
+	// bets or buys with water they have not got.
+	for (int32 i = 0; i < 3; ++i)
+	{
+		*Held[i] = i == 0 ? Purse : FMath::Max(Purse, 0.0f);
+		PurseSeen[i] = *Held[i];
+	}
+
+	// the fight a fighter comes back to after dying is come back to with what they hold now
+	LadderAtRungStart.Water = Ladder.Water;
+
+	bPurseSeen = true;
+}
+
 bool UGutGameInstance::SaveRun()
 {
 	if (!bSaveEnabled || !(bLadderStarted || Window.bStarted || Stable.bStarted))
 	{
 		return false;
+	}
+
+	// what is written down is one purse
+	if (bOnePurse)
+	{
+		ShareWater();
 	}
 
 	UGutSaveGame* Save = Cast<UGutSaveGame>(UGameplayStatics::CreateSaveGameObject(UGutSaveGame::StaticClass()));
@@ -165,6 +237,9 @@ bool UGutGameInstance::SaveRun()
 	Save->Stable = Stable;
 	Save->Bag = Bag;
 	Save->Roster = Roster;
+	Save->Purse = Purse;
+	Save->bOnePurse = bOnePurse;
+	Save->Found = Found;
 
 	return UGameplayStatics::SaveGameToSlot(Save, SaveSlotName, 0);
 }
@@ -192,6 +267,13 @@ bool UGutGameInstance::LoadRun()
 	Stable = Save->Stable;
 	Bag = Save->Bag;
 	Roster = Save->Roster;
+
+	// the purse as it was written down: the three are set to it the next time water is shared, with nothing counted as
+	// gained or spent in between
+	Purse = Save->Purse;
+	bOnePurse = Save->bOnePurse;
+	Found = Save->Found;
+	bPurseSeen = false;
 
 	// a run written down before the dead were counted once for all three: whoever the window and the yard each knew to be dead
 	if (Roster.Dead.IsEmpty())
@@ -238,6 +320,10 @@ bool UGutGameInstance::IsLenderInTown() const
 void UGutGameInstance::GoToStreet(const UObject* WorldContext)
 {
 	SaveRun();
+
+	// the cage's screens are not drawn again: the level is on its way out, and the last picture of it stays up while the
+	// street loads. With the ways in already forgotten it would be the wrong card (a fighter's, over an owner's yard).
+	bGoingToStreet = true;
 
 	// nobody is in the cage in any of its ways while they are in the street
 	bAtDoor = false;

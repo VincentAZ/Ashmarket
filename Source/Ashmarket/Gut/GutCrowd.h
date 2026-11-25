@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GutTypes.h"
 #include "GutCrowd.generated.h"
 
 class UIKRetargeter;
@@ -46,6 +47,20 @@ protected:
 	/** Ways of standing and watching. Each spectator is dealt one. If empty, everybody uses the Idle Animation. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Crowd")
 	TArray<TObjectPtr<UAnimSequenceBase>> IdleAnimations;
+
+	/**
+	 *  Ways of standing and watching that are each several clips from one stance, gone through one after another. Where there
+	 *  are any, each spectator is dealt one of these and not one of the single clips above.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Crowd")
+	TArray<FGutStandFamily> Families;
+
+	/**
+	 *  If true, the murmur of this crowd is heard by how near the listener is to it: full among them, a little of it from
+	 *  the far end of the street. For people standing about a town. A deck round a cage is all round whoever is in it.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Crowd")
+	bool bMurmurByNearness = false;
 
 	/** Ways of cheering. One is picked each time a spectator cheers. If empty, everybody uses the Cheer Animation. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Crowd")
@@ -126,6 +141,12 @@ protected:
 		int32 PersonIndex = INDEX_NONE;
 		FLinearColor Tint = FLinearColor::Black;
 
+		/** Which family of standing it was dealt, which clip of it it is in, how long that has left, and how fast it plays them */
+		int32 Family = INDEX_NONE;
+		int32 FamilyLoop = INDEX_NONE;
+		float FamilyLeft = 0.0f;
+		float FamilyRate = 1.0f;
+
 		/** Time left of the cheer it is in the middle of. Zero when it is only watching. */
 		float CheerTimeLeft = 0.0f;
 
@@ -134,6 +155,15 @@ protected:
 	};
 
 	TArray<FSpectator> Spectators;
+
+	/** What a crowd that is not at a fight is watching, in the world, if it has been told: see SetWatched */
+	TOptional<FVector> Watched;
+
+	/** Turns each head to what its owner is looking at */
+	void TurnHeads();
+
+	/** How much of its murmur is heard now, eased toward what the listener's nearness asks for */
+	float MurmurShare = 1.0f;
 
 	/** The noise of the crowd standing about, and how many of them it was started for */
 	int32 Murmur = INDEX_NONE;
@@ -167,6 +197,10 @@ protected:
 
 public:
 
+	/** How many of this crowd stand within a distance of a place, and how far off the nearest of them is (a great way if there are none) */
+	int32 CountNear(const FVector& Where, float Radius, float* OutNearest = nullptr) const;
+
+
 	/** Constructor */
 	AGutCrowd();
 
@@ -195,6 +229,12 @@ public:
 	/** Returns the number of spectators on the deck */
 	UFUNCTION(BlueprintPure, Category="Gut|Crowd")
 	int32 GetNumSpectators() const { return Spectators.Num(); }
+
+	/**
+	 *  Gives the crowd something to watch: a place in the world its heads are turned to, such as a sale on a block. At a
+	 *  fight it watches the fight whatever it was told, and anybody turns to whoever walks up to them.
+	 */
+	void SetWatched(const FVector& Place) { Watched = Place; }
 
 	/** Returns true while the crowd is yelling at a fight that is going on */
 	UFUNCTION(BlueprintPure, Category="Gut|Crowd")

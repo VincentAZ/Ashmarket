@@ -1,0 +1,4354 @@
+{
+ "packs": {
+  "mc_idles": {
+   "mesh": "/Game/MC_Idles_Pack/Demo/Characters/MCUE5v2/Meshes/SKM_MCUE5v2"
+  },
+  "mc_core": {
+   "mesh": "/Game/MC_Core_Motion/Demo/Characters/MCPaul/Meshes/SKM_MCPaul"
+  },
+  "fight": {
+   "mesh": "/Game/FightingAnimsetPro/UE4_Mannequin/Mesh/SK_Mannequin"
+  },
+  "sword": {
+   "mesh": "/Game/SwordAnimsetPro/UE4_Mannequin/Mesh/SK_Mannequin"
+  },
+  "punch": {
+   "mesh": "/Game/Punch_Pro/Character/Mesh/SK_Mannequin"
+  },
+  "finish": {
+   "mesh": "/Game/Brutal_Finishers_Hand_and_Knife/Demo/Mannequin/Character/Mesh/SK_Mannequin"
+  }
+ },
+ "clips": {
+  "bf_animseq_idle_h2h": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Idle/AnimSeq_Idle_H2H"
+  },
+  "bf_animseq_idle_knife": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Idle/AnimSeq_Idle_Knife"
+  },
+  "bf_animseq_idle_knife_excited": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Idle/AnimSeq_Idle_Knife_Excited"
+  },
+  "bf_animseq_paired_h2h_brick_smashhead_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_Brick_SmashHead_Att"
+  },
+  "bf_animseq_paired_h2h_brick_smashhead_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_Brick_SmashHead_Vic"
+  },
+  "bf_animseq_paired_h2h_eyegouge_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_EyeGouge_Att"
+  },
+  "bf_animseq_paired_h2h_eyegouge_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_EyeGouge_Vic"
+  },
+  "bf_animseq_paired_h2h_grabhead_smashontable_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_GrabHead_SmashOnTable_Att"
+  },
+  "bf_animseq_paired_h2h_grabhead_smashontable_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_GrabHead_SmashOnTable_Vic"
+  },
+  "bf_animseq_paired_h2h_headbutt_punchcombo_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_Headbutt_PunchCombo_Att"
+  },
+  "bf_animseq_paired_h2h_headbutt_punchcombo_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_Headbutt_PunchCombo_Vic"
+  },
+  "bf_animseq_paired_h2h_kneekick_punch_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_KneeKick_Punch_Att"
+  },
+  "bf_animseq_paired_h2h_kneekick_punch_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_KneeKick_Punch_Vic"
+  },
+  "bf_animseq_paired_h2h_punch_left_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_Punch_Left_Att"
+  },
+  "bf_animseq_paired_h2h_punch_left_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_Punch_Left_Vic"
+  },
+  "bf_animseq_paired_h2h_punch_right_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_Punch_Right_Att"
+  },
+  "bf_animseq_paired_h2h_punch_right_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_Punch_Right_Vic"
+  },
+  "bf_animseq_paired_h2h_punch_stomach_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_Punch_Stomach_Att"
+  },
+  "bf_animseq_paired_h2h_punch_stomach_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_H2H/AnimSeq_Paired_H2H_Punch_Stomach_Vic"
+  },
+  "bf_animseq_paired_knife_ducknbackstab_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_DuckNBackStab_Att"
+  },
+  "bf_animseq_paired_knife_ducknbackstab_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_DuckNBackStab_Vic"
+  },
+  "bf_animseq_paired_knife_highblock_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_HighBlock_Att"
+  },
+  "bf_animseq_paired_knife_highblock_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_HighBlock_Vic"
+  },
+  "bf_animseq_paired_knife_midblock_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_MidBlock_Att"
+  },
+  "bf_animseq_paired_knife_midblock_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_MidBlock_Vic"
+  },
+  "bf_animseq_paired_knife_neck_stab_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Neck_Stab_Att"
+  },
+  "bf_animseq_paired_knife_neck_stab_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Neck_Stab_Vic"
+  },
+  "bf_animseq_paired_knife_shove_neckslice_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_NeckSlice_Att"
+  },
+  "bf_animseq_paired_knife_shove_neckslice_cancelend_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_NeckSlice_CancelEnd_Att"
+  },
+  "bf_animseq_paired_knife_shove_neckslice_cancelend_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_NeckSlice_CancelEnd_Vic"
+  },
+  "bf_animseq_paired_knife_shove_neckslice_killend_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_NeckSlice_KillEnd_Att"
+  },
+  "bf_animseq_paired_knife_shove_neckslice_killend_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_NeckSlice_KillEnd_Vic"
+  },
+  "bf_animseq_paired_knife_shove_neckslice_loop_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_NeckSlice_Loop_Att"
+  },
+  "bf_animseq_paired_knife_shove_neckslice_loop_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_NeckSlice_Loop_Vic"
+  },
+  "bf_animseq_paired_knife_shove_neckslice_quick_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_NeckSlice_Quick_Att"
+  },
+  "bf_animseq_paired_knife_shove_neckslice_quick_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_NeckSlice_Quick_Vic"
+  },
+  "bf_animseq_paired_knife_shove_neckslice_start_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_NeckSlice_Start_Att"
+  },
+  "bf_animseq_paired_knife_shove_neckslice_start_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_NeckSlice_Start_Vic"
+  },
+  "bf_animseq_paired_knife_shove_neckslice_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_NeckSlice_Vic"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_Att"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_deathend_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_DeathEnd_Vic"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_end_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_End_Att"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_idleend_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_IdleEnd_Vic"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_idleloop_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_IdleLoop_Att"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_idleloop_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_IdleLoop_Vic"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_quick_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_Quick_Att"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_quick_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_Quick_Vic"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_stabloop_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_StabLoop_Att"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_stabloop_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_StabLoop_Vic"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_start_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_Start_Att"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_start_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_Start_Vic"
+  },
+  "bf_animseq_paired_knife_shove_totable_stab_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Shove_toTable_Stab_Vic"
+  },
+  "bf_animseq_paired_knife_slash_face_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Slash_Face_Att"
+  },
+  "bf_animseq_paired_knife_slash_face_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Slash_Face_Vic"
+  },
+  "bf_animseq_paired_knife_slash_midsection_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Slash_MidSection_Att"
+  },
+  "bf_animseq_paired_knife_slash_midsection_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Slash_MidSection_Vic"
+  },
+  "bf_animseq_paired_knife_stab_heart_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Stab_Heart_Att"
+  },
+  "bf_animseq_paired_knife_stab_heart_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Stab_Heart_Vic"
+  },
+  "bf_animseq_paired_knife_stab_midsection_att": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Stab_MidSection_Att"
+  },
+  "bf_animseq_paired_knife_stab_midsection_vic": {
+   "pack": "finish",
+   "from": "/Game/Brutal_Finishers_Hand_and_Knife/Animations/Paired_Knife/AnimSeq_Paired_Knife_Stab_MidSection_Vic"
+  },
+  "kb_axekick": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_AxeKick"
+  },
+  "kb_block_end": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Block_End"
+  },
+  "kb_block_loop": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Block_Loop"
+  },
+  "kb_block_single": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Block_Single"
+  },
+  "kb_block_start": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Block_Start"
+  },
+  "kb_crouch_block_end": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_Block_End"
+  },
+  "kb_crouch_block_loop": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_Block_Loop"
+  },
+  "kb_crouch_block_single": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_Block_Single"
+  },
+  "kb_crouch_block_start": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_Block_Start"
+  },
+  "kb_crouch_end": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_End"
+  },
+  "kb_crouch_hit_p_midfront_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_Hit_p_MidFront_Weak"
+  },
+  "kb_crouch_hit_p_midleft_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_Hit_p_MidLeft_Weak"
+  },
+  "kb_crouch_hit_p_midright_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_Hit_p_MidRight_Weak"
+  },
+  "kb_crouch_idle": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_Idle"
+  },
+  "kb_crouch_idle_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_Idle_1"
+  },
+  "kb_crouch_m_lowkickround_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_m_LowKickRound_R"
+  },
+  "kb_crouch_m_uppercut_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_m_Uppercut_R"
+  },
+  "kb_crouch_m_uppercut_r_2": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_m_Uppercut_R_2"
+  },
+  "kb_crouch_midko": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_MidKO"
+  },
+  "kb_crouch_midko_back": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_MidKO_Back"
+  },
+  "kb_crouch_p_jab_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_p_Jab_L"
+  },
+  "kb_crouch_p_jab_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_p_Jab_R"
+  },
+  "kb_crouch_p_lowkick_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_p_LowKick_L"
+  },
+  "kb_crouch_p_lowkickround_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_p_LowKickRound_R"
+  },
+  "kb_crouch_p_uppercut_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_p_Uppercut_L"
+  },
+  "kb_crouch_p_uppercut_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_p_Uppercut_R"
+  },
+  "kb_crouch_sidestep_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_Sidestep_L"
+  },
+  "kb_crouch_sidestep_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_Sidestep_R"
+  },
+  "kb_crouch_start": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_Start"
+  },
+  "kb_crouch_turnl_90": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_TurnL_90"
+  },
+  "kb_crouch_turnr_90": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_TurnR_90"
+  },
+  "kb_crouch_walkbwd": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_WalkBwd"
+  },
+  "kb_crouch_walkfwd": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_WalkFwd"
+  },
+  "kb_crouch_walkleft135": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_WalkLeft135"
+  },
+  "kb_crouch_walkleft45": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_WalkLeft45"
+  },
+  "kb_crouch_walkright135": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_WalkRight135"
+  },
+  "kb_crouch_walkright45": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_crouch_WalkRight45"
+  },
+  "kb_dodge_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Dodge_L"
+  },
+  "kb_dodge_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Dodge_R"
+  },
+  "kb_getupback": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_GetUpBack"
+  },
+  "kb_getupback180": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_GetUpBack180"
+  },
+  "kb_getupface": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_GetUpFace"
+  },
+  "kb_getupface180": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_GetUpFace180"
+  },
+  "kb_groundattack": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_GroundAttack"
+  },
+  "kb_highko_air": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_HighKO_Air"
+  },
+  "kb_highko_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_HighKO_L"
+  },
+  "kb_highko_powerful": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_HighKO_Powerful"
+  },
+  "kb_highko_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_HighKO_R"
+  },
+  "kb_hit_m_highback_stagger": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_HighBack_Stagger"
+  },
+  "kb_hit_m_highback_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_HighBack_Weak"
+  },
+  "kb_hit_m_highfront_med": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_HighFront_Med"
+  },
+  "kb_hit_m_highfront_stagger": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_HighFront_Stagger"
+  },
+  "kb_hit_m_highfront_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_HighFront_Weak"
+  },
+  "kb_hit_m_highleft_med": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_HighLeft_Med"
+  },
+  "kb_hit_m_highleft_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_HighLeft_Weak"
+  },
+  "kb_hit_m_highright_med": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_HighRight_Med"
+  },
+  "kb_hit_m_highright_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_HighRight_Weak"
+  },
+  "kb_hit_m_lowleft_med": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_LowLeft_Med"
+  },
+  "kb_hit_m_lowleft_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_LowLeft_Weak"
+  },
+  "kb_hit_m_lowright_med": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_LowRight_Med"
+  },
+  "kb_hit_m_lowright_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_LowRight_Weak"
+  },
+  "kb_hit_m_midback_med": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_MidBack_Med"
+  },
+  "kb_hit_m_midfront_med": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_MidFront_Med"
+  },
+  "kb_hit_m_midfront_stagger": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_MidFront_Stagger"
+  },
+  "kb_hit_m_midfront_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_MidFront_Weak"
+  },
+  "kb_hit_m_midleft_med": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_MidLeft_Med"
+  },
+  "kb_hit_m_midleft_stagger": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_MidLeft_Stagger"
+  },
+  "kb_hit_m_midleft_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_MidLeft_Weak"
+  },
+  "kb_hit_m_midright_med": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_MidRight_Med"
+  },
+  "kb_hit_m_midright_stagger": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_MidRight_Stagger"
+  },
+  "kb_hit_m_midright_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_MidRight_Weak"
+  },
+  "kb_hit_m_midtop_med": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_m_MidTop_Med"
+  },
+  "kb_hit_p_highfront_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_p_HighFront_Weak"
+  },
+  "kb_hit_p_highleft_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_p_HighLeft_Weak"
+  },
+  "kb_hit_p_highright_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_p_HighRight_Weak"
+  },
+  "kb_hit_p_highupper_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_p_HighUpper_Weak"
+  },
+  "kb_hit_p_lowleft_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_p_LowLeft_Weak"
+  },
+  "kb_hit_p_lowright_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_p_LowRight_Weak"
+  },
+  "kb_hit_p_midfront_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_p_MidFront_Weak"
+  },
+  "kb_hit_p_midleft_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_p_MidLeft_Weak"
+  },
+  "kb_hit_p_midright_weak": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Hit_p_MidRight_Weak"
+  },
+  "kb_idle_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Idle_1"
+  },
+  "kb_idle_2": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Idle_2"
+  },
+  "kb_idle_3": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Idle_3"
+  },
+  "kb_idle_4": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Idle_4"
+  },
+  "kb_idle_5": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Idle_5"
+  },
+  "kb_idle_6": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Idle_6"
+  },
+  "kb_idle_7": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Idle_7"
+  },
+  "kb_ko_head": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_KO_Head"
+  },
+  "kb_layback_roll": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_LayBack_Roll"
+  },
+  "kb_lowko_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_LowKO_L"
+  },
+  "kb_lowko_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_LowKO_R"
+  },
+  "kb_m_backelbow_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Backelbow_L"
+  },
+  "kb_m_backelbow_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Backelbow_R"
+  },
+  "kb_m_backelbow_uppercut_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Backelbow_Uppercut_R"
+  },
+  "kb_m_backfistround_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_BackfistRound_L"
+  },
+  "kb_m_backfistround_l2": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_BackfistRound_L2"
+  },
+  "kb_m_backfistround_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_BackfistRound_R"
+  },
+  "kb_m_backfistroundfar_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_BackfistRoundFar_R"
+  },
+  "kb_m_backkick_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_BackKick_R"
+  },
+  "kb_m_backswing_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Backswing_L"
+  },
+  "kb_m_backswing_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Backswing_R"
+  },
+  "kb_m_duck": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Duck"
+  },
+  "kb_m_duck_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Duck_L"
+  },
+  "kb_m_duck_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Duck_R"
+  },
+  "kb_m_elbowround_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_ElbowRound_L"
+  },
+  "kb_m_elbowround_l2": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_ElbowRound_L2"
+  },
+  "kb_m_elbowround_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_ElbowRound_R"
+  },
+  "kb_m_highkick_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_HighKick_R"
+  },
+  "kb_m_highkick_r_2": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_HighKick_R_2"
+  },
+  "kb_m_highkickround_l_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_HighKickRound_L_1"
+  },
+  "kb_m_highkickround_r_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_HighKickRound_R_1"
+  },
+  "kb_m_hook_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Hook_L"
+  },
+  "kb_m_hook_lr_combo": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Hook_LR_combo"
+  },
+  "kb_m_hook_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Hook_R"
+  },
+  "kb_m_jab_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Jab_L"
+  },
+  "kb_m_jab_lr_combo": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Jab_LR_combo"
+  },
+  "kb_m_jab_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Jab_R"
+  },
+  "kb_m_jab_rlhook_combo": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Jab_RLhook_combo"
+  },
+  "kb_m_jab_rlhookrmidkick_combo": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Jab_RLhookRMidKick_combo"
+  },
+  "kb_m_kickuppercut_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_KickUppercut_R"
+  },
+  "kb_m_kneeleft": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_KneeLeft"
+  },
+  "kb_m_kneeright": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_KneeRight"
+  },
+  "kb_m_lowkickl_special": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_LowKickL_Special"
+  },
+  "kb_m_lowkickround_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_LowKickRound_R"
+  },
+  "kb_m_midkick_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_MidKick_L"
+  },
+  "kb_m_midkick_l_2": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_MidKick_L_2"
+  },
+  "kb_m_midkick_ll_2_combo": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_MidKick_LL_2_combo"
+  },
+  "kb_m_midkick_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_MidKick_R"
+  },
+  "kb_m_midkick_r_2": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_MidKick_R_2"
+  },
+  "kb_m_midkickback_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_MidKickBack_L"
+  },
+  "kb_m_midkickback_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_MidKickBack_R"
+  },
+  "kb_m_midkickroud_l_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_MidKickRoud_L_1"
+  },
+  "kb_m_midkickroud_r_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_MidKickRoud_R_1"
+  },
+  "kb_m_midkickstraight_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_MidKickStraight_R"
+  },
+  "kb_m_midrabbitkick_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_MidRabbitKick_R"
+  },
+  "kb_m_midrabbitkick_r_combo": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_MidRabbitKick_R_combo"
+  },
+  "kb_m_onetwo": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_OneTwo"
+  },
+  "kb_m_overhand_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Overhand_L"
+  },
+  "kb_m_overhand_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Overhand_R"
+  },
+  "kb_m_roundhousekickright": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_RoundhouseKickRight"
+  },
+  "kb_m_sidekickleft": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_SideKickLeft"
+  },
+  "kb_m_uppercut_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Uppercut_L"
+  },
+  "kb_m_uppercut_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_m_Uppercut_R"
+  },
+  "kb_midblock_l_single": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_MidBlock_L_Single"
+  },
+  "kb_midblock_r_single": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_MidBlock_R_Single"
+  },
+  "kb_midkickstraightlong": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_MidKickStraightLong"
+  },
+  "kb_midko": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_MidKO"
+  },
+  "kb_midko_back": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_MidKO_Back"
+  },
+  "kb_midko_powerful": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_MidKO_Powerful"
+  },
+  "kb_p_doublehooks": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_DoubleHooks"
+  },
+  "kb_p_doublejab": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_DoubleJab"
+  },
+  "kb_p_duck": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Duck"
+  },
+  "kb_p_elbow_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Elbow_L"
+  },
+  "kb_p_elbow_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Elbow_R"
+  },
+  "kb_p_elbow_top_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Elbow_Top_L"
+  },
+  "kb_p_elbow_top_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Elbow_Top_R"
+  },
+  "kb_p_highkick_r_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_HighKick_R_1"
+  },
+  "kb_p_highkickstraight_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_HighKickStraight_R"
+  },
+  "kb_p_hook_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Hook_L"
+  },
+  "kb_p_hook_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Hook_R"
+  },
+  "kb_p_jab_l_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Jab_L_1"
+  },
+  "kb_p_jab_ll_combo": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Jab_LL_combo"
+  },
+  "kb_p_jab_lr_combo": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Jab_LR_combo"
+  },
+  "kb_p_jab_lrl_combo": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Jab_LRL_combo"
+  },
+  "kb_p_jab_r_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Jab_R_1"
+  },
+  "kb_p_lowkick_l_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_LowKick_L_1"
+  },
+  "kb_p_lowkick_r_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_LowKick_R_1"
+  },
+  "kb_p_lowkick_r_2": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_LowKick_R_2"
+  },
+  "kb_p_midhook_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_MidHook_L"
+  },
+  "kb_p_midhook_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_MidHook_R"
+  },
+  "kb_p_midjab_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_MidJab_L"
+  },
+  "kb_p_midjab_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_MidJab_R"
+  },
+  "kb_p_midkick_l_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_MidKick_L_1"
+  },
+  "kb_p_midkick_r_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_MidKick_R_1"
+  },
+  "kb_p_midkickfront_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_MidKickFront_L"
+  },
+  "kb_p_midkickfront_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_MidKickFront_R"
+  },
+  "kb_p_midkickstraight_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_MidKickStraight_R"
+  },
+  "kb_p_miduppercut_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_MidUppercut_L"
+  },
+  "kb_p_miduppercut_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_MidUppercut_R"
+  },
+  "kb_p_onetwo": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_OneTwo"
+  },
+  "kb_p_onetwothree": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_OneTwoThree"
+  },
+  "kb_p_rabbitpunch_end": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_RabbitPunch_End"
+  },
+  "kb_p_rabbitpunch_loop": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_RabbitPunch_Loop"
+  },
+  "kb_p_uppercut_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Uppercut_L"
+  },
+  "kb_p_uppercut_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_p_Uppercut_R"
+  },
+  "kb_sidestep_l": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Sidestep_L"
+  },
+  "kb_sidestep_r": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_Sidestep_R"
+  },
+  "kb_skipbwd_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_SkipBwd_1"
+  },
+  "kb_skipbwd_2": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_SkipBwd_2"
+  },
+  "kb_skipfwd_1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_SkipFwd_1"
+  },
+  "kb_skipfwd_2": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_SkipFwd_2"
+  },
+  "kb_topko": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_TopKO"
+  },
+  "kb_turnl_180": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_TurnL_180"
+  },
+  "kb_turnl_90": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_TurnL_90"
+  },
+  "kb_turnr_180": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_TurnR_180"
+  },
+  "kb_turnr_90": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_TurnR_90"
+  },
+  "kb_upperko": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_UpperKO"
+  },
+  "kb_upperko_2": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_UpperKO_2"
+  },
+  "kb_upperko_flip": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_UpperKO_Flip"
+  },
+  "kb_walkbwd": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_WalkBwd"
+  },
+  "kb_walkfwd1": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_WalkFwd1"
+  },
+  "kb_walkfwd2": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_WalkFwd2"
+  },
+  "kb_walkleft135": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_WalkLeft135"
+  },
+  "kb_walkleft45": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_WalkLeft45"
+  },
+  "kb_walkright135": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_WalkRight135"
+  },
+  "kb_walkright45": {
+   "pack": "fight",
+   "from": "/Game/FightingAnimsetPro/Animations/InPlace/KB_WalkRight45"
+  },
+  "mc_af_loco_jog_bwd": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Bwd_NoRM",
+   "speed": 282.2
+  },
+  "mc_af_loco_jog_bwd_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Bwd_Pivot_NoRM",
+   "speed": 70.9
+  },
+  "mc_af_loco_jog_bwd_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Bwd_Start_NoRM",
+   "speed": 163.7
+  },
+  "mc_af_loco_jog_bwd_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Bwd_Stop_NoRM",
+   "speed": 108.9
+  },
+  "mc_af_loco_jog_bwdleft": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_BwdLeft_NoRM",
+   "speed": 282.2
+  },
+  "mc_af_loco_jog_bwdright": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_BwdRight_NoRM",
+   "speed": 282.2
+  },
+  "mc_af_loco_jog_fwd": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Fwd_NoRM",
+   "speed": 294.2
+  },
+  "mc_af_loco_jog_fwd_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Fwd_Pivot_NoRM",
+   "speed": 25.7
+  },
+  "mc_af_loco_jog_fwd_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Fwd_Start_NoRM",
+   "speed": 220.7
+  },
+  "mc_af_loco_jog_fwd_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Fwd_Stop_NoRM",
+   "speed": 136.0
+  },
+  "mc_af_loco_jog_fwdleft": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_FwdLeft_NoRM",
+   "speed": 294.2
+  },
+  "mc_af_loco_jog_fwdright": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_FwdRight_NoRM",
+   "speed": 294.2
+  },
+  "mc_af_loco_jog_left": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Left_NoRM",
+   "speed": 282.2
+  },
+  "mc_af_loco_jog_left_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Left_Pivot_NoRM",
+   "speed": 70.9
+  },
+  "mc_af_loco_jog_left_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Left_Start_NoRM",
+   "speed": 163.7
+  },
+  "mc_af_loco_jog_left_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Left_Stop_NoRM",
+   "speed": 108.9
+  },
+  "mc_af_loco_jog_right": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Right_NoRM",
+   "speed": 294.3
+  },
+  "mc_af_loco_jog_right_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Right_Pivot_NoRM",
+   "speed": 25.7
+  },
+  "mc_af_loco_jog_right_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Right_Start_NoRM",
+   "speed": 220.7
+  },
+  "mc_af_loco_jog_right_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Right_Stop_NoRM",
+   "speed": 136.0
+  },
+  "mc_af_loco_jog_start_turnl045_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Start_TurnL045_Lfoot_NoRM",
+   "speed": 209.3
+  },
+  "mc_af_loco_jog_start_turnl090_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Start_TurnL090_Lfoot_NoRM",
+   "speed": 209.3
+  },
+  "mc_af_loco_jog_start_turnl135_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Start_TurnL135_Lfoot_NoRM",
+   "speed": 203.9
+  },
+  "mc_af_loco_jog_start_turnl180_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Start_TurnL180_Lfoot_NoRM",
+   "speed": 203.9
+  },
+  "mc_af_loco_jog_start_turnr045_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Start_TurnR045_Rfoot_NoRM",
+   "speed": 230.8
+  },
+  "mc_af_loco_jog_start_turnr090_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Start_TurnR090_Rfoot_NoRM",
+   "speed": 230.8
+  },
+  "mc_af_loco_jog_start_turnr135_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Start_TurnR135_Rfoot_NoRM",
+   "speed": 185.5
+  },
+  "mc_af_loco_jog_start_turnr180_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Jog/af_Loco_Jog_Start_TurnR180_Rfoot_NoRM",
+   "speed": 185.5
+  },
+  "mc_af_loco_run_fwd": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Run/af_Loco_Run_Fwd_NoRM",
+   "speed": 532.2
+  },
+  "mc_af_loco_run_fwd_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Run/af_Loco_Run_Fwd_Start_NoRM",
+   "speed": 317.1
+  },
+  "mc_af_loco_run_fwd_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Run/af_Loco_Run_Fwd_Stop_NoRM",
+   "speed": 154.3
+  },
+  "mc_af_loco_run_start_turnl045_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Run/af_Loco_Run_Start_TurnL045_Lfoot_NoRM",
+   "speed": 353.0
+  },
+  "mc_af_loco_run_start_turnl090_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Run/af_Loco_Run_Start_TurnL090_Lfoot_NoRM",
+   "speed": 352.9
+  },
+  "mc_af_loco_run_start_turnl135_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Run/af_Loco_Run_Start_TurnL135_Lfoot_NoRM",
+   "speed": 368.5
+  },
+  "mc_af_loco_run_start_turnl180_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Run/af_Loco_Run_Start_TurnL180_Lfoot_NoRM",
+   "speed": 368.5
+  },
+  "mc_af_loco_run_start_turnr045_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Run/af_Loco_Run_Start_TurnR045_Rfoot_NoRM",
+   "speed": 374.7
+  },
+  "mc_af_loco_run_start_turnr090_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Run/af_Loco_Run_Start_TurnR090_Rfoot_NoRM",
+   "speed": 374.7
+  },
+  "mc_af_loco_run_start_turnr135_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Run/af_Loco_Run_Start_TurnR135_Rfoot_NoRM",
+   "speed": 349.9
+  },
+  "mc_af_loco_run_start_turnr180_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Run/af_Loco_Run_Start_TurnR180_Rfoot_NoRM",
+   "speed": 349.9
+  },
+  "mc_af_loco_walk_bwd": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Bwd_NoRM",
+   "speed": 177.8
+  },
+  "mc_af_loco_walk_bwd_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Bwd_Pivot_NoRM",
+   "speed": 25.6
+  },
+  "mc_af_loco_walk_bwd_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Bwd_Start_NoRM",
+   "speed": 120.7
+  },
+  "mc_af_loco_walk_bwd_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Bwd_Stop_NoRM",
+   "speed": 125.2
+  },
+  "mc_af_loco_walk_bwdleft": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_BwdLeft_NoRM",
+   "speed": 177.8
+  },
+  "mc_af_loco_walk_bwdright": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_BwdRight_NoRM",
+   "speed": 177.8
+  },
+  "mc_af_loco_walk_fwd": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Fwd_NoRM",
+   "speed": 196.8
+  },
+  "mc_af_loco_walk_fwd_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Fwd_Pivot_NoRM",
+   "speed": 21.7
+  },
+  "mc_af_loco_walk_fwd_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Fwd_Start_NoRM",
+   "speed": 150.4
+  },
+  "mc_af_loco_walk_fwd_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Fwd_Stop_NoRM",
+   "speed": 106.9
+  },
+  "mc_af_loco_walk_fwdleft": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_FwdLeft_NoRM",
+   "speed": 196.9
+  },
+  "mc_af_loco_walk_fwdright": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_FwdRight_NoRM",
+   "speed": 196.9
+  },
+  "mc_af_loco_walk_left": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Left_NoRM",
+   "speed": 140.6
+  },
+  "mc_af_loco_walk_left_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Left_Pivot_NoRM",
+   "speed": 16.7
+  },
+  "mc_af_loco_walk_left_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Left_Start_NoRM",
+   "speed": 108.8
+  },
+  "mc_af_loco_walk_left_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Left_Stop_NoRM",
+   "speed": 84.0
+  },
+  "mc_af_loco_walk_right": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Right_NoRM",
+   "speed": 154.9
+  },
+  "mc_af_loco_walk_right_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Right_Pivot_NoRM",
+   "speed": 21.6
+  },
+  "mc_af_loco_walk_right_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Right_Start_NoRM",
+   "speed": 116.3
+  },
+  "mc_af_loco_walk_right_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Right_Stop_NoRM",
+   "speed": 106.9
+  },
+  "mc_af_loco_walk_start_turnl045_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Start_TurnL045_Lfoot_NoRM",
+   "speed": 162.0
+  },
+  "mc_af_loco_walk_start_turnl090_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Start_TurnL090_Lfoot_NoRM",
+   "speed": 162.0
+  },
+  "mc_af_loco_walk_start_turnl135_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Start_TurnL135_Lfoot_NoRM",
+   "speed": 164.5
+  },
+  "mc_af_loco_walk_start_turnl180_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Start_TurnL180_Lfoot_NoRM",
+   "speed": 164.7
+  },
+  "mc_af_loco_walk_start_turnr045_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Start_TurnR045_Rfoot_NoRM",
+   "speed": 161.8
+  },
+  "mc_af_loco_walk_start_turnr090_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Start_TurnR090_Rfoot_NoRM",
+   "speed": 161.9
+  },
+  "mc_af_loco_walk_start_turnr135_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Start_TurnR135_Rfoot_NoRM",
+   "speed": 136.0
+  },
+  "mc_af_loco_walk_start_turnr180_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/af_Walk/af_Loco_Walk_Start_TurnR180_Rfoot_NoRM",
+   "speed": 136.7
+  },
+  "mc_af_stand_idle_01": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/af_Stand_Idle_01"
+  },
+  "mc_af_stand_idle_02_weightshift": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/af_Stand_Idle_02_WeightShift"
+  },
+  "mc_af_stand_idle_03_lookright": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/af_Stand_Idle_03_LookRight"
+  },
+  "mc_af_stand_idle_04_lookleft": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/af_Stand_Idle_04_LookLeft"
+  },
+  "mc_af_stand_idle_05_weightshift": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/af_Stand_Idle_05_WeightShift"
+  },
+  "mc_af_stand_idle_06_lookfloor": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/af_Stand_Idle_06_LookFloor"
+  },
+  "mc_af_stand_idle_07_lookbehind": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/af_Stand_Idle_07_LookBehind"
+  },
+  "mc_af_stand_idle_08_lookbehind": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/af_Stand_Idle_08_LookBehind"
+  },
+  "mc_af_stand_idle_09_thightap": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/af_Stand_Idle_09_ThighTap"
+  },
+  "mc_af_stand_idle_10_hiplefthand": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/af_Stand_Idle_10_HipLeftHand"
+  },
+  "mc_af_stand_idle_11_hiprighthand": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/af_Stand_Idle_11_HipRightHand"
+  },
+  "mc_af_stand_idle_12_hiphans": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/af_Stand_Idle_12_HipHans"
+  },
+  "mc_af_stand_idle_turnl045": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/af_Stand_Idle_TurnL045_NoRM"
+  },
+  "mc_af_stand_idle_turnl090": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/af_Stand_Idle_TurnL090_NoRM"
+  },
+  "mc_af_stand_idle_turnl135": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/af_Stand_Idle_TurnL135_NoRM"
+  },
+  "mc_af_stand_idle_turnl180": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/af_Stand_Idle_TurnL180_NoRM"
+  },
+  "mc_af_stand_idle_turnr045": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/af_Stand_Idle_TurnR045_NoRM"
+  },
+  "mc_af_stand_idle_turnr090": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/af_Stand_Idle_TurnR090_NoRM"
+  },
+  "mc_af_stand_idle_turnr135": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/af_Stand_Idle_TurnR135_NoRM"
+  },
+  "mc_af_stand_idle_turnr180": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/af_Stand_Idle_TurnR180_NoRM"
+  },
+  "mc_am_armscrossed_idle_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossed_Idle_01"
+  },
+  "mc_am_armscrossed_idle_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossed_Idle_02"
+  },
+  "mc_am_armscrossed_idle_03": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossed_Idle_03"
+  },
+  "mc_am_armscrossed_idle_04": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossed_Idle_04"
+  },
+  "mc_am_armscrossed_idle_05_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossed_Idle_05_LookAround"
+  },
+  "mc_am_armscrossed_idle_06_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossed_Idle_06_LookAround"
+  },
+  "mc_am_armscrossed_idle_07_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossed_Idle_07_LookAround"
+  },
+  "mc_am_armscrossed_trans_stand_idle": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossed_Trans_Stand_Idle"
+  },
+  "mc_am_armscrossedb_idle_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossedB_Idle_01"
+  },
+  "mc_am_armscrossedb_idle_02_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossedB_Idle_02_LookAround"
+  },
+  "mc_am_armscrossedb_idle_03_shiftweight": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossedB_Idle_03_ShiftWeight"
+  },
+  "mc_am_armscrossedb_idle_04_shiftweight": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossedB_Idle_04_ShiftWeight"
+  },
+  "mc_am_armscrossedb_trans_stand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_ArmsCrossedB_Trans_Stand"
+  },
+  "mc_am_handhipl_idle_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandHipL_Idle_01"
+  },
+  "mc_am_handhipl_idle_02_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandHipL_Idle_02_LookAround"
+  },
+  "mc_am_handhipl_idle_03": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandHipL_Idle_03"
+  },
+  "mc_am_handhipl_idle_04_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandHipL_Idle_04_LookAround"
+  },
+  "mc_am_handhipl_idle_05_fidget": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandHipL_Idle_05_Fidget"
+  },
+  "mc_am_handhipl_trans_stand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandHipL_Trans_Stand"
+  },
+  "mc_am_handhipr_idle_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandHipR_Idle_01"
+  },
+  "mc_am_handhipr_idle_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandHipR_Idle_02"
+  },
+  "mc_am_handhipr_idle_03_shiftweight": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandHipR_Idle_03_ShiftWeight"
+  },
+  "mc_am_handhipr_idle_04_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandHipR_Idle_04_LookAround"
+  },
+  "mc_am_handhipr_trans_stand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandHipR_Trans_Stand"
+  },
+  "mc_am_handsclaspfront_idle_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandsClaspFront/am_HandsClaspFront_Idle_01"
+  },
+  "mc_am_handsclaspfront_idle_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandsClaspFront/am_HandsClaspFront_Idle_02"
+  },
+  "mc_am_handsclaspfront_idle_03_shiftweight": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandsClaspFront/am_HandsClaspFront_Idle_03_ShiftWeight"
+  },
+  "mc_am_handsclaspfront_idle_04_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandsClaspFront/am_HandsClaspFront_Idle_04_LookAround"
+  },
+  "mc_am_handsclaspfront_trans_stand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandsClaspFront/am_HandsClaspFront_Trans_Stand"
+  },
+  "mc_am_handship_idle_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandsHip_Idle_01"
+  },
+  "mc_am_handship_idle_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandsHip_Idle_02"
+  },
+  "mc_am_handship_idle_03": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandsHip_Idle_03"
+  },
+  "mc_am_handship_idle_04_shiftweight": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandsHip_Idle_04_ShiftWeight"
+  },
+  "mc_am_handship_trans_stand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_HandsHip_Trans_Stand"
+  },
+  "mc_am_kneelb_idle_01": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Kneel/am_KneelB_Idle_01"
+  },
+  "mc_am_kneelb_idle_02_lookatfloor": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Kneel/am_KneelB_Idle_02_LookAtFloor"
+  },
+  "mc_am_kneelb_trans_stand": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Kneel/am_KneelB_Trans_Stand"
+  },
+  "mc_am_loco_jog_01_old": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Loco_Jog_01_NoRM",
+   "speed": 224.1
+  },
+  "mc_am_loco_jog_bwd": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Bwd_NoRM",
+   "speed": 226.6
+  },
+  "mc_am_loco_jog_bwd_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Bwd_Pivot_NoRM",
+   "speed": 44.6
+  },
+  "mc_am_loco_jog_bwd_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Bwd_Start_NoRM",
+   "speed": 157.5
+  },
+  "mc_am_loco_jog_bwd_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Bwd_Stop_NoRM",
+   "speed": 101.2
+  },
+  "mc_am_loco_jog_bwdleft": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_BwdLeft_NoRM",
+   "speed": 226.7
+  },
+  "mc_am_loco_jog_bwdright": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_BwdRight_NoRM",
+   "speed": 226.7
+  },
+  "mc_am_loco_jog_fwd": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Fwd_NoRM",
+   "speed": 325.7
+  },
+  "mc_am_loco_jog_fwd_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Fwd_Pivot_NoRM",
+   "speed": 34.6
+  },
+  "mc_am_loco_jog_fwd_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Fwd_Start_NoRM",
+   "speed": 228.0
+  },
+  "mc_am_loco_jog_fwd_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Fwd_Stop_NoRM",
+   "speed": 134.7
+  },
+  "mc_am_loco_jog_fwdleft": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_FwdLeft_NoRM",
+   "speed": 325.7
+  },
+  "mc_am_loco_jog_fwdright": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_FwdRight_NoRM",
+   "speed": 325.7
+  },
+  "mc_am_loco_jog_left": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Left_NoRM",
+   "speed": 230.0
+  },
+  "mc_am_loco_jog_left_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Left_Pivot_NoRM",
+   "speed": 8.2
+  },
+  "mc_am_loco_jog_left_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Left_Start_NoRM",
+   "speed": 156.9
+  },
+  "mc_am_loco_jog_left_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Left_Stop_NoRM",
+   "speed": 136.6
+  },
+  "mc_am_loco_jog_right": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Right_NoRM",
+   "speed": 295.1
+  },
+  "mc_am_loco_jog_right_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Right_Pivot_NoRM",
+   "speed": 48.8
+  },
+  "mc_am_loco_jog_right_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Right_Start_NoRM",
+   "speed": 142.6
+  },
+  "mc_am_loco_jog_right_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Right_Stop_NoRM",
+   "speed": 165.0
+  },
+  "mc_am_loco_jog_start_turnl045_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Start_TurnL045_Lfoot_NoRM",
+   "speed": 241.8
+  },
+  "mc_am_loco_jog_start_turnl090_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Start_TurnL090_Lfoot_NoRM",
+   "speed": 241.8
+  },
+  "mc_am_loco_jog_start_turnl135_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Start_TurnL135_Lfoot_NoRM",
+   "speed": 218.2
+  },
+  "mc_am_loco_jog_start_turnl180_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Start_TurnL180_Lfoot_NoRM",
+   "speed": 218.1
+  },
+  "mc_am_loco_jog_start_turnr045_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Start_TurnR045_Rfoot_NoRM",
+   "speed": 248.6
+  },
+  "mc_am_loco_jog_start_turnr090_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Start_TurnR090_Rfoot_NoRM",
+   "speed": 248.6
+  },
+  "mc_am_loco_jog_start_turnr135_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Start_TurnR135_Rfoot_NoRM",
+   "speed": 221.6
+  },
+  "mc_am_loco_jog_start_turnr180_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Jog/am_Loco_Jog_Start_TurnR180_Rfoot_NoRM",
+   "speed": 221.6
+  },
+  "mc_am_loco_run_01_old": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Loco_Run_01_NoRM",
+   "speed": 406.1
+  },
+  "mc_am_loco_run_fwd": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Run/am_Loco_Run_Fwd_NoRM",
+   "speed": 472.4
+  },
+  "mc_am_loco_run_fwd_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Run/am_Loco_Run_Fwd_Start_NoRM",
+   "speed": 280.6
+  },
+  "mc_am_loco_run_fwd_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Run/am_Loco_Run_Fwd_Stop_NoRM",
+   "speed": 250.2
+  },
+  "mc_am_loco_run_start_turnl045_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Run/am_Loco_Run_Start_TurnL045_Lfoot_NoRM",
+   "speed": 366.8
+  },
+  "mc_am_loco_run_start_turnl090_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Run/am_Loco_Run_Start_TurnL090_Lfoot_NoRM",
+   "speed": 366.8
+  },
+  "mc_am_loco_run_start_turnl135_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Run/am_Loco_Run_Start_TurnL135_Lfoot_NoRM",
+   "speed": 343.4
+  },
+  "mc_am_loco_run_start_turnl180_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Run/am_Loco_Run_Start_TurnL180_Lfoot_NoRM",
+   "speed": 343.4
+  },
+  "mc_am_loco_run_start_turnr045_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Run/am_Loco_Run_Start_TurnR045_Rfoot_NoRM",
+   "speed": 382.9
+  },
+  "mc_am_loco_run_start_turnr090_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Run/am_Loco_Run_Start_TurnR090_Rfoot_NoRM",
+   "speed": 382.9
+  },
+  "mc_am_loco_run_start_turnr135_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Run/am_Loco_Run_Start_TurnR135_Rfoot_NoRM",
+   "speed": 321.2
+  },
+  "mc_am_loco_run_start_turnr180_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Run/am_Loco_Run_Start_TurnR180_Rfoot_NoRM",
+   "speed": 321.1
+  },
+  "mc_am_loco_runfast_01_old": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Loco_RunFast_01_NoRM",
+   "speed": 425.3
+  },
+  "mc_am_loco_walk_bwd": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Bwd_NoRM",
+   "speed": 119.6
+  },
+  "mc_am_loco_walk_bwd_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Bwd_Pivot_NoRM",
+   "speed": 12.8
+  },
+  "mc_am_loco_walk_bwd_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Bwd_Start_NoRM",
+   "speed": 93.3
+  },
+  "mc_am_loco_walk_bwd_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Bwd_Stop_NoRM",
+   "speed": 63.3
+  },
+  "mc_am_loco_walk_bwdleft": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_BwdLeft_NoRM",
+   "speed": 119.6
+  },
+  "mc_am_loco_walk_bwdright": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_BwdRight_NoRM",
+   "speed": 119.6
+  },
+  "mc_am_loco_walk_fwd": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Fwd_NoRM",
+   "speed": 152.8
+  },
+  "mc_am_loco_walk_fwd_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Fwd_Pivot_NoRM",
+   "speed": 27.2
+  },
+  "mc_am_loco_walk_fwd_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Fwd_Start_NoRM",
+   "speed": 125.7
+  },
+  "mc_am_loco_walk_fwd_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Fwd_Stop_NoRM",
+   "speed": 77.9
+  },
+  "mc_am_loco_walk_fwdleft": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_FwdLeft_NoRM",
+   "speed": 152.8
+  },
+  "mc_am_loco_walk_fwdright": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_FwdRight_NoRM",
+   "speed": 152.8
+  },
+  "mc_am_loco_walk_left": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Left_NoRM",
+   "speed": 134.4
+  },
+  "mc_am_loco_walk_left_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Left_Pivot_NoRM",
+   "speed": 12.9
+  },
+  "mc_am_loco_walk_left_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Left_Start_NoRM",
+   "speed": 107.0
+  },
+  "mc_am_loco_walk_left_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Left_Stop_NoRM",
+   "speed": 55.8
+  },
+  "mc_am_loco_walk_right": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Right_NoRM",
+   "speed": 158.8
+  },
+  "mc_am_loco_walk_right_pivot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Right_Pivot_NoRM",
+   "speed": 29.4
+  },
+  "mc_am_loco_walk_right_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Right_Start_NoRM",
+   "speed": 127.5
+  },
+  "mc_am_loco_walk_right_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Right_Stop_NoRM",
+   "speed": 77.0
+  },
+  "mc_am_loco_walk_start_turnl045_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Start_TurnL045_Lfoot_NoRM",
+   "speed": 128.2
+  },
+  "mc_am_loco_walk_start_turnl090_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Start_TurnL090_Lfoot_NoRM",
+   "speed": 128.2
+  },
+  "mc_am_loco_walk_start_turnl135_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Start_TurnL135_Lfoot_NoRM",
+   "speed": 137.4
+  },
+  "mc_am_loco_walk_start_turnl180_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Start_TurnL180_Lfoot_NoRM",
+   "speed": 137.5
+  },
+  "mc_am_loco_walk_start_turnr045_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Start_TurnR045_Rfoot_NoRM",
+   "speed": 133.3
+  },
+  "mc_am_loco_walk_start_turnr090_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Start_TurnR090_Rfoot_NoRM",
+   "speed": 133.3
+  },
+  "mc_am_loco_walk_start_turnr135_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Start_TurnR135_Rfoot_NoRM",
+   "speed": 133.1
+  },
+  "mc_am_loco_walk_start_turnr180_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LocomotionV2/am_Walk/am_Loco_Walk_Start_TurnR180_Rfoot_NoRM",
+   "speed": 133.0
+  },
+  "mc_am_ready_idle_01": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Ready/am_Ready_Idle_01"
+  },
+  "mc_am_ready_idle_02": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Ready/am_Ready_Idle_02"
+  },
+  "mc_am_ready_idle_03_lookaround": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Ready/am_Ready_Idle_03_LookAround"
+  },
+  "mc_am_ready_idle_step_bwd_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Ready_Idle_Step_Bwd_RFoot_NoRM",
+   "speed": 26.7
+  },
+  "mc_am_ready_idle_step_fwd_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Ready_Idle_Step_Fwd_LFoot_NoRM",
+   "speed": 21.8
+  },
+  "mc_am_ready_idle_step_left": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Ready_Idle_Step_Left_NoRM",
+   "speed": 26.3
+  },
+  "mc_am_ready_idle_step_right": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Ready_Idle_Step_Right_NoRM",
+   "speed": 21.0
+  },
+  "mc_am_ready_trans_stand": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Ready/am_Ready_Trans_Stand"
+  },
+  "mc_am_stand_bodyache_01_back": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BodyAche/am_Stand_BodyAche_01_Back"
+  },
+  "mc_am_stand_bodyache_02_shoulders": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BodyAche/am_Stand_BodyAche_02_Shoulders"
+  },
+  "mc_am_stand_bodyache_03_hips": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BodyAche/am_Stand_BodyAche_03_Hips"
+  },
+  "mc_am_stand_bodyache_04_arms": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BodyAche/am_Stand_BodyAche_04_Arms"
+  },
+  "mc_am_stand_bodyache_05_upperbody": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BodyAche/am_Stand_BodyAche_05_UpperBody"
+  },
+  "mc_am_stand_bodyache_06_upperbody": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BodyAche/am_Stand_BodyAche_06_UpperBody"
+  },
+  "mc_am_stand_conv_listen_01_generic": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Conversation/am_Stand_Conv_Listen_01_Generic"
+  },
+  "mc_am_stand_conv_talk_01": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Conversation/am_Stand_Conv_Talk_01"
+  },
+  "mc_am_stand_conv_talk_02_happy": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Conversation/am_Stand_Conv_Talk_02_Happy"
+  },
+  "mc_am_stand_conv_talk_03_angry": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Conversation/am_Stand_Conv_Talk_03_Angry"
+  },
+  "mc_am_stand_conv_talk_04_angry": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Conversation/am_Stand_Conv_Talk_04_Angry"
+  },
+  "mc_am_stand_conv_talk_05_generic": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Conversation/am_Stand_Conv_Talk_05_Generic"
+  },
+  "mc_am_stand_conv_talk_06_generic": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Conversation/am_Stand_Conv_Talk_06_Generic"
+  },
+  "mc_am_stand_conv_talk_07_happy": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Conversation/am_Stand_Conv_Talk_07_Happy"
+  },
+  "mc_am_stand_conv_talk_08_generic": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Conversation/am_Stand_Conv_Talk_08_Generic"
+  },
+  "mc_am_stand_crowd_cheerarms_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_CheerArms_01"
+  },
+  "mc_am_stand_crowd_cheerlarm_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_CheerLArm_01"
+  },
+  "mc_am_stand_crowd_cheerlarm_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_CheerLArm_02"
+  },
+  "mc_am_stand_crowd_cheerrarm_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_CheerRArm_01"
+  },
+  "mc_am_stand_crowd_cheerrarm_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_CheerRArm_02"
+  },
+  "mc_am_stand_crowd_clapa_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_ClapA_01"
+  },
+  "mc_am_stand_crowd_clapa_start": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_ClapA_Start"
+  },
+  "mc_am_stand_crowd_clapa_stop": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_ClapA_Stop"
+  },
+  "mc_am_stand_crowd_clapb_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_ClapB_01"
+  },
+  "mc_am_stand_crowd_clapb_start": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_ClapB_Start"
+  },
+  "mc_am_stand_crowd_clapb_stop": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_ClapB_Stop"
+  },
+  "mc_am_stand_crowd_fistshakelarm_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_FistShakeLArm_01"
+  },
+  "mc_am_stand_crowd_fistshakelarm_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_FistShakeLArm_02"
+  },
+  "mc_am_stand_crowd_fistshakelarm_03": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_FistShakeLArm_03"
+  },
+  "mc_am_stand_crowd_fistshakerarm_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_FistShakeRArm_01"
+  },
+  "mc_am_stand_crowd_fistshakerarm_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_FistShakeRArm_02"
+  },
+  "mc_am_stand_crowd_fistshakerarm_03": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_FistShakeRArm_03"
+  },
+  "mc_am_stand_crowd_fistshakes_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_FistShakes_01"
+  },
+  "mc_am_stand_crowd_look_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_Look_01"
+  },
+  "mc_am_stand_crowd_look_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_Look_02"
+  },
+  "mc_am_stand_crowd_look_03": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_Look_03"
+  },
+  "mc_am_stand_crowd_look_04": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_Look_04"
+  },
+  "mc_am_stand_crowd_lookaround_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_LookAround_01"
+  },
+  "mc_am_stand_crowd_shout_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_Shout_01"
+  },
+  "mc_am_stand_crowd_shout_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Crowd/am_Stand_Crowd_Shout_02"
+  },
+  "mc_am_stand_idle_01": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/am_Stand_Idle_01"
+  },
+  "mc_am_stand_idle_02": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/am_Stand_Idle_02"
+  },
+  "mc_am_stand_idle_03_lookaround": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/am_Stand_Idle_03_LookAround"
+  },
+  "mc_am_stand_idle_04_lookaround": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/am_Stand_Idle_04_LookAround"
+  },
+  "mc_am_stand_idle_05_handships_loop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/am_Stand_Idle_05_HandsHips_Loop"
+  },
+  "mc_am_stand_idle_05_handships_start": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/am_Stand_Idle_05_HandsHips_Start"
+  },
+  "mc_am_stand_idle_05_handships_stop": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/am_Stand_Idle_05_HandsHips_Stop"
+  },
+  "mc_am_stand_idle_06_scratcharm": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/am_Stand_Idle_06_ScratchArm"
+  },
+  "mc_am_stand_idle_07_scratchleg": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/am_Stand_Idle_07_ScratchLeg"
+  },
+  "mc_am_stand_idle_08_thightap": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/am_Stand_Idle_08_ThighTap"
+  },
+  "mc_am_stand_idle_11_point": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Idle/am_Stand_Idle_11_Point"
+  },
+  "mc_am_stand_idle_breathe_01_heavy": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Breathe/am_Stand_Idle_Breathe_01_Heavy"
+  },
+  "mc_am_stand_idle_breathe_02_heavy": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Breathe/am_Stand_Idle_Breathe_02_Heavy"
+  },
+  "mc_am_stand_idle_breathe_03_grabknees_loop_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Breathe/am_Stand_Idle_Breathe_03_GrabKnees_Loop_01"
+  },
+  "mc_am_stand_idle_breathe_03_grabknees_loop_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Breathe/am_Stand_Idle_Breathe_03_GrabKnees_Loop_02"
+  },
+  "mc_am_stand_idle_breathe_03_grabknees_loop_03": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Breathe/am_Stand_Idle_Breathe_03_GrabKnees_Loop_03"
+  },
+  "mc_am_stand_idle_breathe_03_grabknees_start": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Breathe/am_Stand_Idle_Breathe_03_GrabKnees_Start"
+  },
+  "mc_am_stand_idle_breathe_03_grabknees_stop": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Breathe/am_Stand_Idle_Breathe_03_GrabKnees_Stop"
+  },
+  "mc_am_stand_idle_breathe_04_leanover_loop_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Breathe/am_Stand_Idle_Breathe_04_LeanOver_Loop_01"
+  },
+  "mc_am_stand_idle_breathe_04_leanover_start": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Breathe/am_Stand_Idle_Breathe_04_LeanOver_Start"
+  },
+  "mc_am_stand_idle_breathe_04_leanover_stop": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Breathe/am_Stand_Idle_Breathe_04_LeanOver_Stop"
+  },
+  "mc_am_stand_idle_breathe_05_grabhead": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Breathe/am_Stand_Idle_Breathe_05_GrabHead"
+  },
+  "mc_am_stand_idle_brushoff_01_legs": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BrushOff/am_Stand_Idle_BrushOff_01_Legs"
+  },
+  "mc_am_stand_idle_brushoff_02_leg": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BrushOff/am_Stand_Idle_BrushOff_02_Leg"
+  },
+  "mc_am_stand_idle_brushoff_03_legs": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BrushOff/am_Stand_Idle_BrushOff_03_Legs"
+  },
+  "mc_am_stand_idle_brushoff_04_leg": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BrushOff/am_Stand_Idle_BrushOff_04_Leg"
+  },
+  "mc_am_stand_idle_brushoff_05_arm": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BrushOff/am_Stand_Idle_BrushOff_05_Arm"
+  },
+  "mc_am_stand_idle_brushoff_06_arm": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BrushOff/am_Stand_Idle_BrushOff_06_Arm"
+  },
+  "mc_am_stand_idle_brushoff_07_arm": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BrushOff/am_Stand_Idle_BrushOff_07_Arm"
+  },
+  "mc_am_stand_idle_brushoff_08_chest": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BrushOff/am_Stand_Idle_BrushOff_08_Chest"
+  },
+  "mc_am_stand_idle_brushoff_09_chest": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/BrushOff/am_Stand_Idle_BrushOff_09_Chest"
+  },
+  "mc_am_stand_idle_cold_loop_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Cold/am_Stand_Idle_Cold_Loop_01"
+  },
+  "mc_am_stand_idle_cold_loop_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Cold/am_Stand_Idle_Cold_Loop_02"
+  },
+  "mc_am_stand_idle_cold_loop_03_holdarms": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Cold/am_Stand_Idle_Cold_Loop_03_HoldArms"
+  },
+  "mc_am_stand_idle_cold_start": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Cold/am_Stand_Idle_Cold_Start"
+  },
+  "mc_am_stand_idle_cold_stop": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Cold/am_Stand_Idle_Cold_Stop"
+  },
+  "mc_am_stand_idle_fidget_01_scratchhead": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Fidget/am_Stand_Idle_Fidget_01_ScratchHead"
+  },
+  "mc_am_stand_idle_fidget_02_rubneck": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Fidget/am_Stand_Idle_Fidget_02_RubNeck"
+  },
+  "mc_am_stand_idle_fidget_03_rubneck": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Fidget/am_Stand_Idle_Fidget_03_RubNeck"
+  },
+  "mc_am_stand_idle_fidget_04_scratchhead": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Fidget/am_Stand_Idle_Fidget_04_ScratchHead"
+  },
+  "mc_am_stand_idle_fidget_05_scratchface": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Fidget/am_Stand_Idle_Fidget_05_ScratchFace"
+  },
+  "mc_am_stand_idle_fidget_06_scratchface": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Fidget/am_Stand_Idle_Fidget_06_ScratchFace"
+  },
+  "mc_am_stand_idle_fidget_07_fingesrtogether": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Fidget/am_Stand_Idle_Fidget_07_FingesrTogether"
+  },
+  "mc_am_stand_idle_greet_01_wave": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Greet/am_Stand_Idle_Greet_01_Wave"
+  },
+  "mc_am_stand_idle_greet_02_nod": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Greet/am_Stand_Idle_Greet_02_Nod"
+  },
+  "mc_am_stand_idle_greet_03_wave": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Greet/am_Stand_Idle_Greet_03_Wave"
+  },
+  "mc_am_stand_idle_greet_04_nod": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Greet/am_Stand_Idle_Greet_04_Nod"
+  },
+  "mc_am_stand_idle_greet_05_point": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Greet/am_Stand_Idle_Greet_05_Point"
+  },
+  "mc_am_stand_idle_greet_06_point": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Greet/am_Stand_Idle_Greet_06_Point"
+  },
+  "mc_am_stand_idle_greet_07_wave": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Greet/am_Stand_Idle_Greet_07_Wave"
+  },
+  "mc_am_stand_idle_greet_08_wavecomehere": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Greet/am_Stand_Idle_Greet_08_WaveComeHere"
+  },
+  "mc_am_stand_idle_greet_09_wavecomehere": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Greet/am_Stand_Idle_Greet_09_WaveComeHere"
+  },
+  "mc_am_stand_idle_greet_10_wavecomehere": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Greet/am_Stand_Idle_Greet_10_WaveComeHere"
+  },
+  "mc_am_stand_idle_hot_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Hot/am_Stand_Idle_Hot_01"
+  },
+  "mc_am_stand_idle_hot_02_fanrhand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Hot/am_Stand_Idle_Hot_02_FanRHand"
+  },
+  "mc_am_stand_idle_hot_03_fanlhand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Hot/am_Stand_Idle_Hot_03_FanLHand"
+  },
+  "mc_am_stand_idle_hot_04_browrhand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Hot/am_Stand_Idle_Hot_04_BrowRHand"
+  },
+  "mc_am_stand_idle_hot_05_browlhand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Hot/am_Stand_Idle_Hot_05_BrowLHand"
+  },
+  "mc_am_stand_idle_hot_06_neckrhand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Hot/am_Stand_Idle_Hot_06_NeckRHand"
+  },
+  "mc_am_stand_idle_hot_07_necklhand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Hot/am_Stand_Idle_Hot_07_NeckLHand"
+  },
+  "mc_am_stand_idle_hot_08_sunshaderhand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Hot/am_Stand_Idle_Hot_08_SunShadeRHand"
+  },
+  "mc_am_stand_idle_hot_09_sunshadelhand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Hot/am_Stand_Idle_Hot_09_SunShadeLHand"
+  },
+  "mc_am_stand_idle_lookatnails_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/LookAtNails/am_Stand_Idle_LookAtNails_01"
+  },
+  "mc_am_stand_idle_lookatnails_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/LookAtNails/am_Stand_Idle_LookAtNails_02"
+  },
+  "mc_am_stand_idle_lookatnails_03": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/LookAtNails/am_Stand_Idle_LookAtNails_03"
+  },
+  "mc_am_stand_idle_lookatnails_04_bite": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/LookAtNails/am_Stand_Idle_LookAtNails_04_Bite"
+  },
+  "mc_am_stand_idle_shiftl_loop_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftL_Loop_01"
+  },
+  "mc_am_stand_idle_shiftl_loop_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftL_Loop_02"
+  },
+  "mc_am_stand_idle_shiftl_loop_03_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftL_Loop_03_LookAround"
+  },
+  "mc_am_stand_idle_shiftl_loop_04_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftL_Loop_04_LookAround"
+  },
+  "mc_am_stand_idle_shiftl_loop_05_lookahead": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftL_Loop_05_LookAhead"
+  },
+  "mc_am_stand_idle_shiftl_loop_06_lookright": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftL_Loop_06_LookRight"
+  },
+  "mc_am_stand_idle_shiftl_loop_07_lookleft": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftL_Loop_07_LookLeft"
+  },
+  "mc_am_stand_idle_shiftl_start": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftL_Start"
+  },
+  "mc_am_stand_idle_shiftl_stop": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftL_Stop"
+  },
+  "mc_am_stand_idle_shiftr_loop_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftR_Loop_01"
+  },
+  "mc_am_stand_idle_shiftr_loop_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftR_Loop_02"
+  },
+  "mc_am_stand_idle_shiftr_loop_03_wigglefingers": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftR_Loop_03_WiggleFingers"
+  },
+  "mc_am_stand_idle_shiftr_loop_04_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftR_Loop_04_LookAround"
+  },
+  "mc_am_stand_idle_shiftr_loop_05_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftR_Loop_05_LookAround"
+  },
+  "mc_am_stand_idle_shiftr_start": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftR_Start"
+  },
+  "mc_am_stand_idle_shiftr_stop": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Shift/am_Stand_Idle_ShiftR_Stop"
+  },
+  "mc_am_stand_idle_smoke_flickash": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Smoke/am_Stand_Idle_Smoke_FlickAsh"
+  },
+  "mc_am_stand_idle_smoke_hold_loop": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Smoke/am_Stand_Idle_Smoke_Hold_Loop"
+  },
+  "mc_am_stand_idle_smoke_inhale_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Smoke/am_Stand_Idle_Smoke_Inhale_01"
+  },
+  "mc_am_stand_idle_smoke_inhale_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Smoke/am_Stand_Idle_Smoke_Inhale_02"
+  },
+  "mc_am_stand_idle_smoke_inhale_03": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Smoke/am_Stand_Idle_Smoke_Inhale_03"
+  },
+  "mc_am_stand_idle_smoke_lightup": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Smoke/am_Stand_Idle_Smoke_LightUp"
+  },
+  "mc_am_stand_idle_smoke_lookaround_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Smoke/am_Stand_Idle_Smoke_LookAround_01"
+  },
+  "mc_am_stand_idle_smoke_lookaround_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Smoke/am_Stand_Idle_Smoke_LookAround_02"
+  },
+  "mc_am_stand_idle_smoke_start": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Smoke/am_Stand_Idle_Smoke_Start"
+  },
+  "mc_am_stand_idle_smoke_stop": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Smoke/am_Stand_Idle_Smoke_Stop"
+  },
+  "mc_am_stand_idle_step_bwd_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Stand_Idle_Step_Bwd_LFoot_NoRM",
+   "speed": 24.0
+  },
+  "mc_am_stand_idle_step_bwd_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Stand_Idle_Step_Bwd_RFoot_NoRM",
+   "speed": 24.0
+  },
+  "mc_am_stand_idle_step_fwd_lfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Stand_Idle_Step_Fwd_LFoot_NoRM",
+   "speed": 21.8
+  },
+  "mc_am_stand_idle_step_fwd_rfoot": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Stand_Idle_Step_Fwd_RFoot_NoRM",
+   "speed": 24.0
+  },
+  "mc_am_stand_idle_step_left": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Stand_Idle_Step_Left_NoRM",
+   "speed": 23.3
+  },
+  "mc_am_stand_idle_step_right": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Locomotion/am_Stand_Idle_Step_Right_NoRM",
+   "speed": 26.3
+  },
+  "mc_am_stand_idle_tired_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Tired/am_Stand_Idle_Tired_01"
+  },
+  "mc_am_stand_idle_tired_02": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Tired/am_Stand_Idle_Tired_02"
+  },
+  "mc_am_stand_idle_tired_03_staggerside": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Tired/am_Stand_Idle_Tired_03_StaggerSide"
+  },
+  "mc_am_stand_idle_tired_04_staggerback": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Tired/am_Stand_Idle_Tired_04_StaggerBack"
+  },
+  "mc_am_stand_idle_tired_05_yawn": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Tired/am_Stand_Idle_Tired_05_Yawn"
+  },
+  "mc_am_stand_idle_tired_06_yawn": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Tired/am_Stand_Idle_Tired_06_Yawn"
+  },
+  "mc_am_stand_idle_tired_07_fallforward": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Tired/am_Stand_Idle_Tired_07_FallForward"
+  },
+  "mc_am_stand_idle_trans_armscrossed": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_Stand_Idle_Trans_ArmsCrossed"
+  },
+  "mc_am_stand_idle_trans_standwide": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_Stand_Idle_Trans_StandWide"
+  },
+  "mc_am_stand_idle_trans_walllean": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_Stand_Idle_Trans_WallLean"
+  },
+  "mc_am_stand_idle_trans_wallleanrfoot": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_Stand_Idle_Trans_WallLeanRFoot"
+  },
+  "mc_am_stand_idle_trans_wallleanright": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_Stand_Idle_Trans_WallLeanRight"
+  },
+  "mc_am_stand_idle_turnl045": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/am_Stand_Idle_TurnL045_NoRM"
+  },
+  "mc_am_stand_idle_turnl090": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/am_Stand_Idle_TurnL090_NoRM"
+  },
+  "mc_am_stand_idle_turnl135": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/am_Stand_Idle_TurnL135_NoRM"
+  },
+  "mc_am_stand_idle_turnl180": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/am_Stand_Idle_TurnL180_NoRM"
+  },
+  "mc_am_stand_idle_turnr045": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/am_Stand_Idle_TurnR045_NoRM"
+  },
+  "mc_am_stand_idle_turnr090": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/am_Stand_Idle_TurnR090_NoRM"
+  },
+  "mc_am_stand_idle_turnr135": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/am_Stand_Idle_TurnR135_NoRM"
+  },
+  "mc_am_stand_idle_turnr180": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Turn/am_Stand_Idle_TurnR180_NoRM"
+  },
+  "mc_am_stand_idle_waiting_01_checkwatch": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Waiting/am_Stand_Idle_Waiting_01_CheckWatch"
+  },
+  "mc_am_stand_idle_waiting_02_checkwatch": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Waiting/am_Stand_Idle_Waiting_02_CheckWatch"
+  },
+  "mc_am_stand_idle_waiting_03_checkwatch": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Waiting/am_Stand_Idle_Waiting_03_CheckWatch"
+  },
+  "mc_am_stand_idle_waiting_04_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Waiting/am_Stand_Idle_Waiting_04_LookAround"
+  },
+  "mc_am_stand_idle_waiting_05_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Waiting/am_Stand_Idle_Waiting_05_LookAround"
+  },
+  "mc_am_stand_idle_waiting_06_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Waiting/am_Stand_Idle_Waiting_06_LookAround"
+  },
+  "mc_am_stand_idle_waiting_07_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Waiting/am_Stand_Idle_Waiting_07_LookAround"
+  },
+  "mc_am_stand_idle_waiting_08_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Waiting/am_Stand_Idle_Waiting_08_LookAround"
+  },
+  "mc_am_stand_lookat_01": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LookAt/am_Stand_LookAt_01"
+  },
+  "mc_am_stand_lookat_02": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LookAt/am_Stand_LookAt_02"
+  },
+  "mc_am_stand_lookat_03": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LookAt/am_Stand_LookAt_03"
+  },
+  "mc_am_stand_lookat_04_pointlhand": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LookAt/am_Stand_LookAt_04_PointLHand"
+  },
+  "mc_am_stand_lookat_05_pointrhand": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/LookAt/am_Stand_LookAt_05_PointRHand"
+  },
+  "mc_am_stand_pickup_01_floortopocket": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Pickup/am_Stand_Pickup_01_FloorToPocket"
+  },
+  "mc_am_stand_pickup_02_floortofloor": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Pickup/am_Stand_Pickup_02_FloorToFloor"
+  },
+  "mc_am_stand_pickup_03_tabletopocket": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Pickup/am_Stand_Pickup_03_TableToPocket"
+  },
+  "mc_am_stand_pickup_04_tabletotable": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Pickup/am_Stand_Pickup_04_TableToTable"
+  },
+  "mc_am_stand_pickup_05_floortopocket": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Pickup/am_Stand_Pickup_05_FloorToPocket"
+  },
+  "mc_am_stand_pickup_06_tabletopocket": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Pickup/am_Stand_Pickup_06_TableToPocket"
+  },
+  "mc_am_stand_reactbumplight_back": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/ReactBump/am_Stand_ReactBumpLight_Back",
+   "root_lock": true
+  },
+  "mc_am_stand_reactbumplight_backleft": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/ReactBump/am_Stand_ReactBumpLight_BackLeft",
+   "root_lock": true
+  },
+  "mc_am_stand_reactbumplight_backright": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/ReactBump/am_Stand_ReactBumpLight_BackRight",
+   "root_lock": true
+  },
+  "mc_am_stand_reactbumplight_front": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/ReactBump/am_Stand_ReactBumpLight_Front",
+   "root_lock": true
+  },
+  "mc_am_stand_reactbumplight_frontleft": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/ReactBump/am_Stand_ReactBumpLight_FrontLeft",
+   "root_lock": true
+  },
+  "mc_am_stand_reactbumplight_frontright": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/ReactBump/am_Stand_ReactBumpLight_FrontRight",
+   "root_lock": true
+  },
+  "mc_am_stand_trans_armscrossedb": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/ArmsCrossed/am_Stand_Trans_ArmsCrossedB"
+  },
+  "mc_am_stand_trans_handhipl": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_Stand_Trans_HandHipL"
+  },
+  "mc_am_stand_trans_handhipr": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_Stand_Trans_HandHipR"
+  },
+  "mc_am_stand_trans_handsclaspfront": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandsClaspFront/am_Stand_Trans_HandsClaspFront"
+  },
+  "mc_am_stand_trans_handship": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/HandHip/am_Stand_Trans_HandsHip"
+  },
+  "mc_am_stand_trans_kneeb": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Kneel/am_Stand_Trans_KneeB"
+  },
+  "mc_am_stand_trans_ready": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Ready/am_Stand_Trans_Ready"
+  },
+  "mc_am_stand_wave_01_rhand": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Wave/am_Stand_Wave_01_RHand"
+  },
+  "mc_am_stand_wave_02_lhand": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Wave/am_Stand_Wave_02_LHand"
+  },
+  "mc_am_stand_wave_03_rhand": {
+   "pack": "mc_core",
+   "from": "/Game/MC_Core_Motion/Animations/Wave/am_Stand_Wave_03_RHand"
+  },
+  "mc_am_standwide_stretch_01_sidebend": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Stretch_01_SideBend"
+  },
+  "mc_am_standwide_stretch_02_backbend": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Stretch_02_BackBend"
+  },
+  "mc_am_standwide_stretch_03_quad": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Stretch_03_Quad"
+  },
+  "mc_am_standwide_stretch_04_hamstringrleg": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Stretch_04_HamstringRLeg"
+  },
+  "mc_am_standwide_stretch_05_hamstringlleg": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Stretch_05_HamstringLLeg"
+  },
+  "mc_am_standwide_stretch_06_backbend": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Stretch_06_BackBend"
+  },
+  "mc_am_standwide_stretch_07_shoulderrarm": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Stretch_07_ShoulderRArm"
+  },
+  "mc_am_standwide_stretch_08_shoulderlarm": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Stretch_08_ShoulderLArm"
+  },
+  "mc_am_standwide_stretch_09_backtouchtoes": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Stretch_09_BackTouchToes"
+  },
+  "mc_am_standwide_stretch_10_warmup": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Stretch_10_WarmUp"
+  },
+  "mc_am_standwide_stretch_11_shoulders": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Stretch_11_Shoulders"
+  },
+  "mc_am_standwide_stretch_12_shoulders": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Stretch_12_Shoulders"
+  },
+  "mc_am_standwide_trans_stand_idle": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/Stretch/am_StandWide_Trans_Stand_Idle"
+  },
+  "mc_am_walllean_idle_loop_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLean_Idle_Loop_01"
+  },
+  "mc_am_walllean_idle_loop_02_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLean_Idle_Loop_02_LookAround"
+  },
+  "mc_am_walllean_idle_loop_03_lookleft": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLean_Idle_Loop_03_LookLeft"
+  },
+  "mc_am_walllean_idle_loop_04_tapleg": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLean_Idle_Loop_04_TapLeg"
+  },
+  "mc_am_walllean_idle_loop_05_lookright": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLean_Idle_Loop_05_LookRight"
+  },
+  "mc_am_walllean_idle_loop_06_lookdown": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLean_Idle_Loop_06_LookDown"
+  },
+  "mc_am_walllean_trans_stand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLean_Trans_Stand"
+  },
+  "mc_am_wallleanrfoot_idle_loop_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRFoot_Idle_Loop_01"
+  },
+  "mc_am_wallleanrfoot_idle_loop_02_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRFoot_Idle_Loop_02_LookAround"
+  },
+  "mc_am_wallleanrfoot_idle_loop_03": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRFoot_Idle_Loop_03"
+  },
+  "mc_am_wallleanrfoot_idle_loop_04_tapwall": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRFoot_Idle_Loop_04_TapWall"
+  },
+  "mc_am_wallleanrfoot_idle_loop_05_lookright": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRFoot_Idle_Loop_05_LookRight"
+  },
+  "mc_am_wallleanrfoot_idle_loop_06_lookleft": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRFoot_Idle_Loop_06_LookLeft"
+  },
+  "mc_am_wallleanrfoot_trans_stand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRFoot_Trans_Stand"
+  },
+  "mc_am_wallleanright_idle_loop_01": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRight_Idle_Loop_01"
+  },
+  "mc_am_wallleanright_idle_loop_02_lookaround": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRight_Idle_Loop_02_LookAround"
+  },
+  "mc_am_wallleanright_idle_loop_03_lookdown": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRight_Idle_Loop_03_LookDown"
+  },
+  "mc_am_wallleanright_idle_loop_04": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRight_Idle_Loop_04"
+  },
+  "mc_am_wallleanright_idle_loop_05_lookleft": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRight_Idle_Loop_05_LookLeft"
+  },
+  "mc_am_wallleanright_trans_stand": {
+   "pack": "mc_idles",
+   "from": "/Game/MC_Idles_Pack/Animations/WallLean/am_WallLeanRight_Trans_Stand"
+  },
+  "pp_box1_m3_back_dodge": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Back_Dodge",
+   "root_lock": true
+  },
+  "pp_box1_m3_back_weave": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Back_Weave",
+   "root_lock": true
+  },
+  "pp_box1_m3_block_loop": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Block_Loop",
+   "root_lock": true
+  },
+  "pp_box1_m3_block_straight_hit_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Block_Straight_Hit_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_block_straight_hit_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Block_Straight_Hit_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_block_straight_hit_v3": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Block_Straight_Hit_V3",
+   "root_lock": true
+  },
+  "pp_box1_m3_block_to_idle": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Block_To_Idle",
+   "root_lock": true
+  },
+  "pp_box1_m3_body_shot": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Body_Shot",
+   "root_lock": true
+  },
+  "pp_box1_m3_combo_lh_ru": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Combo_LH_RU",
+   "root_lock": true
+  },
+  "pp_box1_m3_combo_punch": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Combo_Punch",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_combo_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Combo_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_combo_v1_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Combo_V1_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_combo_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Combo_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_combo_v2_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Combo_V2_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_cross_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Cross_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_cross_v1_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Cross_V1_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_cross_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Cross_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_cross_v2_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Cross_V2_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_cross_v3": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Cross_V3",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_cross_v4": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Cross_V4",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_gutshot_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_GutShot_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_gutshot_v1_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_GutShot_V1_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_gutshot_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_GutShot_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_gutshot_v2_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_GutShot_V2_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_gutshot_v3": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_GutShot_V3",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v1_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V1_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v2_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V2_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v3": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V3",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v3_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V3_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v5": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V5",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v6": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V6",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v6_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V6_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v7": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V7",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v7_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V7_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v8": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V8",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_hook_v8_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Hook_V8_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_jab_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Jab_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_jab_v1_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Jab_V1_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_jab_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Jab_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_jab_v2_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Jab_V2_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_jab_v3": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Jab_V3",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_jab_v4": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Jab_V4",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_jab_v4_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Jab_V4_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_jab_v5": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Jab_V5",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_jab_v5_short": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Jab_V5_Short",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_kidneyshot_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Kidneyshot_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_hit_by_uppercut_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Hit_By_Uppercut_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_fidget_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Fidget_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_fidget_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Fidget_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_fidget_v3": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Fidget_V3",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_fidget_v4": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Fidget_V4",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_fidget_v5": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Fidget_V5",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_fidget_v6": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Fidget_V6",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_fidget_v7": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Fidget_V7",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_fidget_v8": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Fidget_V8",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_hurt_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Hurt_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_hurt_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Hurt_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_hurt_v3": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Hurt_V3",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_really_tired_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Really_Tired_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_really_tired_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Really_Tired_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_slighty_tired": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Slighty_Tired",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_tired": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_Tired",
+   "root_lock": true
+  },
+  "pp_box1_m3_idle_to_block": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Idle_To_Block",
+   "root_lock": true
+  },
+  "pp_box1_m3_kidney_shot": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Kidney_Shot",
+   "root_lock": true
+  },
+  "pp_box1_m3_knockout_countdown_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Knockout_Countdown_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_knockout_countdown_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Knockout_Countdown_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_knockout_countdown_v3": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Knockout_Countdown_V3",
+   "root_lock": true
+  },
+  "pp_box1_m3_knockout_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Knockout_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_knockout_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Knockout_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_knockout_v3": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Knockout_V3",
+   "root_lock": true
+  },
+  "pp_box1_m3_knockout_v4": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Knockout_V4",
+   "root_lock": true
+  },
+  "pp_box1_m3_knockout_v5": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Knockout_V5",
+   "root_lock": true
+  },
+  "pp_box1_m3_knockout_v6": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Knockout_V6",
+   "root_lock": true
+  },
+  "pp_box1_m3_knockout_v7": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Knockout_V7",
+   "root_lock": true
+  },
+  "pp_box1_m3_knockout_v8": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Knockout_V8",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_dodge": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Dodge",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_hook": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Hook",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_hook__hard": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Hook__Hard",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_hook__hard_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Hook__Hard_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_hook__miss": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Hook__Miss",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_hook_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Hook_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_hook_hurt": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Hook_Hurt",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_hook_hurt_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Hook_Hurt_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_hook_special": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Hook_Special",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_hook_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Hook_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_jab": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Jab",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_jab_a": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Jab_A",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_jab_b": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Jab_B",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_jab_c": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Jab_C",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_jab_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Jab_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_jab_hard": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Jab_Hard",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_jab_hard_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Jab_Hard_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_jab_hurt": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Jab_Hurt",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_jab_hurt_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Jab_Hurt_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_jab_miss": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Jab_Miss",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_jab_special": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Jab_Special",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_uppercut": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Uppercut",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_uppercut__miss": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Uppercut__Miss",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_uppercut_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Uppercut_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_uppercut_hard": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Uppercut_Hard",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_uppercut_hard_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Uppercut_Hard_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_uppercut_hurt": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Uppercut_Hurt",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_uppercut_hurt_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Uppercut_Hurt_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_uppercut_special": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Uppercut_Special",
+   "root_lock": true
+  },
+  "pp_box1_m3_left_weave": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Left_Weave",
+   "root_lock": true
+  },
+  "pp_box1_m3_quick_weave": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Quick_Weave",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_cross": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Cross",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_cross__hard": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Cross__Hard",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_cross__hurt": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Cross__Hurt",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_cross__hurt_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Cross__Hurt_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_cross__miss": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Cross__Miss",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_cross__special": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Cross__Special",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_cross_a": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Cross_A",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_cross_b": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Cross_B",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_cross_c": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Cross_C",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_cross_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Cross_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_cross_hard_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Cross_Hard_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_dodge": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Dodge",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_hook": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Hook",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_hook_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Hook_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_hook_hard": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Hook_Hard",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_hook_hard_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Hook_Hard_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_hook_hurt": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Hook_Hurt",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_hook_hurt_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Hook_Hurt_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_hook_miss": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Hook_Miss",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_hook_special": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Hook_Special",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_uppercut": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Uppercut",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_uppercut__hard": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Uppercut__Hard",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_uppercut__miss": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Uppercut__Miss",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_uppercut_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Uppercut_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_uppercut_hard_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Uppercut_Hard_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_uppercut_hurt": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Uppercut_Hurt",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_uppercut_hurt_ft": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Uppercut_Hurt_FT",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_uppercut_special": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Uppercut_Special",
+   "root_lock": true
+  },
+  "pp_box1_m3_right_weave": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Right_Weave",
+   "root_lock": true
+  },
+  "pp_box1_m3_win_v1": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Win_V1",
+   "root_lock": true
+  },
+  "pp_box1_m3_win_v2": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Win_V2",
+   "root_lock": true
+  },
+  "pp_box1_m3_win_v3": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Win_V3",
+   "root_lock": true
+  },
+  "pp_box1_m3_win_v4": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Win_V4",
+   "root_lock": true
+  },
+  "pp_box1_m3_win_v5": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Win_V5",
+   "root_lock": true
+  },
+  "pp_box1_m3_win_v6": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Win_V6",
+   "root_lock": true
+  },
+  "pp_box1_m3_win_v7": {
+   "pack": "punch",
+   "from": "/Game/Punch_Pro/Animation/Root_Motion/Box1_M3_Win_V7",
+   "root_lock": true
+  },
+  "sw_2xattack_move_med_halfsword_r_l": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/2xAttack_Move_med_halfsword_R_L"
+  },
+  "sw_2xattack_move_med_rdown_l_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/2xAttack_Move_med_Rdown_L_1"
+  },
+  "sw_2xattack_move_med_rlow_lhi_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/2xAttack_Move_med_Rlow_Lhi_1"
+  },
+  "sw_2xattack_move_med_whirl_rhi_rhi_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/2xAttack_Move_med_whirl_Rhi_Rhi_1"
+  },
+  "sw_2xattack_place_fast_ldwon_rdown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/2xAttack_Place_fast_Ldwon_Rdown_1"
+  },
+  "sw_2xattack_place_med_rdown_rdown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/2xAttack_Place_med_Rdown_Rdown_1"
+  },
+  "sw_attack_move_achilles": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_Achilles"
+  },
+  "sw_attack_move_fast_pommel": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_fast_Pommel"
+  },
+  "sw_attack_move_fast_rdown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_fast_Rdown_1"
+  },
+  "sw_attack_move_fast_rlow_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_fast_Rlow_1"
+  },
+  "sw_attack_move_fast_t_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_fast_T_1"
+  },
+  "sw_attack_move_med_kick": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_med_Kick"
+  },
+  "sw_attack_move_med_l_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_med_L_1"
+  },
+  "sw_attack_move_med_ldown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_med_Ldown_1"
+  },
+  "sw_attack_move_med_ldown_2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_med_Ldown_2"
+  },
+  "sw_attack_move_med_lhi_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_med_Lhi_1"
+  },
+  "sw_attack_move_med_rdown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_med_Rdown_1"
+  },
+  "sw_attack_move_med_rdown_2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_med_Rdown_2"
+  },
+  "sw_attack_move_med_rhigh_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_med_Rhigh_1"
+  },
+  "sw_attack_move_med_rlow_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_med_Rlow_1"
+  },
+  "sw_attack_move_med_t_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_med_T_1"
+  },
+  "sw_attack_move_slow_backtrick": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_slow_Backtrick"
+  },
+  "sw_attack_move_slow_l_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_slow_L_1"
+  },
+  "sw_attack_move_slow_lup": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_slow_Lup"
+  },
+  "sw_attack_move_slow_rdown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_slow_Rdown_1"
+  },
+  "sw_attack_move_slow_t_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_slow_T_1"
+  },
+  "sw_attack_move_slow_t_2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_slow_T_2"
+  },
+  "sw_attack_move_slow_whirl_l_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_slow_whirl_L_1"
+  },
+  "sw_attack_move_slow_whirl_l_2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_slow_whirl_L_2"
+  },
+  "sw_attack_move_snap_point": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_snap_Point"
+  },
+  "sw_attack_move_strong_ldown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_strong_Ldown_1"
+  },
+  "sw_attack_move_strong_rdown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Move_strong_Rdown_1"
+  },
+  "sw_attack_place_fast_ldown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_fast_Ldown_1"
+  },
+  "sw_attack_place_fast_llow_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_fast_Llow_1"
+  },
+  "sw_attack_place_fast_lup_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_fast_Lup_1"
+  },
+  "sw_attack_place_fast_rdown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_fast_Rdown_1"
+  },
+  "sw_attack_place_fast_rdown_2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_fast_Rdown_2"
+  },
+  "sw_attack_place_fast_t_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_fast_T_1"
+  },
+  "sw_attack_place_med_r_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_med_R_1"
+  },
+  "sw_attack_place_med_r_2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_med_R_2"
+  },
+  "sw_attack_place_med_rup_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_med_Rup_1"
+  },
+  "sw_attack_place_slow_ldown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_slow_Ldown_1"
+  },
+  "sw_attack_place_slow_rdown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_slow_Rdown_1"
+  },
+  "sw_attack_place_snap_ldown_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_snap_Ldown_1"
+  },
+  "sw_attack_place_snap_ldown_2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_snap_Ldown_2"
+  },
+  "sw_attack_place_snap_r_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_snap_R_1"
+  },
+  "sw_attack_place_snap_t_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Place_snap_T_1"
+  },
+  "sw_attack_run_achilles": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Attack_Run_Achilles"
+  },
+  "sw_beltadjust": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_BeltAdjust"
+  },
+  "sw_death_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Death_1"
+  },
+  "sw_death_2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Death_2"
+  },
+  "sw_death_back": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Death_back"
+  },
+  "sw_death_front": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Death_Front"
+  },
+  "sw_death_l": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Death_L"
+  },
+  "sw_death_r": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Death_R"
+  },
+  "sw_dodge": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Dodge"
+  },
+  "sw_dodge_fwd": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Dodge_Fwd"
+  },
+  "sw_dodge_left": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Dodge_Left"
+  },
+  "sw_dodgle_right": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Dodgle_Right"
+  },
+  "sw_equip": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Equip"
+  },
+  "sw_guarding2combat": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Guarding2Combat"
+  },
+  "sw_guarding_3_2combat": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Guarding_3_2Combat"
+  },
+  "sw_guarding_3_startwalk": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Guarding_3_StartWalk"
+  },
+  "sw_guarding_3_walk_loop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Guarding_3_Walk_Loop"
+  },
+  "sw_guarding_3_walkstop_lu": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Guarding_3_WalkStop_LU"
+  },
+  "sw_guarding_3_walkstop_ru": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Guarding_3_WalkStop_RU"
+  },
+  "sw_guarding_idle_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Guarding_Idle_1"
+  },
+  "sw_guarding_idle_2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Guarding_Idle_2"
+  },
+  "sw_guarding_idle_3": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Guarding_Idle_3"
+  },
+  "sw_guarding_walkstart180": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Guarding_WalkStart180"
+  },
+  "sw_hit_head_front": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Hit_Head_Front"
+  },
+  "sw_hit_head_left": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Hit_Head_Left"
+  },
+  "sw_hit_head_leftdown": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Hit_Head_LeftDown"
+  },
+  "sw_hit_head_leftup": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Hit_Head_LeftUp"
+  },
+  "sw_hit_head_right": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Hit_Head_Right"
+  },
+  "sw_hit_head_rightdown": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Hit_Head_RightDown"
+  },
+  "sw_hit_head_rightup": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Hit_Head_RightUp"
+  },
+  "sw_hit_legs_left": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Hit_Legs_Left"
+  },
+  "sw_hit_legs_right": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Hit_Legs_Right"
+  },
+  "sw_hit_torso_front": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Hit_Torso_Front"
+  },
+  "sw_hit_torso_left": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Hit_Torso_Left"
+  },
+  "sw_hit_torso_right": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Hit_Torso_Right"
+  },
+  "sw_holster": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Holster"
+  },
+  "sw_idle": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Idle"
+  },
+  "sw_idle2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Idle2"
+  },
+  "sw_idle3": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Idle3"
+  },
+  "sw_idle_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Idle_1"
+  },
+  "sw_kick_l": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Kick_L"
+  },
+  "sw_knockdown_front": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Knockdown_Front"
+  },
+  "sw_knockdown_left": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Knockdown_Left"
+  },
+  "sw_knockdown_right": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Knockdown_Right"
+  },
+  "sw_parry_l": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Parry_L"
+  },
+  "sw_parry_l2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Parry_L2"
+  },
+  "sw_parry_lowright": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Parry_LowRight"
+  },
+  "sw_parry_mid": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Parry_Mid"
+  },
+  "sw_parry_mid2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Parry_Mid2"
+  },
+  "sw_parry_r": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Parry_R"
+  },
+  "sw_parry_rd": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Parry_Rd"
+  },
+  "sw_parry_t": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Parry_T"
+  },
+  "sw_piruette_fwd": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Piruette_fwd"
+  },
+  "sw_prepare": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Prepare"
+  },
+  "sw_relaxed2combat": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Relaxed2Combat"
+  },
+  "sw_relaxed_idle": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Relaxed_Idle"
+  },
+  "sw_runbwdloop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_RunBwdLoop"
+  },
+  "sw_runfwdloop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_RunFwdLoop"
+  },
+  "sw_runlt135loop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_RunLt135Loop"
+  },
+  "sw_runlt45loop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_RunLt45Loop"
+  },
+  "sw_runltloop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_RunLtLoop"
+  },
+  "sw_runrt135loop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_RunRt135Loop"
+  },
+  "sw_runrt45loop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_RunRt45Loop"
+  },
+  "sw_runrtloop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_RunRtLoop"
+  },
+  "sw_shortdodge_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_ShortDodge_1"
+  },
+  "sw_shortdodge_highmid": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_ShortDodge_HighMid"
+  },
+  "sw_shortdodge_highright": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_ShortDodge_HighRight"
+  },
+  "sw_shortdodge_low": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_ShortDodge_Low"
+  },
+  "sw_shortdodge_low2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_ShortDodge_Low2"
+  },
+  "sw_shortdodge_mid": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_ShortDodge_Mid"
+  },
+  "sw_shortdodge_mid2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_ShortDodge_Mid2"
+  },
+  "sw_shortdodge_mid3": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_ShortDodge_Mid3"
+  },
+  "sw_skip_bwd": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Skip_Bwd"
+  },
+  "sw_skip_fwd": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Skip_Fwd"
+  },
+  "sw_strafe135leftloop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Strafe135LeftLoop"
+  },
+  "sw_strafe135righttloop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Strafe135RighttLoop"
+  },
+  "sw_strafe45leftloop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Strafe45LeftLoop"
+  },
+  "sw_strafe45rightloop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Strafe45RightLoop"
+  },
+  "sw_strafeleftloop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_StrafeLeftLoop"
+  },
+  "sw_strafeleftstart": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_StrafeLeftStart"
+  },
+  "sw_strafeltstop_lu": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_StrafeLtStop_LU"
+  },
+  "sw_strafeltstop_ru": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_StrafeLtStop_RU"
+  },
+  "sw_straferightloop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_StrafeRightLoop"
+  },
+  "sw_strafertstart": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_StrafeRtStart"
+  },
+  "sw_strafertstop_lu": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_StrafeRtStop_LU"
+  },
+  "sw_strafertstop_ru": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_StrafeRtStop_RU"
+  },
+  "sw_surrender": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Surrender"
+  },
+  "sw_swordplay": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_swordplay"
+  },
+  "sw_taunt_cmon": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Taunt_cmon"
+  },
+  "sw_taunt_lowersword": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Taunt_lowerSword"
+  },
+  "sw_taunt_mark_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Taunt_mark_1"
+  },
+  "sw_taunt_mark_2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Taunt_mark_2"
+  },
+  "sw_taunt_mark_3": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Taunt_mark_3"
+  },
+  "sw_taunt_mark_short": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Taunt_mark_short"
+  },
+  "sw_taunt_swings": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Taunt_swings"
+  },
+  "sw_taunt_taptap": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Taunt_taptap"
+  },
+  "sw_taunt_what": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Taunt_what"
+  },
+  "sw_taunt_wheel_short": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Taunt_wheel_short"
+  },
+  "sw_taunt_wheels": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Taunt_wheels"
+  },
+  "sw_turnl_180": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_TurnL_180"
+  },
+  "sw_turnl_90": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_TurnL_90"
+  },
+  "sw_turnr_180": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_TurnR_180"
+  },
+  "sw_turnr_90": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_TurnR_90"
+  },
+  "sw_vicotry_1": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Vicotry_1"
+  },
+  "sw_victory_2": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Victory_2"
+  },
+  "sw_victory_3": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Victory_3"
+  },
+  "sw_victory_4": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_Victory_4"
+  },
+  "sw_walkbwdloop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkBwdLoop"
+  },
+  "sw_walkbwdstart": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkBwdStart"
+  },
+  "sw_walkbwdstop_lu": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkBwdStop_LU"
+  },
+  "sw_walkbwdstop_ru": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkBwdStop_RU"
+  },
+  "sw_walkfwdloop": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkFwdLoop"
+  },
+  "sw_walkfwdstart": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkFwdStart"
+  },
+  "sw_walkfwdstart135_l": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkFwdStart135_L"
+  },
+  "sw_walkfwdstart135_r": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkFwdStart135_R"
+  },
+  "sw_walkfwdstart180_l": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkFwdStart180_L"
+  },
+  "sw_walkfwdstart180_r": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkFwdStart180_R"
+  },
+  "sw_walkfwdstart90_l": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkFwdStart90_L"
+  },
+  "sw_walkfwdstart90_r": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkFwdStart90_R"
+  },
+  "sw_walkstop_lu": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkStop_LU"
+  },
+  "sw_walkstop_ru": {
+   "pack": "sword",
+   "from": "/Game/SwordAnimsetPro/Animations/InPlace/Sword1h_WalkStop_RU"
+  }
+ }
+}

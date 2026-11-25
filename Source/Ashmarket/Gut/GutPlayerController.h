@@ -19,6 +19,10 @@ class AGutPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+public:
+
+	AGutPlayerController();
+
 protected:
 
 	/** Input Mapping Contexts. Later entries take priority over earlier ones. */
@@ -76,6 +80,12 @@ protected:
 
 	virtual void PlayerTick(float DeltaTime) override;
 
+	/** Looking up and down is not taken at all while the street's camera is locked: the camera turns, and keeps its height */
+	virtual void AddPitchInput(float Val) override;
+
+	/** True while the street's camera is locked at a height and the player is walking under it */
+	bool IsCameraHeld() const;
+
 	/** At a betting screen: how long a key is held before the stake starts to run, and how long each litre takes once it does */
 	UPROPERTY(EditAnywhere, Category="Input", meta = (ClampMin = 0.05, ClampMax = 2, Units = "s"))
 	float StakeRunDelay = 0.4f;
@@ -121,6 +131,20 @@ protected:
 	void InteractPressed();
 	void JogPressed();
 	void JogReleased();
+	void RunPressed();
+
+	/** Locks the street's camera at the height it is at now, or lets it go */
+	void CameraLockPressed();
+
+	/** Puts the street's camera at the next of its set heights (shoulder, three-quarters overhead, overhead) and locks it there */
+	void CameraStepPressed();
+
+	/** When the jog key was last let go: pressed again at once, it is a run */
+	double JogLetGo = 0.0;
+
+	/** True while a run was begun by pressing the left stick in, which ends when the stick comes back to the middle */
+	bool bRunByStick = false;
+
 
 	/** Switches the rack inputs on or off */
 	void SetAtRack(bool bNewAtRack);

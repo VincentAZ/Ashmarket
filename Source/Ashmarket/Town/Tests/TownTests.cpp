@@ -119,13 +119,14 @@ bool FTownStreetTest::RunTest(const FString& Parameters)
 		GutTests::Screenshot(TEXT("70_street"));
 	}, []() { return IsStreetReady(); } });
 
-	// west along the street at a walk for four seconds: about six metres
+	// west along the street at a walk for four seconds: about six metres, at the 153 cm a second the walk was performed at
+	// (22 November: the walk is the motion capture pack's, and goes at the pace its performer went)
 	Steps.Add({ 0.0f, [this, Notes]()
 	{
 		const AGutFighter* Walker = GetTown()->GetWalker();
 		const float Covered = Notes->Start.Y - Walker->GetActorLocation().Y;
 
-		TestTrue(*FString::Printf(TEXT("Four seconds at a walk covers four to seven metres (covered %.0f cm)"), Covered), Covered > 400.0f && Covered < 700.0f);
+		TestTrue(*FString::Printf(TEXT("Four seconds at a walk covers five to six and a half metres (covered %.0f cm)"), Covered), Covered > 500.0f && Covered < 650.0f);
 		TestTrue(TEXT("And the walker faces the way it is going"), FMath::Abs(FMath::FindDeltaAngleDegrees(Walker->GetActorRotation().Yaw, -90.0f)) < 25.0f);
 
 		// feet are only there to be heard where there is a body to have them
@@ -135,7 +136,8 @@ bool FTownStreetTest::RunTest(const FString& Parameters)
 		{
 			// a footfall to a step where the body is drawn. Where nothing is drawn the body is not posed as often as it is
 			// seen to move, and all that can be asked is that some are heard.
-			const int32 Least = FApp::CanEverRender() ? 7 : 3;
+			// The walk is a performer's, a step every half second and a little more: seven in four seconds, give or take one.
+			const int32 Least = FApp::CanEverRender() ? 6 : 3;
 
 			TestTrue(*FString::Printf(TEXT("Its feet are heard on the street as it walks (%d footfalls in four seconds)"), Heard - Notes->Footfalls), Heard - Notes->Footfalls >= Least && Heard - Notes->Footfalls <= 10);
 		}
@@ -567,16 +569,27 @@ bool FTownDoorsTest::RunTest(const FString& Parameters)
 		Say(ETownDeed::Own);
 	}, []() { return IsStreetReady(); } });
 
-	Steps.Add({ 0.5f, [this]()
+	// the yard is a place of its own to walk about in, since 22 November: not the cage with a card over it
+	Steps.Add({ 1.0f, [this]()
 	{
-		const UGutGameInstance* Run = GetRun();
-		const GutTests::FFight Fight = GutTests::GetFight();
+		ATownGameMode* Town = GetTown();
 
-		TestTrue(TEXT("An owner is walked round to the yard"), Run->bStable && !Run->bSandbox && !Run->bWindow);
-		TestTrue(TEXT("Which is the cage as an owner has it"), Fight.GameMode->IsAtStable());
+		if (!TestTrue(TEXT("An owner is walked round to the yard, which is a place"), Town && Town->IsYard()))
+		{
+			return;
+		}
 
-		Fight.GameMode->GoToDoor();
-	}, InCage });
+		// and out by the yard's gate, which is Pool Street again
+		for (const FTownDoor& Door : Town->GetPlace()->Doors)
+		{
+			if (Door.Deed == ETownDeed::Go && Door.Mouth.bIsValid)
+			{
+				const FVector2D Middle = Door.Mouth.GetCenter();
+
+				StandAt(Middle);
+			}
+		}
+	}, []() { return IsStreetReady() && GetTown()->IsYard(); } });
 
 	// and to fight, by the door itself
 	Steps.Add({ 0.5f, [this]()
@@ -604,7 +617,7 @@ bool FTownDoorsTest::RunTest(const FString& Parameters)
 		}
 
 		AddError(TEXT("The street has no door that leads to the fights"));
-	}, []() { return IsStreetReady(); } });
+	}, []() { return IsStreetReady() && !GetTown()->IsYard(); } });
 
 	Steps.Add({ 0.5f, [this]()
 	{
@@ -1638,14 +1651,15 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 
 		Town->Interact();
 
-		TestTrue(TEXT("She begins with the figures"), Town->IsTalking() && Town->GetWords().Contains(TEXT("0 litres owed")) && Town->GetWords().Contains(TEXT("holding 10")));
+		TestTrue(TEXT("She begins with the figures, written under what she says"), Town->IsTalking() && Town->GetTalkNote().Contains(TEXT("0 L owed")) && Town->GetTalkNote().Contains(TEXT("holding 10 L")));
+		TestFalse(TEXT("And nothing she says has a figure of the day's in it, so that all of it can be heard"), Town->GetWords().Contains(TEXT("{")) || Town->GetWords().Contains(TEXT("10")));
 
 		// the first answer borrows
 		Town->HandleMenuInput(EGutMenuInput::Confirm);
 
 		TestEqual(TEXT("She counts out twenty-five"), Run->Window.Water, 35.0f);
 		TestEqual(TEXT("And writes down thirty-five"), Run->Window.Debt, 35.0f);
-		TestTrue(TEXT("And says so, with the page as it now stands"), Town->IsTalking() && Town->GetWords().Contains(TEXT("35 litres owed")));
+		TestTrue(TEXT("And says so, with the page as it now stands written under it"), Town->IsTalking() && Town->GetWords().Contains(TEXT("counted out")) && Town->GetTalkNote().Contains(TEXT("35 L owed")));
 		TestTrue(TEXT("What is owed her is on the player's purse"), Town->GetPurses().ContainsByPredicate([](const FString& Line) { return Line.Contains(TEXT("Mother Ledger 35")); }));
 
 		// the second pays back what the player holds
@@ -1714,7 +1728,7 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 
 		TestTrue(*FString::Printf(TEXT("The first is one of the lots on the Block, and can be had with what an owner comes with (%s, %.0f L, %s)"), *Lines[0].Name, Lines[0].Price, *Lines[0].Why),
 			Lines[0].Name.StartsWith(TEXT("Lot ")) && Lines[0].bCanBuy && !Lines[0].About.IsEmpty() && Lines[0].Price >= 18.0f);
-		TestTrue(TEXT("The last is nobody's lot: somebody with a tag, who signs for a wage"), Lines[2].Name.StartsWith(TEXT("No lot")) && !Lines[2].PriceText.IsEmpty());
+		TestTrue(TEXT("The last is nobody's lot: somebody with a tag, who signs for a wage"), Lines[2].Name.StartsWith(TEXT("Signs")) && !Lines[2].PriceText.IsEmpty());
 		TestFalse(TEXT("Nobody is made an owner by looking"), Run->Stable.bStarted);
 		TestTrue(TEXT("The book says what an owner comes with"), Town->GetShopPurse().Contains(TEXT("70 L")));
 
@@ -1885,18 +1899,26 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		AddError(TEXT("Nobody in Pool Street takes an owner round to the yard"));
 	}, InStreet });
 
-	Steps.Add({ 0.5f, [this, Notes]()
+	Steps.Add({ 1.0f, [this, Notes]()
 	{
 		const UGutGameInstance* Run = GetRun();
-		const GutTests::FFight Fight = GutTests::GetFight();
+		ATownGameMode* Town = GetTown();
 
-		TestTrue(TEXT("The yard is the cage as an owner has it"), Run->bStable && Fight.GameMode->IsAtStable());
-		TestEqual(TEXT("It opens on the yard"), Fight.GameMode->GetStablePage(), EGutStablePage::Yard);
-		TestTrue(TEXT("And whoever was bought at the Block is in it, as they were seen there"), Run->Stable.Fighters.Num() == 1 && Run->Stable.Fighters[0].Body.ToSoftObjectPath() == Notes->Bought);
-		TestTrue(TEXT("They were handed in at the gate, and are in tow no longer"), Run->Stable.Fighters.Num() == 1 && !Run->Stable.Fighters[0].bInTow);
+		TestTrue(TEXT("The yard is a place of its own"), Town->IsYard());
+		TestTrue(TEXT("And whoever was bought at the Block is in it, as they were seen there"), Run->Stable.Fighters.Num() == 1 && Run->Stable.Fighters[0].Body.ToSoftObjectPath() == Notes->Bought && Town->GetYardBody(0));
+		TestTrue(TEXT("They were brought home at the gate, and are in tow no longer"), Run->Stable.Fighters.Num() == 1 && !Run->Stable.Fighters[0].bInTow);
 
-		Fight.GameMode->GoToDoor();
-	}, []() { return GutTests::GetFight().IsValid() && GutTests::GetFight().GameMode->GetPhase() == EGutFightPhase::Card && !GutTests::GetFight().GameMode->IsTellingStory(); } });
+		// and out by the yard's gate, which is Pool Street again
+		for (const FTownDoor& Door : Town->GetPlace()->Doors)
+		{
+			if (Door.Deed == ETownDeed::Go && Door.Mouth.bIsValid)
+			{
+				const FVector2D Middle = Door.Mouth.GetCenter();
+
+				StandAt(Middle);
+			}
+		}
+	}, []() { return IsStreetReady() && GetTown()->IsYard(); } });
 
 	Steps.Add({ 0.5f, [this]()
 	{
@@ -2180,7 +2202,9 @@ bool FTownLookSquareTest::RunTest(const FString& Parameters)
 			StandAt(FVector2D(Here.X - 450.0f, Here.Y), 180.0f);
 		} });
 
-		Steps.Add({ 0.9f, [bRun]() { GutTests::Screenshot(bRun ? TEXT("square_28_as_played_led_at_a_run") : TEXT("square_27_as_played_led_at_a_walk")); } });
+		// The walker is put four and a half metres on at a stroke, which nobody playing does: whoever is led is left by
+		// the camera, and is given the time to make most of it up before the picture.
+		Steps.Add({ bRun ? 0.9f : 1.9f, [bRun]() { GutTests::Screenshot(bRun ? TEXT("square_28_as_played_led_at_a_run") : TEXT("square_27_as_played_led_at_a_walk")); } });
 		Steps.Add({ 3.0f, []() {} });
 	}
 
@@ -2331,6 +2355,932 @@ bool FTownProbeSquareTest::RunTest(const FString& Parameters)
 	Go(TEXT("walking south-east into the crowd"), 10.0f, FVector(-0.75f, 0.66f, 0.0f));
 	Go(TEXT("standing in the crowd, looking at the Block"), 10.0f, FVector::ZeroVector);
 	Go(TEXT("walking back"), 8.0f, FVector(0.75f, -0.66f, 0.0f));
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Ashmarket.Town.YardOut   what stopped Vincent on 21 November: in at the yard gate with somebody in the yard, and back out by the
+ *                          line on the yard's first page that names them. They are behind the walker in the street, and walk
+ *                          when the walker walks.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownYardOutTest, "Ashmarket.Town.YardOut", GutTests::Flags)
+
+bool FTownYardOutTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+
+	if (!OpenStreet(this))
+	{
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+
+	// an owner with one fighter, signed, standing in the yard: in by the yard hand
+	Steps.Add({ 0.5f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+		const UTownPlaceData* Place = Town->GetPlace();
+
+		Run->bStreetForced = true;
+		Run->Stable = FGutStableState();
+		Run->Stable.bStarted = true;
+		Run->Stable.Water = 26.0f;
+		Run->Stable.Seed = 77;
+		Run->PendingStory = EGutStory::None;
+
+		FGutStableFighter Signed;
+
+		Signed.FighterName = FText::FromString(TEXT("Shard"));
+		Signed.bOwned = false;
+		Signed.Wage = 4.0f;
+		Signed.Body = TSoftClassPtr<AActor>(FSoftObjectPath(TEXT("/Game/Gut/Art/MetaHumans/Grace/BP_Grace.BP_Grace_C")));
+
+		Run->Stable.Fighters.Add(Signed);
+
+		for (int32 Person = 0; Person < Place->People.Num(); ++Person)
+		{
+			if (Place->People[Person].Lines.IsEmpty())
+			{
+				continue;
+			}
+
+			const TArray<FTownAnswer>& Answers = Place->People[Person].Lines[0].Answers;
+
+			for (int32 Answer = 0; Answer < Answers.Num(); ++Answer)
+			{
+				if (Answers[Answer].Deed != ETownDeed::Own)
+				{
+					continue;
+				}
+
+				// in front of them, as anybody stands who has walked up to talk: not at their side, against the fence,
+				// where the picture of coming back out was of the yard hand's knees
+				const FVector Front = FRotator(0.0f, Place->People[Person].Facing, 0.0f).Vector() * 170.0f;
+
+				StandBy(Place->People[Person].Place, FVector2D(Front.X, Front.Y));
+				Town->Tick(0.0f);
+				Town->Interact();
+
+				for (int32 i = 0; i < Answer; ++i)
+				{
+					Town->HandleMenuInput(EGutMenuInput::Down);
+				}
+
+				Town->HandleMenuInput(EGutMenuInput::Confirm);
+				return;
+			}
+		}
+
+		AddError(TEXT("Nobody in the street lets an owner into the yard"));
+	}, []() { return IsStreetReady(); } });
+
+	// In the yard, which is a place to walk about in since 22 November ("I never get into the Yard"): whoever is the
+	// player's stands in it. Walked up to, they have a page; "Come with me" on it puts them behind the walker.
+	Steps.Add({ 1.2f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		if (!TestTrue(TEXT("The yard hand's way in opens the yard as a place"), Town && Town->IsYard()))
+		{
+			return;
+		}
+
+		const AGutFighter* Theirs = Town->GetYardBody(0);
+
+		if (!TestNotNull(TEXT("The owner's one fighter stands in the yard"), Theirs))
+		{
+			return;
+		}
+
+		GutTests::Screenshot(TEXT("46_the_yard_arriving"));
+
+		// in front of them, as anybody stands who has walked up to somebody
+		const FVector Ahead = Theirs->GetActorForwardVector() * 150.0f;
+
+		StandBy(Theirs->GetActorLocation(), FVector2D(Ahead.X, Ahead.Y));
+		Town->Tick(0.0f);
+
+		TestTrue(*FString::Printf(TEXT("Standing by them offers to see to them (%s)"), *Town->GetPrompt()), Town->GetPrompt().Contains(TEXT("Shard")));
+
+		Town->Interact();
+
+		TestTrue(TEXT("And their page is up"), Town->IsAtYardPage());
+	}, []() { return IsStreetReady(); } });
+
+	Steps.Add({ 1.0f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		if (!Town || !Town->IsAtYardPage())
+		{
+			return;
+		}
+
+		GutTests::Screenshot(TEXT("46_the_yard_seeing_to_one"));
+
+		// trained: it costs water and the day
+		const TArray<FTownShopLine> Lines = Town->GetShopLines();
+		const int32 Day = Run->Stable.Day;
+		const float Water = Run->Stable.Water;
+
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestTrue(TEXT("Training strength teaches it, costs water and takes the day"), Run->Stable.Fighters[0].Strength == 1 && Run->Stable.Water < Water && Run->Stable.Day == Day + 1);
+
+		const int32 Come = Lines.IndexOfByPredicate([](const FTownShopLine& Line) { return Line.Name == TEXT("Come with me"); });
+
+		if (!TestTrue(TEXT("The page has the way to take them along"), Lines.IsValidIndex(Come)))
+		{
+			return;
+		}
+
+		for (int32 i = 0; i < Come; ++i)
+		{
+			Town->HandleMenuInput(EGutMenuInput::Down);
+		}
+
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestTrue(TEXT("Taking it puts them in tow, and puts the page away"), Run->Stable.Fighters.Num() == 1 && Run->Stable.Fighters[0].bInTow && !Town->IsAtYardPage() && Town->GetTowBody(0));
+
+		// and out by the gate
+		for (const FTownDoor& Door : Town->GetPlace()->Doors)
+		{
+			if (Door.Deed == ETownDeed::Go && Door.Mouth.bIsValid)
+			{
+				const FVector2D Middle = Door.Mouth.GetCenter();
+
+				StandBy(FVector(Middle.X, Middle.Y, Town->GetWalker()->GetActorLocation().Z), FVector2D::ZeroVector);
+			}
+		}
+	} });
+
+	// in the street again, with them behind
+	Steps.Add({ 2.5f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (!TestTrue(TEXT("The yard gate opens Pool Street"), Town && !Town->IsYard()))
+		{
+			return;
+		}
+
+		const AGutFighter* Walker = Town->GetWalker();
+		const AGutFighter* Behind = Town->GetTowBody(0);
+
+		if (TestNotNull(TEXT("Whoever was walked out is in the street"), Behind) && Walker)
+		{
+			const float Apart = FVector::Dist2D(Walker->GetActorLocation(), Behind->GetActorLocation());
+
+			TestTrue(*FString::Printf(TEXT("Within a few steps of the walker (%.0f cm)"), Apart), Apart < 450.0f);
+		}
+
+		GutTests::Screenshot(TEXT("71_street_out_of_the_yard_with_one_behind"));
+	}, [this]() { return IsStreetReady() && GetTown() && !GetTown()->IsYard(); } });
+
+	// And turned round and walked straight back at them, as he did on 24 November ("my slave continually cuts me in all
+	// environments"): whoever is led steps out of the way, and is never stood in.
+	struct FTurnedBack
+	{
+		float Clock = 0.0f;
+		float Nearest = 100000.0f;
+	};
+
+	TSharedRef<FTurnedBack> Back = MakeShared<FTurnedBack>();
+
+	Steps.Add({ 1.5f, []() {}, [Back]()
+	{
+		ATownGameMode* Town = GetTown();
+		AGutFighter* Walker = Town ? Town->GetWalker() : nullptr;
+		const AGutFighter* Behind = Town ? Town->GetTowBody(0) : nullptr;
+
+		if (!Walker || !Behind)
+		{
+			return true;
+		}
+
+		Walker->AddMovementInput((Behind->GetActorLocation() - Walker->GetActorLocation()).GetSafeNormal2D(), 1.0f);
+
+		Back->Nearest = FMath::Min(Back->Nearest, FVector::Dist2D(Walker->GetActorLocation(), Behind->GetActorLocation()));
+		Back->Clock += Walker->GetWorld()->GetDeltaSeconds();
+
+		return Back->Clock >= 4.0f;
+	} });
+
+	Steps.Add({ 0.3f, [this, Back]()
+	{
+		UE_LOG(LogGut, Log, TEXT("Tow: walked straight back at for four seconds, whoever is led was %.0f cm off at the nearest"), Back->Nearest);
+
+		TestTrue(*FString::Printf(TEXT("Walked straight back at, whoever is led is never stood in (%.0f cm at the nearest)"), Back->Nearest), Back->Nearest > 70.0f);
+
+		GutTests::Screenshot(TEXT("71_street_walked_back_at_the_one_behind"));
+
+		// as it was
+		UGutGameInstance* Run = GetRun();
+
+		Run->Stable = FGutStableState();
+		Run->bStreetForced.Reset();
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Ashmarket.Town.YardHatch   what happened to Vincent on 23 November: in to the cage by the hatch in the yard he walks
+ *                             about in, a fight, and afterwards the cage showed its own card of the yard, whose "out with
+ *                             both" put him in the yard with nobody. Whoever comes in by the hatch is never shown that
+ *                             card: backing out of the bill, and the cage opening again after a fight, both stand them
+ *                             back in the yard, by the hatch, with their people standing where they stood.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownYardHatchTest, "Ashmarket.Town.YardHatch", GutTests::Flags)
+
+bool FTownYardHatchTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+
+	if (!OpenStreet(this))
+	{
+		return false;
+	}
+
+	const auto InCage = []()
+	{
+		return GutTests::GetFight().IsValid();
+	};
+
+	const auto InYard = []()
+	{
+		return IsStreetReady() && GetTown() && GetTown()->IsYard();
+	};
+
+	// up to the hatch and in
+	const auto ByTheHatch = [this]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		for (const FTownDoor& Door : Town->GetPlace()->Doors)
+		{
+			if (Door.Deed == ETownDeed::Pit)
+			{
+				StandAt(FVector2D(Door.Place.X - 70.0f, Door.Place.Y));
+				Town->Tick(0.0f);
+				Town->Interact();
+				return;
+			}
+		}
+
+		AddError(TEXT("The yard has no hatch to the pit boss"));
+	};
+
+	TArray<FScript::FStep> Steps;
+
+	// an owner with one fighter, signed, and round to the yard
+	Steps.Add({ 0.5f, [this]()
+	{
+		UGutGameInstance* Run = GetRun();
+
+		Run->bStreetForced = true;
+		Run->Stable = FGutStableState();
+		Run->Stable.bStarted = true;
+		Run->Stable.Water = 40.0f;
+		Run->Stable.Seed = 77;
+		Run->PendingStory = EGutStory::None;
+
+		FGutStableFighter Signed;
+
+		Signed.FighterName = FText::FromString(TEXT("Shard"));
+		Signed.bOwned = false;
+		Signed.Wage = 4.0f;
+		Signed.Body = TSoftClassPtr<AActor>(FSoftObjectPath(TEXT("/Game/Gut/Art/MetaHumans/Grace/BP_Grace.BP_Grace_C")));
+
+		Run->Stable.Fighters.Add(Signed);
+
+		Run->TownArrive = FName("from_pool_street");
+		Run->TownStood.Reset();
+
+		UGameplayStatics::OpenLevel(GetTown(), FName(TEXT("/Game/Town/Lvl_Yard")), true);
+	}, []() { return IsStreetReady(); } });
+
+	Steps.Add({ 1.0f, [this, ByTheHatch]()
+	{
+		TestNotNull(TEXT("The owner's fighter stands in the yard"), GetTown()->GetYardBody(0));
+
+		ByTheHatch();
+	}, InYard });
+
+	// the pit boss's bill, and back out of it
+	Steps.Add({ 0.6f, [this]()
+	{
+		const UGutGameInstance* Run = GetRun();
+		const GutTests::FFight Fight = GutTests::GetFight();
+
+		TestTrue(TEXT("The hatch opens the cage as an owner's, come to from a yard that is walked about in"), Run->bStable && Run->bStableFromYard);
+		TestEqual(TEXT("On the fights there are to be had"), Fight.GameMode->GetStablePage(), EGutStablePage::Bill);
+
+		// the key that goes back a page
+		Fight.GameMode->HandleMenuInput(EGutMenuInput::Left);
+	}, InCage });
+
+	Steps.Add({ 1.0f, [this, ByTheHatch]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		TestTrue(TEXT("Backing out of the bill stands the owner in the yard, not at the cage's card of it"), Town && Town->IsYard());
+		TestNotNull(TEXT("With their fighter standing where it stood"), Town ? Town->GetYardBody(0) : nullptr);
+
+		for (const FTownDoor& Door : Town->GetPlace()->Doors)
+		{
+			if (Door.Deed == ETownDeed::Pit && Town->GetWalker())
+			{
+				TestTrue(TEXT("By the hatch they went in at"), FVector::Dist2D(Town->GetWalker()->GetActorLocation(), Door.Place) < 260.0f);
+			}
+		}
+
+		// in again
+		ByTheHatch();
+	}, InYard });
+
+	// a fight over: the cage is opened again, as it is when a fight has been settled, and would show the yard's card
+	Steps.Add({ 0.6f, [this]()
+	{
+		const GutTests::FFight Fight = GutTests::GetFight();
+
+		TestEqual(TEXT("In by the hatch again, on the bill"), Fight.GameMode->GetStablePage(), EGutStablePage::Bill);
+
+		UGameplayStatics::OpenLevel(Fight.GameMode, FName(*UGameplayStatics::GetCurrentLevelName(Fight.GameMode)), true);
+	}, InCage });
+
+	Steps.Add({ 1.0f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		TestTrue(TEXT("After a fight the owner is stood back in the yard"), Town && Town->IsYard());
+		TestNotNull(TEXT("And their fighter is in it, to be told to come along"), Town ? Town->GetYardBody(0) : nullptr);
+		TestTrue(TEXT("Nobody has been put in tow by a card nobody saw"), Run->Stable.Fighters.Num() == 1 && !Run->Stable.Fighters[0].bInTow);
+
+		Run->Stable = FGutStableState();
+		Run->bStableFromYard = false;
+		Run->bStreetForced.Reset();
+	}, InYard });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Ashmarket.Town.HatchAfterADeath   what happened to Vincent on 24 November: he went to the pit boss's hatch to enter
+ *                                    somebody in a fight, with a fighter of his dead on the table from days before. The
+ *                                    cold room came up with no word of why; and with the body seen to he was put back out
+ *                                    in the yard, not shown the fights ("the screen crashed and took me back").
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownHatchAfterADeathTest, "Ashmarket.Town.HatchAfterADeath", GutTests::Flags)
+
+bool FTownHatchAfterADeathTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+
+	if (!OpenStreet(this))
+	{
+		return false;
+	}
+
+	const auto InCage = []()
+	{
+		return GutTests::GetFight().IsValid();
+	};
+
+	const auto InYard = []()
+	{
+		return IsStreetReady() && GetTown() && GetTown()->IsYard();
+	};
+
+	TArray<FScript::FStep> Steps;
+
+	// an owner with one fighter living and one dead and not yet seen to, round to the yard
+	Steps.Add({ 0.5f, [this]()
+	{
+		UGutGameInstance* Run = GetRun();
+
+		Run->bStreetForced = true;
+		Run->Stable = FGutStableState();
+		Run->Stable.bStarted = true;
+		Run->Stable.Water = 40.0f;
+		Run->Stable.Seed = 77;
+		Run->Stable.Day = 13;
+		Run->Stable.bBodyWaiting = true;
+		Run->Stable.BodyOf = FText::FromString(TEXT("Lye"));
+		Run->Stable.BodySince = 11;
+		Run->PendingStory = EGutStory::None;
+
+		FGutStableFighter Signed;
+
+		Signed.FighterName = FText::FromString(TEXT("Crow"));
+		Signed.bOwned = false;
+		Signed.Wage = 4.0f;
+		Signed.Body = TSoftClassPtr<AActor>(FSoftObjectPath(TEXT("/Game/Gut/Art/MetaHumans/Grace/BP_Grace.BP_Grace_C")));
+
+		Run->Stable.Fighters.Add(Signed);
+
+		Run->TownArrive = FName("from_pool_street");
+		Run->TownStood.Reset();
+
+		UGameplayStatics::OpenLevel(GetTown(), FName(TEXT("/Game/Town/Lvl_Yard")), true);
+	}, []() { return IsStreetReady(); } });
+
+	Steps.Add({ 1.0f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		for (const FTownDoor& Door : Town->GetPlace()->Doors)
+		{
+			if (Door.Deed == ETownDeed::Pit)
+			{
+				StandAt(FVector2D(Door.Place.X - 70.0f, Door.Place.Y));
+				Town->Tick(0.0f);
+
+				TestTrue(TEXT("The hatch says who is dead on the table before it is knocked at"), Town->GetPrompt().Contains(TEXT("Lye")));
+
+				GutTests::Screenshot(TEXT("48_the_hatch_with_a_body_waiting"));
+
+				Town->Interact();
+				return;
+			}
+		}
+
+		AddError(TEXT("The yard has no hatch to the pit boss"));
+	}, InYard });
+
+	// the cold room first, and it says the fights come after
+	Steps.Add({ 0.8f, [this]()
+	{
+		const GutTests::FFight Fight = GutTests::GetFight();
+
+		TestEqual(TEXT("The dead come first"), Fight.GameMode->GetStablePage(), EGutStablePage::Body);
+		TestTrue(TEXT("And whoever came for a fight is told the fights are next"), Fight.GameMode->IsBillAfterBody());
+
+		GutTests::Screenshot(TEXT("48_the_cold_room_on_the_way_to_a_fight"));
+	}, InCage });
+
+	// seen to by the page's own line, the fights are the next page: here the line is taken, as the menu takes it
+	Steps.Add({ 0.5f, [this]()
+	{
+		UGutGameInstance* Run = GetRun();
+		const GutTests::FFight Fight = GutTests::GetFight();
+
+		// the page's first line, the ground behind the pumps, taken as the menu takes it
+		Fight.GameMode->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestFalse(TEXT("The body is seen to"), Run->Stable.bBodyWaiting);
+
+		TestEqual(TEXT("With the body seen to, the fights there are to be had"), Fight.GameMode->GetStablePage(), EGutStablePage::Bill);
+		TestTrue(TEXT("Still at the pit boss's, not put back out in the yard"), !Run->bGoingToStreet);
+
+		GutTests::Screenshot(TEXT("48_the_fights_after_the_cold_room"));
+	} });
+
+	Steps.Add({ 0.8f, [this]()
+	{
+		// as it was
+		UGutGameInstance* Run = GetRun();
+
+		Run->Stable = FGutStableState();
+		Run->bStreetForced.Reset();
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Ashmarket.Town.YardWalks   what happened to Vincent on the evening of 23 November: two in the yard, one on a wage; the
+ *                             one on a wage trained with what there was, the day could not be paid, and he walked on
+ *                             paper and went on standing there as nobody ("the other never showed me the display to
+ *                             talk"). Whoever is lost with a day leaves the yard, the one who is left is still
+ *                             themselves, and what is said about the day is what happened.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownYardWalksTest, "Ashmarket.Town.YardWalks", GutTests::Flags)
+
+bool FTownYardWalksTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+
+	if (!OpenStreet(this))
+	{
+		return false;
+	}
+
+	const auto InYard = []()
+	{
+		return IsStreetReady() && GetTown() && GetTown()->IsYard();
+	};
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 0.5f, [this]()
+	{
+		UGutGameInstance* Run = GetRun();
+
+		Run->bStreetForced = true;
+		Run->Stable = FGutStableState();
+		Run->Stable.bStarted = true;
+		Run->Stable.Water = 8.0f;
+		Run->Stable.Seed = 77;
+		Run->PendingStory = EGutStory::None;
+
+		FGutStableFighter Signed;
+
+		Signed.FighterName = FText::FromString(TEXT("Shard"));
+		Signed.bOwned = false;
+		Signed.Wage = 7.0f;
+		Signed.Body = TSoftClassPtr<AActor>(FSoftObjectPath(TEXT("/Game/Gut/Art/MetaHumans/Grace/BP_Grace.BP_Grace_C")));
+
+		FGutStableFighter Bought;
+
+		Bought.FighterName = FText::FromString(TEXT("Lye"));
+		Bought.bOwned = true;
+		Bought.Price = 20.0f;
+		Bought.Body = TSoftClassPtr<AActor>(FSoftObjectPath(TEXT("/Game/Gut/Art/MetaHumans/Asha/BP_Asha.BP_Asha_C")));
+
+		Run->Stable.Fighters.Add(Signed);
+		Run->Stable.Fighters.Add(Bought);
+
+		Run->TownArrive = FName("from_pool_street");
+		Run->TownStood.Reset();
+
+		UGameplayStatics::OpenLevel(GetTown(), FName(TEXT("/Game/Town/Lvl_Yard")), true);
+	}, []() { return IsStreetReady(); } });
+
+	Steps.Add({ 1.0f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		const AGutFighter* First = Town->GetYardBody(0);
+		const AGutFighter* Second = Town->GetYardBody(1);
+
+		if (!TestTrue(TEXT("Both stand in the yard"), First && Second))
+		{
+			return;
+		}
+
+		const FVector Ahead = First->GetActorForwardVector() * 150.0f;
+
+		StandBy(First->GetActorLocation(), FVector2D(Ahead.X, Ahead.Y));
+		Town->Tick(0.0f);
+		Town->Interact();
+
+		if (!TestTrue(TEXT("The one on a wage has a page"), Town->IsAtYardPage()))
+		{
+			return;
+		}
+
+		TestTrue(*FString::Printf(TEXT("Which says what a day costs before one is spent (%s)"), *Town->GetShopSaid()), Town->GetShopSaid().Contains(TEXT("A day gone by costs 9 L")));
+
+		const TArray<FTownShopLine> Lines = Town->GetShopLines();
+
+		TestTrue(*FString::Printf(TEXT("And that training would leave it unpaid (%s)"), Lines.IsEmpty() ? TEXT("no lines") : *Lines[0].About), !Lines.IsEmpty() && Lines[0].About.Contains(TEXT("unpaid")));
+
+		// trained all the same, as he did
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestTrue(TEXT("The day could not be paid, and the one on a wage is gone from the stable"), Run->Stable.Fighters.Num() == 1 && Run->Stable.Fighters[0].FighterName.ToString() == TEXT("Lye"));
+		TestTrue(TEXT("Their page is put away with them"), !Town->IsAtYardPage());
+		TestTrue(*FString::Printf(TEXT("What is said is what happened (%s)"), *Town->GetNotice()),
+			Town->GetNotice().Contains(TEXT("Shard was not paid, and has walked")) && Town->GetNotice().Contains(TEXT("not enough")) && !Town->GetNotice().Contains(TEXT("verybody is fed")));
+		TestTrue(TEXT("One body is left standing in the yard, and it is the other's"), Town->GetYardBody(0) == Second && !Town->GetYardBody(1));
+	}, InYard });
+
+	// the body that walked is gone from the place itself, and the one left can be seen to as themselves
+	Steps.Add({ 0.6f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		const AGutFighter* Left = Town->GetYardBody(0);
+
+		if (!TestNotNull(TEXT("Somebody is left"), Left))
+		{
+			return;
+		}
+
+		int32 Standing = 0;
+
+		for (TActorIterator<AGutFighter> It(Town->GetWorld()); It; ++It)
+		{
+			Standing += (*It != Town->GetWalker() && IsValid(*It)) ? 1 : 0;
+		}
+
+		TestEqual(TEXT("Nobody stands in the yard who is not the player's"), Standing, 1);
+
+		const FVector Ahead = Left->GetActorForwardVector() * 150.0f;
+
+		StandBy(Left->GetActorLocation(), FVector2D(Ahead.X, Ahead.Y));
+		Town->Tick(0.0f);
+
+		TestTrue(*FString::Printf(TEXT("Standing by the one who is left offers to see to them (%s)"), *Town->GetPrompt()), Town->GetPrompt().Contains(TEXT("Lye")));
+
+		Town->Interact();
+
+		TestTrue(*FString::Printf(TEXT("And the page is theirs (%s)"), *Town->GetShopSaid()), Town->IsAtYardPage() && Town->GetShopSaid().Contains(TEXT("A day gone by costs 1 L")));
+
+		Run->Stable = FGutStableState();
+		Run->bStreetForced.Reset();
+	}, InYard });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Ashmarket.Town.FarSounds   the night has gunfire in it a long way off, and now and then somebody screaming (23 November).
+ *                             Brought forward to now, a far shot is played in the street; left alone, none is played in
+ *                             the first half minute, and the next is not due inside the least gap.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownFarSoundsTest, "Ashmarket.Town.FarSounds", GutTests::Flags)
+
+bool FTownFarSoundsTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+
+	if (!OpenStreet(this))
+	{
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+	TSharedRef<int32> Before = MakeShared<int32>(0);
+
+	Steps.Add({ 1.0f, [this, Before]()
+	{
+		UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(GetTown());
+
+		if (!TestNotNull(TEXT("The street has its sounds"), Sounds))
+		{
+			return;
+		}
+
+		TestTrue(TEXT("There are recordings of far gunfire and of far screams"), Sounds->Has(FName("far_shot")) && Sounds->Has(FName("far_scream")));
+
+		*Before = Sounds->GetTimesPlayed(FName("far_shot"));
+
+		Sounds->HurryStrays();
+	}, &IsStreetReady });
+
+	Steps.Add({ 0.5f, [this, Before]()
+	{
+		UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(GetTown());
+
+		if (Sounds)
+		{
+			TestEqual(TEXT("Brought forward to now, one far shot is heard, and not a volley dealt at once"), Sounds->GetTimesPlayed(FName("far_shot")), *Before + 1);
+		}
+	}, &IsStreetReady });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Ashmarket.Town.Loose   what is loose in a place goes when it is walked into (23 November: "I kick, walk into an object
+ *                         and it moves"). Something loose in Pool Street that can be walked up to is walked into for a
+ *                         second and a half: it has gone somewhere, not far, and is still on the ground.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownLooseTest, "Ashmarket.Town.Loose", GutTests::Flags)
+
+bool FTownLooseTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+
+	if (!OpenStreet(this))
+	{
+		return false;
+	}
+
+	struct FShoved
+	{
+		TWeakObjectPtr<UStaticMeshComponent> Thing;
+		FVector Was = FVector::ZeroVector;
+		FVector Way = FVector::ZeroVector;
+		float Clock = 0.0f;
+	};
+
+	TSharedRef<FShoved> Shoved = MakeShared<FShoved>();
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 1.5f, [this, Shoved]()
+	{
+		ATownGameMode* Town = GetTown();
+		AGutFighter* Walker = Town->GetWalker();
+		UWorld* World = Town->GetWorld();
+
+		if (!TestTrue(TEXT("Something in the street is loose"), Town->GetLoose().Num() > 0))
+		{
+			return;
+		}
+
+		const FCollisionShape Body = FCollisionShape::MakeCapsule(Walker->GetCapsuleComponent()->GetScaledCapsuleRadius(), Walker->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() - 4.0f);
+
+		// one that can be stood beside with nothing between: from whichever side is free
+		for (const TWeakObjectPtr<UStaticMeshComponent>& One : Town->GetLoose())
+		{
+			if (!One.IsValid())
+			{
+				continue;
+			}
+
+			const FVector At = One->Bounds.Origin;
+			const float Reach = FMath::Max(One->Bounds.BoxExtent.X, One->Bounds.BoxExtent.Y) + 95.0f;
+
+			for (int32 Side = 0; Side < 8 && !Shoved->Thing.IsValid(); ++Side)
+			{
+				const FVector Off = FRotator(0.0f, Side * 45.0f, 0.0f).Vector();
+				const FVector Stood(At.X + (Off.X * Reach), At.Y + (Off.Y * Reach), Walker->GetActorLocation().Z);
+				const FVector Beyond(At.X - (Off.X * Reach), At.Y - (Off.Y * Reach), Stood.Z);
+
+				FCollisionQueryParams Mine;
+				Mine.AddIgnoredActor(Walker);
+				Mine.AddIgnoredActor(One->GetOwner());
+
+				// room to stand, and room for the thing to go
+				if (FMath::Abs(Stood.Z - At.Z) < 120.0f && !World->OverlapBlockingTestByChannel(Stood, FQuat::Identity, ECC_Pawn, Body, Mine) && !World->OverlapBlockingTestByChannel(Beyond, FQuat::Identity, ECC_Pawn, Body, Mine))
+				{
+					StandAt(FVector2D(Stood.X, Stood.Y), (-Off).Rotation().Yaw);
+
+					Shoved->Thing = One;
+					Shoved->Was = One->GetComponentLocation();
+					Shoved->Way = -Off;
+
+					GutTests::Screenshot(TEXT("47_loose_before"));
+				}
+			}
+		}
+
+		TestTrue(TEXT("One of them can be walked up to"), Shoved->Thing.IsValid());
+	}, &IsStreetReady });
+
+	// walked into, as a player walks: by the stick
+	Steps.Add({ 0.0f, []() {}, [Shoved]()
+	{
+		ATownGameMode* Town = GetTown();
+		AGutFighter* Walker = Town ? Town->GetWalker() : nullptr;
+
+		if (!Walker || !Shoved->Thing.IsValid())
+		{
+			return true;
+		}
+
+		Walker->AddMovementInput(Shoved->Way, 1.0f);
+
+		Shoved->Clock += Walker->GetWorld()->GetDeltaSeconds();
+
+		return Shoved->Clock >= 1.5f;
+	} });
+
+	Steps.Add({ 1.0f, [this, Shoved]()
+	{
+		if (!Shoved->Thing.IsValid())
+		{
+			return;
+		}
+
+		const FVector Now = Shoved->Thing->GetComponentLocation();
+		const float Gone = FVector::Dist2D(Now, Shoved->Was);
+
+		UE_LOG(LogGut, Log, TEXT("Loose: %s went %.0f cm along the ground and %.0f up, walked into for a second and a half"), *Shoved->Thing->GetOwner()->GetName(), Gone, Now.Z - Shoved->Was.Z);
+
+		GutTests::Screenshot(TEXT("47_loose_after"));
+
+		TestTrue(*FString::Printf(TEXT("Walked into, it has gone somewhere (%.0f cm)"), Gone), Gone > 12.0f);
+		TestTrue(*FString::Printf(TEXT("Not far: it was shoved, not kicked over the wall (%.0f cm)"), Gone), Gone < 450.0f);
+		TestTrue(*FString::Printf(TEXT("And it is still on the ground (%.0f cm up)"), Now.Z - Shoved->Was.Z), FMath::Abs(Now.Z - Shoved->Was.Z) < 45.0f);
+	}, &IsStreetReady });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Not a test: a look. Stands the player in front of somebody in a place, as a player stands who has walked up to them, and
+ *  photographs what the player sees every so often, to catch what a body does over a minute that a single picture misses
+ *  (23 November: the yard hand with his arms stood out and something across his chest). Ashmarket.Probe.Person
+ *  -GutProbePlace=PoolStreet -GutProbePerson=Yard_hand (underscores for spaces) -GutProbeShots=40 -GutProbeEvery=1.5
+ *  -GutProbeFrom=230 (cm in front of them) -GutProbeTalk (talk to them first)
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownProbePersonTest, "Ashmarket.Probe.Person", GutTests::Flags)
+
+bool FTownProbePersonTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+
+	FString Place;
+	FString Person;
+
+	if (!FApp::CanEverRender() || !FParse::Value(FCommandLine::Get(), TEXT("GutProbePerson="), Person))
+	{
+		return true;
+	}
+
+	FParse::Value(FCommandLine::Get(), TEXT("GutProbePlace="), Place);
+
+	Person.ReplaceInline(TEXT("_"), TEXT(" "));
+
+	if (!AutomationOpenMap(FString(TEXT("/Game/Town/Lvl_")) + (Place.IsEmpty() ? TEXT("PoolStreet") : *Place), true))
+	{
+		AddError(TEXT("Could not open that place"));
+		return false;
+	}
+
+	int32 Shots = 30;
+	float Every = 1.5f;
+	float From = 230.0f;
+
+	FParse::Value(FCommandLine::Get(), TEXT("GutProbeShots="), Shots);
+	FParse::Value(FCommandLine::Get(), TEXT("GutProbeEvery="), Every);
+	FParse::Value(FCommandLine::Get(), TEXT("GutProbeFrom="), From);
+
+	const bool bTalk = FParse::Param(FCommandLine::Get(), TEXT("GutProbeTalk"));
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 3.0f, [this, Person, From, bTalk]()
+	{
+		ATownGameMode* Town = GetTown();
+		const UTownPlaceData* Where = Town->GetPlace();
+
+		for (int32 i = 0; i < Where->People.Num(); ++i)
+		{
+			if (Where->People[i].Name != Person)
+			{
+				continue;
+			}
+
+			const FVector Front = FRotator(0.0f, Where->People[i].Facing, 0.0f).Vector() * From;
+
+			StandBy(Where->People[i].Place, FVector2D(Front.X, Front.Y));
+
+			if (APlayerController* Hands = UGameplayStatics::GetPlayerController(Town, 0))
+			{
+				Hands->SetControlRotation(FRotator(-8.0f, (-Front).Rotation().Yaw, 0.0f));
+
+				// -GutProbeSide=90 looks from a camera of its own that far to the player's side, past the player's shoulder,
+				// at -GutProbeHeight=150 off the ground they stand on, aimed at -GutProbeAim=125, through -GutProbeFov=38
+				float Side = 0.0f;
+				float Height = 150.0f;
+				float Aim = 125.0f;
+				float Fov = 38.0f;
+
+				if (FParse::Value(FCommandLine::Get(), TEXT("GutProbeSide="), Side))
+				{
+					FParse::Value(FCommandLine::Get(), TEXT("GutProbeHeight="), Height);
+					FParse::Value(FCommandLine::Get(), TEXT("GutProbeAim="), Aim);
+					FParse::Value(FCommandLine::Get(), TEXT("GutProbeFov="), Fov);
+
+					const FVector Feet = Where->People[i].Place - FVector(0.0f, 0.0f, 0.0f);
+					const FVector Eye = Feet + Front + (FVector::CrossProduct(FVector::UpVector, Front).GetSafeNormal() * Side) + FVector(0.0f, 0.0f, Height);
+					const FVector At = Feet + FVector(0.0f, 0.0f, Aim);
+
+					if (ACameraActor* Camera = Town->GetWorld()->SpawnActor<ACameraActor>(Eye, (At - Eye).Rotation()))
+					{
+						Camera->GetCameraComponent()->SetFieldOfView(Fov);
+						Camera->GetCameraComponent()->SetConstraintAspectRatio(false);
+
+						Hands->SetViewTarget(Camera);
+					}
+				}
+			}
+
+			Town->Tick(0.0f);
+
+			if (bTalk)
+			{
+				Town->Interact();
+			}
+
+			return;
+		}
+
+		AddError(FString::Printf(TEXT("Nobody called %s stands in that place"), *Person));
+	}, &IsStreetReady });
+
+	for (int32 i = 0; i < Shots; ++i)
+	{
+		Steps.Add({ Every, [i, Person]() { GutTests::Screenshot(FString::Printf(TEXT("person_%s_%02d"), *Person.Replace(TEXT(" "), TEXT("_")), i)); }, &IsStreetReady });
+	}
 
 	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
 

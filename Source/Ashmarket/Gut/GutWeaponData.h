@@ -48,6 +48,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Weapon|Stance")
 	FGutStanceAnimations Stance;
 
+	/**
+	 *  How somebody holding this gets about in a fight, where it is not as every fighter does: a weapon held with the other
+	 *  foot forward is not walked with on the legs of a boxer. Only its walking and running clips are read. Empty for the
+	 *  fighter's own.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Weapon|Presentation")
+	FGutLocomotionAnimations Moves;
+
 	/** Light attacks, played in order as a chain while the fighter keeps attacking */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Weapon|Attacks")
 	TArray<FGutAttackDef> LightAttacks;

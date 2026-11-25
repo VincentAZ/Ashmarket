@@ -174,6 +174,21 @@ bool FGutStableTest::RunTest(const FString& Parameters)
 		AGutGameMode* GameMode = Fight.GameMode;
 		UGutGameInstance* Run = Cast<UGutGameInstance>(GameMode->GetGameInstance());
 
+		// the yard's own page: with a street outside, each of them can be walked out from here, with no page to open first
+		{
+			const bool bCameBefore = Run->bCameByDoor;
+
+			TestFalse(TEXT("With no street outside, the yard's page walks nobody out"), GameMode->GetCardItems().Contains(FGutCardItem{ EGutCardItemType::Stable, GutStableLines::WalkWith }));
+
+			Run->bStreetForced = true;
+			Run->bCameByDoor = true;
+
+			TestTrue(TEXT("With one, the yard's own page has the way out with the first of them behind"), GameMode->GetCardItems().Contains(FGutCardItem{ EGutCardItemType::Stable, GutStableLines::WalkWith }));
+
+			Run->bStreetForced.Reset();
+			Run->bCameByDoor = bCameBefore;
+		}
+
 		// one fighter's own page: with a street outside, the last thing on it before selling is walking out with it
 		GameMode->ActivateCardSelection();
 

@@ -88,7 +88,11 @@ namespace GutTests
 
 		Taken.Add(Name);
 
-		const FString Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("for-review/screenshots") / (Name + TEXT(".png")));
+		// -GutShots=wide puts them in for-review/screenshots/wide, so that pictures of another shape do not replace the usual ones
+		FString Sub;
+		FParse::Value(FCommandLine::Get(), TEXT("GutShots="), Sub);
+
+		const FString Path = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("for-review/screenshots") / Sub / (Name + TEXT(".png")));
 
 		FScreenshotRequest::RequestScreenshot(Path, true, false);
 	}

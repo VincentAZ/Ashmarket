@@ -73,7 +73,7 @@ void AGutGameMode::EnterWindow(int32 Seed)
 	GameInstance->Window = FGutWindowState();
 	GameInstance->Window.bStarted = true;
 	GameInstance->PendingStory = EGutStory::Gambler;
-	GameInstance->Window.Water = WindowStartingWater;
+	GameInstance->Window.Water = FMath::Max(GameInstance->GetStartingWater(WindowStartingWater), 0.0f);
 	GameInstance->Window.Seed = Seed != 0 ? Seed : FMath::RandRange(1, 1000000);
 
 	PostWindowBill(GameInstance->Window);
@@ -344,7 +344,7 @@ void AGutGameMode::BeginWindowCard()
 		GameInstance->Window = FGutWindowState();
 		GameInstance->Window.bStarted = true;
 		GameInstance->PendingStory = EGutStory::Gambler;
-		GameInstance->Window.Water = WindowStartingWater;
+		GameInstance->Window.Water = FMath::Max(GameInstance->GetStartingWater(WindowStartingWater), 0.0f);
 		GameInstance->Window.Seed = FMath::RandRange(1, 1000000);
 
 		PostWindowBill(GameInstance->Window);

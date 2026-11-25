@@ -1,6 +1,7 @@
 // Ashmarket prototype: the Gut.
 
 #include "GutSound.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Components/AudioComponent.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -102,11 +103,85 @@ void UGutSoundSubsystem::StopBed(int32 Bed, float FadeOut)
 	Beds[Bed].Playing = nullptr;
 }
 
+void UGutSoundSubsystem::SetBedShare(int32 Bed, float Share)
+{
+	if (!Beds.IsValidIndex(Bed) || Beds[Bed].bStopped)
+	{
+		return;
+	}
+
+	Beds[Bed].Share = FMath::Max(Share, 0.0f);
+
+	if (UAudioComponent* Playing = Beds[Bed].Playing)
+	{
+		Playing->SetVolumeMultiplier(Beds[Bed].Base * Beds[Bed].Share);
+	}
+}
+
+USoundAttenuation* UGutSoundSubsystem::GetAttenuation()
+{
+	return GetData() ? Data->Attenuation.Get() : nullptr;
+}
+
+USoundBase* UGutSoundSubsystem::ChooseForBed(FName Kind, const FGutSoundSet*& OutSet)
+{
+	OutSet = GetData() ? Data->Sets.Find(Kind) : nullptr;
+
+	if (!OutSet || OutSet->Sounds.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	// Dealt like cards, and the deal kept for the whole sitting, through every change of place: each recording is heard
+	// once before any is heard again. Chosen afresh at each place, one recording of the night (the one of crickets) opened
+	// six of the nine times in a ten-minute play, because a place always begins its night at the same point in the dice.
+	static TMap<FName, TArray<int32>> Deals;
+	static TMap<FName, int32> LastDealt;
+	static FRandomStream Dice(static_cast<int32>(FPlatformTime::Cycles64() & 0x7fffffff));
+
+	TArray<int32>& Left = Deals.FindOrAdd(Kind);
+
+	Left.RemoveAll([OutSet](int32 Index) { return !OutSet->Sounds.IsValidIndex(Index) || !OutSet->Sounds[Index]; });
+
+	if (Left.IsEmpty())
+	{
+		for (int32 i = 0; i < OutSet->Sounds.Num(); ++i)
+		{
+			if (OutSet->Sounds[i])
+			{
+				Left.Add(i);
+			}
+		}
+
+		for (int32 i = Left.Num() - 1; i > 0; --i)
+		{
+			Left.Swap(i, Dice.RandRange(0, i));
+		}
+
+		// the new deal does not begin with what the last one ended on
+		if (const int32* Last = LastDealt.Find(Kind); Last && Left.Num() > 1 && Left.Last() == *Last)
+		{
+			Left.Swap(0, Left.Num() - 1);
+		}
+	}
+
+	if (Left.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	const int32 Index = Left.Pop();
+
+	LastDealt.Add(Kind, Index);
+
+	return OutSet->Sounds[Index];
+}
+
 void UGutSoundSubsystem::ChangeBed(FGutSoundBed& Bed, float Fade)
 {
 	const FGutSoundSet* Set = nullptr;
 
-	USoundBase* Sound = Choose(Bed.Kind, Set, false);
+	USoundBase* Sound = ChooseForBed(Bed.Kind, Set);
 
 	if (!Sound)
 	{
@@ -123,7 +198,9 @@ void UGutSoundSubsystem::ChangeBed(FGutSoundBed& Bed, float Fade)
 	const float Hold = Length * FMath::CeilToFloat(GutSoundConstants::BedLeastTime / Length);
 	const float From = Bed.Changes > 0 ? FMath::FRandRange(0.0f, Length * 0.5f) : 0.0f;
 
-	UAudioComponent* Next = UGameplayStatics::CreateSound2D(this, Sound, Set->Volume * Bed.Volume, 1.0f, 0.0f, nullptr, false, false);
+	Bed.Base = Set->Volume * Bed.Volume;
+
+	UAudioComponent* Next = UGameplayStatics::CreateSound2D(this, Sound, Bed.Base * Bed.Share, 1.0f, 0.0f, nullptr, false, false);
 
 	if (!Next)
 	{
@@ -176,6 +253,134 @@ void UGutSoundSubsystem::Tick(float DeltaTime)
 
 		ChangeBed(Bed, GutSoundConstants::BedCrossFade);
 	}
+
+	UpdateStrays(DeltaTime);
+}
+
+namespace GutStrays
+{
+	// How often, decided on 23 November and meant to be argued with. A town with no law, at night, heard from inside it:
+	// gunfire is far off and ordinary, about once in five minutes, and when it comes it is as likely as not more than one
+	// shot (somebody answers, or it was a burst). A scream is rarer, about once in thirteen minutes, and one exchange of
+	// shots in eight is followed by one. In any one minute that is about one chance in five of hearing a shot and one in
+	// fourteen of hearing somebody: a sitting of a quarter of an hour has two or three exchanges in it and a scream.
+	// Never sooner than the least gap, so two never come as a pair of events that were dealt separately.
+	const double ShotEvery = 300.0;
+	const double ShotLeast = 50.0;
+	const double ScreamEvery = 780.0;
+	const double ScreamLeast = 150.0;
+	const double FirstLeast = 40.0;
+
+	const float SecondShot = 0.42f;
+	const float ThirdShot = 0.35f;
+	const float ScreamAfterShots = 0.125f;
+
+	// how long the player has been in places that have them, in all, and when the next of each is: kept through every
+	// change of place, so that walking through a lane does not start the night again
+	double Sitting = 0.0;
+	double NextShot = -1.0;
+	double NextScream = -1.0;
+
+	double After(double Mean, double Least)
+	{
+		// the wait for something that happens at random, so often on average
+		return FMath::Max(Least, -Mean * FMath::Loge(FMath::Max(FMath::FRand(), 0.0001f)));
+	}
+}
+
+void UGutSoundSubsystem::HurryStrays()
+{
+	GutStrays::NextShot = GutStrays::Sitting;
+}
+
+void UGutSoundSubsystem::UpdateStrays(float DeltaTime)
+{
+	using namespace GutStrays;
+
+	const UWorld* World = GetWorld();
+
+	if (!bStrays || !World || DeltaTime <= 0.0f)
+	{
+		return;
+	}
+
+	if (NextShot < 0.0)
+	{
+		NextShot = FMath::Max(FirstLeast, After(ShotEvery, ShotLeast) * 0.6);
+		NextScream = FMath::Max(FirstLeast * 2.0, After(ScreamEvery, ScreamLeast));
+	}
+
+	Sitting += DeltaTime;
+
+	const APlayerCameraManager* Eye = UGameplayStatics::GetPlayerCameraManager(this, 0);
+	const FVector Ears = Eye ? Eye->GetCameraLocation() : FVector::ZeroVector;
+	const double Now = World->GetTimeSeconds();
+
+	// from some way round the compass, and from a long way off or a very long way off: more often the second
+	const auto From = []() { return FRotator(0.0f, FMath::FRandRange(0.0f, 360.0f), 0.0f).Vector(); };
+	const auto HowLoud = []() { return FMath::Lerp(0.3f, 1.0f, FMath::Square(FMath::FRand())); };
+
+	const auto Hear = [this, &Ears](FName Kind, float Volume, const FVector& Way)
+	{
+		// near enough that the place's own falling-off leaves it as it was cut, and to one side or the other
+		Play(Kind, Ears + (Way * 600.0f) + FVector(0.0f, 0.0f, 150.0f), Volume);
+
+		UE_LOG(LogTemp, Log, TEXT("[sound] far off, %.0f degrees round: %s, at %.2f of full"), FMath::Fmod(Way.Rotation().Yaw + 360.0f, 360.0f), *Kind.ToString(), Volume);
+	};
+
+	if (Sitting >= NextShot)
+	{
+		const FVector Way = From();
+		const float Volume = HowLoud();
+
+		Hear(FName("far_shot"), Volume, Way);
+
+		double Last = Now;
+
+		if (FMath::FRand() < SecondShot)
+		{
+			Last += FMath::FRandRange(1.2f, 6.0f);
+			StraysDue.Add({ Last, FName("far_shot"), Volume * FMath::FRandRange(0.8f, 1.1f), (Way + (From() * 0.25f)).GetSafeNormal() });
+
+			if (FMath::FRand() < ThirdShot)
+			{
+				Last += FMath::FRandRange(0.8f, 4.0f);
+				StraysDue.Add({ Last, FName("far_shot"), Volume * FMath::FRandRange(0.8f, 1.1f), (Way + (From() * 0.25f)).GetSafeNormal() });
+			}
+		}
+
+		if (FMath::FRand() < ScreamAfterShots)
+		{
+			StraysDue.Add({ Last + FMath::FRandRange(2.5f, 8.0f), FName("far_scream"), Volume * 0.9f, Way });
+
+			// and that was the scream for a while
+			NextScream = FMath::Max(NextScream, Sitting + ScreamLeast * 2.0);
+		}
+
+		NextShot = Sitting + After(ShotEvery, ShotLeast);
+
+		// somebody screaming does not come on top of gunfire that had nothing to do with it
+		NextScream = FMath::Max(NextScream, Sitting + 30.0);
+
+		UE_LOG(LogTemp, Log, TEXT("[sound] the next far gunfire is in %.0f s, the next far scream in %.0f s"), NextShot - Sitting, NextScream - Sitting);
+	}
+	else if (Sitting >= NextScream)
+	{
+		Hear(FName("far_scream"), HowLoud(), From());
+
+		NextScream = Sitting + After(ScreamEvery, ScreamLeast);
+		NextShot = FMath::Max(NextShot, Sitting + 25.0);
+	}
+
+	for (int32 i = StraysDue.Num() - 1; i >= 0; --i)
+	{
+		if (Now >= StraysDue[i].At)
+		{
+			Hear(StraysDue[i].Kind, StraysDue[i].Volume, StraysDue[i].Way);
+
+			StraysDue.RemoveAt(i);
+		}
+	}
 }
 
 void UGutSoundSubsystem::HurryBeds()
@@ -206,7 +411,7 @@ bool UGutSoundSubsystem::Has(FName Kind)
 	return Set && !Set->Sounds.IsEmpty();
 }
 
-USoundBase* UGutSoundSubsystem::Choose(FName Kind, const FGutSoundSet*& OutSet, bool bCountGap)
+USoundBase* UGutSoundSubsystem::Choose(FName Kind, const FGutSoundSet*& OutSet, bool bCountGap, uint32 Whose)
 {
 	OutSet = GetData() ? Data->Sets.Find(Kind) : nullptr;
 
@@ -229,6 +434,38 @@ USoundBase* UGutSoundSubsystem::Choose(FName Kind, const FGutSoundSet*& OutSet, 
 
 	// any but the one played last
 	const int32 Count = OutSet->Sounds.Num();
+
+	// somebody's own voice: the half or so of the recordings that fell to them, the same every time
+	if (Whose != 0 && Count >= 4)
+	{
+		TArray<int32, TInlineAllocator<32>> Own;
+
+		for (int32 i = 0; i < Count; ++i)
+		{
+			if ((HashCombineFast(Whose, GetTypeHash(i)) % 100) < 55)
+			{
+				Own.Add(i);
+			}
+		}
+
+		if (Own.Num() >= 2)
+		{
+			// kept apart from everybody else's last choice
+			const FName Mine(*FString::Printf(TEXT("%s#%u"), *Kind.ToString(), Whose));
+
+			int32 Place = FMath::RandHelper(Own.Num());
+
+			if (const int32* Last = LastChosen.Find(Mine); Last && Own[Place] == *Last)
+			{
+				Place = (Place + 1 + FMath::RandHelper(Own.Num() - 1)) % Own.Num();
+			}
+
+			LastChosen.Add(Mine, Own[Place]);
+
+			return OutSet->Sounds[Own[Place]];
+		}
+	}
+
 	int32 Index = FMath::RandHelper(Count);
 
 	if (const int32* Last = LastChosen.Find(Kind); Last && Count > 1 && Index == *Last)
@@ -241,11 +478,11 @@ USoundBase* UGutSoundSubsystem::Choose(FName Kind, const FGutSoundSet*& OutSet, 
 	return OutSet->Sounds[Index];
 }
 
-void UGutSoundSubsystem::Play(FName Kind, const FVector& Where, float Volume, float Pitch)
+void UGutSoundSubsystem::Play(FName Kind, const FVector& Where, float Volume, float Pitch, uint32 Whose)
 {
 	const FGutSoundSet* Set = nullptr;
 
-	USoundBase* Sound = Choose(Kind, Set, true);
+	USoundBase* Sound = Choose(Kind, Set, true, Whose);
 
 	if (!Sound || Volume <= 0.0f)
 	{
@@ -304,4 +541,11 @@ FName UGutSoundSubsystem::VoiceOf(const FString& BodyClassName)
 	Name.RemoveFromEnd(TEXT("_C"));
 
 	return (GetData() && Data->WomenBodies.Contains(FName(*Name))) ? Woman : Man;
+}
+
+FGutWho UGutSoundSubsystem::WhoIs(const UObject* WorldContextObject, const TSoftClassPtr<AActor>& Body)
+{
+	UGutSoundSubsystem* Sounds = Get(WorldContextObject);
+
+	return FGutWho(Sounds && !Body.IsNull() && Sounds->VoiceOf(Body.GetAssetName()) == FName(TEXT("woman")));
 }

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "Subsystems/WorldSubsystem.h"
+#include "GutTypes.h"
 #include "GutSound.generated.h"
 
 class UAudioComponent;
@@ -101,6 +102,10 @@ struct FGutSoundBed
 	int32 Changes = 0;
 
 	bool bStopped = false;
+
+	/** How loud it is at full, and how much of that is heard now: a crowd's murmur is heard by how near the crowd is */
+	float Base = 1.0f;
+	float Share = 1.0f;
 };
 
 /**
@@ -130,6 +135,12 @@ public:
 
 	void StopBed(int32 Bed, float FadeOut = 1.5f);
 
+	/** How much of its full loudness a bed is heard at from now on: 1 as it was started */
+	void SetBedShare(int32 Bed, float Share);
+
+	/** How sounds that come from a place fall off with distance, for whoever plays one of their own from a place: a voice */
+	USoundAttenuation* GetAttenuation();
+
 	/** How many recordings a bed has gone through so far, or nought */
 	int32 GetBedChanges(int32 Bed) const { return Beds.IsValidIndex(Bed) ? Beds[Bed].Changes : 0; }
 
@@ -137,13 +148,16 @@ public:
 	void HurryBeds();
 
 	/** Plays one recording of a kind, once, at a place. Volume and pitch are multiplied onto the kind's own. */
-	void Play(FName Kind, const FVector& Where, float Volume = 1.0f, float Pitch = 1.0f);
+	void Play(FName Kind, const FVector& Where, float Volume = 1.0f, float Pitch = 1.0f, uint32 Whose = 0);
 
 	/** Plays one recording of a kind over and over until the returned component is stopped. Attached to a component if one is given. */
 	UAudioComponent* Loop(FName Kind, const FVector& Where, float Volume = 1.0f, USceneComponent* AttachTo = nullptr);
 
 	/** "woman" or "man", for building the name of a voice's sounds, from the name of a body's class */
 	FName VoiceOf(const FString& BodyClassName);
+
+	/** He or she, for whoever is seen as this body. A man where nothing is known. */
+	static FGutWho WhoIs(const UObject* WorldContextObject, const TSoftClassPtr<AActor>& Body);
 
 	bool Has(FName Kind);
 
@@ -153,10 +167,24 @@ public:
 	/** How many times a kind has been played since the level began: what a test listens with */
 	int32 GetTimesPlayed(FName Kind) const { return TimesPlayed.FindRef(Kind); }
 
+	/**
+	 *  The night's far sounds, for a place that is walked about in: gunfire a long way off, and now and then somebody
+	 *  screaming (23 November: "add gun shots and sounds of screaming. But random... you decide the % that makes it real and
+	 *  not hollywood"). Not on a beat and not often: see UpdateStrays for how often and why.
+	 */
+	void SetStrays(bool bOn) { bStrays = bOn; }
+
+	/** For the tests: the next far sound is due now */
+	void HurryStrays();
+
 private:
 
 	/** The kind's set and one of its recordings, or null if there is none or it was asked for too soon after the last */
-	USoundBase* Choose(FName Kind, const FGutSoundSet*& OutSet, bool bCountGap);
+	/** @param Whose  not zero for a voice: whose it is. Each owner has about half of a kind's recordings to themselves, so that two people do not make the same sounds. */
+	USoundBase* Choose(FName Kind, const FGutSoundSet*& OutSet, bool bCountGap, uint32 Whose = 0);
+
+	/** The next recording for a bed of this kind: dealt so that each is heard once, in any order, before any is heard again, across every place of a sitting */
+	USoundBase* ChooseForBed(FName Kind, const FGutSoundSet*& OutSet);
 
 	UGutSoundData* GetData();
 
@@ -177,4 +205,20 @@ private:
 
 	TMap<FName, int32> LastChosen;
 	TMap<FName, double> LastPlayed;
+
+	/** Plays what far sounds have come due, and says when the next are */
+	void UpdateStrays(float DeltaTime);
+
+	bool bStrays = false;
+
+	/** Far sounds that follow one already heard: a second shot, an answer, a scream after it. When (in the level's time), what, how loud and from where. */
+	struct FStrayDue
+	{
+		double At = 0.0;
+		FName Kind;
+		float Volume = 1.0f;
+		FVector Way = FVector::ForwardVector;
+	};
+
+	TArray<FStrayDue> StraysDue;
 };

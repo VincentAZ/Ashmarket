@@ -150,7 +150,33 @@
   {"model": "floodlight_wagon", "x": -13.0, "y": 24.0, "yaw": 20, "note": "the Gate Yard, seen from the street"},
   {"model": "floodlight_flatbed", "x": 13.0, "y": 27.0, "yaw": 100},
   {"model": "town_overpass", "x": 0.0, "y": 262.0, "yaw": 90, "note": "the overpass, far up the street beyond the square"},
-  {"model": "street_lamp_01", "x": -6.6, "y": 145.0, "lamp": true, "note": "in the square"}
+  {"model": "street_lamp_01", "x": -6.6, "y": 145.0, "lamp": true, "note": "in the square"},
+  {"model": "plastic_bottle_gallon", "x": 6.07, "y": 94.83, "yaw": 225, "scattered": true},
+  {"model": "plastic_crate_02", "x": -7.23, "y": 67.84, "yaw": 295, "scattered": true},
+  {"model": "plastic_jerrycan", "x": -5.85, "y": 110.3, "yaw": 65, "scattered": true},
+  {"model": "metal_stool_02", "x": -6.22, "y": 47.93, "yaw": 215, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 6.9, "y": 66.67, "yaw": 195, "scattered": true},
+  {"model": "trashbag", "x": 7.03, "y": 94.35, "yaw": 95, "scattered": true},
+  {"model": "plastic_jerrycan", "x": -6.64, "y": 124.11, "yaw": 285, "scattered": true},
+  {"model": "can_rusted", "x": -6.57, "y": 64.9, "yaw": 310, "scattered": true},
+  {"model": "oil_tin", "x": -5.84, "y": 65.03, "yaw": 350, "scattered": true},
+  {"model": "plastic_monobloc_chair_01", "x": -5.84, "y": 70.22, "yaw": 315, "scattered": true},
+  {"model": "can_rusted", "x": -6.03, "y": 69.5, "yaw": 230, "scattered": true},
+  {"model": "plastic_jerrycan", "x": 6.92, "y": 114.73, "yaw": 255, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 6.42, "y": 103.49, "yaw": 210, "scattered": true},
+  {"model": "can_rusted", "x": 6.46, "y": 104.04, "yaw": 65, "scattered": true},
+  {"model": "can_rusted", "x": 6.25, "y": 72.03, "yaw": 75, "scattered": true},
+  {"model": "plastic_monobloc_chair_01", "x": -6.33, "y": 97.73, "yaw": 125, "scattered": true},
+  {"model": "trashbag", "x": -6.21, "y": 43.05, "yaw": 10, "scattered": true},
+  {"model": "plastic_jerrycan", "x": 6.61, "y": 106.09, "yaw": 60, "scattered": true},
+  {"model": "trashbag", "x": -7.21, "y": 78.12, "yaw": 105, "scattered": true},
+  {"model": "plastic_jerrycan", "x": 6.53, "y": 79.46, "yaw": 340, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": -5.86, "y": 84.42, "yaw": 350, "scattered": true},
+  {"model": "plastic_crate_02", "x": -5.26, "y": 84.68, "yaw": 205, "scattered": true},
+  {"model": "oil_tin", "x": -6.31, "y": 73.99, "yaw": 100, "scattered": true},
+  {"model": "plastic_crate_02", "x": -6.02, "y": 77.54, "yaw": 105, "scattered": true},
+  {"model": "plastic_jerrycan", "x": -6.97, "y": 114.66, "yaw": 190, "scattered": true},
+  {"model": "oil_tin", "x": -6.4, "y": 114.13, "yaw": 135, "scattered": true}
  ],
 
  "pictures_about": "Bills, made in Mixar for Pool Street and the square (ArtSource/mixar/street). 'faces' is the way the surface they are on looks.",
@@ -203,7 +229,7 @@
  "people": [
   {
    "name": "Needle", "prompt": "Talk to Needle, at Hide & Plate", "body": "Ada", "cloth": [0.32, 0.31, 0.28],
-   "x": -9.45, "y": 96.16, "facing": 90, "on": true, "idle": "crowd_watch_hands_on_hips",
+   "x": -9.45, "y": 96.16, "facing": 90, "on": true, "stand": "hip_l",
    "lines": [
     {"id": "counter", "words": "Arms up. Turn. You stand like somebody who gets hit on the left. We cut ring armor for the Gut: tire rubber for what is swung at you, road sign for what is edged. Water in hand. Nothing here goes on a slate.",
      "answers": [
@@ -220,14 +246,14 @@
   },
   {
    "name": "Thread", "prompt": "Talk to Thread", "body": "Ada", "cloth": [0.3, 0.3, 0.29],
-   "x": -7.3, "y": 100.4, "facing": 180, "idle": "crowd_watch_relaxed",
+   "x": -7.3, "y": 100.4, "facing": 180, "stand": "stand_f",
    "lines": [
     {"id": "line", "words": "Needle sells you the plate. I would sooner know who it is for. Come by when the line is not running, and sit. Tonight it is running."}
    ]
   },
   {
    "name": "Brass", "prompt": "Talk to Brass, at Tooth & Trigger", "body": "Mix02", "cloth": [0.05, 0.07, 0.05],
-   "x": 4.25, "y": 60.6, "facing": 270, "idle": "crowd_watch_arms_crossed",
+   "x": 4.25, "y": 60.6, "facing": 270, "stand": "crossed",
    "lines": [
     {"id": "drawer", "words": "Scrap, tuned or relic. Scrap is cheap because you'll be back. Relic is dear because you won't.",
      "answers": [
@@ -241,14 +267,14 @@
   },
   {
    "name": "Gate Warden", "prompt": "Talk to the Warden at the barrier", "body": "Mix04", "cloth": [0.035, 0.04, 0.055],
-   "x": 2.2, "y": 42.3, "facing": 0, "idle": "crowd_watch_arms_crossed",
+   "x": 2.2, "y": 42.3, "facing": 0, "stand": "clasp",
    "lines": [
     {"id": "shut", "words": "Gate Yard is shut to foot traffic until the bell. You can see the gate from here, and that is as near as you get tonight."}
    ]
   },
   {
    "name": "Stallholder", "prompt": "Talk to the stallholder", "body": "Mix07", "cloth": [0.09, 0.06, 0.04],
-   "x": -6.5, "y": 72.0, "facing": 90, "idle": "crowd_watch_hands_on_hips",
+   "x": -6.5, "y": 72.0, "facing": 90, "stand": "hips",
    "sells": ["bread"],
    "lines": [
     {"id": "bread", "words": "Bread's hot. Water first, then bread. That is the order everything goes in here.",
@@ -260,8 +286,8 @@
   },
   {
    "name": "Scrap seller", "prompt": "Talk to the scrap seller", "body": "Sookja", "cloth": [0.06, 0.06, 0.05],
-   "x": 6.5, "y": 84.0, "facing": 270, "idle": "crowd_watch_relaxed",
-   "sells": ["splint"],
+   "x": 6.5, "y": 84.0, "facing": 270, "stand": "shift_l",
+   "sells": ["splint"], "buys": ["scrap", "tag"],
    "lines": [
     {"id": "table", "words": "If it is on the table it is for sale. If it is under the table it is sold. If it is yours, you should have kept hold of it.",
      "answers": [
@@ -272,8 +298,8 @@
   },
   {
    "name": "Tea seller", "prompt": "Talk to the tea seller", "body": "Jelena", "cloth": [0.08, 0.05, 0.05],
-   "x": 6.7, "y": 108.0, "facing": 270, "idle": "crowd_watch_relaxed",
-   "sells": ["tea"],
+   "x": 6.7, "y": 108.0, "facing": 270, "stand": "stand_f",
+   "sells": ["tea"], "buys": ["smokes"],
    "lines": [
     {"id": "tea", "words": "Tea. It is leaves and it is hot, and that is all I will say about the leaves. A cup is a tenth of a litre. Yes, I see the joke. Everybody sees the joke.",
      "answers": [
@@ -284,14 +310,14 @@
   },
   {
    "name": "Dealer", "prompt": "Talk to the dice dealer", "body": "Mix14", "cloth": [0.04, 0.04, 0.045],
-   "x": -7.2, "y": 107.0, "facing": 90, "idle": "crowd_watch_leaning",
+   "x": -7.2, "y": 107.0, "facing": 90, "stand": "hip_r",
    "lines": [
     {"id": "cup", "words": "Three dice, one cup. You fight at the Gut? Then you have had your luck for the week, and I would be robbing you. Come back when you are bored of living."}
    ]
   },
   {
    "name": "Carrier", "prompt": "Talk to the carrier", "body": "Mix03", "cloth": [0.05, 0.06, 0.08],
-   "x": 6.3, "y": 98.6, "facing": 270, "idle": "crowd_watch_neck",
+   "x": 6.3, "y": 98.6, "facing": 270, "stand": "stand",
    "lines": [
     {"id": "cart", "words": "Pump water, sealed at the window. I carry it. I do not sell it and I do not lend it. Hands off the cart: that is touching the water."}
    ]
@@ -299,7 +325,7 @@
 
   {
    "name": "Warden", "prompt": "Talk to the Warden", "body": "Mix13", "cloth": [0.035, 0.04, 0.055],
-   "x": -1.4, "y": 49.0, "facing": 0, "idle": "crowd_watch_arms_crossed", "pace": 0.8,
+   "x": -1.4, "y": 49.0, "facing": 0, "stand": "clasp", "pace": 0.8,
    "beat": [[-1.4, 49.0, 5, 180], [-1.4, 122.0, 4, 180]],
    "lines": [
     {"id": "loop", "words": "Market Loop. Thirteen minutes if nobody makes it longer. Do not make it longer."}
@@ -307,7 +333,7 @@
   },
   {
    "name": "Warden", "prompt": "Talk to the Warden", "body": "Mix11", "cloth": [0.035, 0.04, 0.055],
-   "x": -0.4, "y": 49.0, "facing": 0, "idle": "crowd_watch_arms_crossed", "pace": 0.8,
+   "x": -0.4, "y": 49.0, "facing": 0, "stand": "clasp", "pace": 0.8,
    "beat": [[-0.4, 49.0, 5, 180], [-0.4, 122.0, 4, 180]],
    "lines": [
     {"id": "loop", "words": "Talk to the other one. I am counting."}
@@ -315,19 +341,19 @@
   },
   {
    "name": "Carrier", "body": "Mix08", "cloth": [0.05, 0.06, 0.08],
-   "x": 1.0, "y": 118.0, "facing": 180, "idle": "crowd_watch_relaxed", "pace": 0.95,
+   "x": 1.0, "y": 118.0, "facing": 180, "stand": "stand", "walk": "style_walk_limp", "pace": 0.55,
    "beat": [[1.0, 118.0, 2], [1.0, 47.5, 6, 180]],
    "lines": []
   },
   {
    "name": "Somebody", "body": "Mix10", "cloth": [0.07, 0.065, 0.06],
-   "x": -2.9, "y": 60.0, "facing": 0, "idle": "crowd_watch_relaxed", "pace": 0.7,
+   "x": -2.9, "y": 60.0, "facing": 0, "stand": "shift_r", "pace": 0.7,
    "beat": [[-2.9, 60.0, 3], [-2.9, 74.0, 7, 270], [-2.9, 96.0, 8, 270], [-2.9, 116.0, 3]],
    "lines": []
   },
   {
    "name": "Somebody", "body": "Mix12", "cloth": [0.06, 0.07, 0.06],
-   "x": 2.9, "y": 110.0, "facing": 180, "idle": "crowd_watch_relaxed", "pace": 0.7,
+   "x": 2.9, "y": 110.0, "facing": 180, "stand": "shift_l", "pace": 0.7,
    "beat": [[2.9, 110.0, 4], [2.9, 84.0, 8, 90], [2.9, 62.5, 6, 90], [2.9, 50.0, 3]],
    "lines": []
   }
@@ -339,5 +365,12 @@
   {"prompt": "Try the gate into Pen Lane", "x": 7.3, "y": 117.1, "shut": "Barred from the other side. The Chainmen's carts come through here, not people."},
   {"prompt": "Look down the alley", "x": -7.1, "y": 59.75, "shut": "Chain-link, wired shut. The Stacks go on behind it, dark."},
   {"prompt": "Look down at the gate", "x": 0.0, "y": 41.6, "shut": "The Gate Yard, and the tunnel through the dam. Nobody goes down there tonight."}
+ ],
+ "finds_about": "What lies about to be found and picked up (E, or X): a good by the name the town knows it by, where it lies on the map, and which way it is turned. Each is there once: picked up, it is in the bag and gone from the street for good.",
+ "finds": [
+  {"good": "flask", "x": -6.5, "y": 45.7, "facing": 20},
+  {"good": "scrap", "x": -6.6, "y": 66.4, "facing": 150},
+  {"good": "tag", "x": 4.6, "y": 103.3, "facing": 70},
+  {"good": "smokes", "x": 6.4, "y": 121.2, "facing": 300}
  ]
 }

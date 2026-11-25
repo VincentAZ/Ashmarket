@@ -9,6 +9,26 @@
 /** Log category for everything that happens in the cage */
 DECLARE_LOG_CATEGORY_EXTERN(LogGut, Log, All);
 
+/**
+ *  The words for one person, a man or a woman. Nobody the game names is "they" or "it": every body in it is plainly a
+ *  man's or a woman's, and whoever is bought, signed, led, fed or buried is spoken of as he or she (24 November).
+ */
+struct FGutWho
+{
+	bool bWoman = false;
+
+	FGutWho() = default;
+	explicit FGutWho(bool bIsWoman) : bWoman(bIsWoman) {}
+
+	const TCHAR* He() const { return bWoman ? TEXT("she") : TEXT("he"); }
+	const TCHAR* Him() const { return bWoman ? TEXT("her") : TEXT("him"); }
+	const TCHAR* His() const { return bWoman ? TEXT("her") : TEXT("his"); }
+	const TCHAR* Hers() const { return bWoman ? TEXT("hers") : TEXT("his"); }
+	const TCHAR* HeCap() const { return bWoman ? TEXT("She") : TEXT("He"); }
+	const TCHAR* HisCap() const { return bWoman ? TEXT("Her") : TEXT("His"); }
+	const TCHAR* Man() const { return bWoman ? TEXT("woman") : TEXT("man"); }
+};
+
 /** What a fighter is doing right now. A fighter is always in exactly one state. */
 UENUM(BlueprintType)
 enum class EGutFighterState : uint8
@@ -239,6 +259,22 @@ enum class EGutMenuInput : uint8
  *  Timing, reach and damage live here and never in the animation, so a fight plays the same with or without art.
  *  The animation is only played to match.
  */
+/** Another way of throwing the same blow: another performance of it, and where in that the blow begins and lands */
+USTRUCT(BlueprintType)
+struct FGutAttackWay
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Attack|Animation")
+	TObjectPtr<UAnimSequenceBase> Animation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Attack|Animation", meta = (ClampMin = 0, Units = "s"))
+	float AnimStartTime = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Attack|Animation", meta = (ClampMin = 0, Units = "s"))
+	float AnimImpactTime = 0.45f;
+};
+
 USTRUCT(BlueprintType)
 struct FGutAttackDef
 {
@@ -330,8 +366,25 @@ struct FGutAttackDef
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Attack|Animation", meta = (ClampMin = 0, Units = "s"))
 	float AnimImpactTime = 0.45f;
 
+	/** Other performances of the same blow. Each time it is thrown it is thrown one of these ways or the first, never the same way twice running: it lands when it lands whichever it is. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Attack|Animation")
+	TArray<FGutAttackWay> Others;
+
 	/** Total time the attacker is committed */
 	float GetTotalTime() const { return Windup + Active + Recovery; }
+};
+
+/** Other ways of doing what one clip does: whenever that clip would be played, it or one of these is */
+USTRUCT(BlueprintType)
+struct FGutOtherWays
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stance")
+	TObjectPtr<UAnimSequenceBase> For;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stance")
+	TArray<TObjectPtr<UAnimSequenceBase>> Ways;
 };
 
 /**
@@ -347,9 +400,27 @@ struct FGutStanceAnimations
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stance")
 	TObjectPtr<UAnimSequenceBase> Idle;
 
+	/**
+	 *  More than one way of taking a blow, of being driven back off a guard, of dodging: for any clip below, others that
+	 *  do the same thing. Nobody reels the same way twice running (23 November: of 1,008 clips bought, 212 were in use).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stance")
+	TArray<FGutOtherWays> Others;
+
+	/** How the winner shows the crowd, holding this: if there are none, the fighter's own ways are used */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stance")
+	TArray<TObjectPtr<UAnimSequenceBase>> Victory;
+
 	/** Holding the guard up. A loop. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stance")
 	TObjectPtr<UAnimSequenceBase> Block;
+
+	/**
+	 *  Where in that clip the guard is held, in seconds, when the clip is not a loop but somebody putting a guard up and
+	 *  taking it down again: the guard is that one moment of it, held still. Less than nought for a loop.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stance")
+	float BlockHold = -1.0f;
 
 	/** Taking a blow on the guard: jolted, and the guard still up. Played once, at its own speed, each time a blow is stopped. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stance")
@@ -476,6 +547,32 @@ struct FGutTurnClip
 	}
 };
 
+/**
+ *  One way of standing about, out of a fight: clips recorded from one stance (weight on the left leg, arms crossed, a hand
+ *  on a hip), each of which begins and ends as the others do. Somebody who stands this way goes from one of them to the next
+ *  and never does the same few seconds twice running.
+ */
+USTRUCT(BlueprintType)
+struct FGutStandFamily
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stand")
+	FName Name;
+
+	/** Who is dealt it when they were given no way of their own: 0 nobody (it has to be asked for by name), 1 men, 2 women, 3 anybody */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stand", meta = (ClampMin = 0, ClampMax = 3))
+	int32 DealtTo = 3;
+
+	/** The standing itself: each can follow any other */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stand")
+	TArray<TObjectPtr<UAnimSequenceBase>> Loops;
+
+	/** Small things done from that stance and back to it, now and then: a look round, a hand to the neck */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stand")
+	TArray<TObjectPtr<UAnimSequenceBase>> Extras;
+};
+
 /** One clip of a fighter moving in its stance, and how fast the body in it was really going */
 USTRUCT(BlueprintType)
 struct FGutMoveClip
@@ -489,6 +586,24 @@ struct FGutMoveClip
 	/** Speed the clip was made at. Played faster or slower as the fighter goes faster or slower than this, within limits. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Move", meta = (ClampMin = 1, ClampMax = 2000, Units = "cm/s"))
 	float Speed = 150.0f;
+
+	/** How many times faster than it was made the clip is played at that speed: a stroll walked in a small room, played as a walk */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Move", meta = (ClampMin = 0.25, ClampMax = 4))
+	float Quickened = 1.0f;
+
+	/** How many whole cycles (a left step and a right) the clip holds. Clips are kept in step with one another by the cycle. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Move", meta = (ClampMin = 1, ClampMax = 8))
+	int32 Cycles = 1;
+
+	/**
+	 *  Where in its first cycle the clip's left foot passes its right going forward, as a share of the cycle. Clips that are
+	 *  mixed are read so that these fall together: a walk and a run that were not recorded from the same footfall.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Move", meta = (ClampMin = 0, ClampMax = 1))
+	float Phase = 0.0f;
+
+	/** How long one cycle of it takes at its speed */
+	float GetCycleTime() const { return Animation ? Animation->GetPlayLength() / (FMath::Max(Quickened, 0.25f) * FMath::Max(Cycles, 1)) : 1.0f; }
 };
 
 /**
@@ -523,6 +638,10 @@ struct FGutLocomotionAnimations
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Move|Run")
 	FGutMoveClip RunLeft;
+
+	/** Faster than a run, forward only: a flat-out run in the street. Nothing in the cage has one. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Move|Run")
+	FGutMoveClip Sprint;
 
 	/** Stepping round on the spot to keep facing an opponent: a short turn and a long one, each way */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Move|Turn")
@@ -691,4 +810,13 @@ struct FGutFinisherDef
 	/** Time in that animation at which the body goes limp and is left to the floor */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Finisher|Animation", meta = (ClampMin = 0, Units = "s"))
 	float DeathLimpTime = 0.0f;
+
+	/**
+	 *  For a finisher that two people performed together: how far apart the two stood, facing, as it began. The two clips
+	 *  are then played as they were performed, at their own speed and from their start, each body is carried along its own
+	 *  clip, and the one it is done to goes on in its clip past the blow, down to the floor, until Death Limp Time (which is
+	 *  then a time in the Taken Animation). 0: not such a finisher.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Finisher|Animation", meta = (ClampMin = 0, Units = "cm"))
+	float PairApart = 0.0f;
 };

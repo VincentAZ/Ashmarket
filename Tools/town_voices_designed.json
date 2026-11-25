@@ -10,24 +10,24 @@
   "generated_voice_id": "CLIO1rP4LDHzSdgdwUuk"
  },
  "Block Square/Mother Ledger": {
-  "description": "An old woman, late sixties, a moneylender who has never needed to raise her voice. Thin, dry, papery, very calm and slow, faintly amused, patient in a way that frightens people. She speaks softly and close, as if across a small table at night. Not a narrator and not an actress: plain, tired, exact.",
-  "generated_voice_id": "tAxtp9dr0UYE6W7sxYdT",
-  "note": "the take Vincent chose from the audition (D1), 2026-11-19"
+  "description": "A very old woman, late seventies, small and frail, a moneylender who has never needed to raise her voice. A high, thin, reedy voice with an old woman's quaver in it, light as paper, very calm and slow, faintly amused, patient in a way that frightens people. She speaks softly and close, as if across a small table at night. Not a narrator and not an actress: plain, exact, old.",
+  "first_said": "People who signed. I have never collared anybody. People sign, and then they owe, and then they come back to this table. That is all a ledger is, dear: a list of people who came back.",
+  "generated_voice_id": "QsjSZjtHn6iquaIt40yX"
  },
  "Block Square/Warden": {
-  "description": "A militia guard in his thirties standing post at a crowded night market in a desert shanty town. A rough, mid-pitched man's voice, hoarse from dust, curt, a little impatient, talking while he looks past you at the crowd. Plain working American speech with a trace of a Southwestern drawl. Not an announcer: close, clipped, real.",
+  "description": "An ordinary American man in his thirties working security at a crowded outdoor night market. A natural mid-pitched speaking voice with a slight Southwestern drawl, short of patience. He speaks casually and quickly while his attention is on the crowd, without acting it or performing it. Conversational, plain, understated. Perfect audio quality, recorded close on a studio microphone in a quiet room, dry, no effects.",
   "first_said": "Main Street is open as far as the Gate Yard. The armorers and the gunsmith are down it, if you have business with either. Keep your hands where the Chainmen can see them.",
-  "generated_voice_id": "mfxwpuEWNuf2xBVoA8Gi"
+  "generated_voice_id": "VzsLobvU2GmlJwxzIh8E"
  },
  "Main Street/Brass": {
-  "description": "A woman in her fifties, a gunsmith who trades from the back of a truck in a desert shanty town. Hard, clipped, gravelly, very few words and none wasted: the voice of somebody who has turned away better customers than you. Low and dry, with a smoker's edge. Plain working American speech. Not an announcer and not a narrator: curt, close, real.",
+  "description": "A big older woman in her sixties with an unusually deep contralto voice, deeper than most men's: husky, rumbling, slow and heavy, rough from forty years of cigarettes. A gunsmith who trades from the back of a truck in a desert shanty town. Very few words and none wasted. Plain working American speech. Not an announcer and not a narrator: curt, close, real.",
   "first_said": "Scrap, tuned or relic. Scrap is cheap because you'll be back. Relic is dear because you won't. Nothing the Gut lets through its door. Hasp racks what you fight with, and Hasp does not take mine. When you have a tag and a reason, come back and I will find you a tool. Ten litres a fight to wear them, from Butcher rank. The offer comes to your card at the Gut. I do not chase fighters down the street.",
-  "generated_voice_id": "MgplkC3ZIovO2H5wJVdl"
+  "generated_voice_id": "e6P9FwLrqIQU2rhF6K8C"
  },
  "Main Street/Carrier": {
-  "description": "A woman in her thirties who hauls a water cart through a night market in a desert shanty town. Strong, blunt, wary, a little out of breath, a mid-low voice with dust in it. She says each thing like a rule she is tired of repeating. Plain working American speech. Not a narrator: short, guarded, real.",
+  "description": "A young woman of about twenty-five who hauls a water cart through a night market in a desert shanty town. A clear, bright, strong young voice, higher than the older women around her and with no rasp in it at all, a little out of breath from the work, blunt and wary. She says each thing like a rule she is tired of repeating. Plain working American speech. Not a narrator: short, guarded, real.",
   "first_said": "Pump water, sealed at the window. I carry it. I do not sell it and I do not lend it. Hands off the cart: that is touching the water.",
-  "generated_voice_id": "UNHjTlbdM7MnfhnfJ3to"
+  "generated_voice_id": "LbpqhdUaHci3ydhXZf3A"
  },
  "Main Street/Dealer": {
   "description": "A man in his forties who runs a dice game on a crate at a night market in a desert shanty town. Lazy, smooth, low, smiling as he talks: a gambler's easy drawl with smoke in it, friendly in a way you should not trust. Unhurried. Plain American speech with a little Southern in it. Not an announcer and not a narrator: close, offhand, real.",
@@ -35,9 +35,9 @@
   "generated_voice_id": "sP9LxBSZzACSEnUp0dMt"
  },
  "Main Street/Gate Warden": {
-  "description": "A militia guard in his fifties who minds a barrier gate at night in a desert shanty town. Gruff, gravelly, deep, tired on his feet. He has turned people back all his life and takes no pleasure in it any more. Slow and final. Plain working American speech. Not an announcer: flat, worn, real.",
+  "description": "An ordinary American man in his fifties who minds a gate at night. A natural low speaking voice, gravelly and tired, slow and final but quiet, a man who has said no all his life and no longer argues about it. Conversational, plain, understated, without acting it. Perfect audio quality, recorded close on a studio microphone in a quiet room: clean, full and dry, with no radio, telephone or loudspeaker sound, no echo and no distortion.",
   "first_said": "Gate Yard is shut to foot traffic until the bell. You can see the gate from here, and that is as near as you get tonight.",
-  "generated_voice_id": "0lEQeqrrqCFevZaEgLH5"
+  "generated_voice_id": "fSK78hEpQirnffciwN72"
  },
  "Main Street/Needle": {
   "description": "A woman in her late thirties who fits armor at a workshop counter in a desert shanty town. Low for a woman, level and sharp, sizing you up while she talks, and she says a thing once. Dry, a little smoky, practical, faintly scornful of anybody who has not been hit yet. Plain working American speech. Not a narrator: close, matter-of-fact, real.",
@@ -84,9 +84,9 @@
   "note": "the take Vincent chose from the audition (D1), 2026-11-19"
  },
  "Pool Street/Warden": {
-  "description": "A militia guard in his forties posted on a street corner at night in a desert shanty town. A deep, flat, heavy voice, bored and faintly threatening, used to being obeyed without raising it. Slow. Plain working American speech. He says the same warning forty times a night and sounds like it. Not an announcer: close, dull, real.",
+  "description": "An ordinary American man in his forties, a night watchman on a street corner. A natural, relaxed, medium-low speaking voice, a little hoarse and tired. He talks quietly and plainly, the way a bored man repeats something he has said many times tonight, without acting it or performing it. Conversational, unhurried, understated, slightly mumbled. Perfect audio quality, recorded close on a studio microphone in a quiet room, dry, no effects.",
   "first_said": "Sale night. The square is open until the last lot is down: south, down the lane. Keep your hands where the Chainmen can see them.",
-  "generated_voice_id": "T7lmujiLj6GoK3nARmRG"
+  "generated_voice_id": "kqleOFtjdK5nXRKIbbm5"
  },
  "Pool Street/Yard hand": {
   "description": "A man in his thirties who works the yard gate behind a pit-fighting cage in a desert shanty town. A light Mexican Spanish accent, easy and low, a little tired, friendly enough but watching you. Short sentences, no hurry, talks out of the side of his mouth. Not an announcer and not a narrator: offhand, a little mumbled, real.",

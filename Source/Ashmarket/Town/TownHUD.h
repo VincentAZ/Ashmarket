@@ -33,6 +33,9 @@ protected:
 
 	void DrawTalk(const ATownGameMode* Town, float CenterX);
 	void DrawShop(const ATownGameMode* Town, float CenterX);
+
+	/** The Block's book: the list of who is for sale, with whoever the choice is on pictured on the card and told about beside it */
+	void DrawBook(const ATownGameMode* Town, float CenterX);
 	void DrawTownStopped(const ATownGameMode* Town, float CenterX);
 
 	/** The town's own map, with the player marked on it */

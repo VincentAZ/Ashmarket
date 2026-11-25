@@ -97,6 +97,29 @@ void AGutGameMode::Tick(float DeltaTime)
 
 	PhaseTime += DeltaTime;
 
+	// between fights nobody holds a guard: at the card and at the gate the two in the cage stand as people stand, and
+	// come up into their stance when the weapons are drawn. (He found everybody's standing unnatural, 21 November:
+	// a fighting crouch held for as long as a card is read was a large part of it.)
+	{
+		static const bool bAlwaysOnGuard = FParse::Param(FCommandLine::Get(), TEXT("GutAlwaysOnGuard"));
+
+		const bool bAtEase = !bAlwaysOnGuard && (Phase == EGutFightPhase::Card || Phase == EGutFightPhase::Gate);
+
+		// only when it changes: anything else that stands somebody at ease in the cage is left to
+		if (bAtEase != bStoodAtEase)
+		{
+			bStoodAtEase = bAtEase;
+
+			for (AGutFighter* Fighter : { static_cast<AGutFighter*>(PlayerFighter), static_cast<AGutFighter*>(EnemyFighter) })
+			{
+				if (Fighter && Fighter->IsAlive() && !Fighter->IsBeast())
+				{
+					Fighter->SetAtEase(bAtEase);
+				}
+			}
+		}
+	}
+
 	if (Phase == EGutFightPhase::Fighting)
 	{
 		FightTime = PhaseTime;
@@ -130,6 +153,12 @@ void AGutGameMode::Tick(float DeltaTime)
 void AGutGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
 {
 	Super::InitGame(MapName, Options, ErrorMessage);
+
+	// in the cage again: its screens are drawn
+	if (UGutGameInstance* Run = Cast<UGutGameInstance>(GetGameInstance()))
+	{
+		Run->bGoingToStreet = false;
+	}
 
 	// the pit boss's dogs, where the game mode's own settings do not name any: -GutNoDogs leaves the cage without them
 	if (!Dog && !FParse::Param(FCommandLine::Get(), TEXT("GutNoDogs")))
@@ -215,6 +244,12 @@ void AGutGameMode::InitGame(const FString& MapName, const FString& Options, FStr
 
 UGutGameInstance* AGutGameMode::GetGutGameInstance() const
 {
+	// lent to a yard outside the cage: the run is whoever's it was lent to (and there is no world here to ask)
+	if (LentTo)
+	{
+		return LentTo;
+	}
+
 	return Cast<UGutGameInstance>(GetGameInstance());
 }
 
@@ -458,6 +493,7 @@ void AGutGameMode::EnterBy(int32 Way)
 	GameInstance->bAtDoor = false;
 	GameInstance->bSandbox = Way == GutDoorLines::Spar;
 	GameInstance->bStable = Way == GutDoorLines::Own;
+	GameInstance->bStableFromYard = false;
 	GameInstance->bWindow = Way == GutDoorLines::Bet;
 
 	if (bAfresh)

@@ -1,6 +1,12 @@
 // Ashmarket: the town outside the cage.
 
 #include "TownHUD.h"
+#include "CanvasItem.h"
+#include "Engine/Canvas.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "GutFighter.h"
+#include "GutStableTypes.h"
+#include "GutWeaponData.h"
 #include "Engine/Canvas.h"
 #include "Engine/World.h"
 #include "TownGameMode.h"
@@ -63,25 +69,51 @@ void ATownHUD::DrawHUD()
 
 	if (bShowControls && !Town->IsTalking() && !Town->IsShopping())
 	{
-		const TCHAR* Controls[][2] =
+		// what it does, on the keys, on a pad: three columns, each as wide as its longest line, and the dark behind as wide as all three
+		const TCHAR* Controls[][3] =
 		{
-			{ TEXT("Walk"), TEXT("WASD / left stick") },
-			{ TEXT("Look"), TEXT("Mouse / right stick") },
-			{ TEXT("Jog (hold)"), TEXT("Shift / LB") },
-			{ TEXT("Talk, use"), TEXT("E / X") },
-			{ TEXT("Back out"), TEXT("Backspace / B") },
-			{ TEXT("Stop"), TEXT("Esc / Back") },
+			{ TEXT("Walk"), TEXT("W A S D"), TEXT("Left stick") },
+			{ TEXT("Look"), TEXT("Mouse"), TEXT("Right stick") },
+			{ TEXT("Jog"), TEXT("Hold Shift"), TEXT("Hold LB") },
+			{ TEXT("Run"), TEXT("Shift twice, hold"), TEXT("Press left stick") },
+			{ TEXT("Lock camera"), TEXT("C"), TEXT("D-pad up") },
+			{ TEXT("Camera height"), TEXT("V"), TEXT("D-pad down") },
+			{ TEXT("Talk, use"), TEXT("E"), TEXT("X") },
+			{ TEXT("Back out"), TEXT("Backspace"), TEXT("B") },
+			{ TEXT("Stop"), TEXT("Esc"), TEXT("Back") },
 		};
 
-		// on something dark, so that it can be read against a lit street
-		DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.5f), 38.0f * UIScale, 86.0f * UIScale, 372.0f * UIScale, ((UE_ARRAY_COUNT(Controls) * 24.0f) + 14.0f) * UIScale);
-
-		float Y = 92.0f;
+		const int32 Size = 17;
+		const float Between = 34.0f;
+		float Wide[3] = { MeasureLabel(TEXT("KEYS"), Size), MeasureLabel(TEXT("KEYS"), Size), MeasureLabel(TEXT("PAD"), Size) };
 
 		for (const auto& Line : Controls)
 		{
-			DrawLabel(Line[0], 50.0f, Y, 17, GutHUDColors::DimText);
-			DrawLabel(Line[1], 190.0f, Y, 17, GutHUDColors::Text);
+			for (int32 Column = 0; Column < 3; ++Column)
+			{
+				Wide[Column] = FMath::Max(Wide[Column], MeasureLabel(Line[Column], Size));
+			}
+		}
+
+		const float Left = 50.0f;
+		const float Keys = Left + Wide[0] + Between;
+		const float Pad = Keys + Wide[1] + Between;
+
+		// on something dark, so that it can be read against a lit street
+		DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.6f), (Left - 12.0f) * UIScale, 86.0f * UIScale, ((Pad + Wide[2] + 12.0f) - (Left - 12.0f)) * UIScale, (((UE_ARRAY_COUNT(Controls) + 1) * 24.0f) + 16.0f) * UIScale);
+
+		float Y = 92.0f;
+
+		DrawLabel(TEXT("KEYS"), Keys, Y, Size, GutHUDColors::DimText);
+		DrawLabel(TEXT("PAD"), Pad, Y, Size, GutHUDColors::DimText);
+
+		Y += 26.0f;
+
+		for (const auto& Line : Controls)
+		{
+			DrawLabel(Line[0], Left, Y, Size, GutHUDColors::DimText);
+			DrawLabel(Line[1], Keys, Y, Size, GutHUDColors::Text);
+			DrawLabel(Line[2], Pad, Y, Size, GutHUDColors::Text);
 
 			Y += 24.0f;
 		}
@@ -172,8 +204,66 @@ void ATownHUD::DrawHUD()
 
 	if (Town->IsShopping())
 	{
-		DrawShop(Town, CenterX);
+		if (Town->IsAtBook())
+		{
+			DrawBook(Town, CenterX);
+		}
+		else
+		{
+			DrawShop(Town, CenterX);
+		}
+
 		return;
+	}
+
+	// what lies about to be picked up catches the light now and then: a small glint, brighter the nearer it is. Without it
+	// a tin the size of a hand in a dark street is found only by somebody who was told where it is.
+	if (const AGutFighter* Walker = Town->GetWalker())
+	{
+		const double Time = GetWorld()->GetTimeSeconds();
+
+		int32 Which = 0;
+
+		for (const FVector& Lying : Town->GetFindsLying())
+		{
+			++Which;
+
+			const float Far = FVector::Dist(Lying, Walker->GetActorLocation());
+
+			if (Far > 900.0f)
+			{
+				continue;
+			}
+
+			const FVector At = Project(Lying, false);
+
+			if (At.Z <= 0.0f || At.X < 0.0f || At.Y < 0.0f || At.X > Canvas->SizeX || At.Y > Canvas->SizeY)
+			{
+				continue;
+			}
+
+			// a flash a quarter of a second long every two seconds or so, each in its own time, over a faint steady point
+			const double Beat = FMath::Fmod(Time + (Which * 0.73), 2.1);
+			// -GutGlintHeld holds the flash at its brightest, for a picture of it
+			static const bool bHeld = FParse::Param(FCommandLine::Get(), TEXT("GutGlintHeld"));
+
+			const float Flash = bHeld ? 1.0f : (Beat < 0.25 ? FMath::Sin(static_cast<float>(Beat / 0.25) * UE_PI) : 0.0f);
+			const float Near = 1.0f - FMath::Clamp((Far - 150.0f) / 750.0f, 0.0f, 1.0f);
+			const float Bright = FMath::Sqrt(Near) * (0.22f + (0.78f * Flash));
+			const float Long = (4.0f + (13.0f * Flash)) * UIScale * (0.6f + (0.4f * Near));
+			const float Thin = FMath::Max(1.0f, 1.5f * UIScale);
+
+			// the light a bit of metal throws back: a hot point, short arms as bright as it, and long thin ones fading out
+			const FLinearColor Core(1.0f, 0.95f, 0.8f, FMath::Min(Bright * 1.6f, 1.0f));
+			const FLinearColor Arm(1.0f, 0.86f, 0.55f, Bright);
+			const FLinearColor Far2(1.0f, 0.8f, 0.45f, Bright * 0.45f);
+
+			DrawRect(Far2, At.X - Long, At.Y - (Thin * 0.5f), Long * 2.0f, Thin);
+			DrawRect(Far2, At.X - (Thin * 0.5f), At.Y - Long, Thin, Long * 2.0f);
+			DrawRect(Arm, At.X - (Long * 0.45f), At.Y - (Thin * 0.5f), Long * 0.9f, Thin);
+			DrawRect(Arm, At.X - (Thin * 0.5f), At.Y - (Long * 0.45f), Thin, Long * 0.9f);
+			DrawRect(Core, At.X - (Thin * 1.25f), At.Y - (Thin * 1.25f), Thin * 2.5f, Thin * 2.5f);
+		}
 	}
 
 	if (const FString Notice = Town->GetNotice(); !Notice.IsEmpty())
@@ -223,8 +313,11 @@ void ATownHUD::DrawTalk(const ATownGameMode* Town, float CenterX)
 	const TArray<FString> Answers = Town->GetAnswers();
 	const TArray<bool> Asked = Town->GetAnswersAsked();
 
+	// the day's figures, written whether or not the line is heard
+	const TArray<FString> Noted = Wrap(Town->GetTalkNote(), TalkLineLength + 12);
+
 	const float LineHeight = 34.0f;
-	const float Height = 96.0f + (Said.Num() * LineHeight) + (Answers.IsEmpty() ? 40.0f : 26.0f + (Answers.Num() * LineHeight)) + 44.0f;
+	const float Height = 96.0f + (Said.Num() * LineHeight) + (Noted.Num() * 28.0f) + (Answers.IsEmpty() ? 40.0f : 26.0f + (Answers.Num() * LineHeight)) + 44.0f;
 	const float Top = 1040.0f - Height;
 
 	// what is said is written on the slate, as the odds are
@@ -239,6 +332,13 @@ void ATownHUD::DrawTalk(const ATownGameMode* Town, float CenterX)
 		DrawLabel(Line, CenterX - 540.0f, Y, 22, GutHUDColors::Text);
 
 		Y += LineHeight;
+	}
+
+	for (const FString& Line : Noted)
+	{
+		DrawLabel(Line, CenterX - 540.0f, Y + 2.0f, 18, GutHUDColors::Stamina);
+
+		Y += 28.0f;
 	}
 
 	Y += 26.0f;
@@ -293,9 +393,12 @@ void ATownHUD::DrawShop(const ATownGameMode* Town, float CenterX)
 
 	float Y = Top + 78.0f;
 
+	// what was said in refusing is lit for a moment, so that asking is seen to have been answered
+	const FLinearColor SaidInk = Town->GetShopRefusedAgo() < 1.4f ? GutHUDColors::Warning : GutHUDColors::Text;
+
 	for (const FString& Line : Said)
 	{
-		DrawLabel(Line, Left, Y, 21, GutHUDColors::Text);
+		DrawLabel(Line, Left, Y, 21, SaidInk);
 
 		Y += 30.0f;
 	}
@@ -318,12 +421,32 @@ void ATownHUD::DrawShop(const ATownGameMode* Town, float CenterX)
 		const FLinearColor Ink = bChosen ? GutHUDColors::Warning : (Line.bCanBuy ? GutHUDColors::Text : GutHUDColors::DimText);
 
 		DrawLabel(FString(Mark) + Line.Name, Left + 20.0f, Y, 22, Ink);
-		DrawLabel(Line.Detail, Left + 408.0f, Y + 5.0f, 16, bChosen ? GutHUDColors::Text : GutHUDColors::DimText);
 
 		// the price, and beside it why it cannot be had, if it cannot
 		const FString Price = Line.PriceText.IsEmpty() ? FString::Printf(TEXT("%.0f L"), Line.Price) : Line.PriceText;
+		const float PriceLeft = Left + 930.0f - MeasureLabel(Price, 22);
 
-		DrawLabel(Price, Left + 930.0f - MeasureLabel(Price, 22), Y, 22, Ink);
+		// What there is to say of the line stops short of its price, and of its name: a long one ran on under the figure
+		// (24 November). It is drawn smaller until it fits, and cut if it still does not.
+		const float DetailLeft = FMath::Max(Left + 408.0f, Left + 20.0f + MeasureLabel(FString(Mark) + Line.Name, 22) + 18.0f);
+		const float DetailRoom = PriceLeft - 18.0f - DetailLeft;
+
+		FString Detail = Line.Detail;
+		int32 DetailSize = 16;
+
+		while (DetailSize > 13 && MeasureLabel(Detail, DetailSize) > DetailRoom)
+		{
+			--DetailSize;
+		}
+
+		while (Detail.Len() > 4 && MeasureLabel(Detail, DetailSize) > DetailRoom)
+		{
+			Detail = Detail.LeftChop(4).TrimEnd() + TEXT("...");
+		}
+
+		DrawLabel(Detail, DetailLeft, Y + 5.0f + ((16 - DetailSize) * 0.5f), DetailSize, bChosen ? GutHUDColors::Text : GutHUDColors::DimText);
+
+		DrawLabel(Price, PriceLeft, Y, 22, Ink);
 
 		if (!Line.Why.IsEmpty())
 		{
@@ -342,6 +465,164 @@ void ATownHUD::DrawShop(const ATownGameMode* Town, float CenterX)
 			DrawLabel(About, Left + 20.0f, AboutY, 19, GutHUDColors::DimText);
 
 			AboutY += 28.0f;
+		}
+	}
+
+	DrawLabel(FString::Printf(TEXT("W / S or D-pad: choose          E, Enter or A button: %s          Backspace or B button: leave"), *Town->GetShopVerb()), CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);
+}
+
+void ATownHUD::DrawBook(const ATownGameMode* Town, float CenterX)
+{
+	const TArray<FTownShopLine> Lines = Town->GetShopLines();
+	const TArray<FString> Said = Wrap(Town->GetShopSaid(), TalkLineLength);
+	const int32 Choice = Town->GetShopChoice();
+
+	// three things side by side: the picture of whoever the choice is on, the list, and what there is to know of them
+	const float PictureWide = 300.0f;
+	const float PictureHigh = 400.0f;
+	const float LineHeight = 38.0f;
+
+	const float Middle = FMath::Max(PictureHigh, (Lines.Num() + 1) * LineHeight);
+	const float Height = 96.0f + (Said.Num() * 30.0f) + Middle + 78.0f;
+	const float Top = 1040.0f - Height;
+	const float Left = CenterX - 540.0f;
+
+	DrawPanel(CenterX, Top, 1180.0f, Height, EGutPanel::Slate);
+
+	DrawLabel(Town->GetShopTitle(), Left, Top + 22.0f, 30, GutHUDColors::Warning);
+
+	if (const FString Held = Town->GetShopPurse(); !Held.IsEmpty())
+	{
+		DrawLabel(Held, CenterX + 540.0f - MeasureLabel(Held, 22), Top + 28.0f, 22, GutHUDColors::Text);
+	}
+
+	float Y = Top + 78.0f;
+
+	for (const FString& Line : Said)
+	{
+		DrawLabel(Line, Left, Y, 21, GutHUDColors::Text);
+
+		Y += 30.0f;
+	}
+
+	Y += 14.0f;
+
+	// the picture, in a frame, or the frame alone when the choice is on nobody
+	DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.85f), (Left - 4.0f) * UIScale, (Y - 4.0f) * UIScale, (PictureWide + 8.0f) * UIScale, (PictureHigh + 8.0f) * UIScale);
+
+	FGutStableFighter Person;
+	int32 Lot = 0;
+
+	const bool bSomebody = Town->GetBookPerson(Choice, Person, Lot);
+
+	if (UTextureRenderTarget2D* Picture = Town->GetBookPicture(); Picture && Picture->GetResource() && Canvas && bSomebody)
+	{
+		FCanvasTileItem Tile(FVector2D(Left * UIScale, Y * UIScale), Picture->GetResource(), FVector2D(PictureWide * UIScale, PictureHigh * UIScale), FVector2D(0.0f, 0.0f), FVector2D(1.0f, 1.0f), FLinearColor::White);
+
+		Tile.BlendMode = SE_BLEND_Opaque;
+
+		Canvas->DrawItem(Tile);
+	}
+	else
+	{
+		// a moment while they are stood for it: nothing is written over the frame
+		DrawLabel(TEXT(""), Left + (PictureWide * 0.5f), Y + (PictureHigh * 0.5f) - 10.0f, 16, GutHUDColors::DimText, true);
+	}
+
+	// the list
+	const float ListLeft = Left + PictureWide + 26.0f;
+	const float ListWide = 370.0f;
+
+	float LineY = Y;
+
+	for (int32 i = 0; i <= Lines.Num(); ++i)
+	{
+		const bool bChosen = i == Choice;
+		const TCHAR* Mark = bChosen ? TEXT(">  ") : TEXT("    ");
+
+		if (i == Lines.Num())
+		{
+			DrawLabel(FString(Mark) + TEXT("Nothing more"), ListLeft, LineY + 8.0f, 21, bChosen ? GutHUDColors::Warning : GutHUDColors::Text);
+			break;
+		}
+
+		const FTownShopLine& Line = Lines[i];
+		const FLinearColor Ink = bChosen ? GutHUDColors::Warning : (Line.bCanBuy ? GutHUDColors::Text : GutHUDColors::DimText);
+		const FString Price = Line.PriceText.IsEmpty() ? FString::Printf(TEXT("%.0f L"), Line.Price) : Line.PriceText;
+
+		// the price as large as the name leaves room for: a wage ("6 L a day") ran into the name before it (24 November)
+		const float NameWide = MeasureLabel(FString(Mark) + Line.Name, 20);
+
+		int32 PriceSize = 20;
+
+		while (PriceSize > 13 && NameWide + 14.0f + MeasureLabel(Price, PriceSize) > ListWide)
+		{
+			--PriceSize;
+		}
+
+		DrawLabel(FString(Mark) + Line.Name, ListLeft, LineY, 20, Ink);
+		DrawLabel(Price, ListLeft + ListWide - MeasureLabel(Price, PriceSize), LineY + ((20 - PriceSize) * 0.6f), PriceSize, Ink);
+
+		LineY += LineHeight;
+	}
+
+	// what there is to know of the one the choice is on
+	if (bSomebody && Lines.IsValidIndex(Choice))
+	{
+		const FTownShopLine& Line = Lines[Choice];
+		const float AboutLeft = ListLeft + ListWide + 34.0f;
+
+		float AboutY = Y;
+
+		DrawLabel(Person.FighterName.ToString().ToUpper(), AboutLeft, AboutY, 26, GutHUDColors::Warning);
+
+		AboutY += 40.0f;
+
+		DrawLabel(FString::Printf(TEXT("About %d years old  \u00B7  %s"), ATownGameMode::GetAgeOf(Person),
+			Lot > 0 ? *FString::Printf(TEXT("lot %d, for sale"), Lot) : TEXT("tagged, signs for a wage")), AboutLeft, AboutY, 18, GutHUDColors::Text);
+
+		AboutY += 38.0f;
+
+		// each of the three things a fighter is taught, as marks out of five
+		const TPair<const TCHAR*, int32> Taught[] = { { TEXT("Strength"), Person.Strength }, { TEXT("Speed"), Person.Speed }, { TEXT("Nerve"), Person.Nerve } };
+
+		for (const TPair<const TCHAR*, int32>& One : Taught)
+		{
+			DrawLabel(One.Key, AboutLeft, AboutY, 17, GutHUDColors::DimText);
+
+			for (int32 Mark = 0; Mark < 5; ++Mark)
+			{
+				DrawRect(Mark < One.Value ? GutHUDColors::Warning : FLinearColor(1.0f, 1.0f, 1.0f, 0.12f),
+					(AboutLeft + 124.0f + (Mark * 26.0f)) * UIScale, (AboutY + 5.0f) * UIScale, 20.0f * UIScale, 12.0f * UIScale);
+			}
+
+			DrawLabel(FString::FromInt(One.Value), AboutLeft + 124.0f + (5 * 26.0f) + 8.0f, AboutY, 17, GutHUDColors::Text);
+
+			AboutY += 28.0f;
+		}
+
+		AboutY += 10.0f;
+
+		DrawLabel(Person.Weapon ? FString::Printf(TEXT("Fights with the %s"), *Person.Weapon->DisplayName.ToString().ToLower()) : FString(TEXT("Fights with bare hands")), AboutLeft, AboutY, 18, GutHUDColors::Text);
+
+		AboutY += 28.0f;
+
+		DrawLabel(Person.Wins > 0 ? FString::Printf(TEXT("In the cage: %d %s, and alive"), Person.Wins, Person.Wins == 1 ? TEXT("fight won") : TEXT("fights won")) : FString(TEXT("In the cage: never yet")),
+			AboutLeft, AboutY, 18, Person.Wins > 0 ? GutHUDColors::Text : GutHUDColors::DimText);
+
+		AboutY += 36.0f;
+
+		// how they came to be here, and why they cannot be had, if they cannot
+		for (const FString& Told : Wrap(Person.Billing.ToString() + (Person.bOwned ? TEXT("") : TEXT(" Not for sale: signs with you for a wage and a share of each purse.")), 38))
+		{
+			DrawLabel(Told, AboutLeft, AboutY, 16, GutHUDColors::DimText);
+
+			AboutY += 23.0f;
+		}
+
+		if (!Line.Why.IsEmpty())
+		{
+			DrawLabel(Line.Why.ToUpper(), AboutLeft, AboutY + 6.0f, 16, Line.bWorn ? GutHUDColors::Stamina : GutHUDColors::Health);
 		}
 	}
 

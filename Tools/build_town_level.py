@@ -64,19 +64,32 @@ LAMP_GLASS = "/Game/Gut/Materials/MI_Gut_Lamp"
 # a light with this tag wavers as a fire does (ATownGameMode::UpdateFires)
 FIRE_TAG = "TownFire"
 
+# What can be shoved by walking into it, and what each weighs in kilograms: light enough that a person's shin moves it.
+# Anything not listed stays where it is put (a generator, a table, a lamp, a drum with a fire in it).
+LOOSE = {"old_tyre": 9.0, "wooden_crate_02": 14.0, "metal_jerrycan": 7.0, "propane_tank": 16.0, "Barrel_01": 30.0, "barrel_03": 30.0,
+         # the small things Tools/scatter_loose_things.py sets down (Poly Haven scans, Tools/import_loose_props.sh)
+         "plastic_jerrycan": 1.5, "plastic_bottle_gallon": 0.6, "plastic_crate_02": 2.0, "can_rusted": 0.4, "oil_tin": 0.8, "metal_stool_02": 4.0,
+         "plastic_monobloc_chair_01": 2.5, "cardboard_box_01": 1.2, "trashbag": 3.0, "cement_bag": 25.0}
+
+# anything lighter than this (kg) never stops whoever walks: it is kicked aside or stepped past, and a can against a wall is not a wall
+LOOSE_STOPS_NOBODY = 5.0
+
+# an actor with this tag is one of those (ATownGameMode counts them and listens for them being struck)
+LOOSE_TAG = "TownLoose"
+
 # the bulb that hangs wherever a list says a bulb is 'hung'
 HUNG_BULB = "main_bulb"
 
 DEEDS = {"": unreal.TownDeed.NONE, "fight": unreal.TownDeed.FIGHT, "fight_afresh": unreal.TownDeed.FIGHT_AFRESH,
          "spar": unreal.TownDeed.SPAR, "bet": unreal.TownDeed.BET, "own": unreal.TownDeed.OWN, "go": unreal.TownDeed.GO,
          "buy": unreal.TownDeed.BUY, "borrow": unreal.TownDeed.BORROW, "repay": unreal.TownDeed.REPAY,
-         "armor": unreal.TownDeed.ARMOR, "trade": unreal.TownDeed.TRADE}
+         "armor": unreal.TownDeed.ARMOR, "trade": unreal.TownDeed.TRADE, "pit": unreal.TownDeed.PIT, "rest": unreal.TownDeed.REST}
 
 # the clip somebody with their wrists tied has their arms taken from (AGutFighter::BoundArms), which nobody else in a town stands in
 BOUND_STANCE = "crowd_watch_hands_behind"
 
 # what the cage's crowd is made of, which a crowd standing anywhere else is made of too: read from the cage's own crowd
-CROWD_MAKINGS = ("spectator_mesh", "idle_animation", "cheer_animation", "idle_animations", "cheer_animations", "tint_parameter",
+CROWD_MAKINGS = ("spectator_mesh", "idle_animation", "cheer_animation", "idle_animations", "cheer_animations", "families", "tint_parameter",
                  "spectator_classes", "spectator_retargeter", "person_body_name", "cloth_parameters")
 
 eal = unreal.EditorAssetLibrary
@@ -815,12 +828,19 @@ def main():
 
         return made
 
+    loose_count = 0
+
     for entry in listed["things"]:
         # 'z' is the ground it stands on where that is not the street's, and 'scale' how much bigger than itself it is made
         own_block = entry.get("block")
         size = float(entry.get("scale", 1.0))
+        # What a person could shove with a foot is loose: see below. It is not on the place's list of what stands where,
+        # which is what keeps a walker out of things: it is walked into.
+        heavy = LOOSE.get(entry["model"])
+        loose = bool(heavy) and entry.get("loose", True) and not entry.get("hollow") and not entry.get("lamp") and not entry.get("light") and not own_block and entry.get("z") is None
+
         actor, top, _ = stand(entry["model"], entry["x"], entry["y"], entry.get("yaw", (entry["x"] * 37.0 + entry["y"] * 91.0) % 360.0),
-                              base=entry.get("z"), scale=size, blocking=own_block is None and entry.get("blocking", True))
+                              base=entry.get("z"), scale=size, blocking=own_block is None and entry.get("blocking", True) and not loose)
         part = actor.get_editor_property("static_mesh_component")
 
         # 'block' is what of it stops a walker, where that is not everything of it that is lower than a head: a shop is
@@ -834,6 +854,29 @@ def main():
         # else, would push them out of it
         if entry.get("hollow"):
             part.set_collision_profile_name("NoCollision")
+
+        # What a person could shove with a foot is loose: walked into, it goes (23 November: "objects are moveable - I kick,
+        # walk into an object and it moves"). It weighs what the thing would weigh, so a tyre skids and a full barrel only
+        # grudges an inch. 'loose': false on a thing keeps it where it is; -GutNoLoose in the game keeps them all.
+        if loose:
+            part.set_mobility(unreal.ComponentMobility.MOVABLE)
+            part.set_collision_profile_name("PhysicsActor")
+            part.set_simulate_physics(True)
+            part.set_mass_override_in_kg(unreal.Name("None"), heavy * size * size * size, True)
+            part.set_linear_damping(0.35)
+            part.set_angular_damping(0.9)
+            part.set_editor_property("can_character_step_up_on", unreal.CanBeCharacterBase.ECB_NO)
+
+            if heavy < LOOSE_STOPS_NOBODY:
+                part.set_collision_response_to_channel(unreal.CollisionChannel.ECC_PAWN, unreal.CollisionResponseType.ECR_IGNORE)
+
+            # asleep until something touches it: things stood against each other or a little into the ground do not
+            # shoulder each other apart when the place opens
+            body = part.get_editor_property("body_instance")
+            body.set_editor_property("start_awake", False)
+            part.set_editor_property("body_instance", body)
+            actor.set_editor_property("tags", list(actor.get_editor_property("tags")) + [unreal.Name(LOOSE_TAG)])
+            loose_count += 1
 
         if entry.get("lamp"):
             lamps.append((entry["x"], entry["y"], top, actor))
@@ -1043,11 +1086,21 @@ def main():
         person.set_editor_property("cloth", unreal.LinearColor(entry["cloth"][0], entry["cloth"][1], entry["cloth"][2], 1.0))
         person.set_editor_property("place", place(entry["x"], entry["y"]))
         person.set_editor_property("facing", float(entry["facing"]))
-        person.set_editor_property("idle", unreal.load_asset("{}/{}".format(MOTION, entry["idle"])))
+        # how they stand: a family of clips from one stance (Tools/import_gut_motion.py, FAMILIES), or failing that one clip
+        person.set_editor_property("stand", unreal.Name(entry.get("stand", "")))
+        person.set_editor_property("idle", unreal.load_asset("{}/{}".format(MOTION, entry["idle"])) if entry.get("idle") else None)
         person.set_editor_property("stands_on_what_is_there", bool(entry.get("on")))
         person.set_editor_property("collared", bool(entry.get("collared")))
         person.set_editor_property("lot", int(entry.get("lot", 0)))
+        # their own way of walking: a clip cut from motion capture, and the speed it was walked at (Tools/make_style_motion.py)
+        if entry.get("walk"):
+            known = os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()), "ArtSource", "style", "export", entry["walk"] + ".json")
+
+            person.set_editor_property("walk", unreal.load_asset("{}/{}".format(MOTION, entry["walk"])))
+            person.set_editor_property("walk_speed", float(json.load(open(known)).get("speed", 90.0)) if os.path.exists(known) else 90.0)
+
         person.set_editor_property("sells", [unreal.Name(good) for good in entry.get("sells", [])])
+        person.set_editor_property("buys", [unreal.Name(good) for good in entry.get("buys", [])])
 
         # a round they walk: each stop is [x, y], then how long they stand there, then which way they look while they do
         beat = []
@@ -1068,6 +1121,8 @@ def main():
         for said in entry.get("lines", []):
             line = unreal.TownLine()
             line.set_editor_property("words", said["words"])
+            line.set_editor_property("id", str(said.get("id", "")))
+            line.set_editor_property("note", said.get("note", ""))
             line.set_editor_property("next", ids.get(said.get("next"), -1))
             line.set_editor_property("voice", voice("{}{}_{}".format(worded(entry["name"]), "" if nth == 1 else str(nth), worded(str(said.get("id", len(lines)))))))
 
@@ -1110,6 +1165,18 @@ def main():
             door.set_editor_property("mouth", mouth)
         doors.append(door)
 
+    # what lies about to be found and picked up: each is a good, where it lies, and which way it is turned
+    finds = []
+
+    for entry in listed.get("finds", []):
+        find = unreal.TownFind()
+        find.set_editor_property("good", unreal.Name(entry["good"]))
+        find.set_editor_property("place", place(entry["x"], entry["y"]))
+        find.set_editor_property("facing", float(entry.get("facing", 0.0)))
+        finds.append(find)
+
+    data.set_editor_property("finds", finds)
+
     # the ways in from other places
     arrivals = []
 
@@ -1119,6 +1186,16 @@ def main():
         arrival.set_editor_property("place", place(entry["x"], entry["y"]))
         arrival.set_editor_property("facing", float(entry["facing"]))
         arrivals.append(arrival)
+
+    # in a place that is the player's own yard: where their people stand
+    stalls = []
+
+    for entry in listed.get("stalls", []):
+        stall = unreal.TownArrival()
+        stall.set_editor_property("name", "stall_{}".format(len(stalls) + 1))
+        stall.set_editor_property("place", place(entry["x"], entry["y"]))
+        stall.set_editor_property("facing", float(entry["facing"]))
+        stalls.append(stall)
 
     # what is called out over the place
     calls = []
@@ -1184,6 +1261,9 @@ def main():
             crowd.set_editor_property(name, value)
 
         crowd.set_editor_property("standing_places", places)
+
+        # heard by how near they are, not the same from one end of the place to the other
+        crowd.set_editor_property("murmur_by_nearness", True)
         label(crowd, "Crowd", entry["label"])
 
         log("{}: {} people standing about, of {} asked for".format(entry["label"], len(places), entry["count"]))
@@ -1211,6 +1291,7 @@ def main():
     data.set_editor_property("people", people)
     data.set_editor_property("doors", doors)
     data.set_editor_property("arrivals", arrivals)
+    data.set_editor_property("stalls", stalls)
     data.set_editor_property("calls", calls)
 
     # the way a sale's lots come up and go down, and how far behind their marks they walk
@@ -1260,7 +1341,7 @@ def main():
     unreal.EditorLoadingAndSavingUtils.save_dirty_packages(True, True)
 
     log("placed: " + ", ".join("{} {}".format(count, kind) for kind, count in sorted(counts.items())))
-    log("{}: {} people, {} doors, {} patches of ground, {} things to walk round".format(listed["name"], len(people), len(doors), len(ground), len(blocks)))
+    log("{}: {} people, {} doors, {} patches of ground, {} things to walk round, {} loose things".format(listed["name"], len(people), len(doors), len(ground), len(blocks), loose_count))
 
     if bare:
         log("OPEN EDGES: {}. The level is saved so that they can be looked at, but it is not fit to walk: stand something along each".format(len(bare)))

@@ -550,6 +550,9 @@ protected:
 	/** Who the player's bet on this fight is on */
 	EGutBetSide BetSide = EGutBetSide::None;
 
+	/** True while the two in the cage have been stood at ease because a card or the gate is up */
+	bool bStoodAtEase = false;
+
 	/** Water the player has staked, or means to stake, on this fight */
 	float BetStake = 0.0f;
 
@@ -630,6 +633,9 @@ protected:
 
 	/** The owner's card: which page is up, which fighter it is about, and which fight on the bill was picked */
 	EGutStablePage StablePage = EGutStablePage::Yard;
+
+	/** If true whoever is at the cold room came to make a fight, and is shown the fights once the body is seen to */
+	bool bBillAfterBody = false;
 	int32 StableFocus = 0;
 	int32 StablePicked = 0;
 
@@ -662,6 +668,10 @@ protected:
 
 	/** Stands the owner's people beside the card, or takes them away again, as the card and the stable now are */
 	void UpdateYardBodies();
+
+	/** Whose run the owner's rules are working on while they are lent out of the cage: see LendRulesTo */
+	UPROPERTY(Transient)
+	TObjectPtr<UGutGameInstance> LentTo;
 
 	/** True if the stable's fighter in the cage has decided to lose */
 	bool bStableLayDown = false;
@@ -1080,6 +1090,8 @@ public:
 
 	EGutStablePage GetStablePage() const { return StablePage; }
 
+	bool IsBillAfterBody() const { return bBillAfterBody; }
+
 	/**
 	 *  Everybody who fights in this cage, the dead with the living, from the bottom rank to the top: each as rank times 100
 	 *  plus place. A rank's own fighters come first and then whoever has come into it since, of whom only the first
@@ -1118,6 +1130,22 @@ public:
 	int32 GetLadderRank() const;
 
 	/** The body one of the stable's fighters is seen as in the yard, if it is stood there now */
+	/**
+	 *  Lends the owner's rules (training, mending, tags, selling, a day going by) to a yard that is a place of its own, walked
+	 *  about in: until they are given back with none, they work on that run and take the yard to be open. The town does this
+	 *  with the rules' own defaults, which have no world and no cage.
+	 */
+	void LendRulesTo(UGutGameInstance* Run) { LentTo = Run; }
+
+	/** True where the owner's yard can be dealt in: at its card in the cage, or lent out to the yard itself */
+	/**
+	 *  Stands the player back in the yard they walked into the cage from, if that is how they came and the cage's own yard
+	 *  card is what would be shown next. Returns true if they are on their way.
+	 */
+	bool BackToWalkedYard();
+
+	bool IsYardOpen() const { return LentTo != nullptr || (Phase == EGutFightPhase::Card && IsAtStable()); }
+
 	const AGutFighter* GetYardBody(int32 FighterIndex) const { return YardBodies.IsValidIndex(FighterIndex) ? YardBodies[FighterIndex].Get() : nullptr; }
 	int32 GetStableFocus() const { return StableFocus; }
 	int32 GetStablePicked() const { return StablePicked; }

@@ -12,7 +12,8 @@
  "start": {"x": 91.0, "y": 175.6, "facing": 270},
 
  "arrivals": [
-  {"name": "from_square", "x": 5.6, "y": 176.4, "facing": 90}
+  {"name": "from_square", "x": 5.6, "y": 176.4, "facing": 90},
+  {"name": "from_yard", "x": 78.0, "y": 199.4, "facing": 180}
  ],
 
  "errand": [
@@ -94,7 +95,31 @@
   {"model": "Barrel_01", "x": 76.15, "y": 181.6}, {"model": "old_tyre", "x": 76.1, "y": 190.0}, {"model": "wooden_crate_02", "x": 79.95, "y": 186.0},
   {"model": "barrel_03", "x": 79.85, "y": 190.6}, {"model": "metal_jerrycan", "x": 79.95, "y": 189.9},
   {"model": "old_tyre", "x": 110.4, "y": 177.6}, {"model": "Barrel_01", "x": 109.4, "y": 177.7},
-  {"model": "street_lamp_01", "x": 31.0, "y": 172.15, "lamp": true}, {"model": "street_lamp_01", "x": 101.0, "y": 172.45, "lamp": true}
+  {"model": "street_lamp_01", "x": 31.0, "y": 172.15, "lamp": true}, {"model": "street_lamp_01", "x": 101.0, "y": 172.45, "lamp": true},
+  {"model": "plastic_bottle_gallon", "x": 51.37, "y": 176.72, "yaw": 315, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 41.72, "y": 176.7, "yaw": 315, "scattered": true},
+  {"model": "oil_tin", "x": 76.5, "y": 191.28, "yaw": 45, "scattered": true},
+  {"model": "plastic_monobloc_chair_01", "x": 76.35, "y": 191.91, "yaw": 285, "scattered": true},
+  {"model": "can_rusted", "x": 72.33, "y": 172.31, "yaw": 350, "scattered": true},
+  {"model": "can_rusted", "x": 72.98, "y": 172.31, "yaw": 155, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 62.47, "y": 173.23, "yaw": 315, "scattered": true},
+  {"model": "oil_tin", "x": 61.86, "y": 173.8, "yaw": 250, "scattered": true},
+  {"model": "can_rusted", "x": 62.66, "y": 172.56, "yaw": 65, "scattered": true},
+  {"model": "can_rusted", "x": 77.34, "y": 190.48, "yaw": 300, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 85.25, "y": 172.51, "yaw": 330, "scattered": true},
+  {"model": "oil_tin", "x": 84.6, "y": 172.09, "yaw": 80, "scattered": true},
+  {"model": "plastic_crate_02", "x": 70.64, "y": 172.45, "yaw": 40, "scattered": true},
+  {"model": "can_rusted", "x": 69.93, "y": 172.66, "yaw": 90, "scattered": true},
+  {"model": "can_rusted", "x": 71.02, "y": 171.88, "yaw": 185, "scattered": true},
+  {"model": "cardboard_box_01", "x": 28.26, "y": 172.87, "yaw": 35, "scattered": true},
+  {"model": "metal_stool_02", "x": 59.17, "y": 177.06, "yaw": 260, "scattered": true},
+  {"model": "plastic_monobloc_chair_01", "x": 63.43, "y": 173.2, "yaw": 195, "scattered": true},
+  {"model": "oil_tin", "x": 78.63, "y": 189.48, "yaw": 65, "scattered": true},
+  {"model": "oil_tin", "x": 18.44, "y": 177.21, "yaw": 310, "scattered": true},
+  {"model": "can_rusted", "x": 92.74, "y": 172.99, "yaw": 30, "scattered": true},
+  {"model": "plastic_crate_02", "x": 92.06, "y": 172.89, "yaw": 25, "scattered": true},
+  {"model": "can_rusted", "x": 103.42, "y": 172.88, "yaw": 105, "scattered": true},
+  {"model": "can_rusted", "x": 104.09, "y": 173.1, "yaw": 215, "scattered": true}
  ],
 
  "pictures_about": "Bills and painted words, made in Mixar (ArtSource/mixar/street). 'faces' is the way the surface they are on looks; 'out' is how far that surface stands toward the looker from the place given; 'up' is the height of the picture's middle and 'tall' its height, in metres. 'pasted' sticks bills one after another along a line, which and how crooked from a fixed deal.",
@@ -131,7 +156,7 @@
  "people": [
   {
    "name": "Chalk", "prompt": "Talk to Chalk, at the window", "body": "Zuri", "cloth": [0.06, 0.065, 0.075],
-   "x": 81.5, "y": 198.15, "facing": 270, "idle": "crowd_watch_arms_crossed",
+   "x": 81.5, "y": 198.15, "facing": 270, "stand": "stand_f",
    "lines": [
     {"id": "slate", "words": "Slate's up. Four fights tonight. The house keeps a tenth of the pot, you bet in fives, fifty at most a fight. I write the odds. I don't sell results.",
      "answers": [
@@ -144,7 +169,7 @@
   },
   {
    "name": "Hasp", "prompt": "Talk to Hasp, who keeps the rack", "body": "Omari", "cloth": [0.07, 0.05, 0.035],
-   "x": 98.6, "y": 179.25, "facing": 180, "idle": "crowd_watch_hands_on_hips",
+   "x": 98.6, "y": 179.25, "facing": 180, "stand": "hips",
    "lines": [
     {"id": "rack", "words": "Rack's inside. The club for most of them. The blade for anybody wearing rubber. And nobody ever thanked me for handing them a chain against a shield. That's free. Are you going in?",
      "answers": [
@@ -157,7 +182,7 @@
   },
   {
    "name": "Yard hand", "prompt": "Talk to the yard hand", "body": "Jorge", "cloth": [0.045, 0.055, 0.04],
-   "x": 78.3, "y": 201.6, "facing": 180, "idle": "crowd_watch_relaxed",
+   "x": 78.3, "y": 201.6, "facing": 180, "stand": "shift_l",
    "lines": [
     {"id": "yard", "words": "Alley's shut past the fence. Owners go round to the yard gate, and I walk them. You an owner?",
      "answers": [
@@ -168,7 +193,7 @@
   },
   {
    "name": "Warden", "prompt": "Talk to the Warden", "body": "Lorenzo", "cloth": [0.035, 0.04, 0.055],
-   "x": 3.2, "y": 177.3, "facing": 120, "idle": "crowd_watch_arms_crossed",
+   "x": 3.2, "y": 177.3, "facing": 120, "stand": "clasp",
    "lines": [
     {"id": "sale", "words": "Sale night. The square is open until the last lot is down: south, down the lane. Keep your hands where the Chainmen can see them."}
    ]
@@ -179,6 +204,12 @@
   {"prompt": "Go in at the fighters' door", "x": 95.0, "y": 179.4, "deed": "fight"},
   {"prompt": "Try the public gate", "x": 81.2, "y": 201.2, "shut": "Chained. It opens to the public on fight nights."},
   {"prompt": "Try the Scrappers' gate", "x": 110.9, "y": 176.1, "shut": "Shut for the night. The yard beyond is dark."},
-  {"prompt": "Down the lane to Block Square", "x": 5.3, "y": 171.75, "deed": "go", "to": "/Game/Town/Lvl_BlockSquare", "arrive": "from_pool_street", "walk_through": true, "reach": 3.4}
+  {"prompt": "Down the lane to Block Square", "x": 5.3, "y": 171.75, "deed": "go", "to": "/Game/Town/Lvl_BlockSquare", "arrive": "from_pool_street", "walk_through": true, "mouth": {"x": [2.0, 8.4], "y": [171.3, 172.4]}}
+ ],
+ "finds_about": "What lies about to be found and picked up (E, or X): a good by the name the town knows it by, where it lies on the map, and which way it is turned. Each is there once: picked up, it is in the bag and gone from the street for good.",
+ "finds": [
+  {"good": "flask", "x": 85.6, "y": 178.9, "facing": 40},
+  {"good": "scrap", "x": 64.3, "y": 176.9, "facing": 110},
+  {"good": "tag", "x": 38.9, "y": 177.0, "facing": 200}
  ]
 }

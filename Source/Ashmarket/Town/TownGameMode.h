@@ -9,6 +9,8 @@
 #include "TownGameMode.generated.h"
 
 class ACameraActor;
+class ASceneCapture2D;
+class UTextureRenderTarget2D;
 class AGutFighter;
 class UAudioComponent;
 class AGutGameMode;
@@ -18,6 +20,8 @@ struct FGutStableFighter;
 struct FGutStableState;
 class UGutLadderData;
 class UIKRetargeter;
+class USoundBase;
+class UAnimSequenceBase;
 
 /** The lines of the menu that stops the game in the street */
 namespace TownStoppedLines
@@ -64,6 +68,13 @@ struct FTownTow
 
 	/** Where the player's feet have been since, oldest first. They are walked along it, and so round whatever the player went round. */
 	TArray<FVector> Trail;
+
+	/** The same marks where the player's own feet were, and not to their side: the way that is known to be free */
+	TArray<FVector> Own;
+
+	/** How long they have been getting nowhere, and whether they have been put on the player's own way for it */
+	float Held = 0.0f;
+	bool bOnOwnWay = false;
 };
 
 /** A light in the place that is a fire: how bright the list made it, about which it wavers */
@@ -273,6 +284,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 0, ClampMax = 300, Units = "cm"))
 	float TowAside = 80.0f;
 
+	/** How near the player, in a straight line, whoever is led may stand: nearer, they step out of the way. Two bodies' room. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 0, ClampMax = 300, Units = "cm"))
+	float TowApart = 105.0f;
+
 	/** The player's way is marked this often for them to follow, and they hurry when they are this much further behind than they should be */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 10, ClampMax = 200, Units = "cm"))
 	float TowCrumb = 40.0f;
@@ -317,6 +332,18 @@ protected:
 	int32 PersonInReach = INDEX_NONE;
 	int32 DoorInReach = INDEX_NONE;
 
+	/** Which of the place's finds is near enough to pick up, and what stands in the level for each of them: none for one that has been taken */
+	int32 FindInReach = INDEX_NONE;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<AActor>> FindActors;
+
+	/** Puts out whatever of the place's finds nobody has picked up yet */
+	void LayFinds();
+
+	/** The name a find is remembered as picked up under: the place's, and which of its finds */
+	FName GetFindName(int32 Find) const;
+
 	/** Who is being talked to, which of their lines they are at, and which answer the player is on */
 	int32 TalkingTo = INDEX_NONE;
 	int32 TalkLine = 0;
@@ -344,6 +371,9 @@ protected:
 
 	/** What the last dealing with the lender came to, in words, for her to say back */
 	FString Dealt;
+
+	/** Which of the lender's lines says how the last dealing came out */
+	FString DealtId;
 
 	/** Everybody who is being walked somewhere just now */
 	TArray<FTownLed> Led;
@@ -375,6 +405,51 @@ protected:
 	bool bAtStall = false;
 	bool bAtBag = false;
 
+	/**
+	 *  The yard, where it is a place that is walked about in (a place with stalls): the bodies of the player's own people
+	 *  standing in it, which of the stable each is, the one in reach, and the one whose page is up.
+	 */
+	UPROPERTY()
+	TArray<TObjectPtr<AGutFighter>> YardBodies;
+
+	TArray<int32> YardFighters;
+
+	int32 YardInReach = INDEX_NONE;
+	int32 YardFocus = INDEX_NONE;
+
+	/** What in the place is loose, to be shoved by whoever walks into it, and whether each is on the move */
+	TArray<TWeakObjectPtr<UStaticMeshComponent>> Loose;
+	TArray<bool> LooseMoving;
+	TArray<FTransform> LooseBegan;
+
+	/** Who was in reach a moment ago, and when each person last nodded to the player walking up */
+	int32 NoddedAt = INDEX_NONE;
+	TMap<int32, double> Nodded;
+	bool bAtYardPage = false;
+
+	/** Stands the player's people in their places in the yard */
+	void SettleYard();
+
+	/** Puts up what can be done with one of them: which of the bodies standing there */
+	void OpenYardPage(int32 Which);
+
+	/** The lines of that page, and what each does (GutStableLines) */
+	void GetYardPage(TArray<FTownShopLine>& OutLines, TArray<int32>& OutCodes) const;
+
+	bool DoYardLine(int32 Line);
+
+	/** What a day costs the player as things stand: a mouth's feed each, and the wage of whoever is paid */
+	float GetDayDue() const;
+
+	/**
+	 *  After a day has gone by, which may have lost the player somebody (not paid, they walk; past bearing, they are gone
+	 *  in the night). Before is the stable as it was. Every body in the yard and behind the player is matched again to who
+	 *  it is in the stable now, whoever is gone leaves the place, and what comes back says how the day was paid for and
+	 *  who went. On 23 November somebody not paid walked on paper and went on standing in the yard as nobody: the body of
+	 *  the one after them could not be spoken to, and theirs answered as that one.
+	 */
+	FString SettleAfterDay(const TArray<FGutStableFighter>& Before, float DebtBefore);
+
 	/** True while the bag is asking who a thing is for, which thing, and which of the answers the player is on */
 	bool bBagAsking = false;
 	FName BagAsked;
@@ -383,6 +458,30 @@ protected:
 	/** What looks at whoever the book's line is about, while the book is open, and which line it was last turned to */
 	UPROPERTY(Transient)
 	TObjectPtr<ACameraActor> BookCamera;
+
+	/**
+	 *  The eye that looks at whoever the book's line is about, and the picture it makes of them, which is put on the card:
+	 *  the player's own view stays the player's (22 November: "show them on the card - not outside the card").
+	 */
+	UPROPERTY()
+	TObjectPtr<ASceneCapture2D> BookEye;
+
+	UPROPERTY()
+	TObjectPtr<UTextureRenderTarget2D> BookPicture;
+
+	/** The lamps turned on whoever is pictured */
+	UPROPERTY()
+	TArray<TObjectPtr<class ULightComponent>> BookLamps;
+
+	/** Whoever the book's line is about, stood for their picture out of sight of the place; whose body it is; and when it was stood there */
+	UPROPERTY()
+	TObjectPtr<AGutFighter> BookSitter;
+
+	FString BookSitting;
+	float BookSatAt = 0.0f;
+
+	/** True while the eye has somebody in front of it */
+	bool bBookPictured = false;
 
 	int32 BookShown = INDEX_NONE;
 
@@ -422,6 +521,22 @@ protected:
 
 	/** Keeps whoever walks on the ground the place has, and out of everything that stands on it */
 	void KeepOnGround(AGutFighter* Walker) const;
+
+	/** Shuts the bag, turns the camera to whoever in tow was just handed something out of it, and has them take it */
+	void ShowGiven(int32 Fighter, const FName& Good, const FString& Said);
+
+	/** When the counter last refused something, by the world's clock */
+	float ShopRefusedAt = 0.0f;
+
+	/** Whoever was last handed something, and until when the camera stays on them */
+	TWeakObjectPtr<AGutFighter> GivenTo;
+	float GivenUntil = 0.0f;
+
+	/** The nearest place to this one that is on the ground and clear of everything that stands in the place: itself, if it is */
+	FVector2D GetKeptClear(const FVector2D& Flat) const { return GetKeptClear(Flat, WalkerRadius); }
+
+	/** The same for something of another size: what is loose in a place is kept on its ground and out of what stands in it as a walker is */
+	FVector2D GetKeptClear(const FVector2D& Flat, float Radius) const;
 
 	/** Works out who or what is in reach of the player */
 	void FindReach(const AGutFighter* Walker);
@@ -544,6 +659,9 @@ public:
 	UFUNCTION(BlueprintPure, Category="Town")
 	AGutFighter* GetWalker() const;
 
+	/** The performance of the face that goes with a recording of speech, if one has been made: Epic's speech-to-face, run by Tools/make_town_faces.sh */
+	UAnimSequenceBase* GetFaceFor(const USoundBase* Recording) const;
+
 	UFUNCTION(BlueprintPure, Category="Town")
 	bool IsSettled() const { return bSettled; }
 
@@ -586,6 +704,9 @@ public:
 	/** Who is speaking, what they are saying, what can be said back, and which answer the player is on */
 	FString GetSpeaker() const;
 	FString GetWords() const;
+
+	/** What is written under the line and not spoken: the day's figures */
+	FString GetTalkNote() const;
 
 	/** True if what is being said is heard and the player has chosen to hear and not read: then only the answers are written */
 	bool IsWordsUnwritten() const;
@@ -671,6 +792,34 @@ public:
 	/** Which line the player is on: one past the last piece is the line that leaves */
 	int32 GetShopChoice() const { return ShopChoice; }
 
+	/** Puts a line up on the street for a few seconds */
+	void ShowNotice(const FString& Words);
+
+	/** How long ago the counter last refused something, in seconds: a long time if it never has */
+	float GetShopRefusedAgo() const { return ShopRefusedAt > 0.0f ? GetWorld()->GetTimeSeconds() - ShopRefusedAt : 1000.0f; }
+
+	bool IsAtBook() const { return bShopping && bAtBook; }
+
+	bool IsAtYardPage() const { return bShopping && bAtYardPage; }
+
+	/** One of the player's own people standing in their yard, by their place among those standing there */
+	const AGutFighter* GetYardBody(int32 Index) const { return YardBodies.IsValidIndex(Index) ? YardBodies[Index].Get() : nullptr; }
+
+	/** What in the place can be shoved about, for the tests */
+	const TArray<TWeakObjectPtr<UStaticMeshComponent>>& GetLoose() const { return Loose; }
+
+	/** True in a place that is the player's own yard */
+	bool IsYard() const { return PlaceData && !PlaceData->Stalls.IsEmpty(); }
+
+	/** The picture of whoever the book's chosen line is about, as they stand there now: none if there is nobody to see */
+	UTextureRenderTarget2D* GetBookPicture() const { return (IsAtBook() && bBookPictured) ? BookPicture.Get() : nullptr; }
+
+	/** Who a line of the book is about, and the number of their lot (0 for somebody who is nobody's lot). False if there is no such line. */
+	bool GetBookPerson(int32 Line, FGutStableFighter& OutPerson, int32& OutLot) const;
+
+	/** How old somebody looks to be: the same answer for the same person every time */
+	static int32 GetAgeOf(const FGutStableFighter& Person);
+
 	/** What the fighter holds to spend there, and whether there is a fighter at all */
 	float GetShopWater() const;
 	bool HasFighter() const;
@@ -706,4 +855,11 @@ public:
 	/** For the tests: who and which door is in reach */
 	int32 GetPersonInReach() const { return PersonInReach; }
 	int32 GetDoorInReach() const { return DoorInReach; }
+	int32 GetFindInReach() const { return FindInReach; }
+
+	/** Where each thing that still lies about the place to be found is, in the world: a little above the middle of it */
+	TArray<FVector> GetFindsLying() const;
+
+	/** Picks up one of the place's finds: it goes in the bag and is not there again. @return true if it was there to take */
+	bool TakeFind(int32 Find);
 };

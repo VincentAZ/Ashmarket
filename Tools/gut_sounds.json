@@ -1359,10 +1359,6 @@
      "seconds": 90.0
     },
     {
-     "file": "ambience/night_mining_camp_generator_cicadas_distant_voices_laughs_preview.mp3",
-     "seconds": 90.0
-    },
-    {
      "file": "ambience/night_generator_fifty_metres_away_crickets_preview.mp3",
      "seconds": 90.0
     },
@@ -1384,10 +1380,6 @@
     },
     {
      "file": "ambience/night_wind_strong_howling_open_desert_preview.mp3",
-     "seconds": 90.0
-    },
-    {
-     "file": "ambience/night_village_outskirts_quiet_crickets_far_motor_far_dog_preview.mp3",
      "seconds": 90.0
     },
     {
@@ -2048,6 +2040,121 @@
     {
      "file": "ambience/fire_campfire_adding_kindling_medium_wind_preview.mp3",
      "seconds": 30.0
+    }
+   ]
+  },
+  "far_shot": {
+   "about": "Gunfire a long way off in the night: one shot, two, a burst. Each is a recording of real gunfire heard from a distance, set further off still (Tools/set_sound_far.py). Played now and then by the town, from some way round the compass, never on a beat: see UGutSoundSubsystem::UpdateStrays.",
+   "volume": 0.5,
+   "pitch": [
+    0.94,
+    1.05
+   ],
+   "from": [
+    {
+     "file": "far/shot_distant_1_far.flac",
+     "longest": 9.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/shot_distant_2_far.flac",
+     "longest": 9.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/shot_distant_3_far.flac",
+     "longest": 9.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/shot_distant_4_far.flac",
+     "longest": 9.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/shot_single_distant_pistol_far.flac",
+     "longest": 9.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/shot_distant_resaural_far.flac",
+     "longest": 9.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/shot_distantshot_far.flac",
+     "longest": 9.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/shot_distant_three_round_burst_far.flac",
+     "longest": 9.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/shot_distant_gunfire_3_far.flac",
+     "longest": 9.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/shot_distant_gunfire_far.flac",
+     "longest": 9.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/shot_multiple_shooters_far.flac",
+     "longest": 9.0,
+     "fade": 0.8
+    }
+   ]
+  },
+  "far_scream": {
+   "about": "Somebody screaming a long way off in the night, a man or a woman, once. Each is a recording of a person, set far off (Tools/set_sound_far.py). Rarer than the gunfire, and sometimes after it.",
+   "volume": 0.32,
+   "pitch": [
+    0.95,
+    1.05
+   ],
+   "from": [
+    {
+     "file": "far/scream_female_muffled_far.flac",
+     "longest": 7.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/scream_grito_a_lo_lejos_far.flac",
+     "longest": 7.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/scream_grito_hombre_far.flac",
+     "longest": 7.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/scream_woman_2_far.flac",
+     "longest": 7.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/scream_woman_pain_far.flac",
+     "longest": 7.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/scream_man_pain_big_hall_far.flac",
+     "longest": 7.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/scream_wounded_man_far.flac",
+     "longest": 7.0,
+     "fade": 0.8
+    },
+    {
+     "file": "far/scream_man_excruciating_far.flac",
+     "longest": 7.0,
+     "fade": 0.8
     }
    ]
   }

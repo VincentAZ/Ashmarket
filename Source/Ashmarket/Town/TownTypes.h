@@ -47,7 +47,13 @@ enum class ETownDeed : uint8
 	Armor,
 
 	/** To whatever they sell from their stall: bought with water in hand, and carried away in the player's bag */
-	Trade
+	Trade,
+
+	/** Into the cage as an owner by the pit boss's hatch: straight to the fights there are to be had */
+	Pit,
+
+	/** Sits the day out in the yard: everybody is fed and paid, and it is tomorrow */
+	Rest
 };
 
 /** One thing the player can say back */
@@ -76,6 +82,17 @@ struct FTownLine
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
 	FString Words;
+
+	/** What the place's list calls the line, for a deed that is answered with one line or another by how it came out */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
+	FString Id;
+
+	/**
+	 *  What is written under the line and never spoken: the figures of the day ({held}, {owed}, {dealt}). A line with a
+	 *  figure in its words cannot be recorded, and Mother Ledger, whose every line had one, was never heard (24 November).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
+	FString Note;
 
 	/** What can be said back. With none, the talk goes on to Next when the player is ready. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
@@ -140,6 +157,10 @@ struct FTownPerson
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
 	TObjectPtr<UAnimSequenceBase> Idle;
 
+	/** Or the family of standing clips they keep to (FGutStandFamily::Name), which comes before the single clip above */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
+	FName Stand;
+
 	/** If true they wear a collar: somebody's property, a lot on the Block */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
 	bool bCollared = false;
@@ -159,6 +180,13 @@ struct FTownPerson
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
 	TArray<FTownBeatStop> Beat;
 
+	/** How they walk it, if not as everybody walks: a loop of whole steps with the travel taken out, and the speed it was walked at */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
+	TObjectPtr<UAnimSequenceBase> Walk;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person", meta = (ClampMin = 1, Units = "cm/s"))
+	float WalkSpeed = 90.0f;
+
 	/** How fast they walk it, against the pace everybody walks at */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person", meta = (ClampMin = 0.2, ClampMax = 2))
 	float Pace = 0.85f;
@@ -167,9 +195,31 @@ struct FTownPerson
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
 	TArray<FName> Sells;
 
+	/** What they will buy off somebody who has it in their bag, by the same names (scrap, tag, smokes). With none they buy nothing. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
+	TArray<FName> Buys;
+
 	/** What they say. The talk begins at the first. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
 	TArray<FTownLine> Lines;
+};
+
+/** Something lying about a place that whoever finds it can pick up: it goes in the bag, and is not there again */
+USTRUCT(BlueprintType)
+struct FTownFind
+{
+	GENERATED_BODY()
+
+	/** What it is, by the name the town's goods go under (flask, scrap, smokes, tag) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Find")
+	FName Good;
+
+	/** Where it lies, in the level, and which way it is turned */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Find")
+	FVector Place = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Find", meta = (Units = "deg"))
+	float Facing = 0.0f;
 };
 
 /** A way out of a place: a door, a gate, a hatch */
@@ -376,9 +426,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place")
 	TArray<FTownDoor> Doors;
 
+	/** What lies about the place to be found and picked up */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place")
+	TArray<FTownFind> Finds;
+
 	/** The ways in from other places. Somebody who comes by none of them is stood where the level starts its player. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place")
 	TArray<FTownArrival> Arrivals;
+
+	/**
+	 *  In a place that is the player's own yard: where the people they own or pay stand, one to a place. A place with any
+	 *  of these is the yard, and whoever walks into it with somebody in tow has brought them home.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Town")
+	TArray<FTownArrival> Stalls;
 
 	/** What is called out over the place, round and round, for as long as anybody is in it: a sale */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Place")

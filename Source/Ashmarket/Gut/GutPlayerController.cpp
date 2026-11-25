@@ -1,6 +1,7 @@
 // Ashmarket prototype: the Gut.
 
 #include "GutPlayerController.h"
+#include "GutCameraManager.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
@@ -8,7 +9,14 @@
 #include "GutFighter.h"
 #include "GutGameMode.h"
 #include "InputMappingContext.h"
+#include "GutGameInstance.h"
 #include "TownGameMode.h"
+
+AGutPlayerController::AGutPlayerController()
+{
+	// screens wider than 16:9 see more to the sides and lose nothing from top to bottom
+	PlayerCameraManagerClass = AGutCameraManager::StaticClass();
+}
 
 void AGutPlayerController::BeginPlay()
 {
@@ -99,6 +107,20 @@ void AGutPlayerController::SetupInputComponent()
 			Bind(Key, &AGutPlayerController::InteractPressed);
 		}
 
+		Bind(EKeys::Gamepad_LeftThumbstick, &AGutPlayerController::RunPressed);
+
+		// the street's camera: C locks it where it is, V goes through its set heights. On a pad, the D-pad's up and down
+		// (in the street nothing else uses them: right is the bag).
+		for (const FKey& Key : { EKeys::C, EKeys::Gamepad_DPad_Up })
+		{
+			Bind(Key, &AGutPlayerController::CameraLockPressed);
+		}
+
+		for (const FKey& Key : { EKeys::V, EKeys::Gamepad_DPad_Down })
+		{
+			Bind(Key, &AGutPlayerController::CameraStepPressed);
+		}
+
 		for (const FKey& Key : { EKeys::LeftShift, EKeys::Gamepad_LeftShoulder })
 		{
 			Bind(Key, &AGutPlayerController::JogPressed);
@@ -131,9 +153,64 @@ void AGutPlayerController::OnPossess(APawn* InPawn)
 	SetControlRotation(FRotator(StartingCameraPitch, InPawn->GetActorRotation().Yaw, 0.0f));
 }
 
+bool AGutPlayerController::IsCameraHeld() const
+{
+	const UGutGameInstance* Run = Cast<UGutGameInstance>(GetGameInstance());
+
+	if (!Run || !Run->bCameraLocked || !GetWorld() || !GetWorld()->GetAuthGameMode<ATownGameMode>())
+	{
+		return false;
+	}
+
+	const AGutFighter* Walker = Cast<AGutFighter>(GetPawn());
+
+	return Walker && Walker->IsAtEase();
+}
+
+void AGutPlayerController::AddPitchInput(float Val)
+{
+	// He locked it and could still push it up and down, and it came back when he let go. Locked, it does not move at all.
+	if (IsCameraHeld())
+	{
+		return;
+	}
+
+	Super::AddPitchInput(Val);
+}
+
 void AGutPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
+
+	// The street's camera, locked: it is brought to its height and kept there, whatever the mouse or the stick asks of it
+	// up and down. Turning is left alone.
+	if (IsCameraHeld())
+	{
+		const UGutGameInstance* Run = Cast<UGutGameInstance>(GetGameInstance());
+
+		FRotator Looking = GetControlRotation();
+
+		Looking.Pitch = FMath::FInterpTo(FRotator::NormalizeAxis(Looking.Pitch), Run->CameraLockedPitch, DeltaTime, 8.0f);
+
+		SetControlRotation(Looking);
+	}
+
+	// a run begun on the stick ends when the stick is let come back, as a run does on any pad
+	if (bRunByStick)
+	{
+		const float Pushed = FVector2D(GetInputAnalogKeyState(EKeys::Gamepad_LeftX), GetInputAnalogKeyState(EKeys::Gamepad_LeftY)).Size();
+
+		if (Pushed < 0.3f && !IsInputKeyDown(EKeys::Gamepad_LeftShoulder) && !IsInputKeyDown(EKeys::LeftShift))
+		{
+			bRunByStick = false;
+
+			if (AGutFighter* Walker = Cast<AGutFighter>(GetPawn()))
+			{
+				Walker->SetJogging(false);
+				Walker->SetRunning(false);
+			}
+		}
+	}
 
 	// at a betting screen a key that is held runs the stake up or down, a litre at a time, after a moment's wait: the first
 	// litre is the press itself
@@ -355,7 +432,12 @@ void AGutPlayerController::JogPressed()
 {
 	if (AGutFighter* Walker = Cast<AGutFighter>(GetPawn()); Walker && Walker->IsAtEase())
 	{
+		// Held, a jog. Let go and pressed again at once and held, a flat-out run: three paces on one key
+		// (22 November: "I prefer walk, fast walk, and run").
+		const double Now = FPlatformTime::Seconds();
+
 		Walker->SetJogging(true);
+		Walker->SetRunning(Now - JogLetGo < 0.4);
 	}
 }
 
@@ -364,5 +446,74 @@ void AGutPlayerController::JogReleased()
 	if (AGutFighter* Walker = Cast<AGutFighter>(GetPawn()); Walker && Walker->IsAtEase())
 	{
 		Walker->SetJogging(false);
+		Walker->SetRunning(false);
+	}
+
+	JogLetGo = FPlatformTime::Seconds();
+}
+
+void AGutPlayerController::CameraLockPressed()
+{
+	ATownGameMode* Town = GetWorld()->GetAuthGameMode<ATownGameMode>();
+	UGutGameInstance* Run = Cast<UGutGameInstance>(GetGameInstance());
+	const AGutFighter* Walker = Cast<AGutFighter>(GetPawn());
+
+	// only out in the street, and not at a counter or in a talk, where the same keys choose
+	if (!Town || !Run || !Walker || !Walker->IsAtEase() || Town->IsTalking() || Town->IsShopping())
+	{
+		return;
+	}
+
+	Run->bCameraLocked = !Run->bCameraLocked;
+	Run->CameraLockedPitch = FRotator::NormalizeAxis(GetControlRotation().Pitch);
+
+	Town->ShowNotice(Run->bCameraLocked
+		? TEXT("Camera locked at this height. It turns with you, and stays as high as it is. C lets it go.")
+		: TEXT("Camera let go."));
+}
+
+void AGutPlayerController::CameraStepPressed()
+{
+	ATownGameMode* Town = GetWorld()->GetAuthGameMode<ATownGameMode>();
+	UGutGameInstance* Run = Cast<UGutGameInstance>(GetGameInstance());
+	const AGutFighter* Walker = Cast<AGutFighter>(GetPawn());
+
+	if (!Town || !Run || !Walker || !Walker->IsAtEase() || Town->IsTalking() || Town->IsShopping())
+	{
+		return;
+	}
+
+	// at the shoulder, three-quarters overhead, and nearly straight down: the next one steeper than it is now, and round again
+	static const float Heights[] = { -6.0f, -42.0f, -68.0f };
+	static const TCHAR* Named[] = { TEXT("at your shoulder"), TEXT("three-quarters overhead"), TEXT("overhead") };
+
+	const float Now = FRotator::NormalizeAxis(GetControlRotation().Pitch);
+
+	int32 Next = 0;
+
+	for (int32 i = 0; i < UE_ARRAY_COUNT(Heights); ++i)
+	{
+		if (Heights[i] < Now - 4.0f)
+		{
+			Next = i;
+			break;
+		}
+	}
+
+	Run->bCameraLocked = true;
+	Run->CameraLockedPitch = Heights[Next];
+
+	Town->ShowNotice(FString::Printf(TEXT("Camera locked %s. C lets it go."), Named[Next]));
+}
+
+void AGutPlayerController::RunPressed()
+{
+	// the left stick pressed in: a flat-out run for as long as the stick is kept pushed
+	if (AGutFighter* Walker = Cast<AGutFighter>(GetPawn()); Walker && Walker->IsAtEase())
+	{
+		Walker->SetJogging(true);
+		Walker->SetRunning(true);
+
+		bRunByStick = true;
 	}
 }

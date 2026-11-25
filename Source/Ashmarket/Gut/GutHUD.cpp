@@ -12,6 +12,7 @@
 #include "GutHazard.h"
 #include "GutLadderData.h"
 #include "GutPlayerCharacter.h"
+#include "GutSound.h"
 #include "GutWeaponData.h"
 #include "Engine/Texture2D.h"
 #include "Application/SlateApplicationBase.h"
@@ -43,6 +44,12 @@ void AGutHUD::DrawHUD()
 	const AGutGameMode* GameMode = GetWorld()->GetAuthGameMode<AGutGameMode>();
 
 	if (!Canvas || !GameMode)
+	{
+		return;
+	}
+
+	// on the way out to the street: nothing of the cage's is drawn over its last picture
+	if (const UGutGameInstance* Run = Cast<UGutGameInstance>(GetGameInstance()); Run && Run->bGoingToStreet)
 	{
 		return;
 	}
@@ -300,7 +307,7 @@ void AGutHUD::DrawHUD()
 		}
 
 		DrawLabel(TEXT("YOU WALK OUT"), CenterX, 170.0f, 54, GutHUDColors::Text, true);
-		DrawLabel((Enemy && Enemy->GetKillingHazard()) ? TEXT("The cage finished them for you.") : TEXT("The cage's verdict is final."), CenterX, 255.0f, 22, GutHUDColors::DimText, true);
+		DrawLabel((Enemy && Enemy->GetKillingHazard()) ? *FString::Printf(TEXT("The cage finished %s for you."), FGutWho(Enemy->IsWoman()).Him()) : TEXT("The cage's verdict is final."), CenterX, 255.0f, 22, GutHUDColors::DimText, true);
 		break;
 
 	case EGutFightPhase::PlayerLost:
@@ -775,8 +782,8 @@ void AGutHUD::DrawCard(const AGutGameMode* GameMode, float CenterX)
 				: Offer == EGutSpecialCard::OneAgainstThree
 				? FString::Printf(TEXT("The pit boss's card: you alone against %s and two of the new meat  \u00B7  %.0f L"),
 					*Rung->OpponentName.ToString(), FMath::RoundToFloat(Rung->Purse * GameMode->GetSpecialPurseScale(Offer)))
-				: FString::Printf(TEXT("The pit boss's card: two on two, you and a second against %s and its own  \u00B7  %.0f L"),
-					*Rung->OpponentName.ToString(), FMath::RoundToFloat(Rung->Purse * GameMode->GetSpecialPurseScale(Offer)));
+				: FString::Printf(TEXT("The pit boss's card: two on two, you and a second against %s and %s own  \u00B7  %.0f L"),
+					*Rung->OpponentName.ToString(), UGutSoundSubsystem::WhoIs(this, Rung->Body).His(), FMath::RoundToFloat(Rung->Purse * GameMode->GetSpecialPurseScale(Offer)));
 
 			if (GameMode->IsSpecialAccepted())
 			{
@@ -862,9 +869,20 @@ void AGutHUD::DrawBettingWindow(const AGutGameMode* GameMode, float CenterX)
 	// a bet against yourself only pays if you are there to collect
 	const FGutLadderRung* Rung = GameMode->GetRung();
 
-	if (Side == EGutBetSide::Opponent && Rung && !Rung->bSparesPlayer && !GameMode->IsThrowingFight())
+	const bool bWalksOut = Rung && (Rung->bSparesPlayer || GameMode->IsThrowingFight());
+
+	// why the other corner can be backed at all: he asked, 21 November
+	if (Side == EGutBetSide::Opponent && !bWalksOut)
 	{
-		DrawLabel(TEXT("If it wins, you will not be there to collect."), CenterX, 478.0f, 16, GutHUDColors::Health, true);
+		DrawLabel(TEXT("Against yourself. It pays only if you lose, and here the beaten are not spared: you will not be there to collect."), CenterX, 478.0f, 16, GutHUDColors::Health, true);
+	}
+	else if (Side == EGutBetSide::Opponent)
+	{
+		DrawLabel(TEXT("Against yourself. It pays only if you lose: you would walk out beaten, with no purse, and collect."), CenterX, 478.0f, 16, GutHUDColors::Warning, true);
+	}
+	else if (Side == EGutBetSide::None)
+	{
+		DrawLabel(TEXT("Chalk takes anybody's water on either corner, a fighter's own included. Against yourself is a bet that you lose."), CenterX, 478.0f, 16, GutHUDColors::DimText, true);
 	}
 
 	DrawLabel(TEXT("Left mouse, Enter or A button: to the cage"), CenterX, 508.0f, 17, GutHUDColors::Text, true);
@@ -885,9 +903,37 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 	GameMode->GetStableOffers(OnBill);
 
 	const float ItemHeight = 30.0f;
+	const float HeadingHeight = 34.0f;
 	const float Top = 96.0f;
 
-	DrawPanel(CenterX, Top, 1180.0f, 250.0f + (Items.Num() * ItemHeight));
+	/**
+	 *  On the yard's own page the lines are of three kinds, and each kind has a heading over it: the people, the day's
+	 *  business, and the ways out. Without them it was a column of names and numbers with no word of what choosing one did
+	 *  (22 November: "I see 4 fighters all looking at me. So clueless what to do").
+	 */
+	auto KindOf = [Page](const FGutCardItem& Item)
+	{
+		if (Page != EGutStablePage::Yard)
+		{
+			return -1;
+		}
+
+		if (Item.Type == EGutCardItemType::Door || Item.Index >= WalkWith || Item.Index == WalkOutAll)
+		{
+			return 2;
+		}
+
+		return (Item.Type == EGutCardItemType::Stable && Item.Index >= OpenFighter && Item.Index < Buy) ? 0 : 1;
+	};
+
+	int32 Headings = 0;
+
+	for (int32 i = 0; i < Items.Num(); ++i)
+	{
+		Headings += (KindOf(Items[i]) >= 0 && (i == 0 || KindOf(Items[i]) != KindOf(Items[i - 1]))) ? 1 : 0;
+	}
+
+	DrawPanel(CenterX, Top, 1180.0f, 250.0f + (Items.Num() * ItemHeight) + (Headings * HeadingHeight));
 
 	float Y = Top + 22.0f;
 
@@ -899,14 +945,39 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 
 	FString Holding = FString::Printf(TEXT("You hold %.0f L."), State.Water);
 
-	if (State.Debt > 0.0f)
+	// What is owed is said with whom it is owed to. "You owe 7 L" stood here beside a note for 81 L in the bag: the 7 was the
+	// yard's unpaid days and the 81 Mother Ledger's, and nothing said so (24 November).
+	const UGutGameInstance* Run = GetWorld() ? Cast<UGutGameInstance>(GetWorld()->GetGameInstance()) : nullptr;
+	const float Lent = (Run && Run->Window.bStarted) ? Run->Window.Debt : 0.0f;
+
+	if (State.Debt > 0.5f || Lent > 0.5f)
 	{
-		Holding += FString::Printf(TEXT("  You owe %.0f L."), State.Debt);
+		Holding += TEXT("  Owed:");
+
+		if (State.Debt > 0.5f)
+		{
+			Holding += FString::Printf(TEXT(" %.0f L for the yard's unpaid days"), State.Debt);
+		}
+
+		if (Lent > 0.5f)
+		{
+			Holding += FString::Printf(TEXT("%s %.0f L to Mother Ledger"), State.Debt > 0.5f ? TEXT(",") : TEXT(""), Lent);
+		}
+
+		Holding += TEXT(".");
 	}
 
-	Holding += FString::Printf(TEXT("  %d of %d places in the yard are taken. Each mouth is %.0f L a day."), State.Fighters.Num(), GameMode->GetStableMostFighters(), GameMode->GetFeedPerDay());
+	Holding += FString::Printf(TEXT("  Yard: %d of %d places taken, %.0f L a mouth a day."), State.Fighters.Num(), GameMode->GetStableMostFighters(), GameMode->GetFeedPerDay());
 
-	DrawLabel(Holding, CenterX, Y, 18, GutHUDColors::Text, true);
+	// as large as the panel has room for
+	int32 HoldingSize = 18;
+
+	while (HoldingSize > 13 && MeasureLabel(Holding, HoldingSize) > 1120.0f)
+	{
+		--HoldingSize;
+	}
+
+	DrawLabel(Holding, CenterX, Y, HoldingSize, GutHUDColors::Text, true);
 
 	Y += 40.0f;
 
@@ -951,7 +1022,7 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 			}
 			else if (Fighter.bPromisedTag)
 			{
-				Text += TEXT("  \u00B7  promised its tag");
+				Text += FString::Printf(TEXT("  \u00B7  promised %s tag"), UGutSoundSubsystem::WhoIs(GameMode, Fighter.Body).His());
 			}
 		}
 
@@ -968,7 +1039,9 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 
 		if (GameMode->IsTagDue(GameMode->GetStableFocus()))
 		{
-			DrawLabel(TEXT("It has won what you asked of it. It is waiting for its tag."), CenterX, Y + 54.0f, 16, GutHUDColors::Warning, true);
+			const FGutWho Who = UGutSoundSubsystem::WhoIs(this, Fighter.Body);
+
+			DrawLabel(FString::Printf(TEXT("%s has won what you asked of %s. %s is waiting for %s tag."), Who.HeCap(), Who.Him(), Who.HeCap(), Who.His()), CenterX, Y + 54.0f, 16, GutHUDColors::Warning, true);
 		}
 	}
 	else if (Page == EGutStablePage::Block)
@@ -982,14 +1055,26 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 	else if (Page == EGutStablePage::Body)
 	{
 		DrawLabel(FString::Printf(TEXT("%s is on the pit boss's table, and is yours to see to."), *State.BodyOf.ToString()), CenterX, Y, 20, GutHUDColors::Health, true);
-		DrawLabel(TEXT("The yard will know by morning where it went."), CenterX, Y + 30.0f, 15, GutHUDColors::DimText, true);
+		// said plainly why this page is here and what comes after it: he came to make a fight, was shown this instead with
+		// no word of why, and took it for the game falling over (24 November)
+		DrawLabel(FString::Printf(TEXT("%s died in the cage%s. This is settled before anything else at the hatch%s."),
+			FGutWho(State.bBodyWoman).HeCap(), State.BodySince > 0 ? *FString::Printf(TEXT(" on day %d"), State.BodySince) : TEXT(""),
+			GameMode->IsBillAfterBody() ? TEXT(": the fights are the next page") : TEXT("")), CenterX, Y + 30.0f, 16, GutHUDColors::Text, true);
+		DrawLabel(FString::Printf(TEXT("The yard will know by morning where %s went."), FGutWho(State.bBodyWoman).He()), CenterX, Y + 54.0f, 15, GutHUDColors::DimText, true);
 	}
 	else if (State.Fighters.IsEmpty())
 	{
-		DrawLabel(TEXT("The yard is empty. Fighters are bought at the Block, or signed there for a wage."), CenterX, Y + 14.0f, 16, GutHUDColors::DimText, true);
+		DrawLabel(TEXT("This is your yard, and it is empty. Fighters are bought at the Block, or signed there for a wage."), CenterX, Y + 14.0f, 16, GutHUDColors::DimText, true);
+	}
+	else if (Page == EGutStablePage::Yard)
+	{
+		DrawLabel(TEXT("This is your yard. Your fighters stand in it, and fight for you when you send them."), CenterX, Y, 17, GutHUDColors::Text, true);
+		DrawLabel(TEXT("Choose one to train, mend or sell. Take a fight from the pit boss to earn by them. Or go back out."), CenterX, Y + 30.0f, 17, GutHUDColors::DimText, true);
 	}
 
 	Y += 86.0f;
+
+	int32 LastKind = -1;
 
 	for (const FGutCardItem& Item : Items)
 	{
@@ -998,9 +1083,28 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 
 		const int32 Code = Item.Index;
 
+		if (const int32 Kind = KindOf(Item); Kind >= 0 && Kind != LastKind)
+		{
+			static const TCHAR* Over[] = { TEXT("YOUR FIGHTERS"), TEXT("THE DAY"), TEXT("OUT TO THE STREET") };
+
+			DrawLabel(Over[Kind], CenterX, Y + 8.0f, 13, GutHUDColors::DimText, true);
+
+			Y += HeadingHeight;
+			LastKind = Kind;
+		}
+
 		if (Item.Type == EGutCardItemType::Door)
 		{
-			Line = TEXT("Out of the yard gate to the street");
+			Line = State.Fighters.IsEmpty() ? TEXT("Out of the yard gate") : TEXT("Out of the yard gate, alone");
+		}
+		else if (Code >= WalkWith)
+		{
+			Line = State.Fighters.IsValidIndex(Code - WalkWith)
+				? FString::Printf(TEXT("Out of the yard gate, with %s walking behind you"), *State.Fighters[Code - WalkWith].FighterName.ToString().ToUpper()) : FString();
+		}
+		else if (Code == WalkOutAll)
+		{
+			Line = FString::Printf(TEXT("Out of the yard gate, with all %d of them walking behind you"), State.Fighters.Num());
 		}
 		else if (Code >= SendFighter)
 		{
@@ -1029,24 +1133,25 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 		}
 		else if (Code >= OpenFighter)
 		{
-			Line = State.Fighters.IsValidIndex(Code - OpenFighter) ? Describe(State.Fighters[Code - OpenFighter], true) : FString();
+			Line = State.Fighters.IsValidIndex(Code - OpenFighter) ? TEXT("See to ") + Describe(State.Fighters[Code - OpenFighter], true) : FString();
 		}
 		else
 		{
 			const FGutStableFighter* Fighter = State.Fighters.IsValidIndex(GameMode->GetStableFocus()) ? &State.Fighters[GameMode->GetStableFocus()] : nullptr;
+			const FGutWho Who = UGutSoundSubsystem::WhoIs(this, Fighter ? Fighter->Body : TSoftClassPtr<AActor>());
 
 			switch (Code)
 			{
 			case ToBlock:
-				Line = TEXT("To the Block");
+				Line = TEXT("To the Block, to buy or sign another");
 				break;
 
 			case ToBill:
-				Line = TEXT("To the pit boss, for a fight");
+				Line = TEXT("To the pit boss, to put one of them in a fight for a purse");
 				break;
 
 			case Wait:
-				Line = TEXT("Let the day go by");
+				Line = FString::Printf(TEXT("Let the day go by  \u00B7  feed and wages are paid, %.0f L a mouth"), GameMode->GetFeedPerDay());
 				break;
 
 			case TrainStrength:
@@ -1069,21 +1174,21 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 				break;
 
 			case Dope:
-				Line = (Fighter && Fighter->bDoped) ? FString(TEXT("Dusted for its next fight")) : FString::Printf(TEXT("Give it Dust for its next fight  \u00B7  %.0f L"), GameMode->GetDopeCost());
+				Line = (Fighter && Fighter->bDoped) ? FString::Printf(TEXT("Dusted for %s next fight"), Who.His()) : FString::Printf(TEXT("Give %s Dust for %s next fight  \u00B7  %.0f L"), Who.Him(), Who.His(), GameMode->GetDopeCost());
 				bAvailable = Fighter && !Fighter->bDoped && GameMode->GetDopeCost() <= State.Water;
 				break;
 
 			case Promise:
-				Line = FString::Printf(TEXT("Promise it its tag for %d wins"), GameMode->GetWinsForTag());
+				Line = FString::Printf(TEXT("Promise %s %s tag for %d wins"), Who.Him(), Who.His(), GameMode->GetWinsForTag());
 				break;
 
 			case HandOverTag:
-				Line = FString::Printf(TEXT("Buy its tag at the Pump office and hand it over  \u00B7  %.0f L"), GameMode->GetTagPrice());
+				Line = FString::Printf(TEXT("Buy %s tag at the Pump office and hand it over  \u00B7  %.0f L"), Who.His(), GameMode->GetTagPrice());
 				bAvailable = GameMode->GetTagPrice() <= State.Water;
 				break;
 
 			case DenyTag:
-				Line = TEXT("Tell it there will be no tag");
+				Line = FString::Printf(TEXT("Tell %s there will be no tag"), Who.Him());
 				break;
 
 			case BodyToGround:
@@ -1100,11 +1205,11 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 				break;
 
 			case WalkOut:
-				Line = TEXT("Out of the yard gate to the street, with it walking behind you");
+				Line = FString::Printf(TEXT("Out of the yard gate to the street, with %s walking behind you"), Who.Him());
 				break;
 
 			case Sell:
-				Line = (Fighter && !Fighter->bOwned) ? FString(TEXT("Let it go")) : FString::Printf(TEXT("Sell it at the Block  \u00B7  about %.0f L back"), Fighter ? FMath::RoundToFloat(Fighter->Price * 0.8f * (Fighter->IsCrippled() ? 0.5f : 1.0f)) : 0.0f);
+				Line = (Fighter && !Fighter->bOwned) ? FString::Printf(TEXT("Let %s go"), Who.Him()) : FString::Printf(TEXT("Sell %s at the Block  \u00B7  about %.0f L back"), Who.Him(), Fighter ? FMath::RoundToFloat(Fighter->Price * 0.8f * (Fighter->IsCrippled() ? 0.5f : 1.0f)) : 0.0f);
 				break;
 
 			default:
@@ -1159,6 +1264,8 @@ float AGutHUD::DrawStableResult(const AGutGameMode* GameMode, float CenterX)
 
 	TArray<FString> Lines;
 
+	const FGutWho Was(Result.bWoman);
+
 	if (Result.bWon)
 	{
 		Lines.Add(Result.FightersShare > 0.0f
@@ -1167,14 +1274,14 @@ float AGutHUD::DrawStableResult(const AGutGameMode* GameMode, float CenterX)
 
 		if (Result.bTagDue)
 		{
-			Lines.Add(FString::Printf(TEXT("%s has won what you asked of it. It is waiting for its tag."), *Result.FighterName.ToString()));
+			Lines.Add(FString::Printf(TEXT("%s has won what you asked of %s. %s is waiting for %s tag."), *Result.FighterName.ToString(), Was.Him(), Was.HeCap(), Was.His()));
 		}
 	}
 	else
 	{
 		Lines.Add(Result.bLayDown
-			? FString::Printf(TEXT("%s did not fight. That was what it thought of you."), *Result.FighterName.ToString())
-			: FString::Printf(TEXT("%s is dead, and what you paid for it with it."), *Result.FighterName.ToString()));
+			? FString::Printf(TEXT("%s did not fight. That was what %s thought of you."), *Result.FighterName.ToString(), Was.He())
+			: FString::Printf(TEXT("%s is dead, and what you paid for %s with %s."), *Result.FighterName.ToString(), Was.Him(), Was.Him()));
 	}
 
 	if (Result.Backed >= 0)
@@ -1840,13 +1947,40 @@ void AGutHUD::DrawRack(const AGutGameMode* GameMode, float CenterX)
 		DrawLabel(Weapons[GameMode->GetPlayerChoice()]->Description.ToString(), CenterX, CardsTop + CardHeight + 18.0f, 18, GutHUDColors::Text, true);
 	}
 
+	// Why the choice will not move along the rack, when it will not: a broken arm holds nothing, and the choice passes over
+	// whatever that arm would have held. Said nowhere, it read as a rack that could not be scrolled (22 November).
+	float KeysY = CardsTop + CardHeight + 52.0f;
+
+	if (const AGutFighter* Chooser = GameMode->GetPlayerFighter())
+	{
+		int32 Held = 0;
+
+		for (const UGutWeaponData* Weapon : Weapons)
+		{
+			Held += GameMode->CanPlayerHold(Weapon) ? 1 : 0;
+		}
+
+		const bool bLeft = Chooser->IsLimbCrippled(EGutLimb::LeftArm);
+		const bool bRight = Chooser->IsLimbCrippled(EGutLimb::RightArm);
+
+		if (Held > 0 && Held < Weapons.Num() && (bLeft || bRight))
+		{
+			DrawLabel(FString::Printf(TEXT("Your %s arm is broken, and holds nothing: %s. A limb is mended between fights, for water."),
+				bRight ? TEXT("right") : TEXT("left"),
+				Held == 1 ? TEXT("there is one thing on the rack you can still carry") : *FString::Printf(TEXT("%d of these are still yours to choose from"), Held)),
+				CenterX, KeysY, 18, GutHUDColors::Health, true);
+
+			KeysY += 34.0f;
+		}
+	}
+
 	// changing the opponent's draw is for trying matchups in single fights. On a ladder its weapon is its own business.
 	DrawLabel(GameMode->IsOnLadder()
 		? TEXT("A / D or D-pad: choose          Left mouse, Enter or A button: take it to the window")
 		: (GameMode->CameByDoor()
 			? TEXT("A / D or D-pad: choose          Left mouse, Enter or A button: take it          W or D-pad up: change the opponent's          S or D-pad down: back out to the street")
 			: TEXT("A / D or D-pad: choose          Left mouse, Enter or A button: take it          W or D-pad up: change the opponent's")),
-		CenterX, CardsTop + CardHeight + 52.0f, 17, GutHUDColors::Text, true);
+		CenterX, KeysY, 17, GutHUDColors::Text, true);
 }
 
 void AGutHUD::DrawWeaponCard(const AGutGameMode* GameMode, const UGutWeaponData* Weapon, float X, float Y, float Width, float Height, bool bPlayers, bool bEnemys)
@@ -1893,7 +2027,7 @@ void AGutHUD::DrawWeaponCard(const AGutGameMode* GameMode, const UGutWeaponData*
 	// who has drawn it, along the bottom of the card
 	if (!bCanHold)
 	{
-		DrawLabel(TEXT("NO ARM"), X + 16.0f, Y + Height - 32.0f, 13, GutHUDColors::Health);
+		DrawLabel(TEXT("NO ARM TO HOLD IT"), X + 16.0f, Y + Height - 32.0f, 13, GutHUDColors::Health);
 	}
 	else if (bPlayers)
 	{

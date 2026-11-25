@@ -1,0 +1,480 @@
+{
+ "about": "The owner's yard, beside the Gut: a place of its own, walked about in. The player's people stand at the 'stalls'; walking up to one puts up what can be done with them. Read by Tools/build_town_level.py. Places are in the map's own metres (x east, y north).",
+ "name": "The Yard",
+ "level": "/Game/Town/Lvl_Yard",
+ "data": "/Game/Town/DA_Town_Yard",
+ "origin": {
+  "x": 95.0,
+  "y": 208.0,
+  "z": 3.0
+ },
+ "street_height": 5.25,
+ "alley": {
+  "from_y": 1000.0,
+  "rise_per_metre": 0.0
+ },
+ "start": {
+  "x": 81.2,
+  "y": 207.4,
+  "facing": 0
+ },
+ "arrivals": [
+  {
+   "name": "from_pool_street",
+   "x": 81.2,
+   "y": 207.4,
+   "facing": 0
+  }
+ ],
+ "errand": [
+  "YOUR YARD",
+  "Whoever you own or pay stands here.",
+  "Walk up to one of them: train, mend, or take them out with you.",
+  "The hatch in the east wall: the pit boss, to put one in a fight.",
+  "The crate by the gate: sit out the day.",
+  "The gate, south: Pool Street."
+ ],
+ "surfaces": {
+  "Road": {
+   "from": "road_damaged",
+   "size": 320
+  },
+  "Yard": {
+   "from": "dirty_concrete",
+   "size": 300
+  },
+  "Blockwork": {
+   "from": "concrete_block_wall",
+   "size": 200
+  },
+  "Sheet": {
+   "from": "rusty_corrugated_iron",
+   "size": 200
+  }
+ },
+ "ground": [
+  {
+   "label": "Beyond",
+   "x": [
+    20,
+    140
+   ],
+   "y": [
+    160,
+    260
+   ],
+   "z": 5.17,
+   "surface": "Yard"
+  },
+  {
+   "label": "YardFloor",
+   "x": [
+    68.0,
+    84.0
+   ],
+   "y": [
+    205.0,
+    219.0
+   ],
+   "z": 5.25,
+   "surface": "Yard"
+  }
+ ],
+ "walk": [
+  {
+   "x": [
+    68.6,
+    83.4
+   ],
+   "y": [
+    205.6,
+    218.4
+   ]
+  }
+ ],
+ "walls": [
+  {
+   "label": "GutWall",
+   "x": [
+    83.4,
+    84.6
+   ],
+   "y": [
+    203.0,
+    221.0
+   ],
+   "height": 4.6,
+   "surface": "Blockwork",
+   "stained": [
+    "west"
+   ]
+  },
+  {
+   "label": "GateWestPier",
+   "x": [
+    78.4,
+    79.0
+   ],
+   "y": [
+    205.0,
+    205.6
+   ],
+   "height": 3.2,
+   "surface": "Blockwork",
+   "stained": [
+    "north"
+   ]
+  },
+  {
+   "label": "NorthSheet",
+   "x": [
+    68.0,
+    83.4
+   ],
+   "y": [
+    218.4,
+    219.0
+   ],
+   "height": 2.6,
+   "surface": "Sheet",
+   "stained": [
+    "south"
+   ]
+  },
+  {
+   "label": "WestSheet",
+   "x": [
+    68.0,
+    68.6
+   ],
+   "y": [
+    205.0,
+    219.0
+   ],
+   "height": 3.2,
+   "surface": "Sheet",
+   "stained": [
+    "east"
+   ]
+  }
+ ],
+ "rows": [
+  {
+   "label": "NorthRow",
+   "model": [
+    "town_container_red",
+    "town_container_blue",
+    "town_container_red"
+   ],
+   "yaw": 90,
+   "high": 2,
+   "along": "x",
+   "from": 66.6,
+   "to": 84.9,
+   "face": 219.0,
+   "side": "north"
+  }
+ ],
+ "runs": [
+  {
+   "label": "SouthFence",
+   "model": "modular_chainlink_fence",
+   "from": [
+    68.6,
+    205.6
+   ],
+   "to": [
+    79.0,
+    205.6
+   ]
+  },
+  {
+   "label": "YardGate",
+   "model": "street_gate",
+   "from": [
+    79.0,
+    205.6
+   ],
+   "to": [
+    83.4,
+    205.6
+   ]
+  }
+ ],
+ "things": [
+  {
+   "model": "street_door",
+   "x": 83.35,
+   "y": 212.0,
+   "yaw": 180,
+   "note": "the pit boss's hatch, in the Gut's wall"
+  },
+  {
+   "model": "worn_metal_rack",
+   "x": 76.0,
+   "y": 217.9,
+   "yaw": 0,
+   "note": "what they train with"
+  },
+  {
+   "model": "old_tyre",
+   "x": 70.2,
+   "y": 210.6
+  },
+  {
+   "model": "old_tyre",
+   "x": 70.6,
+   "y": 211.5
+  },
+  {
+   "model": "Barrel_01",
+   "x": 82.6,
+   "y": 216.9
+  },
+  {
+   "model": "barrel_03",
+   "x": 81.8,
+   "y": 217.5
+  },
+  {
+   "model": "metal_jerrycan",
+   "x": 82.2,
+   "y": 215.9
+  },
+  {
+   "model": "wooden_crate_02",
+   "x": 70.0,
+   "y": 206.6,
+   "note": "the crate by the gate: the day is sat out on it"
+  },
+  {
+   "model": "portable_generator",
+   "x": 69.6,
+   "y": 216.6
+  },
+  {
+   "model": "street_lamp_01",
+   "x": 76.0,
+   "y": 206.3,
+   "lamp": true
+  },
+  {
+   "model": "square_water_cart",
+   "x": 71.6,
+   "y": 208.8,
+   "yaw": 20,
+   "note": "what they drink"
+  },
+  {
+   "model": "square_table",
+   "x": 80.2,
+   "y": 209.6,
+   "yaw": 90,
+   "note": "by the hatch: where the pit boss's man writes fights down"
+  },
+  {
+   "model": "wooden_crate_02",
+   "x": 81.4,
+   "y": 210.4
+  },
+  {
+   "model": "old_tyre",
+   "x": 73.4,
+   "y": 213.4
+  },
+  {
+   "model": "propane_tank",
+   "x": 69.4,
+   "y": 213.8
+  },
+  {
+   "model": "Barrel_01",
+   "x": 69.3,
+   "y": 208.0
+  },
+  {
+   "model": "metal_jerrycan",
+   "x": 72.9,
+   "y": 207.6
+  },
+  {
+   "model": "main_fire_drum",
+   "x": 77.0,
+   "y": 210.7,
+   "yaw": 30,
+   "light": {
+    "candela": 2400,
+    "reach": 9,
+    "colour": "fire",
+    "flicker": true,
+    "off": 0.3,
+    "size": 0.2,
+    "shadows": true,
+    "note": "the yard's fire: what they stand round when nobody is making them train"
+   }
+  },
+  {
+   "model": "concrete_road_barrier",
+   "x": 77.0,
+   "y": 208.7,
+   "yaw": 0,
+   "note": "a length of road barrier by the fire, to sit on"
+  },
+  {
+   "model": "main_lantern",
+   "x": 79.5,
+   "y": 208.9,
+   "yaw": 70,
+   "light": {
+    "candela": 600,
+    "reach": 5,
+    "colour": "lantern",
+    "flicker": true,
+    "off": 0.0,
+    "note": "set down by the table at the hatch, to write fights by"
+   }
+  },
+  {
+   "model": "main_lantern",
+   "x": 70.3,
+   "y": 217.4,
+   "yaw": 200,
+   "light": {
+    "candela": 600,
+    "reach": 5,
+    "colour": "lantern",
+    "flicker": true,
+    "off": 0.0,
+    "note": "in the corner where they sleep"
+   }
+  },
+  {
+   "model": "main_coat_rail",
+   "x": 72.7,
+   "y": 217.9,
+   "yaw": 0,
+   "note": "what they own, hung up: it is not much"
+  },
+  {
+   "model": "old_tyre",
+   "x": 78.0,
+   "y": 217.7,
+   "note": "more of what they train with"
+  },
+  {
+   "model": "old_tyre",
+   "x": 78.7,
+   "y": 217.9
+  },
+  {
+   "model": "wooden_crate_02",
+   "x": 75.2,
+   "y": 210.2,
+   "yaw": 20,
+   "note": "a seat on the other side of the fire"
+  },
+  {"model": "can_rusted", "x": 76.54, "y": 216.65, "yaw": 235, "scattered": true},
+  {"model": "can_rusted", "x": 75.9, "y": 216.12, "yaw": 55, "scattered": true},
+  {"model": "plastic_jerrycan", "x": 74.53, "y": 206.61, "yaw": 130, "scattered": true},
+  {"model": "plastic_bottle_gallon", "x": 75.04, "y": 207.25, "yaw": 235, "scattered": true},
+  {"model": "trashbag", "x": 79.06, "y": 207.45, "yaw": 285, "scattered": true},
+  {"model": "cardboard_box_01", "x": 77.51, "y": 206.85, "yaw": 350, "scattered": true},
+  {"model": "oil_tin", "x": 77.89, "y": 206.29, "yaw": 20, "scattered": true},
+  {"model": "can_rusted", "x": 72.08, "y": 206.26, "yaw": 65, "scattered": true},
+  {"model": "can_rusted", "x": 71.46, "y": 206.16, "yaw": 275, "scattered": true}
+ ],
+ "pictures": [],
+ "pasted": [],
+ "bulbs": [
+  {
+   "x": 76.0,
+   "y": 212.0,
+   "up": 4.2,
+   "candela": 5200,
+   "reach": 18,
+   "shadows": true,
+   "note": "over the middle of the yard"
+  },
+  {
+   "x": 82.6,
+   "y": 212.0,
+   "up": 2.8,
+   "candela": 2200,
+   "reach": 9,
+   "note": "over the hatch"
+  },
+  {
+   "x": 75.5,
+   "y": 217.2,
+   "up": 3.0,
+   "candela": 2600,
+   "reach": 12,
+   "note": "over where they stand"
+  },
+  {
+   "x": 70.4,
+   "y": 207.6,
+   "up": 2.6,
+   "candela": 1800,
+   "reach": 9,
+   "note": "by the crate at the gate"
+  }
+ ],
+ "stalls": [
+  {
+   "x": 71.5,
+   "y": 216.2,
+   "facing": 180
+  },
+  {
+   "x": 74.0,
+   "y": 216.2,
+   "facing": 180
+  },
+  {
+   "x": 78.2,
+   "y": 216.2,
+   "facing": 180
+  },
+  {
+   "x": 80.6,
+   "y": 216.2,
+   "facing": 180
+  }
+ ],
+ "people": [],
+ "doors": [
+  {
+   "prompt": "Out of the yard gate to Pool Street",
+   "x": 81.2,
+   "y": 205.9,
+   "deed": "go",
+   "to": "/Game/Town/Lvl_PoolStreet",
+   "arrive": "from_yard",
+   "walk_through": true,
+   "mouth": {
+    "x": [
+     79.3,
+     83.1
+    ],
+    "y": [
+     205.4,
+     206.25
+    ]
+   }
+  },
+  {
+   "prompt": "Knock at the pit boss's hatch: put one of them in a fight",
+   "x": 82.7,
+   "y": 212.0,
+   "deed": "pit"
+  },
+  {
+   "prompt": "Sit out the day on the crate: everybody is fed and paid",
+   "x": 70.6,
+   "y": 207.2,
+   "deed": "rest"
+  }
+ ],
+ "finds": []
+}

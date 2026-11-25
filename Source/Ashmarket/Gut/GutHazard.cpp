@@ -136,6 +136,19 @@ void AGutHazard::TryHurt(AGutFighter* Fighter, float Now)
 		return;
 	}
 
+	// A fighter held still for the instant a blow lands is not getting clear of anything, and the time it was given to get
+	// clear in is not running. Without this the cage took twice as many fighters once blows began to stop them (60 fights
+	// each way, 21 November: 11 against 5, and 9 against 2).
+	if (Fighter->IsStoppedForBlow())
+	{
+		if (float* Held = LastHitTimes.Find(Fighter))
+		{
+			*Held += GetWorld()->GetDeltaSeconds();
+		}
+
+		return;
+	}
+
 	// one touch at a time: give the fighter the chance to get clear
 	if (const float* LastHitTime = LastHitTimes.Find(Fighter))
 	{
