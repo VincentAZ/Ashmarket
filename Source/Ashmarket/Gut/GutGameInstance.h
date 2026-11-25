@@ -183,6 +183,19 @@ public:
 	/** What the town knows of the player: how it stands with each of its powers, the work it has taken and how each piece came out */
 	UPROPERTY()
 	FTownStoryState Story;
+
+	/** Who at the Block went to somebody else today: see UGutGameInstance::BlockSold */
+	UPROPERTY()
+	TArray<int32> BlockSold;
+
+	UPROPERTY()
+	TArray<FString> BlockSoldTo;
+
+	UPROPERTY()
+	int32 BlockSoldDay = -1;
+
+	UPROPERTY()
+	int32 BlockSoldSeed = 0;
 };
 
 /**
@@ -256,6 +269,20 @@ public:
 	 */
 	UPROPERTY(BlueprintReadOnly, Category="Gut")
 	FTownStoryState Story;
+
+	/**
+	 *  Who at the Block was bid for and went to somebody else: the lines of the day's book, who each went to, and the day
+	 *  and the book they were of. Of no account on any other day. Kept apart from the stable, which somebody who has only
+	 *  ever lost at the Block has not got.
+	 */
+	UPROPERTY()
+	TArray<int32> BlockSold;
+
+	UPROPERTY()
+	TArray<FString> BlockSoldTo;
+
+	int32 BlockSoldDay = -1;
+	int32 BlockSoldSeed = 0;
 
 	/** How many of something are in the bag, and puts so many more in it, or takes them out */
 	int32 GetBagCount(FName Good) const;

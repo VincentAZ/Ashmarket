@@ -241,6 +241,10 @@ bool UGutGameInstance::SaveRun()
 	Save->bOnePurse = bOnePurse;
 	Save->Found = Found;
 	Save->Story = Story;
+	Save->BlockSold = BlockSold;
+	Save->BlockSoldTo = BlockSoldTo;
+	Save->BlockSoldDay = BlockSoldDay;
+	Save->BlockSoldSeed = BlockSoldSeed;
 
 	return UGameplayStatics::SaveGameToSlot(Save, SaveSlotName, 0);
 }
@@ -275,6 +279,10 @@ bool UGutGameInstance::LoadRun()
 	bOnePurse = Save->bOnePurse;
 	Found = Save->Found;
 	Story = Save->Story;
+	BlockSold = Save->BlockSold;
+	BlockSoldTo = Save->BlockSoldTo;
+	BlockSoldDay = Save->BlockSoldDay;
+	BlockSoldSeed = Save->BlockSoldSeed;
 	bPurseSeen = false;
 
 	if (FParse::Param(FCommandLine::Get(), TEXT("GutStoryAfresh")))

@@ -587,7 +587,7 @@ void ATownHUD::DrawBook(const ATownGameMode* Town, float CenterX)
 
 		if (i == Lines.Num())
 		{
-			DrawLabel(FString(Mark) + TEXT("Nothing more"), ListLeft, LineY + 8.0f, 21, bChosen ? GutHUDColors::Warning : GutHUDColors::Text);
+			DrawLabel(FString(Mark) + (Town->IsBidding() ? TEXT("Let it go") : TEXT("Nothing more")), ListLeft, LineY + 8.0f, 21, bChosen ? GutHUDColors::Warning : GutHUDColors::Text);
 			break;
 		}
 
@@ -612,9 +612,9 @@ void ATownHUD::DrawBook(const ATownGameMode* Town, float CenterX)
 	}
 
 	// what there is to know of the one the choice is on
-	if (bSomebody && Lines.IsValidIndex(Choice))
+	if (bSomebody && (Lines.IsValidIndex(Choice) || Town->IsBidding()))
 	{
-		const FTownShopLine& Line = Lines[Choice];
+		const FTownShopLine Line = Lines.IsValidIndex(Choice) ? Lines[Choice] : FTownShopLine();
 		const float AboutLeft = ListLeft + ListWide + 34.0f;
 
 		float AboutY = Y;
@@ -671,7 +671,8 @@ void ATownHUD::DrawBook(const ATownGameMode* Town, float CenterX)
 		}
 	}
 
-	DrawLabel(FString::Printf(TEXT("W / S or D-pad: choose          E, Enter or A button: %s          Backspace or B button: leave"), *Town->GetShopVerb()), CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);
+	DrawLabel(FString::Printf(TEXT("W / S or D-pad: choose          E, Enter or A button: %s          Backspace or B button: %s"), *Town->GetShopVerb(), Town->IsBidding() ? TEXT("let it go") : TEXT("leave")),
+		CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);
 }
 
 UTexture2D* ATownHUD::GetBagPicture(const FName& Name)

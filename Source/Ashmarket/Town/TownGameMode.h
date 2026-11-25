@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "GutTypes.h"
+#include "GutStableTypes.h"
 #include "TownTypes.h"
 #include "TownStoryTypes.h"
 #include "TownGameMode.generated.h"
@@ -55,6 +56,42 @@ struct FTownLed
 
 	/** If true they are gone from the place when they get there: somebody who has walked off out of it */
 	bool bGoes = false;
+};
+
+/** Somebody else who wants a lot at the Block, and how far they will go for it */
+struct FTownBidder
+{
+	FString Name;
+
+	float Limit = 0.0f;
+};
+
+/** A lot being bid for at the Block: the player at the clerk's table against whoever else wants it */
+struct FTownAuction
+{
+	bool bOn = false;
+
+	/** Which line of the day's book it is, and the number it stands on */
+	int32 Line = INDEX_NONE;
+	int32 Lot = 0;
+
+	FGutStableFighter Offer;
+
+	/** Where the caller opens, and the bid that stands */
+	float Open = 0.0f;
+	float Bid = 0.0f;
+
+	/** Whose the bid is: nobody's yet, the player's (nought), or one of the others' (their place among them, and one) */
+	int32 Leader = INDEX_NONE;
+
+	TArray<FTownBidder> Rivals;
+
+	/** How far the caller has counted since the last bid (once, twice), and how long before he goes on */
+	int32 Count = 0;
+	float Wait = 0.0f;
+
+	/** What he last called */
+	FString Called;
 };
 
 /** Somebody the player has bought or signed and not yet brought to their yard: they come along behind, wherever the player goes */
@@ -633,6 +670,37 @@ protected:
 	TArray<FTownShopLine> GetBookLines() const;
 	bool BuyAtBook(int32 Line);
 
+	/**
+	 *  Takes somebody on a line of the book for the player: paid for, made the player's, and brought down off the Block to
+	 *  walk behind them. For what the book has them at, or for what was bid.
+	 */
+	bool TakeAtBook(int32 Line, float Price = -1.0f);
+
+	/** The lot being bid for, and the caller's last words as something called over the place */
+	FTownAuction Auction;
+	FTownCall AuctionCall;
+
+	/** Puts a lot up: the caller opens it, and whoever else wants it bids against the player. False if it cannot be put up, and says why. */
+	bool BeginAuction(int32 Line);
+
+	/** Bids one of the sums offered. False if it is more than the player holds, or the bid is the player's already. */
+	bool PlaceBid(int32 Option);
+
+	/** Lets the lot go to whoever else wants it. False while the bid is the player's own: a bid stands. */
+	bool LetGo();
+
+	/** The lot is knocked down: to the player, to somebody else, or to nobody */
+	void EndAuction();
+
+	/** Has the caller call something, and waits so long before he goes on */
+	void CallAuction(const FString& Words, float Wait);
+
+	/** The sums that can be bid just now, as lines of the book's panel */
+	TArray<FTownShopLine> GetAuctionLines() const;
+
+	/** Walks a lot that has gone to somebody else down off the Block, for good */
+	void WalkLotAway(int32 Lot);
+
 	/** Turns the book's camera on whoever the line the player is on is about: the lot on the Block, or the one who signs */
 	void ShowBookLine();
 
@@ -722,6 +790,31 @@ public:
 	/** Returns the player's fighter, at ease in the street */
 	UFUNCTION(BlueprintPure, Category="Town")
 	AGutFighter* GetWalker() const;
+
+	/**
+	 *  If true a lot at the Block is bid for, and goes to whoever bids most (25 November: "the auction is a real auction,
+	 *  but I pay a fixed price - let the protagonist bid"). If false it is bought for what the book has it at, as it was.
+	 *  -GutNoBidding on the command line is the old way.
+	 */
+	bool bBids = true;
+
+	bool IsBidding() const { return bShopping && bAtBook && Auction.bOn; }
+
+	const FTownAuction& GetAuction() const { return Auction; }
+
+	/** Moves the caller on: he counts once, twice, and knocks the lot down, and whoever else wants it bids */
+	void UpdateAuction(float DeltaTime);
+
+	/** Who else wants a line of the book today, and how far each will go: the same however often it is asked */
+	void GetBidders(int32 Line, const FGutStableFighter& Offer, TArray<FTownBidder>& OutBidders) const;
+
+	/** What a bid is raised by, where the caller opens a lot the book has at a price, and the least that can be bid now */
+	static float GetBidStep(float Bid);
+	static float GetOpeningBid(float BookPrice);
+	float GetNextBid() const;
+
+	/** True if a line of today's book was bid for and went to somebody else; and to whom */
+	bool IsSoldAway(int32 Line, FString* OutTo = nullptr) const;
 
 	/**
 	 *  What one of the town's marks stands at. Some are read off the game as it is and not kept: "water" (litres in hand,

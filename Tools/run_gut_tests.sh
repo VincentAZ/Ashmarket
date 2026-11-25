@@ -4,6 +4,8 @@
 #   Tools/run_gut_tests.sh            no renderer, fastest
 #   Tools/run_gut_tests.sh --render   renders off screen and saves screenshots to for-review/screenshots
 #
+# Lots at the Block are bought at the book's price here (-GutNoBidding), as the tests of buying were written:
+# Ashmarket.Town.Bidding turns bidding on for itself.
 # Set GUT_ARGS to pass more to the engine, for example GUT_ARGS=-GutNoBodies to fight as the placeholder skeletons.
 # Set GUT_CVARS to set renderer variables for a rendered run, for example GUT_CVARS=r.Lumen.DiffuseIndirect.Allow=0.
 # Set GUT_SOUND=1 to have sound in a rendered run (worked out with the game, not played aloud).
@@ -39,7 +41,7 @@ LOG="${GUT_LOG:-$PROJECT_DIR/Saved/Logs/gut_tests.log}"
 OUT="${LOG%.log}.out"
 
 "$UE_ROOT/Engine/Binaries/Linux/UnrealEditor-Cmd" "$PROJECT_DIR/Ashmarket.uproject" /Game/Gut/Lvl_Gut -game $RENDER_ARGS \
-	-unattended -nosplash $SOUND_ARGS -nopause -forcelogflush -GutNoSave ${GUT_ARGS:-} \
+	-unattended -nosplash $SOUND_ARGS -nopause -forcelogflush -GutNoSave -GutNoBidding ${GUT_ARGS:-} \
 	-ExecCmds="DisableAllScreenMessages,Automation RunTests ${GUT_TESTS:-Ashmarket.Gut+Ashmarket.Town}; Quit" -testexit="Automation Test Queue Empty" \
 	-abslog="$LOG" >"$OUT" 2>&1
 

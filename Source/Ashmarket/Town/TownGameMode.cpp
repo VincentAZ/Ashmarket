@@ -297,6 +297,8 @@ void ATownGameMode::InitGame(const FString& MapName, const FString& Options, FSt
 	PlaceData = Place.LoadSynchronous();
 	LadderData = FirstLadder.LoadSynchronous();
 
+	bBids = !FParse::Param(FCommandLine::Get(), TEXT("GutNoBidding"));
+
 	// the town's story, where it has been written down (Tools/build_town_level.sh writes it with every place)
 	if (FPackageName::DoesPackageExist(Story.GetLongPackageName()))
 	{
@@ -381,6 +383,7 @@ void ATownGameMode::Tick(float DeltaTime)
 	SettledFor += DeltaTime;
 
 	UpdateCalls(DeltaTime);
+	UpdateAuction(DeltaTime);
 	UpdateSoundsDue();
 	UpdateLed(DeltaTime);
 	UpdateBeats(DeltaTime);
@@ -1022,7 +1025,7 @@ void ATownGameMode::SettleOwned()
 	{
 		const int32 Lot = Lots[i];
 
-		if (Lot <= 0 || !GameInstance->Stable.BoughtToday.Contains(i))
+		if (Lot <= 0 || (!GameInstance->Stable.BoughtToday.Contains(i) && !IsSoldAway(i)))
 		{
 			continue;
 		}
@@ -2053,6 +2056,11 @@ void ATownGameMode::HandleBack()
 		// back from who a thing is for, to the bag
 		bBagAsking = false;
 	}
+	else if (bShopping && Auction.bOn)
+	{
+		// backing out of a lot that is up lets it go, where it can be let go
+		LetGo();
+	}
 	else if (bShopping)
 	{
 		CloseShop();
@@ -2243,7 +2251,15 @@ void ATownGameMode::HandleMenuInput(EGutMenuInput Input)
 		{
 			if (ShopChoice >= Pieces)
 			{
-				CloseShop();
+				// with a lot up, the last line lets it go: the book stays open
+				if (Auction.bOn)
+				{
+					LetGo();
+				}
+				else
+				{
+					CloseShop();
+				}
 			}
 			else
 			{
@@ -2500,7 +2516,8 @@ FString ATownGameMode::Told(const FString& Words) const
 
 void ATownGameMode::UpdateCalls(float DeltaTime)
 {
-	if (!PlaceData || PlaceData->Calls.IsEmpty())
+	// while a lot is up for the player the caller is calling that, and nothing else
+	if (!PlaceData || PlaceData->Calls.IsEmpty() || Auction.bOn)
 	{
 		return;
 	}
@@ -3158,6 +3175,13 @@ void ATownGameMode::CloseShop()
 
 	if (bAtBook)
 	{
+		// a lot that is up is finished by the room: nothing is left half sold
+		while (Auction.bOn)
+		{
+			Auction.Wait = 0.0f;
+			UpdateAuction(0.0f);
+		}
+
 		EndBookShow();
 	}
 
@@ -3373,6 +3397,12 @@ TArray<FTownShopLine> ATownGameMode::GetBookLines() const
 		return Lines;
 	}
 
+	// while a lot is up, the lines are what can be bid
+	if (Auction.bOn)
+	{
+		return GetAuctionLines();
+	}
+
 	TArray<FGutStableFighter> Offers;
 	TArray<int32> Lots;
 	GetBookOffers(Offers, Lots);
@@ -3405,7 +3435,28 @@ TArray<FTownShopLine> ATownGameMode::GetBookLines() const
 		// the cage's own rules say whether they can be had, tried on a copy
 		FGutStableState Tried = State;
 
-		Line.bCanBuy = Rules->TakeBlockOffer(Tried, Offer, i, &Line.Why);
+		if (bBids && Offer.bOwned)
+		{
+			// a lot is bid for: the price is where the caller opens, and it can be put up by whoever holds that much
+			FGutStableFighter Opened = Offer;
+
+			Opened.Price = GetOpeningBid(Offer.Price);
+
+			Line.PriceText = FString::Printf(TEXT("opens at %.0f L"), Opened.Price);
+			Line.About += FString::Printf(TEXT(" The book has %s at %.0f L: what %s goes for is up to the room."), UGutSoundSubsystem::WhoIs(this, Offer.Body).Him(), Offer.Price, UGutSoundSubsystem::WhoIs(this, Offer.Body).He());
+			Line.bCanBuy = Rules->TakeBlockOffer(Tried, Opened, i, &Line.Why);
+
+			if (FString To; IsSoldAway(i, &To))
+			{
+				Line.bCanBuy = false;
+				Line.PriceText = TEXT("sold");
+				Line.Why = FString::Printf(TEXT("went to %s"), *To);
+			}
+		}
+		else
+		{
+			Line.bCanBuy = Rules->TakeBlockOffer(Tried, Offer, i, &Line.Why);
+		}
 
 		if (Line.Why == TEXT("taken"))
 		{
@@ -3502,6 +3553,9 @@ void ATownGameMode::OpenBook(int32 Keeper)
 
 void ATownGameMode::ShowBookLine()
 {
+	// while a lot is up it is the one looked at, whichever bid the player is on
+	const int32 Turned = Auction.bOn ? Auction.Line : ShopChoice;
+
 	APlayerController* Eyes = UGameplayStatics::GetPlayerController(this, 0);
 
 	if (!bAtBook || !Eyes || !PlaceData)
@@ -3511,9 +3565,9 @@ void ATownGameMode::ShowBookLine()
 
 	// turned to them when the player comes to their line, and kept on them after: a lot may be walked off the Block, or
 	// brought back up it, while the book is open
-	const bool bTurnedTo = ShopChoice != BookShown;
+	const bool bTurnedTo = Turned != BookShown;
 
-	BookShown = ShopChoice;
+	BookShown = Turned;
 
 	TArray<FGutStableFighter> Offers;
 	TArray<int32> Lots;
@@ -3522,11 +3576,11 @@ void ATownGameMode::ShowBookLine()
 	// who the line is about: the lot of that number where it stands, or the one stood by the table
 	const AGutFighter* Shown = nullptr;
 
-	if (Lots.IsValidIndex(ShopChoice))
+	if (Lots.IsValidIndex(Turned))
 	{
-		if (Lots[ShopChoice] > 0)
+		if (Lots[Turned] > 0)
 		{
-			const int32 Lot = Lots[ShopChoice];
+			const int32 Lot = Lots[Turned];
 			const int32 Who = PlaceData->People.IndexOfByPredicate([Lot](const FTownPerson& Person) { return Person.Lot == Lot; });
 
 			Shown = People.IsValidIndex(Who) ? People[Who].Get() : nullptr;
@@ -3537,7 +3591,7 @@ void ATownGameMode::ShowBookLine()
 		}
 
 		// bought a moment ago: still looked at, wherever they have got to
-		if (const int32 Towed = Tow.IndexOfByPredicate([this](const FTownTow& One) { return One.Offer == ShopChoice; }); !Shown && TowBodies.IsValidIndex(Towed))
+		if (const int32 Towed = Tow.IndexOfByPredicate([Turned](const FTownTow& One) { return One.Offer == Turned; }); !Shown && TowBodies.IsValidIndex(Towed))
 		{
 			Shown = TowBodies[Towed];
 		}
@@ -3556,8 +3610,8 @@ void ATownGameMode::ShowBookLine()
 		// them where they were in the square, from the player's side: the player stood in it (a hip filled the frame),
 		// somebody just bought and standing in the dark by the table was a shape, and nobody could be seen who was not on
 		// the Block just then (24 November: "just show a still of the slave... use a clip of her idle... a clear view").
-		const bool bSomebody = Offers.IsValidIndex(ShopChoice);
-		const FString Sitting = bSomebody ? Offers[ShopChoice].FighterName.ToString() + Offers[ShopChoice].Body.GetAssetName() : FString();
+		const bool bSomebody = Offers.IsValidIndex(Turned);
+		const FString Sitting = bSomebody ? Offers[Turned].FighterName.ToString() + Offers[Turned].Body.GetAssetName() : FString();
 
 		if (BookSitter && BookSitting != Sitting)
 		{
@@ -3658,7 +3712,7 @@ void ATownGameMode::ShowBookLine()
 			const AGutFighter* Walker = GetWalker();
 			const FVector Under = (Walker ? Walker->GetActorLocation() : FVector::ZeroVector) - FVector(0.0f, 0.0f, TownConstants::BookStudioBelow);
 
-			BookSitter = StandOwned(Offers[ShopChoice], FTransform(FRotator::ZeroRotator, Under));
+			BookSitter = StandOwned(Offers[Turned], FTransform(FRotator::ZeroRotator, Under));
 			BookSitting = Sitting;
 			BookSatAt = GetWorld()->GetTimeSeconds();
 
@@ -3817,6 +3871,12 @@ bool ATownGameMode::GetBookPerson(int32 Line, FGutStableFighter& OutPerson, int3
 	TArray<int32> Lots;
 	GetBookOffers(Offers, Lots);
 
+	// while a lot is up it is the one looked at, whichever bid the player is on
+	if (Auction.bOn)
+	{
+		Line = Auction.Line;
+	}
+
 	if (!Offers.IsValidIndex(Line) || !Lots.IsValidIndex(Line))
 	{
 		return false;
@@ -3853,6 +3913,27 @@ int32 ATownGameMode::GetAgeOf(const FGutStableFighter& Person)
 
 bool ATownGameMode::BuyAtBook(int32 Line)
 {
+	// while a lot is up, what is chosen is a bid
+	if (Auction.bOn)
+	{
+		return PlaceBid(Line);
+	}
+
+	TArray<FGutStableFighter> Offers;
+	TArray<int32> Lots;
+	GetBookOffers(Offers, Lots);
+
+	// a lot is put up and bid for; somebody with a tag signs for a wage, as before
+	if (bBids && Offers.IsValidIndex(Line) && Offers[Line].bOwned)
+	{
+		return BeginAuction(Line);
+	}
+
+	return TakeAtBook(Line);
+}
+
+bool ATownGameMode::TakeAtBook(int32 Line, float Price)
+{
 	UGutGameInstance* GameInstance = GetGutGameInstance();
 	const AGutGameMode* Rules = GetCageRules();
 
@@ -3865,7 +3946,14 @@ bool ATownGameMode::BuyAtBook(int32 Line)
 		return false;
 	}
 
-	const FGutStableFighter& Offer = Offers[Line];
+	// for what was bid, where it was bid for
+	FGutStableFighter Offer = Offers[Line];
+
+	if (Price >= 0.0f)
+	{
+		Offer.Price = Price;
+	}
+
 	const FString Who = Offer.FighterName.ToString();
 
 	// tried on a copy first, so that somebody who cannot buy is not made an owner by asking
@@ -4571,11 +4659,13 @@ TArray<FTownBagLine> ATownGameMode::GetBagLines() const
 		// what is owed is said outright, and the paper's own figures are said to be her terms: he read "25 FOR 35" on the
 		// paper beside "67 L owed" and asked which he owed (25 November)
 		Line.Count = FString::Printf(TEXT("you owe %.0f L"), GameInstance->Window.Debt);
-		Line.Detail = FString::Printf(TEXT("the paper is her terms: %.0f lent is written as %.0f"), LoanGiven, LoanOwed);
-		Line.Picture = FName("bag_note_debt");
+		Line.Detail = FString::Printf(TEXT("her terms: %.0f lent is written as %.0f"), LoanGiven, LoanOwed);
+
+		// the paper has no figure on it (bag_note_owed): the one it had, her terms, was read as the debt
+		Line.Picture = FName("bag_note_owed");
 
 		// what the paper means, in plain words: he could not make head or tail of it (24 November)
-		Line.About.Add(FString::Printf(TEXT("You owe Mother Ledger %.0f L. That is the whole of it, and it is not written on the paper. The paper has her terms: each time she lends she counts out %.0f L and writes down %.0f. The 10 is her price. It does not grow after that."),
+		Line.About.Add(FString::Printf(TEXT("You owe Mother Ledger %.0f L. That is the whole of it. Her terms: each time she lends she counts out %.0f L and writes down %.0f. The 10 is her price. It does not grow after that."),
 			GameInstance->Window.Debt, LoanGiven, LoanOwed));
 		Line.About.Add(FString::Printf(TEXT("\"Every debt is paid\" is the town's second law. Until this is clear, half of anything the window or the pit pays you is kept against it, and she will not let you owe more than %.0f L."), LoanLimit));
 		Line.About.Add(TEXT("Pay it down whenever you like, any amount you hold, at her table outside the Counting House on Block Square."));
@@ -5532,11 +5622,34 @@ FString ATownGameMode::GetShopVerb() const
 		}
 	}
 
+	if (bAtBook && Auction.bOn)
+	{
+		return TEXT("bid");
+	}
+
+	if (bAtBook && bBids)
+	{
+		TArray<FGutStableFighter> Offers;
+		TArray<int32> Lots;
+		GetBookOffers(Offers, Lots);
+
+		if (Offers.IsValidIndex(ShopChoice))
+		{
+			return Offers[ShopChoice].bOwned ? TEXT("have the lot put up") : TEXT("sign");
+		}
+	}
+
 	return TEXT("buy it");
 }
 
 FString ATownGameMode::GetShopTitle() const
 {
+	if (bAtBook && Auction.bOn)
+	{
+		return Auction.Lot > 0 ? FString::Printf(TEXT("LOT %d  \u00B7  %s  \u00B7  UP NOW"), Auction.Lot, *Auction.Offer.FighterName.ToString().ToUpper())
+			: FString::Printf(TEXT("%s  \u00B7  UP NOW"), *Auction.Offer.FighterName.ToString().ToUpper());
+	}
+
 	if (bAtBook)
 	{
 		return TEXT("THE BLOCK'S BOOK");
@@ -5612,6 +5725,11 @@ FString ATownGameMode::GetShopPurse() const
 
 const FTownCall* ATownGameMode::GetCall() const
 {
+	if (Auction.bOn)
+	{
+		return &AuctionCall;
+	}
+
 	return (bSettled && PlaceData && PlaceData->Calls.IsValidIndex(CallIndex)) ? &PlaceData->Calls[CallIndex] : nullptr;
 }
 
