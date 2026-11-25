@@ -854,6 +854,10 @@ protected:
 
 	/** How much hanging arms are being brought in to the body's side just now: see FGutClearShape::HangIn */
 	float HangInShown = 0.0f;
+
+	/** How many frames somebody at ease has had a body, and how many times its clothes have been set to hang as they stand */
+	int32 ClothFrames = 0;
+	int32 ClothSettles = 0;
 	float HeldSince = 0.0f;
 
 	/** Measures the trunk and the upper arms of the body that is seen */
@@ -1504,6 +1508,18 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Gut")
 	bool IsAtEase() const { return bAtEase; }
+
+	/**
+	 *  True for the first moments of somebody who was stood at ease as they were made: a person of the town as their
+	 *  place opens. A fighter is made on its guard, and was eased down from it to standing over half a second, its arms
+	 *  drawn in to its sides over another half and its jacket thrown about by both: so whoever came out of the cage beside
+	 *  somebody saw them with their fists up and their clothes flying, "perfect once they move at all" (25 November; the
+	 *  same on the 24th, when I mended something else). In these moments nothing is eased: they are standing already.
+	 */
+	bool IsNewlyAtEase() const { return bAtEase && GetGameTimeSinceCreation() < GutNewlyAtEase; }
+
+	/** How long those first moments are */
+	static constexpr float GutNewlyAtEase = 1.5f;
 
 private:
 	bool bHangsHead = false;

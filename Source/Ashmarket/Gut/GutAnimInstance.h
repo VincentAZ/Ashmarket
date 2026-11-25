@@ -44,6 +44,9 @@ struct FGutAnimInputs
 	/** True if a new idle is begun at its beginning: one of a family of standing clips, each of which follows on from the last */
 	bool bIdleFromStart = false;
 
+	/** True if the idle is taken up at once, with no change over from whatever was stood in before: somebody newly stood at ease */
+	bool bIdleAtOnce = false;
+
 	/** True for a fighter: its body is kept from jerking, and it steps round on the spot when it is turned. Somebody watching needs neither. */
 	bool bFighter = false;
 

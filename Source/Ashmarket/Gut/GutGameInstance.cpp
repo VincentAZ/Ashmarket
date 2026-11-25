@@ -240,6 +240,7 @@ bool UGutGameInstance::SaveRun()
 	Save->Purse = Purse;
 	Save->bOnePurse = bOnePurse;
 	Save->Found = Found;
+	Save->Story = Story;
 
 	return UGameplayStatics::SaveGameToSlot(Save, SaveSlotName, 0);
 }
@@ -273,7 +274,13 @@ bool UGutGameInstance::LoadRun()
 	Purse = Save->Purse;
 	bOnePurse = Save->bOnePurse;
 	Found = Save->Found;
+	Story = Save->Story;
 	bPurseSeen = false;
+
+	if (FParse::Param(FCommandLine::Get(), TEXT("GutStoryAfresh")))
+	{
+		Story = FTownStoryState();
+	}
 
 	// a run written down before the dead were counted once for all three: whoever the window and the yard each knew to be dead
 	if (Roster.Dead.IsEmpty())

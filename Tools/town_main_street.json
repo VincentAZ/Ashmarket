@@ -26,7 +26,7 @@
   "MAIN STREET",
   "Hide & Plate, on the west side: armor for the Gut's fighters. Needle, at the counter.",
   "Tooth & Trigger, on the east side: Brass, at the truck.",
-  "North: Block Square.   South: the gate, shut tonight."
+  "North: Block Square.   South: the Gate Yard. Sergeant Rook, at the tally desk, has work."
  ],
 
  "surfaces": {
@@ -39,7 +39,7 @@
  },
 
  "ground": [
-  {"label": "GateYard", "x": [-90, 120], "y": [-20.0, 40.0], "z": 1.12, "surface": "Yard"},
+  {"label": "GateYard", "x": [-90, 120], "y": [-34.0, 40.0], "z": 1.12, "surface": "Yard"},
   {"label": "GateRoad", "x": [-5.0, 5.0], "y": [0.0, 40.0], "z": 1.2, "surface": "Road"},
   {"label": "Beyond", "x": [-90, 120], "y": [40.0, 300.0], "z": 1.12, "slope": true, "surface": "Yard"},
   {"label": "Street", "x": [-8.4, 8.4], "y": [40.0, 128.4], "slope": true, "surface": "Road"},
@@ -48,7 +48,9 @@
 
  "walk_about": "The ground that can be walked on. Each patch runs on into whatever stands along its edge (a wall, a row of containers, a fence), and that is what stops whoever walks: the builder measures every model and refuses a place where a patch ends at nothing.",
  "walk": [
-  {"x": [-7.7, 7.7], "y": [41.1, 127.6]}
+  {"x": [-7.7, 7.7], "y": [41.1, 127.6]},
+  {"x": [-12.0, 12.0], "y": [0.3, 41.1], "note": "the Gate Yard: from the dam's foot up to the mouth of the street, between the stacks and the bus row"},
+  {"x": [-2.5, 2.5], "y": [-18.9, 0.3], "note": "the gate tunnel, as far as the outer gate"}
  ],
 
  "walls_about": "The dam is three slabs with the gate tunnel's mouth left between them, and a slab at the tunnel's far end. It is 24 m high from the foot of the street's own ground, which is why its 'raise' is less than nought.",
@@ -56,9 +58,13 @@
   {"label": "Dam_west", "x": [-90.0, -2.5], "y": [-19.5, 0.0], "height": 25.2, "raise": -1.2, "surface": "Dam", "stained": ["north"]},
   {"label": "Dam_east", "x": [2.5, 120.0], "y": [-19.5, 0.0], "height": 25.2, "raise": -1.2, "surface": "Dam", "stained": ["north"]},
   {"label": "Dam_over_the_gate", "x": [-2.5, 2.5], "y": [-19.5, 0.0], "height": 19.7, "raise": 4.3, "surface": "Dam"},
-  {"label": "Tunnel_end", "x": [-2.5, 2.5], "y": [-20.0, -19.0], "height": 6.7, "raise": -1.2, "surface": "Plate"},
+  {"label": "OuterGate", "x": [-2.5, 1.2], "y": [-20.0, -19.0], "height": 6.7, "raise": -1.2, "surface": "Plate", "note": "the outer gate, down for the night, with the wicket left in its east end"},
+  {"label": "OuterGate_jamb", "x": [2.3, 2.5], "y": [-20.0, -19.0], "height": 6.7, "raise": -1.2, "surface": "Plate"},
+  {"label": "OuterGate_over_the_wicket", "x": [1.2, 2.3], "y": [-20.0, -19.0], "height": 3.4, "raise": 2.1, "surface": "Plate"},
   {"label": "PenLane_pier", "x": [8.0, 8.5], "y": [114.2, 114.95], "height": 3.2, "surface": "Blockwork", "slope": true},
-  {"label": "Corner_pier", "x": [8.0, 8.6], "y": [127.7, 128.4], "height": 3.2, "surface": "Blockwork", "slope": true}
+  {"label": "Corner_pier", "x": [8.0, 8.6], "y": [127.7, 128.4], "height": 3.2, "surface": "Blockwork", "slope": true},
+  {"label": "GateYard_pier_west", "x": [-12.2, -10.35], "y": [41.1, 41.7], "height": 3.2, "surface": "Blockwork", "stained": ["south"]},
+  {"label": "GateYard_pier_east", "x": [10.35, 12.2], "y": [41.1, 41.7], "height": 3.2, "surface": "Blockwork", "stained": ["south"]}
  ],
 
  "rows_about": "Containers and buses end to end. 'face' is the line their near sides stand on, 'side' the side of it they lie on, and they are spread between 'from' and 'to': each span here is the sum of its models' lengths (red 6.05 m, blue 8.30 m, bus 11.0 m) and a hand's width between them, so that no gap is left to walk at. The blue one's awning is on its own left, so 'yaw' turns it to the street. The last five rows are Block Square, seen up the street.",
@@ -75,6 +81,10 @@
    "along": "y", "from": 66.35, "to": 114.12, "face": 8.0, "side": "east"},
   {"label": "EastStacksC", "model": ["town_container_blue"], "yaw": 180, "high": 2,
    "along": "y", "from": 119.3, "to": 127.67, "face": 8.0, "side": "east"},
+  {"label": "GateYardWest", "model": ["town_container_blue", "town_container_red", "town_container_red", "town_container_blue", "town_container_red", "town_container_red"], "yaw": 0, "high": 2,
+   "along": "y", "from": 0.1, "to": 41.6, "face": -12.0, "side": "west", "note": "the Stacks, down the west side of the Gate Yard to the dam"},
+  {"label": "GateYardEast", "model": ["town_bus", "town_container_red", "town_bus", "town_container_red", "town_container_red"], "yaw": 180, "high": 1,
+   "along": "y", "from": 0.1, "to": 41.0, "face": 12.0, "side": "east", "note": "the first of the Bus Rows, down the east side"},
 
   {"label": "SquareWestBuses", "model": ["town_bus"], "yaw": 0, "high": 1,
    "along": "y", "from": 129.0, "to": 151.2, "face": -7.7, "side": "west"},
@@ -90,7 +100,8 @@
 
  "runs_about": "Pieces end to end along a line. 'posts' are where a piece that is carried on legs stands on the ground, along it from its middle, and 'post' half a leg's size along and across: it is walked under between them. 'slope' lies each piece along the climbing ground.",
  "runs": [
-  {"label": "GateYardShut", "model": "concrete_road_barrier", "from": [-7.9, 40.8], "to": [7.9, 40.8]},
+  {"label": "FootLaneWest", "model": "concrete_road_barrier", "from": [0.75, 0.7], "to": [0.75, 6.7], "note": "the foot lane up from the tunnel: the wagon lane is west of this"},
+  {"label": "FootLaneEast", "model": "concrete_road_barrier", "from": [2.85, 0.7], "to": [2.85, 6.7]},
   {"label": "StackAlley", "model": "modular_chainlink_fence", "from": [-8.0, 57.8], "to": [-8.0, 61.7]},
   {"label": "PenLaneGate", "model": "street_gate", "from": [8.0, 115.0], "to": [8.0, 119.2], "turn": 180},
   {"label": "TriggerYard", "model": "main_barrier_wall", "from": [8.43, 53.35], "to": [8.43, 66.25], "turn": 180, "note": "Tooth & Trigger's yard wall: road barriers and sign plate, three pieces of 4.3 m"},
@@ -147,8 +158,24 @@
 
   {"model": "town_container_red", "x": -14.5, "y": 59.75, "yaw": 90, "note": "what the alley ends at"},
   {"model": "main_gantry", "x": 0.0, "y": 12.0, "yaw": 270, "note": "the gallows: the freeway gantry across the road, twelve metres inside the gate, its signs to the town"},
-  {"model": "floodlight_wagon", "x": -13.0, "y": 24.0, "yaw": 20, "note": "the Gate Yard, seen from the street"},
-  {"model": "floodlight_flatbed", "x": 13.0, "y": 27.0, "yaw": 100},
+  {"model": "floodlight_wagon", "x": -9.4, "y": 25.0, "yaw": 20, "note": "the Gate Yard's own light, west"},
+  {"model": "floodlight_flatbed", "x": 9.2, "y": 28.5, "yaw": 100, "note": "and east"},
+  {"model": "square_table", "x": 5.3, "y": 8.3, "yaw": 90, "note": "the tally desk, at the head of the foot lane"},
+  {"model": "metal_stool_02", "x": 6.3, "y": 9.6, "yaw": 40},
+  {"model": "street_kiosk", "x": 9.3, "y": 6.0, "yaw": 180, "hollow": true, "note": "the Gate Post: the booth tags are struck in"},
+  {"model": "main_fire_drum", "x": 6.9, "y": 10.6, "yaw": 10, "light": {"candela": 2600, "reach": 9, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "shadows": true, "note": "the fire by the tally desk"}},
+  {"model": "main_fire_drum", "x": -7.6, "y": 19.8, "yaw": 50, "light": {"candela": 2400, "reach": 9, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "note": "the fire carriers wait at, west"}},
+  {"model": "main_lamp_mast", "x": 7.4, "y": 3.4, "yaw": 270, "light": {"kind": "spot", "candela": 5200, "reach": 14, "cone": 58, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "the one work lamp, over the head of the foot lane: the yard is otherwise fires and what comes off the trucks"}},
+  {"model": "concrete_road_barrier", "x": -4.4, "y": 39.9, "yaw": 78, "note": "the barrier that shut the yard, dragged aside"},
+  {"model": "concrete_road_barrier", "x": 4.6, "y": 39.2, "yaw": 104},
+  {"model": "square_water_cart", "x": -2.6, "y": 15.4, "yaw": 8, "note": "a cart in the wagon lane, waiting for the morning"},
+  {"model": "wooden_crate_02", "x": 7.6, "y": 7.5, "yaw": 20},
+  {"model": "wooden_crate_02", "x": 8.0, "y": 8.5, "yaw": 70},
+  {"model": "metal_jerrycan", "x": 4.5, "y": 9.4, "yaw": 30, "note": "the tin: what the lane takes"},
+  {"model": "Barrel_01", "x": -10.9, "y": 12.2},
+  {"model": "barrel_03", "x": -11.0, "y": 13.2},
+  {"model": "old_tyre", "x": 10.6, "y": 16.4},
+  {"model": "old_tyre", "x": 10.9, "y": 17.3},
   {"model": "town_overpass", "x": 0.0, "y": 262.0, "yaw": 90, "note": "the overpass, far up the street beyond the square"},
   {"model": "street_lamp_01", "x": -6.6, "y": 145.0, "lamp": true, "note": "in the square"},
   {"model": "plastic_bottle_gallon", "x": 6.07, "y": 94.83, "yaw": 225, "scattered": true},
@@ -201,8 +228,9 @@
 
   {"x": -10.0, "y": 25.0, "up": 5.0, "candela": 16000, "reach": 45, "note": "the Gate Yard, west"},
   {"x": 11.0, "y": 28.0, "up": 5.0, "candela": 16000, "reach": 45, "note": "the Gate Yard, east"},
-  {"x": -9.0, "y": 4.0, "up": 7.0, "candela": 30000, "reach": 42, "note": "the dam by the gate, west"},
-  {"x": 9.0, "y": 4.0, "up": 7.0, "candela": 30000, "reach": 42, "note": "the dam by the gate, east"},
+  {"x": -9.0, "y": 6.0, "up": 9.5, "candela": 9000, "reach": 26, "note": "the dam by the gate, west: thrown up at it from the yard, so that the yard itself stays dark"},
+  {"x": 9.0, "y": 6.0, "up": 9.5, "candela": 9000, "reach": 26, "note": "the dam by the gate, east"},
+  {"x": 0.0, "y": -3.0, "up": 3.9, "candela": 500, "reach": 6, "hung": true, "shadows": true, "note": "in the gate tunnel, at its mouth: the far end is dark"},
   {"x": 0.0, "y": 9.0, "up": 11.0, "candela": 45000, "reach": 44, "note": "the Laws, lit from the gantry's catwalk"},
   {"x": -42.0, "y": 5.0, "up": 9.0, "candela": 30000, "reach": 46, "note": "the dam, further west"},
   {"x": 42.0, "y": 5.0, "up": 9.0, "candela": 30000, "reach": 46, "note": "the dam, further east"},
@@ -215,7 +243,8 @@
 
  "bystanders_about": "People standing about: so many in a stretch of ground, each looking at 'look'. They keep to the verges and the barrier; the middle of the road belongs to whoever walks it.",
  "bystanders": [
-  {"label": "AtTheBarrier", "count": 4, "x": [-3.4, 5.0], "y": [42.4, 45.6], "apart": 1.6, "look": [0.0, 8.0]},
+  {"label": "AtTheBarrier", "count": 3, "x": [4.2, 6.9], "y": [42.2, 45.4], "apart": 1.1, "look": [5.9, 43.6]},
+  {"label": "AtTheYardFire", "count": 3, "x": [-9.2, -6.0], "y": [18.2, 21.4], "apart": 1.1, "look": [-7.6, 19.8]},
   {"label": "AtTheTruck", "count": 2, "x": [3.3, 4.2], "y": [62.6, 64.4], "apart": 1.0, "look": [4.9, 62.2]},
   {"label": "AtTheFoodStall", "count": 3, "x": [-4.4, -3.5], "y": [70.6, 73.4], "apart": 1.0, "look": [-6.4, 72.0]},
   {"label": "AtTheEastFire", "count": 2, "x": [4.2, 4.9], "y": [75.0, 77.0], "apart": 1.0, "look": [5.6, 76.0]},
@@ -266,10 +295,24 @@
    ]
   },
   {
-   "name": "Gate Warden", "prompt": "Talk to the Warden at the barrier", "body": "Mix04", "cloth": [0.035, 0.04, 0.055],
-   "x": 2.2, "y": 42.3, "facing": 0, "stand": "clasp",
+   "name": "Gate Warden", "prompt": "Talk to the Warden at the head of the yard", "body": "Mix04", "cloth": [0.035, 0.04, 0.055],
+   "x": 6.6, "y": 40.3, "facing": 315, "stand": "clasp",
    "lines": [
-    {"id": "shut", "words": "Gate Yard is shut to foot traffic until the bell. You can see the gate from here, and that is as near as you get tonight."}
+    {"id": "open", "words": "Gate Yard is open until the bell. Tag where the post can read it, and keep out of the wagon lane. If it is work you are after, the sergeant is at the tally desk, down by the tunnel."}
+   ]
+  },
+  {
+   "name": "Sergeant Rook", "prompt": "Talk to Sergeant Rook, at the tally desk", "body": "Try05", "cloth": [0.035, 0.04, 0.055],
+   "x": 5.3, "y": 9.35, "facing": 180, "stand": "stand",
+   "lines": [
+    {"id": "post", "words": "Gate Post. Tags are read here and tolls are taken here, and at the bell the gate comes down. If you were thinking of going out, you are not. Not tonight."}
+   ]
+  },
+  {
+   "name": "Lane Warden", "prompt": "Talk to the Warden on the wagon lane", "body": "Try06", "cloth": [0.035, 0.04, 0.055],
+   "x": -3.6, "y": 4.4, "facing": 180, "stand": "hips",
+   "lines": [
+    {"id": "lane", "words": "Wagon lane. Nothing on wheels comes up after dark, so I am guarding a hole. Foot lane is the other side of the barrier."}
    ]
   },
   {
@@ -364,7 +407,10 @@
    "mouth": {"x": [-7.7, 7.7], "y": [126.8, 127.6]}},
   {"prompt": "Try the gate into Pen Lane", "x": 7.3, "y": 117.1, "shut": "Barred from the other side. The Chainmen's carts come through here, not people."},
   {"prompt": "Look down the alley", "x": -7.1, "y": 59.75, "shut": "Chain-link, wired shut. The Stacks go on behind it, dark."},
-  {"prompt": "Look down at the gate", "x": 0.0, "y": 41.6, "shut": "The Gate Yard, and the tunnel through the dam. Nobody goes down there tonight."}
+  {"prompt": "Try the outer gate", "x": -0.4, "y": -18.3, "shut": "The outer gate: plate and rebar, down for the night. The wicket in it is the Wardens': people come in by it until the bell, and nobody goes out."},
+  {"prompt": "Out by the wicket", "x": 1.75, "y": -18.9, "deed": "go", "to": "/Game/Town/Lvl_Flats", "arrive": "from_the_gate", "walk_through": true, "when": "gate.out",
+   "mouth": {"x": [1.2, 2.3], "y": [-19.2, -18.6]}, "note": "the way out to the Flats, which is not built: nothing sets 'gate.out' yet"},
+  {"prompt": "Look in at the Gate Post", "x": 8.6, "y": 6.0, "shut": "The booth. A die, a hammer, a box of blank discs, and the register. A tag is thirty litres, struck while you wait, and nobody is waiting."}
  ],
  "finds_about": "What lies about to be found and picked up (E, or X): a good by the name the town knows it by, where it lies on the map, and which way it is turned. Each is there once: picked up, it is in the bag and gone from the street for good.",
  "finds": [

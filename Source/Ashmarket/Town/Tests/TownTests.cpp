@@ -1756,7 +1756,15 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 		if (const AGutFighter* Towed = Town->GetTowBody(0); TestNotNull(TEXT("They are somebody to be seen"), Towed))
 		{
 			TestTrue(TEXT("Their wrists are tied"), Towed->IsBound());
-			TestTrue(TEXT("They are the lot that stood on the Block, which is no longer one of the sale's"), !Town->GetPeople().Contains(Towed) && Town->GetPeople().FilterByPredicate([](const TObjectPtr<AGutFighter>& Body) { return Body == nullptr; }).Num() == 1);
+			// (whoever is only in the square when the town's marks say so does not count: Calla Wynn, held at the fence, is not here now)
+			int32 Gone = 0;
+
+			for (int32 i = 0; i < Place->People.Num(); ++i)
+			{
+				Gone += (Place->People[i].When.IsEmpty() && Town->GetPeople().IsValidIndex(i) && !Town->GetPeople()[i]) ? 1 : 0;
+			}
+
+			TestTrue(TEXT("They are the lot that stood on the Block, which is no longer one of the sale's"), !Town->GetPeople().Contains(Towed) && Gone == 1);
 
 			if (Towed->HasBody())
 			{
@@ -3217,14 +3225,20 @@ bool FTownProbePersonTest::RunTest(const FString& Parameters)
 
 	TArray<FScript::FStep> Steps;
 
-	Steps.Add({ 3.0f, [this, Person, From, bTalk]()
+	// -GutProbeWait=0 looks from the moment the place is settled: what somebody is in their first seconds, which is what
+	// whoever walks out of the cage beside them sees
+	float Wait = 3.0f;
+	FParse::Value(FCommandLine::Get(), TEXT("GutProbeWait="), Wait);
+
+	Steps.Add({ Wait, [this, Person, From, bTalk]()
 	{
 		ATownGameMode* Town = GetTown();
 		const UTownPlaceData* Where = Town->GetPlace();
 
 		for (int32 i = 0; i < Where->People.Num(); ++i)
 		{
-			if (Where->People[i].Name != Person)
+			// whoever of that name is in the place just now: there may be several, each there at another time
+			if (Where->People[i].Name != Person || !Town->GetPeople().IsValidIndex(i) || !Town->GetPeople()[i])
 			{
 				continue;
 			}

@@ -206,6 +206,7 @@ void UGutAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	Inputs.Idle = Stance.Idle;
 	Inputs.bIdleFromStart = Fighter->IsStandingInFamily();
+	Inputs.bIdleAtOnce = Fighter->IsNewlyAtEase();
 	Inputs.Block = Stance.Block;
 	Inputs.BlockHold = Stance.BlockHold;
 	Inputs.Locomotion = Fighter->GetLocomotionAnimations();
@@ -422,6 +423,13 @@ void FGutAnimInstanceProxy::UpdateAnimationNode(const FAnimationUpdateContext& I
 			IdleTime = 0.0f;
 			IdleChangeLength = 0.55f;
 		}
+	}
+
+	// somebody newly stood at ease is standing already: there is nothing before it to come out of (AGutFighter::IsNewlyAtEase)
+	if (Inputs.bIdleAtOnce)
+	{
+		PreviousIdle = nullptr;
+		IdleChange = 1.0f;
 	}
 
 	IdleChange = FMath::Min(1.0f, IdleChange + (DeltaTime / IdleChangeLength));

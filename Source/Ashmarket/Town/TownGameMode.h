@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "GutTypes.h"
 #include "TownTypes.h"
+#include "TownStoryTypes.h"
 #include "TownGameMode.generated.h"
 
 class ACameraActor;
@@ -51,6 +52,9 @@ struct FTownLed
 
 	/** How long before they set off */
 	float Wait = 0.0f;
+
+	/** If true they are gone from the place when they get there: somebody who has walked off out of it */
+	bool bGoes = false;
 };
 
 /** Somebody the player has bought or signed and not yet brought to their yard: they come along behind, wherever the player goes */
@@ -313,6 +317,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town", meta = (ClampMin = 0, ClampMax = 20))
 	float TalkCameraTurnSpeed = 4.0f;
 
+	/** The town's story as it is written down: its powers and its work */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Town")
+	TSoftObjectPtr<UTownStoryData> Story;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTownStoryData> StoryData;
+
 	/** The place, once read */
 	UPROPERTY(Transient)
 	TObjectPtr<UTownPlaceData> PlaceData;
@@ -519,6 +530,59 @@ protected:
 	/** Finds the player's fighter and stands the people in their places, once both can be done */
 	void Settle();
 
+	/**
+	 *  Stands one of the place's people where the place puts them, or somewhere else: the body, dressed and at ease.
+	 *  Nothing if they cannot be made.
+	 */
+	AGutFighter* StandPerson(int32 Index, const FVector* At = nullptr);
+
+	/** True if the town's marks have that one of the place's people in the place just now */
+	bool IsPresent(int32 Person) const;
+
+	/**
+	 *  Sees that who is in the place is who the town's marks have in it, after something has changed them: whoever has
+	 *  come to be here walks in, and whoever is here no longer walks off.
+	 */
+	void RefreshPresent();
+
+	/** Walks one of the place's people along one of their ways. False if they have no such way. */
+	bool WalkPerson(int32 Person, const FName& Way, bool bGoes);
+
+	/** The answers of a line that can be said as things stand: their places among all of its answers */
+	TArray<int32> GetShownAnswers(const FTownLine& Line) const;
+
+	/**
+	 *  True if a line only sends the talk one way or another by how things stand: every answer it has just now is
+	 *  wordless. Nothing is offered; when the player is ready the talk goes on by the first of them.
+	 */
+	bool IsSwitch(const FTownLine& Line) const;
+
+	/** Where a talk with somebody begins as things stand: the line of theirs it opens at */
+	int32 GetOpeningLine(int32 Person) const;
+
+	/** Does what the line the talk is at does, once for each time it is come to */
+	void DoTalkLine();
+
+	/** The line whose doing was last done, so that it is done once: who, and which */
+	int32 DonePerson = INDEX_NONE;
+	int32 DoneLine = INDEX_NONE;
+
+	/** What a mark is called when its changing is told to the player ("Wardens"), or nothing if it is not told */
+	FString GetMarkName(const FName& Key) const;
+
+	/** Sounds that something done has still to make: which kind, and when by the world's clock (a bell struck three times) */
+	TArray<TPair<FName, float>> SoundsDue;
+
+	/** Makes whichever of them are due */
+	void UpdateSoundsDue();
+
+	/** What the last thing done in a talk came to, in words, and the line it is shown under */
+	FString TalkTold;
+	int32 TalkToldLine = INDEX_NONE;
+
+	/** True if one of the place's people is being walked somewhere just now */
+	bool IsLed(int32 Person) const { return Led.ContainsByPredicate([Person](const FTownLed& One) { return One.Person == Person; }); }
+
 	/** Keeps whoever walks on the ground the place has, and out of everything that stands on it */
 	void KeepOnGround(AGutFighter* Walker) const;
 
@@ -658,6 +722,50 @@ public:
 	/** Returns the player's fighter, at ease in the street */
 	UFUNCTION(BlueprintPure, Category="Town")
 	AGutFighter* GetWalker() const;
+
+	/**
+	 *  What one of the town's marks stands at. Some are read off the game as it is and not kept: "water" (litres in hand,
+	 *  rounded down), "day", "owns" (how many fighters), "tow" (how many walking behind), "name" (cage fame), "fighter"
+	 *  (1 if there is a run up the ladder), and "bag.tag" and the like (how many of a good are carried).
+	 */
+	int32 GetMark(const FName& Key) const;
+
+	/** Sets one of the marks that are kept. For the tests, and for what code decides. */
+	void SetMark(const FName& Key, int32 Value);
+
+	/**
+	 *  True if every term of When holds: "w1=2 !wynn st.wardens>=20". A term is a mark alone (it is not nought), a mark
+	 *  after "!" (it is nought), or a mark, one of = != < > <= >= and a whole number. Terms joined by "|" are either of
+	 *  them. Nothing at all always holds. OutLacking is the first term that did not, for telling the player what is wanting.
+	 */
+	bool Holds(const FString& When, FString* OutLacking = nullptr) const;
+
+	/**
+	 *  Does what Does says, a term at a time: "st.wardens+10 water-30 wynn=2 bag.tag+1 w1.roll=?4 walk:through". A mark
+	 *  is set (=), raised (+) or lowered (-) by a whole number, or set to a throw of a die ("=?4" is one to four).
+	 *  "walk:" and a way's name walks whoever is being talked to along that way of theirs. "sound:gate_bell*3" makes a
+	 *  sound of that kind (Tools/gut_sounds.json) so many times, a little apart. Standing is kept between -100
+	 *  and 100, trust and fear between 0 and 100, heat between 0 and 5, and water is never taken below what is held.
+	 *  @return what it came to, in words for the player ("Wardens +10 · 30 L paid: you hold 12"), or nothing
+	 */
+	FString Apply(const FString& Does);
+
+	/** Writes a line in the player's own account of what it has done */
+	void WriteLog(const FString& Words);
+
+	/** For the tests: what every throw of a die comes to, where it is not to be left to chance */
+	TOptional<int32> Thrown;
+
+	/** What one of the town's goods is called, or its own short name if it is none of them */
+	static FString GetGoodName(const FName& Good);
+
+	const UTownStoryData* GetStory() const { return StoryData; }
+
+	/** How the player stands with one of the town's powers, in a word or two */
+	static FString GetStandingWord(int32 Standing);
+
+	/** How a piece of work stands, in words: what is to be done next, or how it ended. Nothing if it has not been begun. */
+	FString GetMissionStep(const FTownMission& Mission) const;
 
 	/** The performance of the face that goes with a recording of speech, if one has been made: Epic's speech-to-face, run by Tools/make_town_faces.sh */
 	UAnimSequenceBase* GetFaceFor(const USoundBase* Recording) const;
@@ -851,6 +959,9 @@ public:
 	int32 GetStoppedChoice() const { return StoppedChoice; }
 
 	TArray<FString> GetStoppedLines() const;
+
+	/** True if one of the place's people is being walked somewhere just now */
+	bool IsPersonLed(int32 Person) const { return IsLed(Person); }
 
 	/** For the tests: who and which door is in reach */
 	int32 GetPersonInReach() const { return PersonInReach; }

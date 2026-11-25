@@ -383,12 +383,34 @@ void ATownHUD::DrawShop(const ATownGameMode* Town, float CenterX)
 	// a counter is a slate with prices on it, like the window's
 	DrawPanel(CenterX, Top, 1180.0f, Height, EGutPanel::Slate);
 
-	DrawLabel(Town->GetShopTitle(), Left, Top + 22.0f, 30, GutHUDColors::Warning);
-
-	// whose water it is: a fighter's own or an owner's, and nobody else's page
-	if (const FString Held = Town->GetShopPurse(); !Held.IsEmpty())
+	// The title and whose water it is share a line, and each is drawn as large as leaves room for the other: the yard's
+	// page wrote "You hold 15 L, the yard owes 7 L, day 14" across the end of "CROW, SIGNED WITH YOU" (25 November).
 	{
-		DrawLabel(Held, CenterX + 540.0f - MeasureLabel(Held, 22), Top + 28.0f, 22, GutHUDColors::Text);
+		const FString Title = Town->GetShopTitle();
+		const FString Held = Town->GetShopPurse();
+
+		int32 TitleSize = 30;
+		int32 HeldSize = 22;
+
+		while (!Held.IsEmpty() && MeasureLabel(Title, TitleSize) + 30.0f + MeasureLabel(Held, HeldSize) > 1080.0f && (HeldSize > 15 || TitleSize > 18))
+		{
+			if (HeldSize > 15)
+			{
+				--HeldSize;
+			}
+			else
+			{
+				--TitleSize;
+			}
+		}
+
+		DrawLabel(Title, Left, Top + 22.0f + ((30 - TitleSize) * 0.6f), TitleSize, GutHUDColors::Warning);
+
+		// whose water it is: a fighter's own or an owner's, and nobody else's page
+		if (!Held.IsEmpty())
+		{
+			DrawLabel(Held, CenterX + 540.0f - MeasureLabel(Held, HeldSize), Top + 28.0f + ((22 - HeldSize) * 0.6f), HeldSize, GutHUDColors::Text);
+		}
 	}
 
 	float Y = Top + 78.0f;
@@ -489,11 +511,34 @@ void ATownHUD::DrawBook(const ATownGameMode* Town, float CenterX)
 
 	DrawPanel(CenterX, Top, 1180.0f, Height, EGutPanel::Slate);
 
-	DrawLabel(Town->GetShopTitle(), Left, Top + 22.0f, 30, GutHUDColors::Warning);
-
-	if (const FString Held = Town->GetShopPurse(); !Held.IsEmpty())
+	// The title and whose water it is share a line, and each is drawn as large as leaves room for the other: the yard's
+	// page wrote "You hold 15 L, the yard owes 7 L, day 14" across the end of "CROW, SIGNED WITH YOU" (25 November).
 	{
-		DrawLabel(Held, CenterX + 540.0f - MeasureLabel(Held, 22), Top + 28.0f, 22, GutHUDColors::Text);
+		const FString Title = Town->GetShopTitle();
+		const FString Held = Town->GetShopPurse();
+
+		int32 TitleSize = 30;
+		int32 HeldSize = 22;
+
+		while (!Held.IsEmpty() && MeasureLabel(Title, TitleSize) + 30.0f + MeasureLabel(Held, HeldSize) > 1080.0f && (HeldSize > 15 || TitleSize > 18))
+		{
+			if (HeldSize > 15)
+			{
+				--HeldSize;
+			}
+			else
+			{
+				--TitleSize;
+			}
+		}
+
+		DrawLabel(Title, Left, Top + 22.0f + ((30 - TitleSize) * 0.6f), TitleSize, GutHUDColors::Warning);
+
+		// whose water it is: a fighter's own or an owner's, and nobody else's page
+		if (!Held.IsEmpty())
+		{
+			DrawLabel(Held, CenterX + 540.0f - MeasureLabel(Held, HeldSize), Top + 28.0f + ((22 - HeldSize) * 0.6f), HeldSize, GutHUDColors::Text);
+		}
 	}
 
 	float Y = Top + 78.0f;

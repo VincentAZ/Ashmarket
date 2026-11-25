@@ -1,0 +1,14 @@
+{
+ "about": "The town's story as it is written down: its powers, and where its marks begin. Each piece of work is a list of its own in Tools/missions/. Read by Tools/town_lists.py and written where the game reads it by Tools/build_town_level.py, every time any place is built. A mark is a named whole number kept with the run: 'st.wardens' is how the player stands with the Wardens (100 under to 100), 'trust' and 'fear' are what the town at large thinks (0 to 100), and a mission's own key is how far it has got.",
+ "data": "/Game/Town/DA_Town_Story",
+
+ "starts": {"trust": 40},
+
+ "factions": [
+  {"key": "chainmen", "name": "The Chainmen", "about": "The house that collars whoever has no tag, sells them from the Block, and keeps the book of who owes what. Mother Ledger's."},
+  {"key": "wardens", "name": "The Wardens", "about": "The militia on the wall and at the gate. The law here is a price list, and they are who collects it. Captain Voss's; Sergeant Rook has the gate."},
+  {"key": "pump", "name": "The Pump", "about": "The well, the pipe, and what a litre costs, called through the pipe every morning."},
+  {"key": "freetags", "name": "The Free Tags", "about": "People under the dam who get tags to those who have none, and people out of collars. Nobody says the name where a Warden can hear it."},
+  {"key": "scrappers", "name": "The Scrappers", "about": "The Guild that works the Bones: salvage, repairs, and whatever the old town left that still turns."}
+ ]
+}

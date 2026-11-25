@@ -839,7 +839,25 @@ bool FTownLookMainStreetTest::RunTest(const FString& Parameters)
 		{ TEXT("main_13d_work_lamps"), FVector(0.5f, 97.0f, 4.2f), FVector(5.6f, 92.5f, 6.4f), 58.0f },
 		{ TEXT("main_13e_the_tea_stall"), FVector(2.2f, 105.0f, 4.9f), FVector(6.5f, 108.0f, 4.2f), 55.0f },
 		{ TEXT("main_13f_thread_at_the_machine"), FVector(-4.2f, 97.4f, 4.4f), FVector(-7.4f, 100.2f, 4.0f), 55.0f },
+
+		// the Gate Yard, opened on 25 November: -GutLookOnly=yard takes these alone
+		{ TEXT("yard_01_down_into_the_yard"), FVector(0.4f, 39.0f, 3.0f), FVector(0.5f, 4.0f, 3.2f), 68.0f },
+		{ TEXT("yard_02_the_tally_desk"), FVector(2.2f, 12.6f, 2.9f), FVector(6.0f, 7.4f, 2.4f), 62.0f },
+		{ TEXT("yard_03_the_foot_lane_and_the_tunnel"), FVector(1.9f, 9.6f, 2.9f), FVector(1.75f, -10.0f, 2.2f), 60.0f },
+		{ TEXT("yard_04_the_wagon_lane"), FVector(3.6f, 9.4f, 2.9f), FVector(-5.0f, 3.0f, 2.6f), 66.0f },
+		{ TEXT("yard_05_up_from_the_gate"), FVector(-0.6f, 1.6f, 2.9f), FVector(0.0f, 40.0f, 4.6f), 70.0f },
+		{ TEXT("yard_06_west_side"), FVector(4.0f, 22.0f, 2.9f), FVector(-9.0f, 20.0f, 2.6f), 70.0f },
+		{ TEXT("yard_07_east_side"), FVector(-4.0f, 24.0f, 2.9f), FVector(9.5f, 26.0f, 2.8f), 70.0f },
+		{ TEXT("yard_08_in_the_tunnel"), FVector(-0.8f, -2.0f, 2.9f), FVector(1.2f, -19.0f, 2.3f), 60.0f },
+		{ TEXT("yard_09_from_above"), FVector(0.0f, 20.0f, 46.0f), FVector(0.2f, 20.4f, 2.0f), 62.0f },
+		{ TEXT("yard_10_the_pipe_at_the_dam"), FVector(-1.6f, 7.0f, 3.2f), FVector(-5.2f, 0.0f, 3.8f), 62.0f },
+		{ TEXT("yard_11_across_the_desk"), FVector(5.0f, 5.6f, 2.9f), FVector(5.3f, 9.4f, 2.6f), 60.0f },
+		{ TEXT("yard_12_the_pipe_from_above"), FVector(-5.2f, 4.0f, 16.0f), FVector(-5.19f, 4.2f, 2.0f), 60.0f },
 	};
+
+	// only those whose names have this in them, if it is given
+	FString Only;
+	FParse::Value(FCommandLine::Get(), TEXT("GutLookOnly="), Only);
 
 	TSharedRef<TWeakObjectPtr<ACameraActor>> Camera = MakeShared<TWeakObjectPtr<ACameraActor>>();
 
@@ -866,6 +884,11 @@ bool FTownLookMainStreetTest::RunTest(const FString& Parameters)
 
 	for (const FView& View : Views)
 	{
+		if (!Only.IsEmpty() && !FString(View.Name).Contains(Only))
+		{
+			continue;
+		}
+
 		Steps.Add({ 0.1f, [Camera, View]()
 		{
 			if (ACameraActor* Seen = Camera->Get())

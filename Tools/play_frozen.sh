@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 # Plays the frozen copy of the game (see Tools/freeze_play_copy.sh), which a build or an import in the project cannot
 # reach. Takes everything Tools/play_gut.sh takes: GUT_MODE=ladder Tools/play_frozen.sh, and so on.
-# Its log is ~/.cache/ashmarket-sim/play/Saved/Logs/Ashmarket.log.
+# Its log is Saved/Logs/Ashmarket.log in whichever copy it played: ~/.cache/ashmarket-sim/play or play-b.
 set -euo pipefail
 
-COPY_DIR="${GUT_PLAY_COPY:-$HOME/.cache/ashmarket-sim/play}"
+BASE="${GUT_PLAY_BASE:-$HOME/.cache/ashmarket-sim}"
+COPY_DIR="${GUT_PLAY_COPY:-$BASE/play}"
+
+# there are two copies (see Tools/freeze_play_copy.sh): whichever was frozen last is the one to play
+if [[ -z "${GUT_PLAY_COPY:-}" && -f "$BASE/play-b/FROZEN_AT" && ( ! -f "$BASE/play/FROZEN_AT" || "$BASE/play-b/FROZEN_AT" -nt "$BASE/play/FROZEN_AT" ) ]]; then
+	COPY_DIR="$BASE/play-b"
+fi
 
 if [[ ! -x "$COPY_DIR/Tools/play_gut.sh" ]]; then
 	echo "There is no frozen copy yet: run Tools/freeze_play_copy.sh" >&2

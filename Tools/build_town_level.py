@@ -18,10 +18,19 @@ import math
 import os
 import re
 import struct
+import sys
 import random
 import traceback
 
 import unreal
+
+# the place lists are read through Tools/town_lists.py, which grafts each piece of work into the places it touches
+sys.path.insert(0, os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()), "Tools"))
+
+import importlib
+import town_lists
+
+importlib.reload(town_lists)
 
 PROJECT = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir())
 LIST = os.environ.get("GUT_TOWN_LIST", os.path.join(PROJECT, "Tools", "town_pool_street.json"))
@@ -462,8 +471,59 @@ def level(listed):
     return actors, makings
 
 
+def story():
+    """Writes down the town's story where the game reads it: its powers, where its marks begin, and every piece of work
+    there is, with how each stands at each figure of its mark. What is said and done in each piece is in the places."""
+    told = town_lists.story()
+    path = told.get("data", "/Game/Town/DA_Town_Story")
+    folder, name = path.rsplit("/", 1)
+
+    if eal.does_asset_exist(path):
+        data = unreal.load_asset(path)
+    else:
+        factory = unreal.DataAssetFactory()
+        factory.set_editor_property("data_asset_class", unreal.TownStoryData)
+        data = asset_tools.create_asset(name, folder, unreal.TownStoryData, factory)
+
+    factions = []
+
+    for entry in told.get("factions", []):
+        faction = unreal.TownFaction()
+        faction.set_editor_property("key", unreal.Name(entry["key"]))
+        faction.set_editor_property("name", entry["name"])
+        faction.set_editor_property("about", entry.get("about", ""))
+        factions.append(faction)
+
+    missions = []
+
+    for entry in told.get("missions", []):
+        mission = unreal.TownMission()
+        mission.set_editor_property("key", unreal.Name(entry["key"]))
+        mission.set_editor_property("name", entry["name"])
+        mission.set_editor_property("faction", unreal.Name(entry.get("faction", "")))
+        mission.set_editor_property("giver", entry.get("giver", ""))
+
+        steps = []
+
+        for at, words in entry.get("steps", []):
+            step = unreal.TownMissionStep()
+            step.set_editor_property("at", int(at))
+            step.set_editor_property("words", words)
+            steps.append(step)
+
+        mission.set_editor_property("steps", steps)
+        missions.append(mission)
+
+    data.set_editor_property("factions", factions)
+    data.set_editor_property("missions", missions)
+    data.set_editor_property("starts", {unreal.Name(key): int(value) for key, value in told.get("starts", {}).items()})
+
+    log("the story: {} powers, {} pieces of work".format(len(factions), len(missions)))
+
+
 def main():
-    listed = json.load(open(LIST))
+    # with whatever each piece of work has in this place (Tools/town_lists.py)
+    listed = town_lists.place(LIST)
 
     origin = listed["origin"]
     street = float(listed["street_height"])
@@ -1092,6 +1152,19 @@ def main():
         person.set_editor_property("stands_on_what_is_there", bool(entry.get("on")))
         person.set_editor_property("collared", bool(entry.get("collared")))
         person.set_editor_property("lot", int(entry.get("lot", 0)))
+        # somebody who is only there while the town's marks say so, and the ways they are walked along by name
+        person.set_editor_property("when", entry.get("when", ""))
+
+        ways = []
+
+        for called, along in entry.get("ways", {}).items():
+            way = unreal.TownWay()
+            way.set_editor_property("name", unreal.Name(called))
+            way.set_editor_property("points", [place(x, y) for x, y in along["points"]])
+            way.set_editor_property("facing", float(along.get("facing", entry["facing"])))
+            ways.append(way)
+
+        person.set_editor_property("ways", ways)
         # their own way of walking: a clip cut from motion capture, and the speed it was walked at (Tools/make_style_motion.py)
         if entry.get("walk"):
             known = os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()), "ArtSource", "style", "export", entry["walk"] + ".json")
@@ -1124,6 +1197,14 @@ def main():
             line.set_editor_property("id", str(said.get("id", "")))
             line.set_editor_property("note", said.get("note", ""))
             line.set_editor_property("next", ids.get(said.get("next"), -1))
+            line.set_editor_property("opens", bool(said.get("opens")))
+            line.set_editor_property("when", said.get("when", ""))
+            line.set_editor_property("does", said.get("does", ""))
+            line.set_editor_property("log", said.get("log", ""))
+
+            if said.get("next") and said["next"] not in ids:
+                raise RuntimeError("{} has no line called {} to go on to".format(entry["name"], said["next"]))
+
             line.set_editor_property("voice", voice("{}{}_{}".format(worded(entry["name"]), "" if nth == 1 else str(nth), worded(str(said.get("id", len(lines)))))))
 
             answers = []
@@ -1133,6 +1214,13 @@ def main():
                 answer.set_editor_property("words", back["words"])
                 answer.set_editor_property("deed", DEEDS[back.get("deed", "")])
                 answer.set_editor_property("next", ids.get(back.get("next"), -1))
+                answer.set_editor_property("when", back.get("when", ""))
+                answer.set_editor_property("needs", back.get("needs", ""))
+                answer.set_editor_property("does", back.get("does", ""))
+                answer.set_editor_property("log", back.get("log", ""))
+
+                if back.get("next") and back["next"] not in ids:
+                    raise RuntimeError("{} has no line called {} to answer with".format(entry["name"], back["next"]))
                 answers.append(answer)
 
             line.set_editor_property("answers", answers)
@@ -1153,6 +1241,8 @@ def main():
         door.set_editor_property("arrive", entry.get("arrive", ""))
         door.set_editor_property("walked_through", bool(entry.get("walk_through")))
         door.set_editor_property("reach", float(entry.get("reach", 0.0)) * 100.0)
+        door.set_editor_property("when", entry.get("when", ""))
+        door.set_editor_property("does", entry.get("does", ""))
 
         # a way as wide as a street is gone through anywhere across its mouth
         if entry.get("mouth"):
@@ -1337,6 +1427,9 @@ def main():
         log("OPEN EDGE: nothing stands along the ground's edge from ({:.1f}, {:.1f}) to ({:.1f}, {:.1f}) on the map, {:.1f} m".format(
             begin[1] / 100.0 + origin["x"], begin[0] / 100.0 + origin["y"], end[1] / 100.0 + origin["x"], end[0] / 100.0 + origin["y"],
             math.hypot(end[0] - begin[0], end[1] - begin[1]) / 100.0))
+
+    # and the town's story, which every place's people speak from
+    story()
 
     unreal.EditorLoadingAndSavingUtils.save_dirty_packages(True, True)
 

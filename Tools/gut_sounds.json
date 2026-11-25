@@ -2157,6 +2157,22 @@
      "fade": 0.8
     }
    ]
+  },
+  "gate_bell": {
+   "about": "The gate bell: a truck's brake drum hung in the Gate Yard, struck with a hammer when the gate comes down for the night. A recording of a brake drum struck with a hammer (freesound 373398, CC0), set lower so that it is a truck's drum and not a car's. Heard all over the town.",
+   "volume": 0.85,
+   "everywhere": true,
+   "pitch": [
+    0.7,
+    0.74
+   ],
+   "from": [
+    {
+     "file": "gate/brake_drum_hammer_preview.mp3",
+     "longest": 1.6,
+     "fade": 0.5
+    }
+   ]
   }
  }
 }

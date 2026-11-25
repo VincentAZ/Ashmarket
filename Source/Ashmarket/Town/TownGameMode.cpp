@@ -93,7 +93,8 @@ namespace TownConstants
 
 	const FMapPatch MapPatches[] =
 	{
-		{ TEXT("Main Street"), FBox2D(FVector2D(-8.0f, 41.0f), FVector2D(8.0f, 127.0f)), FBox2D(FVector2D(0.486f, 0.748f), FVector2D(0.514f, 0.548f)) },
+		// with the Gate Yard and the tunnel at its foot (25 November): the same scale on down to the dam
+		{ TEXT("Main Street"), FBox2D(FVector2D(-12.0f, -19.0f), FVector2D(12.0f, 127.0f)), FBox2D(FVector2D(0.479f, 0.8875f), FVector2D(0.521f, 0.548f)) },
 		{ TEXT("Block Square"), FBox2D(FVector2D(-7.5f, 130.0f), FVector2D(30.7f, 166.0f)), FBox2D(FVector2D(0.456f, 0.544f), FVector2D(0.541f, 0.433f)) },
 		{ TEXT("Pool Street"), FBox2D(FVector2D(2.0f, 172.0f), FVector2D(108.0f, 200.0f)), FBox2D(FVector2D(0.508f, 0.460f), FVector2D(0.661f, 0.420f)) },
 	};
@@ -273,6 +274,7 @@ ATownGameMode::ATownGameMode()
 	PersonClass = TSoftClassPtr<AGutFighter>(FSoftObjectPath(TEXT("/Game/Gut/Blueprints/BP_GutDummy.BP_GutDummy_C")));
 	FirstLadder = TSoftObjectPtr<UGutLadderData>(FSoftObjectPath(TEXT("/Game/Gut/Ladder/DA_Gut_MeatLadder.DA_Gut_MeatLadder")));
 	CageRules = TSoftClassPtr<AGutGameMode>(FSoftObjectPath(TEXT("/Game/Gut/Blueprints/BP_GutGameMode.BP_GutGameMode_C")));
+	Story = TSoftObjectPtr<UTownStoryData>(FSoftObjectPath(TEXT("/Game/Town/DA_Town_Story.DA_Town_Story")));
 }
 
 void ATownGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
@@ -294,6 +296,19 @@ void ATownGameMode::InitGame(const FString& MapName, const FString& Options, FSt
 
 	PlaceData = Place.LoadSynchronous();
 	LadderData = FirstLadder.LoadSynchronous();
+
+	// the town's story, where it has been written down (Tools/build_town_level.sh writes it with every place)
+	if (FPackageName::DoesPackageExist(Story.GetLongPackageName()))
+	{
+		StoryData = Story.LoadSynchronous();
+	}
+
+	// -GutMarks=w1=100,wynn=1 sets the town's marks as the place opens (commas for spaces): for seeing how something came
+	// out without doing it again
+	if (FString Marks; FParse::Value(FCommandLine::Get(), TEXT("GutMarks="), Marks, false))
+	{
+		Apply(Marks.Replace(TEXT(","), TEXT(" ")));
+	}
 
 	if (!PlaceData)
 	{
@@ -366,6 +381,7 @@ void ATownGameMode::Tick(float DeltaTime)
 	SettledFor += DeltaTime;
 
 	UpdateCalls(DeltaTime);
+	UpdateSoundsDue();
 	UpdateLed(DeltaTime);
 	UpdateBeats(DeltaTime);
 	UpdateTow(DeltaTime);
@@ -501,7 +517,10 @@ void ATownGameMode::Tick(float DeltaTime)
 			const double Now = GetWorld()->GetTimeSeconds();
 			double& Last = Nodded.FindOrAdd(PersonInReach, -1000.0);
 
-			if (Now - Last > 90.0 && !People[PersonInReach]->IsFidgeting() && FMath::FRand() < 0.6f)
+			// -GutAlwaysGreet: every time, for looking at it
+			static const bool bAlways = FParse::Param(FCommandLine::Get(), TEXT("GutAlwaysGreet"));
+
+			if (Now - Last > 90.0 && !People[PersonInReach]->IsFidgeting() && (bAlways || FMath::FRand() < 0.6f))
 			{
 				const TCHAR* Nod = (PersonInReach % 2) ? TEXT("mc_am_stand_idle_greet_02_nod") : TEXT("mc_am_stand_idle_greet_04_nod");
 
@@ -518,9 +537,12 @@ void ATownGameMode::Tick(float DeltaTime)
 		{
 			for (const FTownDoor& Door : PlaceData->Doors)
 			{
-				if (Door.bWalkedThrough && Door.Deed == ETownDeed::Go && Door.IsEntered(Walker->GetActorLocation(), WayReach))
+				if (Door.bWalkedThrough && Door.Deed == ETownDeed::Go && Holds(Door.When) && Door.IsEntered(Walker->GetActorLocation(), WayReach))
 				{
-					Do(Door.Deed, &Door);
+					const FTownDoor Through = Door;
+
+					Apply(Through.Does);
+					Do(Through.Deed, &Through);
 					return;
 				}
 			}
@@ -692,104 +714,14 @@ void ATownGameMode::Settle()
 			return;
 		}
 
-		const float HalfHeight = Kind->GetDefaultObject<AGutFighter>()->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-
-		// -TownPeople=3 stands only the first so many, and -TownNoCollars leaves the collars off: for finding out what a place costs
+		// -TownPeople=3 stands only the first so many: for finding out what a place costs
 		int32 Most = MAX_int32;
 		FParse::Value(FCommandLine::Get(), TEXT("TownPeople="), Most);
 
-		const bool bCollars = !FParse::Param(FCommandLine::Get(), TEXT("TownNoCollars"));
+		// whoever the town's marks do not have in the place is not stood in it: they keep their place in the list, empty
+		const int32 Next = People.Num();
 
-		{
-			const FTownPerson& Person = PlaceData->People[People.Num()];
-
-			if (People.Num() >= Most)
-			{
-				People.Add(nullptr);
-				return;
-			}
-
-			FVector Feet = Person.Place;
-
-			// somebody up on something stands on it: whatever is under them there
-			if (Person.bStandsOnWhatIsThere)
-			{
-				FCollisionQueryParams Looking(FName("TownStanding"), true, Walker);
-				FHitResult Under;
-
-				if (GetWorld()->LineTraceSingleByChannel(Under, Feet + FVector(0.0f, 0.0f, 230.0f), Feet - FVector(0.0f, 0.0f, 50.0f), ECC_Visibility, Looking))
-				{
-					UE_LOG(LogTown, Log, TEXT("Street: under %s is %s, %.0f cm up"), *Person.Name, *GetNameSafe(Under.GetActor()), Under.Location.Z - Feet.Z);
-
-					Feet.Z = Under.Location.Z;
-				}
-			}
-
-			// where they stand is where their feet are
-			const FTransform Where(FRotator(0.0f, Person.Facing, 0.0f), Feet + FVector(0.0f, 0.0f, HalfHeight));
-
-			AGutFighter* Body = GetWorld()->SpawnActorDeferred<AGutFighter>(Kind, Where, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-
-			if (!Body)
-			{
-				People.Add(nullptr);
-				return;
-			}
-
-			// the body they are seen as is named before they begin, so that they are never anybody else first
-			if (!Person.Body.IsNull())
-			{
-				Body->SetBodyClass(Person.Body);
-			}
-
-			if (!Person.Stand.IsNone())
-			{
-				Body->SetAtEaseFamily(Person.Stand);
-			}
-			else if (Person.Idle)
-			{
-				Body->SetAtEaseIdle(Person.Idle);
-			}
-
-			// and their own way of walking, if they have one
-			Body->SetAtEaseWalk(Person.Walk, Person.WalkSpeed);
-
-			UGameplayStatics::FinishSpawningActor(Body, Where);
-
-			Body->EquipWeapon(nullptr);
-			Body->SetCollared(Person.bCollared && bCollars);
-			Body->SetAtEase(true);
-
-			// somebody stood up on something stays where they were stood: a truck's deck is not ground to whatever moves a
-			// fighter about, which would walk them off the end of it
-			if (Person.bStandsOnWhatIsThere)
-			{
-				Body->GetCharacterMovement()->DisableMovement();
-			}
-
-			// somebody with a round to walk is walked along it, from its first stop to its second
-			if (!Person.Beat.IsEmpty())
-			{
-				Body->GetCharacterMovement()->DisableMovement();
-
-				FTownBeat Round;
-				Round.Person = People.Num();
-				Round.Stop = Person.Beat.Num() > 1 ? 1 : 0;
-				Round.Wait = Person.Beat[0].Wait;
-
-				Beats.Add(Round);
-			}
-
-			// their clothes are their own, a shade off anybody else's who has the same
-			Dye(Body, Person.Cloth);
-
-			// a lot on the Block has its wrists tied behind it
-			Body->SetBound(Person.bCollared && Person.Lot > 0);
-
-			People.Add(Body);
-
-			UE_LOG(LogTown, Log, TEXT("Street: %s stands at %s"), *Person.Name, *Feet.ToCompactString());
-		}
+		People.Add((Next < Most && IsPresent(Next)) ? StandPerson(Next) : nullptr);
 
 		// the next of them next frame
 		return;
@@ -857,6 +789,102 @@ void ATownGameMode::Settle()
 	bSettled = true;
 
 	UE_LOG(LogTown, Log, TEXT("Street: %s, %d people, %d doors, %d fires"), PlaceData ? *PlaceData->Name : TEXT("nowhere"), People.Num(), PlaceData ? PlaceData->Doors.Num() : 0, Fires.Num());
+}
+
+AGutFighter* ATownGameMode::StandPerson(int32 Index, const FVector* At)
+{
+	UClass* Kind = PersonClass.LoadSynchronous();
+	AGutFighter* Walker = GetWalker();
+
+	if (!PlaceData || !PlaceData->People.IsValidIndex(Index) || !Kind)
+	{
+		return nullptr;
+	}
+
+	const float HalfHeight = Kind->GetDefaultObject<AGutFighter>()->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	const bool bCollars = !FParse::Param(FCommandLine::Get(), TEXT("TownNoCollars"));
+
+	const FTownPerson& Person = PlaceData->People[Index];
+
+	FVector Feet = At ? *At : Person.Place;
+
+	// somebody up on something stands on it: whatever is under them there
+	if (Person.bStandsOnWhatIsThere)
+	{
+		FCollisionQueryParams Looking(FName("TownStanding"), true, Walker);
+		FHitResult Under;
+
+		if (GetWorld()->LineTraceSingleByChannel(Under, Feet + FVector(0.0f, 0.0f, 230.0f), Feet - FVector(0.0f, 0.0f, 50.0f), ECC_Visibility, Looking))
+		{
+			UE_LOG(LogTown, Log, TEXT("Street: under %s is %s, %.0f cm up"), *Person.Name, *GetNameSafe(Under.GetActor()), Under.Location.Z - Feet.Z);
+
+			Feet.Z = Under.Location.Z;
+		}
+	}
+
+	// where they stand is where their feet are
+	const FTransform Where(FRotator(0.0f, Person.Facing, 0.0f), Feet + FVector(0.0f, 0.0f, HalfHeight));
+
+	AGutFighter* Body = GetWorld()->SpawnActorDeferred<AGutFighter>(Kind, Where, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+	if (!Body)
+	{
+		return nullptr;
+	}
+
+	// the body they are seen as is named before they begin, so that they are never anybody else first
+	if (!Person.Body.IsNull())
+	{
+		Body->SetBodyClass(Person.Body);
+	}
+
+	if (!Person.Stand.IsNone())
+	{
+		Body->SetAtEaseFamily(Person.Stand);
+	}
+	else if (Person.Idle)
+	{
+		Body->SetAtEaseIdle(Person.Idle);
+	}
+
+	// and their own way of walking, if they have one
+	Body->SetAtEaseWalk(Person.Walk, Person.WalkSpeed);
+
+	UGameplayStatics::FinishSpawningActor(Body, Where);
+
+	Body->EquipWeapon(nullptr);
+	Body->SetCollared(Person.bCollared && bCollars);
+	Body->SetAtEase(true);
+
+	// somebody stood up on something stays where they were stood: a truck's deck is not ground to whatever moves a
+	// fighter about, which would walk them off the end of it
+	if (Person.bStandsOnWhatIsThere)
+	{
+		Body->GetCharacterMovement()->DisableMovement();
+	}
+
+	// somebody with a round to walk is walked along it, from its first stop to its second
+	if (!Person.Beat.IsEmpty())
+	{
+		Body->GetCharacterMovement()->DisableMovement();
+
+		FTownBeat Round;
+		Round.Person = Index;
+		Round.Stop = Person.Beat.Num() > 1 ? 1 : 0;
+		Round.Wait = Person.Beat[0].Wait;
+
+		Beats.Add(Round);
+	}
+
+	// their clothes are their own, a shade off anybody else's who has the same
+	Dye(Body, Person.Cloth);
+
+	// a lot on the Block has its wrists tied behind it
+	Body->SetBound(Person.bCollared && Person.Lot > 0);
+
+	UE_LOG(LogTown, Log, TEXT("Street: %s stands at %s"), *Person.Name, *Feet.ToCompactString());
+
+	return Body;
 }
 
 void ATownGameMode::Dye(const AGutFighter* Body, const FLinearColor& Cloth)
@@ -1488,7 +1516,7 @@ void ATownGameMode::FindReach(const AGutFighter* Walker)
 		const float Distance = FVector::Dist2D(Here, GetPersonPlace(i));
 
 		// somebody with nothing to say is not offered to be talked to
-		if (Distance < Nearest && People.IsValidIndex(i) && People[i] && !PlaceData->People[i].Lines.IsEmpty())
+		if (Distance < Nearest && People.IsValidIndex(i) && People[i] && !PlaceData->People[i].Lines.IsEmpty() && !IsLed(i))
 		{
 			Nearest = Distance;
 			PersonInReach = i;
@@ -1593,14 +1621,21 @@ void ATownGameMode::Interact()
 	{
 		const FTownDoor& Door = PlaceData->Doors[DoorInReach];
 
-		if (Door.Deed == ETownDeed::None)
+		if (Door.Deed == ETownDeed::None || !Holds(Door.When))
 		{
 			Notice = Door.Shut;
 			NoticeUntil = GetWorld()->GetTimeSeconds() + TownConstants::NoticeTime;
 		}
 		else
 		{
-			Do(Door.Deed, &Door);
+			const FTownDoor Through = Door;
+
+			if (const FString Came = Apply(Through.Does); !Came.IsEmpty())
+			{
+				ShowNotice(Came);
+			}
+
+			Do(Through.Deed, &Through);
 		}
 	}
 }
@@ -1613,10 +1648,14 @@ void ATownGameMode::BeginTalk(int32 Person)
 	}
 
 	TalkingTo = Person;
-	TalkLine = 0;
+	TalkLine = GetOpeningLine(Person);
 	TalkChoice = 0;
-	TalkHub = PlaceData->People[Person].Lines[0].Answers.IsEmpty() ? INDEX_NONE : 0;
+	TalkHub = (GetShownAnswers(PlaceData->People[Person].Lines[TalkLine]).IsEmpty() || IsSwitch(PlaceData->People[Person].Lines[TalkLine])) ? INDEX_NONE : TalkLine;
 	TalkAsked.Reset();
+	TalkTold.Reset();
+	TalkToldLine = INDEX_NONE;
+	DonePerson = INDEX_NONE;
+	DoneLine = INDEX_NONE;
 	Dealt.Reset();
 	DealtId.Reset();
 
@@ -1641,6 +1680,7 @@ void ATownGameMode::BeginTalk(int32 Person)
 	SaidPerson = INDEX_NONE;
 	SaidLine = INDEX_NONE;
 
+	DoTalkLine();
 	SayTalkLine();
 }
 
@@ -1780,6 +1820,16 @@ void ATownGameMode::EndTalk()
 	TalkHub = INDEX_NONE;
 	TalkAsked.Reset();
 
+	// what the last thing said came to stays up in the street for a while, where the talk ended on it
+	if (!TalkTold.IsEmpty())
+	{
+		ShowNotice(TalkTold);
+		NoticeUntil = GetWorld()->GetTimeSeconds() + TownConstants::GivenTime;
+	}
+
+	TalkTold.Reset();
+	TalkToldLine = INDEX_NONE;
+
 	// whoever was speaking is left in the middle of it, and the caller is heard again
 	if (TalkVoice)
 	{
@@ -1814,13 +1864,15 @@ const FTownLine* ATownGameMode::GetAnsweredLine() const
 
 	const FTownLine& Line = Lines[TalkLine];
 
-	if (!Line.Answers.IsEmpty())
+	if (!GetShownAnswers(Line).IsEmpty())
 	{
 		return &Line;
 	}
 
-	// said in answer to something, and nothing follows it: everything that could be said before can be said still
-	if (!Lines.IsValidIndex(Line.Next) && Lines.IsValidIndex(TalkHub))
+	// said in answer to something, and nothing follows it: everything that could be said before can be said still. Not to
+	// somebody who is walking off, or whom the town has in the place no longer, or where what was asked has had its day
+	// (work that has since been taken is not offered again in the same breath): what they said was the last of it.
+	if (!Lines.IsValidIndex(Line.Next) && Lines.IsValidIndex(TalkHub) && TalkHub != TalkLine && !IsLed(TalkingTo) && IsPresent(TalkingTo) && Holds(Lines[TalkHub].When) && !GetShownAnswers(Lines[TalkHub]).IsEmpty())
 	{
 		return &Lines[TalkHub];
 	}
@@ -1848,9 +1900,39 @@ void ATownGameMode::AdvanceTalk()
 
 	int32 Next = Line.Next;
 
-	if (Asked && Asked->Answers.IsValidIndex(TalkChoice))
+	const TArray<int32> Shown = Asked ? GetShownAnswers(*Asked) : TArray<int32>();
+	const int32 AskedLine = Asked ? static_cast<int32>(Asked - Lines.GetData()) : INDEX_NONE;
+
+	if (Asked && Shown.IsValidIndex(TalkChoice))
 	{
-		const FTownAnswer& Answer = Asked->Answers[TalkChoice];
+		// copied: what it does may be the end of whoever was asked
+		const FTownAnswer Answer = Asked->Answers[Shown[TalkChoice]];
+
+		// what it takes is said, and nothing is done, where the player has not got it
+		if (FString Lacking; !Holds(Answer.Needs, &Lacking))
+		{
+			FString Mark, Figure;
+
+			TalkTold = (Lacking.Split(TEXT(">="), &Mark, &Figure) && Mark == TEXT("water")) ? FString::Printf(TEXT("That takes %s L. You hold %d."), *Figure, GetMark(FName("water")))
+				: FString(TEXT("You have not got what that takes."));
+			TalkToldLine = TalkLine;
+
+			ShopRefusedAt = GetWorld()->GetTimeSeconds();
+			return;
+		}
+
+		TalkTold = Apply(Answer.Does);
+		TalkToldLine = INDEX_NONE;
+
+		WriteLog(Answer.Log);
+
+		if (!Answer.Does.IsEmpty() || !Answer.Log.IsEmpty())
+		{
+			if (UGutGameInstance* GameInstance = GetGutGameInstance())
+			{
+				GameInstance->SaveRun();
+			}
+		}
 
 		if (Answer.Deed == ETownDeed::Borrow || Answer.Deed == ETownDeed::Repay)
 		{
@@ -1905,7 +1987,7 @@ void ATownGameMode::AdvanceTalk()
 			return;
 		}
 
-		TalkAsked.Add((static_cast<int32>(Asked - Lines.GetData()) * 100) + TalkChoice);
+		TalkAsked.Add((AskedLine * 100) + Shown[TalkChoice]);
 	}
 
 	if (!Lines.IsValidIndex(Next))
@@ -1926,9 +2008,16 @@ void ATownGameMode::AdvanceTalk()
 	}
 
 	TalkLine = Next;
+	TalkToldLine = Next;
 
 	// a line with answers of its own starts the choosing again; one without keeps the arrow where it was, under what was just asked
-	if (!Lines[Next].Answers.IsEmpty())
+	if (IsSwitch(Lines[Next]))
+	{
+		// a line that only sends the talk one way or another: nothing said before it can be gone back to
+		TalkChoice = 0;
+		TalkHub = INDEX_NONE;
+	}
+	else if (!GetShownAnswers(Lines[Next]).IsEmpty())
 	{
 		if (Next != TalkHub)
 		{
@@ -1936,6 +2025,14 @@ void ATownGameMode::AdvanceTalk()
 		}
 
 		TalkHub = Next;
+	}
+
+	DoTalkLine();
+
+	// what could be said may be fewer than it was
+	if (const FTownLine* Now = GetAnsweredLine())
+	{
+		TalkChoice = FMath::Clamp(TalkChoice, 0, FMath::Max(0, GetShownAnswers(*Now).Num() - 1));
 	}
 
 	SayTalkLine();
@@ -2163,7 +2260,7 @@ void ATownGameMode::HandleMenuInput(EGutMenuInput Input)
 	}
 
 	const FTownLine* Asked = GetAnsweredLine();
-	const int32 Answers = Asked ? Asked->Answers.Num() : 0;
+	const int32 Answers = (Asked && !IsSwitch(*Asked)) ? GetShownAnswers(*Asked).Num() : 0;
 
 	if (Input == EGutMenuInput::Confirm)
 	{
@@ -2664,7 +2761,18 @@ void ATownGameMode::UpdateLed(float DeltaTime)
 			Body->SetLedVelocity(FVector::ZeroVector);
 			Body->SetActorRotation(FMath::RInterpConstantTo(Facing, FRotator(0.0f, One.Facing, 0.0f), DeltaTime, LotTurnSpeed));
 
-			if (FMath::Abs(FRotator::NormalizeAxis(Body->GetActorRotation().Yaw - One.Facing)) < 1.0f)
+			if (One.bGoes)
+			{
+				// walked off out of the place: gone
+				const int32 Gone = One.Person;
+
+				Led.RemoveAt(i);
+				Beats.RemoveAll([Gone](const FTownBeat& Round) { return Round.Person == Gone; });
+
+				Body->Destroy();
+				People[Gone] = nullptr;
+			}
+			else if (FMath::Abs(FRotator::NormalizeAxis(Body->GetActorRotation().Yaw - One.Facing)) < 1.0f)
 			{
 				Led.RemoveAt(i);
 			}
@@ -2750,6 +2858,14 @@ FVector ATownGameMode::GetPersonPlace(int32 Person) const
 	if (!PlaceData->People[Person].Beat.IsEmpty() && People.IsValidIndex(Person) && People[Person])
 	{
 		return People[Person]->GetActorLocation();
+	}
+
+	// and so is somebody who has ways to be walked along: they may have been walked somewhere and be standing there
+	if (!PlaceData->People[Person].Ways.IsEmpty() && People.IsValidIndex(Person) && People[Person])
+	{
+		const FVector Stood = People[Person]->GetActorLocation();
+
+		return FVector(Stood.X, Stood.Y, PlaceData->People[Person].Place.Z);
 	}
 
 	return PlaceData->People[Person].Place;
@@ -4452,15 +4568,84 @@ TArray<FTownBagLine> ATownGameMode::GetBagLines() const
 		Line.Kind = ETownBagKind::Note;
 		Line.Part = TEXT("PAPERS");
 		Line.Name = TEXT("Mother Ledger's note");
-		Line.Count = FString::Printf(TEXT("%.0f L owed"), GameInstance->Window.Debt);
-		Line.Detail = TEXT("every debt is paid");
+		// what is owed is said outright, and the paper's own figures are said to be her terms: he read "25 FOR 35" on the
+		// paper beside "67 L owed" and asked which he owed (25 November)
+		Line.Count = FString::Printf(TEXT("you owe %.0f L"), GameInstance->Window.Debt);
+		Line.Detail = FString::Printf(TEXT("the paper is her terms: %.0f lent is written as %.0f"), LoanGiven, LoanOwed);
 		Line.Picture = FName("bag_note_debt");
 
 		// what the paper means, in plain words: he could not make head or tail of it (24 November)
-		Line.About.Add(FString::Printf(TEXT("You owe Mother Ledger %.0f L. Each time she lends she counts out %.0f L and writes down %.0f: that is the \"25 for 35\". The 10 is her price. It does not grow after that."),
+		Line.About.Add(FString::Printf(TEXT("You owe Mother Ledger %.0f L. That is the whole of it, and it is not written on the paper. The paper has her terms: each time she lends she counts out %.0f L and writes down %.0f. The 10 is her price. It does not grow after that."),
 			GameInstance->Window.Debt, LoanGiven, LoanOwed));
 		Line.About.Add(FString::Printf(TEXT("\"Every debt is paid\" is the town's second law. Until this is clear, half of anything the window or the pit pays you is kept against it, and she will not let you owe more than %.0f L."), LoanLimit));
 		Line.About.Add(TEXT("Pay it down whenever you like, any amount you hold, at her table outside the Counting House on Block Square."));
+
+		Lines.Add(MoveTemp(Line));
+	}
+
+	// work taken and how it stands, work done and how it came out
+	for (const FTownMission& Mission : StoryData ? StoryData->Missions : TArray<FTownMission>())
+	{
+		const int32 Stands = GetMark(Mission.Key);
+
+		if (Stands <= 0)
+		{
+			continue;
+		}
+
+		FTownBagLine Line;
+
+		Line.Kind = ETownBagKind::Note;
+		Line.Part = TEXT("WORK");
+		Line.Name = Mission.Name;
+		Line.Count = Stands >= TownStory::Ended ? TEXT("done") : TEXT("in hand");
+		Line.Detail = Mission.Giver;
+		Line.Picture = FName("bag_paper_wage");
+		Line.About.Add(GetMissionStep(Mission));
+
+		Lines.Add(MoveTemp(Line));
+	}
+
+	// how the player stands with each of the town's powers it has had to do with
+	for (const FTownFaction& Faction : StoryData ? StoryData->Factions : TArray<FTownFaction>())
+	{
+		const FName Mark(*(FString(TEXT("st.")) + Faction.Key.ToString()));
+
+		if (!GameInstance->Story.Marks.Contains(Mark))
+		{
+			continue;
+		}
+
+		const int32 Standing = GetMark(Mark);
+
+		FTownBagLine Line;
+
+		Line.Kind = ETownBagKind::Note;
+		Line.Part = TEXT("STANDING");
+		Line.Name = Faction.Name;
+		Line.Count = FString::Printf(TEXT("%s%d"), Standing > 0 ? TEXT("+") : TEXT(""), Standing);
+		Line.Detail = GetStandingWord(Standing);
+		Line.About.Add(Faction.About);
+		Line.About.Add(TEXT("From 100 down to 100 under. Work is offered from 19 under; at 20 the harder work, at 40 what they offer their own. At 20 under they go cold, and at 50 under they come for you."));
+
+		Lines.Add(MoveTemp(Line));
+	}
+
+	// and what the player has done, as it would tell it: the last of it
+	if (!GameInstance->Story.Journal.IsEmpty())
+	{
+		FTownBagLine Line;
+
+		Line.Kind = ETownBagKind::Note;
+		Line.Part = TEXT("STANDING");
+		Line.Name = TEXT("What you have done");
+		Line.Count = FString::Printf(TEXT("trust %d  \u00B7  fear %d"), GetMark(FName("trust")), GetMark(FName("fear")));
+		Line.Detail = TEXT("as the town tells it");
+
+		for (int32 i = FMath::Max(0, GameInstance->Story.Journal.Num() - 6); i < GameInstance->Story.Journal.Num(); ++i)
+		{
+			Line.About.Add(GameInstance->Story.Journal[i]);
+		}
 
 		Lines.Add(MoveTemp(Line));
 	}
@@ -5759,7 +5944,22 @@ FString ATownGameMode::GetTalkNote() const
 		return FString();
 	}
 
-	return Told(PlaceData->People[TalkingTo].Lines[TalkLine].Note);
+	const FString Noted = Told(PlaceData->People[TalkingTo].Lines[TalkLine].Note);
+
+	// and what the last thing done came to: who thinks better or worse of the player for it, and what was paid
+	if (!TalkTold.IsEmpty() && TalkToldLine == TalkLine)
+	{
+		return Noted.IsEmpty() ? TalkTold : Noted + TEXT("   \u00B7   ") + TalkTold;
+	}
+
+	return Noted;
+}
+
+FString ATownGameMode::GetGoodName(const FName& Good)
+{
+	const TownConstants::FGood* Known = TownConstants::FindGood(Good);
+
+	return Known ? FString(Known->Name) : Good.ToString();
 }
 
 TArray<FString> ATownGameMode::GetAnswers() const
@@ -5768,9 +5968,10 @@ TArray<FString> ATownGameMode::GetAnswers() const
 
 	if (const FTownLine* Asked = GetAnsweredLine())
 	{
-		for (const FTownAnswer& Answer : Asked->Answers)
+		// nothing is offered at a line that only sends the talk on
+		for (const int32 Which : IsSwitch(*Asked) ? TArray<int32>() : GetShownAnswers(*Asked))
 		{
-			Result.Add(Told(Answer.Words));
+			Result.Add(Told(Asked->Answers[Which].Words));
 		}
 	}
 
@@ -5785,9 +5986,9 @@ TArray<bool> ATownGameMode::GetAnswersAsked() const
 	{
 		const int32 Line = static_cast<int32>(Asked - PlaceData->People[TalkingTo].Lines.GetData());
 
-		for (int32 i = 0; i < Asked->Answers.Num(); ++i)
+		for (const int32 Which : IsSwitch(*Asked) ? TArray<int32>() : GetShownAnswers(*Asked))
 		{
-			Result.Add(TalkAsked.Contains((Line * 100) + i));
+			Result.Add(TalkAsked.Contains((Line * 100) + Which));
 		}
 	}
 

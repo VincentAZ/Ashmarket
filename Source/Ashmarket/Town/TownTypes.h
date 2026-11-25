@@ -72,6 +72,25 @@ struct FTownAnswer
 	/** The line it is answered with: its place in the speaker's lines. Less than nought ends the talk. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
 	int32 Next = -1;
+
+	/** It can be said only while this holds of the town's marks ("w1=2 !wynn"): otherwise it is not there. See ATownGameMode::Holds. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
+	FString When;
+
+	/**
+	 *  What saying it takes ("water>=30"). It is always there to be read; said without what it takes, the player is told
+	 *  what is lacking and nothing is done. No answer is hidden for want of water: the player is shown what it could do.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
+	FString Needs;
+
+	/** What saying it changes ("water-30 wynn=2 st.freetags+5 walk:through"). See ATownGameMode::Apply. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
+	FString Does;
+
+	/** What is written in the player's own account of what it has done, if saying this is worth a line there */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
+	FString Log;
 };
 
 /** One thing somebody says, and what can be said back to it */
@@ -105,6 +124,42 @@ struct FTownLine
 	/** The line that follows when there is nothing to answer. Less than nought ends the talk. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
 	int32 Next = -1;
+
+	/**
+	 *  If true a talk can begin here: it begins at the last such line whose When holds, and at the first line of all if
+	 *  none does. So what somebody says first follows what has happened, and a mission's lines are added after the lines
+	 *  they always had.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
+	bool bOpens = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
+	FString When;
+
+	/** What its being said changes, once each time it is come to: the pay counted out as the words are said */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
+	FString Does;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Talk")
+	FString Log;
+};
+
+/** A way somebody can be walked along, by name: in from where they come, off to where they go */
+USTRUCT(BlueprintType)
+struct FTownWay
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Way")
+	FName Name;
+
+	/** The places gone through in turn, in the level */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Way")
+	TArray<FVector> Points;
+
+	/** Which way they turn to face at the end of it */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Way", meta = (Units = "deg"))
+	float Facing = 0.0f;
 };
 
 /** One stop on the round somebody walks: where it is, how long they stand there, and which way they look while they do */
@@ -199,9 +254,26 @@ struct FTownPerson
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
 	TArray<FName> Buys;
 
-	/** What they say. The talk begins at the first. */
+	/** What they say. The talk begins at the first, or at a line that opens it (FTownLine::bOpens). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
 	TArray<FTownLine> Lines;
+
+	/** They are in the place only while this holds of the town's marks. With nothing they are always there. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
+	FString When;
+
+	/**
+	 *  Ways they can be walked along. Somebody who comes to be in the place while the player is in it walks in by "in",
+	 *  from its first place; somebody who stops being in it walks off by "out" and is gone at its end. Any other is taken
+	 *  when something done says so ("walk:held").
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
+	TArray<FTownWay> Ways;
+
+	const FTownWay* FindWay(const FName& Named) const
+	{
+		return Ways.FindByPredicate([&Named](const FTownWay& Way) { return Way.Name == Named; });
+	}
 };
 
 /** Something lying about a place that whoever finds it can pick up: it goes in the bag, and is not there again */
@@ -263,6 +335,14 @@ struct FTownDoor
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Door")
 	FBox2D Mouth = FBox2D(ForceInit);
+
+	/** It is open only while this holds of the town's marks: otherwise it is shut, and Shut says why */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Door")
+	FString When;
+
+	/** What going through it changes */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Door")
+	FString Does;
 
 	/** True if somebody standing there is going through this way, when it is one that is walked through */
 	bool IsEntered(const FVector& Where, float OwnReach) const

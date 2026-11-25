@@ -29,6 +29,8 @@ import os
 import re
 import sys
 
+import town_lists
+
 PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CAST = os.path.join(PROJECT, "Tools", "town_voices.json")
 DESIGNED = os.path.join(PROJECT, "Tools", "town_voices_designed.json")
@@ -102,7 +104,8 @@ def main():
     said = {}
 
     for path in LISTS:
-        listed = json.load(open(path))
+        # with whatever each piece of work has its people say there (Tools/town_lists.py)
+        listed = town_lists.place(path)
 
         if "people" not in listed or "name" not in listed:
             continue

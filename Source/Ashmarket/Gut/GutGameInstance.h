@@ -9,6 +9,7 @@
 #include "GutTypes.h"
 #include "GutStableTypes.h"
 #include "GutWindowTypes.h"
+#include "TownStoryTypes.h"
 #include "GutGameInstance.generated.h"
 
 class UGutLadderData;
@@ -178,6 +179,10 @@ public:
 
 	UPROPERTY()
 	bool bOnePurse = false;
+
+	/** What the town knows of the player: how it stands with each of its powers, the work it has taken and how each piece came out */
+	UPROPERTY()
+	FTownStoryState Story;
 };
 
 /**
@@ -244,6 +249,13 @@ public:
 	/** Who in the cage is dead, who has come in since, and what each has won, whichever way the player comes to it */
 	UPROPERTY(BlueprintReadOnly, Category="Gut")
 	FGutRosterState Roster;
+
+	/**
+	 *  What the town knows of the player: how it stands with each of its powers, the work it has taken, what became of
+	 *  whoever it dealt with. Kept with the run. -GutStoryAfresh on the command line forgets it when the game opens.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category="Gut")
+	FTownStoryState Story;
 
 	/** How many of something are in the bag, and puts so many more in it, or takes them out */
 	int32 GetBagCount(FName Good) const;

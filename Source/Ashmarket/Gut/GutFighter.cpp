@@ -339,6 +339,23 @@ void AGutFighter::Tick(float DeltaTime)
 		UpdateBeast(DeltaTime);
 	}
 
+	// Somebody stood at ease as they were made has their clothes begin as they hang on somebody standing, and not as they
+	// were thrown by the body being posed for the first time: twice, a few frames apart, once the body has been posed
+	if (bAtEase && BodyActor && ClothSettles < 2 && ++ClothFrames >= (ClothSettles == 0 ? 3 : 14))
+	{
+		static const bool bLeave = FParse::Param(FCommandLine::Get(), TEXT("GutNoClothSettle"));
+
+		for (UActorComponent* Component : bLeave ? TSet<UActorComponent*>() : BodyActor->GetComponents())
+		{
+			if (USkeletalMeshComponent* Part = Cast<USkeletalMeshComponent>(Component))
+			{
+				Part->ForceClothNextUpdateTeleportAndReset();
+			}
+		}
+
+		++ClothSettles;
+	}
+
 	// with a body of its own the chain is moved when that body has been posed, which is later in the frame than this
 	if (!HasBody())
 	{
@@ -4755,7 +4772,7 @@ bool AGutFighter::GetClearShape(FGutClearShape& OutShape)
 	const bool bHangs = bArmsHang && bAtEase && !bCelebrating && State == EGutFighterState::Idle && !(Weapon && Weapon->Mesh)
 		&& GetVelocity().SizeSquared2D() < FMath::Square(20.0f) && LedVelocity.IsNearlyZero();
 
-	HangInShown = FMath::FInterpConstantTo(HangInShown, bHangs ? 1.0f : 0.0f, GetWorld()->GetDeltaSeconds(), 2.2f);
+	HangInShown = IsNewlyAtEase() ? (bHangs ? 1.0f : 0.0f) : FMath::FInterpConstantTo(HangInShown, bHangs ? 1.0f : 0.0f, GetWorld()->GetDeltaSeconds(), 2.2f);
 
 	OutShape.HangIn = HangInShown;
 	OutShape.HangGap = ArmHangGap;

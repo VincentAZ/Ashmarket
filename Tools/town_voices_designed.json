@@ -19,10 +19,35 @@
   "first_said": "Main Street is open as far as the Gate Yard. The armorers and the gunsmith are down it, if you have business with either. Keep your hands where the Chainmen can see them.",
   "generated_voice_id": "VzsLobvU2GmlJwxzIh8E"
  },
+ "Main Street/A cart hand": {
+  "description": "A water-cart hand in his late fifties, at the end of a long day. Dry, low, quick, conspiratorial: he talks out of the side of his mouth as if somebody might be listening, and enjoys knowing something you do not. A worn, slightly cracked voice. Plain working American speech. Not a narrator: close, sly, real.",
+  "first_said": "Pump cart, east branch. Tag, litre. I am the last: there is nobody behind me but the dark. You did not hear it from a cart hand. The east tank is down a hand's width since Tuesday, and nobody has drawn from it. Work that out. Ring your bell, reader. That is the day.",
+  "generated_voice_id": "YhTi3TzYJuAcoxWTsMXY"
+ },
+ "Main Street/A collector": {
+  "description": "A slave-taker in his forties, back from a night's work in the desert. Soft-spoken, smooth, contemptuous, smiling as he talks, in no hurry at all: the voice of a man nobody has said no to in years. Low and a little oily, with a faint Mexican Spanish accent. Not a villain in a film: quiet, close, real.",
+  "first_said": "Chainmen. I do not pay at the lane. The Block settles with the post by the month. Ask your sergeant, when you have been here longer than an hour. A litre. I will remember a litre. Harrow remembers them for me. Quick learner.",
+  "generated_voice_id": "oPX4mJrJpVbBwZv92J29"
+ },
+ "Main Street/A hauler": {
+  "description": "A big haulage man in his fifties who has carried loads across a desert all his life. A deep, rough, good-humoured voice, short of breath from the walk, unhurried, with dust in it. Plain working American speech. Not a narrator: close, easy, real.",
+  "first_said": "Guild hauler. Ridgeline to the Flats and back, since before you had that brand. Tag is on the cord. Litre is in my hand. Wind. A convoy stuck on the salt with its lights off, and people out there who are waiting for the lights to go on. Same as every night. New reader. Do not let them rush you. The ones who rush you are the ones to read twice.",
+  "generated_voice_id": "KAgrFHrFxz1AUyMJbkff"
+ },
+ "Main Street/A woman with no litre": {
+  "description": "A woman in her late twenties at a checkpoint at night with no money for the toll. Quick, anxious, a little high, trying to sound reasonable and not quite managing it, talking too fast. Plain American speech. Not an actress: close, breathy, frightened underneath, real.",
+  "first_said": "Tag is good. It is good, look at it. I have not got the litre. I had it this morning. I can bring it down tomorrow, first thing, I swear on the pipe. Out there? At night? You know what is out there at night. You... all right. I will not forget who did that. Tomorrow. First thing. Thank you.",
+  "generated_voice_id": "p7Lzx35NkvMEESXUHlYe"
+ },
  "Main Street/Brass": {
   "description": "A big older woman in her sixties with an unusually deep contralto voice, deeper than most men's: husky, rumbling, slow and heavy, rough from forty years of cigarettes. A gunsmith who trades from the back of a truck in a desert shanty town. Very few words and none wasted. Plain working American speech. Not an announcer and not a narrator: curt, close, real.",
   "first_said": "Scrap, tuned or relic. Scrap is cheap because you'll be back. Relic is dear because you won't. Nothing the Gut lets through its door. Hasp racks what you fight with, and Hasp does not take mine. When you have a tag and a reason, come back and I will find you a tool. Ten litres a fight to wear them, from Butcher rank. The offer comes to your card at the Gut. I do not chase fighters down the street.",
   "generated_voice_id": "e6P9FwLrqIQU2rhF6K8C"
+ },
+ "Main Street/Calla Wynn": {
+  "description": "A woman in her mid thirties, a field medic who has walked four days across a salt desert with almost no water. A low, steady, educated voice gone hoarse and dry with thirst, holding fear down by an effort, careful with every word. Warm underneath. Plain American speech. Not an actress and not a narrator: close, tired, real.",
+  "first_said": "Lot nine, tomorrow. Medic, it says on the card. Eighteen litres and six for the skill. I set bones. You read a stamp, and now I am twenty-four litres of somebody else's. They did not find the twelve litres on me. I told the clerk a reader had it. She wrote that down. She writes everything down. Calla Wynn. Medic. Twelve litres on me, and I can set a bone. The tag is good. It is good. A man at the Drive-In. Everything I had but the twelve. He said it was off the Pump's own die. I have walked four days on that. Please. All of it? That is... here. That is everything. Now let me by. I set bones. I would have set yours. Thirty litres. For somebody you have known for a minute. Wynn. Remember it. I will remember yours. Thank you. I will not forget the lane, or who was reading on it. You are worse than the man at the Drive-In. He at least sold me something. You took it and... of course. Of course you did. You. Sit down. No, sit. Somebody who fights for Rask does not get to say he is fine.",
+  "generated_voice_id": "ucQYf5mK0YM3KktPkvaD"
  },
  "Main Street/Carrier": {
   "description": "A young woman of about twenty-five who hauls a water cart through a night market in a desert shanty town. A clear, bright, strong young voice, higher than the older women around her and with no rasp in it at all, a little out of breath from the work, blunt and wary. She says each thing like a rule she is tired of repeating. Plain working American speech. Not a narrator: short, guarded, real.",
@@ -39,6 +64,11 @@
   "first_said": "Gate Yard is shut to foot traffic until the bell. You can see the gate from here, and that is as near as you get tonight.",
   "generated_voice_id": "fSK78hEpQirnffciwN72"
  },
+ "Main Street/Lane Warden": {
+  "description": "A heavy militia guard in his thirties, bored on a night post in a desert shanty town. A thick, slow, nasal voice, sardonic, a little out of breath, amused at his own bad luck. Plain working American speech. Not an announcer: close, offhand, mumbled, real.",
+  "first_said": "Wagon lane. Nothing on wheels comes up after dark, so I am guarding a hole. Foot lane is the other side of the barrier.",
+  "generated_voice_id": "6ChqpftjCEEiCcjg3e4F"
+ },
  "Main Street/Needle": {
   "description": "A woman in her late thirties who fits armor at a workshop counter in a desert shanty town. Low for a woman, level and sharp, sizing you up while she talks, and she says a thing once. Dry, a little smoky, practical, faintly scornful of anybody who has not been hit yet. Plain working American speech. Not a narrator: close, matter-of-fact, real.",
   "first_said": "Arms up. Turn. You stand like somebody who gets hit on the left. We cut ring armor for the Gut: tire rubber for what is swung at you, road sign for what is edged. Water in hand. Nothing here goes on a slate. Rubber takes the weight out of a club or a chain. Sign plate turns an edge. Nothing does both. Find out who you are fighting, and then find out what they carry.",
@@ -48,6 +78,11 @@
   "description": "A woman in her fifties who sells scrap from a table at a night market in a desert shanty town. A faint Korean accent. Sly, dry, quick, quietly amused at her own jokes and never smiling when she says them. A thin, slightly hoarse voice. Not a narrator and not an actress: offhand, close, real.",
   "first_said": "If it is on the table it is for sale. If it is under the table it is sold. If it is yours, you should have kept hold of it.",
   "generated_voice_id": "OOIFmml1w1PJaQUUPaeq"
+ },
+ "Main Street/Sergeant Rook": {
+  "description": "A militia sergeant in his late forties who runs the gate of a desert shanty town at night. A level, dry, unhurried baritone with a little gravel in it. Exact with words and sparing with them; he never raises his voice and never needs to. A man who has counted heads for twenty years, has never taken a bribe, and is tired of being the only one. Plain working American speech with a trace of the rural Southwest. Not an announcer and not a narrator: close, quiet, matter-of-fact, real.",
+  "first_said": "Gate Post. Tags are read here and tolls are taken here, and at the bell the gate comes down. If you were thinking of going out, you are not. Not tonight. You are off Rask's ladder. I know the brand. I am a reader short on the foot lane, and there is an hour of people still to come up that tunnel before the bell. One shift. Twenty-five litres, and a share of the tin. Everybody who comes up shows a tag. You read it. A litre a head goes in the tin. No tag is property: you stand them by the post, and I send them up the stair. Nobody goes through on a story. That is all of it, and you would be surprised how few can do it. Foot lane. East side of the barrier, at its head. They come up one at a time. Read the tag, take the litre, send them on. Bring me the count when the last of them is through. The lane is that way. The count comes to me when the last of them is through, and not before. That is the last of them. Count. Then it is right. A fifth of the tin is the reader's.",
+  "generated_voice_id": "J8DqcheqgGQ5oHaJ4rMt"
  },
  "Main Street/Stallholder": {
   "description": "A woman in her sixties who sells bread from a market stall at night in a desert shanty town. Warm but loud, a market voice cracked from calling over a crowd, brisk and motherly and not to be argued with. Plain working American speech. Not an announcer and not a narrator: busy, rough, real.",
