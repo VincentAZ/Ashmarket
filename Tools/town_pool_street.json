@@ -13,7 +13,8 @@
 
  "arrivals": [
   {"name": "from_square", "x": 5.6, "y": 176.4, "facing": 90},
-  {"name": "from_yard", "x": 78.0, "y": 199.4, "facing": 180}
+  {"name": "from_yard", "x": 78.0, "y": 199.4, "facing": 180},
+  {"name": "from_row", "x": 4.6, "y": 175.2, "facing": 90}
  ],
 
  "errand": [
@@ -22,7 +23,8 @@
   "To fight: the fighters' door, in the Lockers' front.",
   "To bet: Chalk's window, up Cold Alley.",
   "To own: the yard hand, at the top of Cold Alley.",
-  "The Block is selling tonight: west, past the Warden."
+  "The Block is selling tonight: west, past the Warden.",
+  "Rotgut Row, where the town drinks: on west, off the end of the street."
  ],
 
  "surfaces": {
@@ -68,8 +70,10 @@
    "along": "x", "from": 49.0, "to": 116.0, "face": 169.5, "side": "south"},
   {"label": "SquareCorner", "model": ["town_container_red"], "yaw": 90, "high": 1,
    "along": "x", "from": 9.9, "to": 35.1, "face": 168.8, "side": "south"},
-  {"label": "MainStreetFar", "model": ["town_container_blue", "town_container_red"], "yaw": 0, "high": 2,
-   "along": "y", "from": 162.4, "to": 185.4, "face": 1.7, "side": "west"},
+  {"label": "MainStreetFarNorth", "model": ["town_container_red"], "yaw": 0, "high": 2, "along": "y", "from": 178.3, "to": 185.4, "face": 1.7, "side": "west",
+   "note": "the stack that shut the street's west end, with the way to the Row left between it and the next"},
+  {"label": "MainStreetFar", "model": ["town_container_blue"], "yaw": 0, "high": 2,
+   "along": "y", "from": 162.4, "to": 171.6, "face": 1.7, "side": "west"},
   {"label": "ScrappersFar", "model": ["town_container_blue", "town_container_red"], "yaw": 180, "high": 2,
    "along": "y", "from": 163.0, "to": 186.0, "face": 119.8, "side": "east"}
  ],
@@ -204,7 +208,9 @@
   {"prompt": "Go in at the fighters' door", "x": 95.0, "y": 179.4, "deed": "fight"},
   {"prompt": "Try the public gate", "x": 81.2, "y": 201.2, "shut": "Chained. It opens to the public on fight nights."},
   {"prompt": "Try the Scrappers' gate", "x": 110.9, "y": 176.1, "shut": "Shut for the night. The yard beyond is dark."},
-  {"prompt": "Down the lane to Block Square", "x": 5.3, "y": 171.75, "deed": "go", "to": "/Game/Town/Lvl_BlockSquare", "arrive": "from_pool_street", "walk_through": true, "mouth": {"x": [2.0, 8.4], "y": [171.3, 172.4]}}
+  {"prompt": "Down the lane to Block Square", "x": 5.3, "y": 171.75, "deed": "go", "to": "/Game/Town/Lvl_BlockSquare", "arrive": "from_pool_street", "walk_through": true, "mouth": {"x": [2.0, 8.4], "y": [171.3, 172.4]}},
+  {"prompt": "West, under the overpass, to Rotgut Row", "x": 2.2, "y": 175.2, "deed": "go", "to": "/Game/Town/Lvl_RotgutRow", "arrive": "from_pool_street", "walk_through": true,
+   "mouth": {"x": [1.5, 2.5], "y": [172.8, 177.9]}}
  ],
  "finds_about": "What lies about to be found and picked up (E, or X): a good by the name the town knows it by, where it lies on the map, and which way it is turned. Each is there once: picked up, it is in the bag and gone from the street for good.",
  "finds": [

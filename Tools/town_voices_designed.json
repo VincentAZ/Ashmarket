@@ -127,5 +127,25 @@
   "description": "A man in his thirties who works the yard gate behind a pit-fighting cage in a desert shanty town. A light Mexican Spanish accent, easy and low, a little tired, friendly enough but watching you. Short sentences, no hurry, talks out of the side of his mouth. Not an announcer and not a narrator: offhand, a little mumbled, real.",
   "first_said": "Alley's shut past the fence. Owners go round to the yard gate, and I walk them. You an owner? Then you wait here like everybody else.",
   "generated_voice_id": "3lwppkZo7aWctrr0mn4Y"
+ },
+ "Rotgut Row/A new keeper": {
+  "description": "A hard woman in her forties who has just taken over a market stall she did not build, in a desert shanty town. Clipped, smug, a little bored; a thin sharp voice with nothing friendly in it. Plain American speech. Not a narrator: close, curt, real.",
+  "first_said": "Fen? Fen lost the pitch. The post said short, and the Row heard it. I pay three tenths, not four, and the cup is what it costs now. Buying or looking?",
+  "generated_voice_id": "PpTP5zyzx1gqELSgaw1q"
+ },
+ "Rotgut Row/Big Lottie": {
+  "description": "A big woman of fifty who keeps a drum-top bar and a chalk fighting ring in a desert shanty town. A deep, warm, loud voice gone rough from years of shouting over drinkers: slow, amused, entirely sure of herself, with a West African lilt under plain English. She is the biggest person in any room and has never had to prove it. Not an announcer and not a narrator: close, easy, real.",
+  "first_said": "The Sump. A cup is a cup and a fight in my ring is two cups to watch. You look like you have been in a ring with a floor. Mine is chalk, and people get up out of it. The post's cut, and a new face to carry it. Twelve. Count it where I can see you count it. Tell your sergeant The Sump has never once been short. And when you get up the Row, look at who is.",
+  "generated_voice_id": "A514cn84orkzquhxQ6ZO"
+ },
+ "Rotgut Row/Fen": {
+  "description": "A man in his early thirties who buys stolen things at a tarp stall at night in a desert shanty town. Quiet, quick and dry; he talks low and fast, out of the side of his mouth, and never says more than the trade needs. A light, slightly nasal voice, tired and wary. Plain American speech. Not a narrator: close, guarded, real.",
+  "first_said": "Tarp Nine. I buy things. I do not ask where a thing has been, and you do not ask where it goes. Four tenths of what it is worth, and that is generous on this Row. The cut. Yes. Somebody came down off the lip in the night and took the tin, and what was in the tin, and the cut was in the tin. I have stock. I have no water. Somebody who knew which night the tin was full. Ask Mash. She sees this lip from the bus, and she does not sleep. Nobody does that. Not on this Row. There is a cot behind the tarp: if you ever need not to be found for a night, it is yours. Stop. Stop. Here. That was to buy next week's stock. You have closed Tarp Nine a week early, and you may tell your sergeant so. Mash told me who, and that you got it out of him. So the post robs me at night and collects from me in the morning. Still. You did not have to. The cot is behind the tarp. Nobody asks at Tarp Nine. That is the whole trade.",
+  "generated_voice_id": "DrecK5NVgPqXKqXT8Rub"
+ },
+ "Rotgut Row/Mash": {
+  "description": "A woman of thirty-eight who distils rough liquor and runs a bar out of an old school bus in a desert shanty town. Hoarse, flat and practical, with a smoker's roughness; she has not slept properly in years and misses nothing. Dry humour, no warmth wasted. Plain working American speech with a trace of Mexican Spanish. Not a narrator: close, tired, real.",
+  "first_said": "Detention. Everything anybody drinks in this town came out of my tubs, the Last Call's included, whatever she tells you it is. Sit down or move along. The bus is full. Twelve, on the counter. Detention pays on the night. I cannot afford a Warden who does not like me. You will find Tarp Nine lighter than you want it. That was not Fen's doing. Who robbed Fen? I see the whole west lip from this bus, and I do not sleep. Boots, not sandals. A vest with plates in it. Heavy, and breathing like the walk up the cut was the most he had done all week. Whoever stands at your gate with nothing to do.",
+  "generated_voice_id": "ndqYaFovuLx8dg086ugx"
  }
 }

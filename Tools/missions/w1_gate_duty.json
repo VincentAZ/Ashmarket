@@ -1,5 +1,5 @@
 {
- "about": "W1, Gate duty (for-review/design/faction-quests.md, 2.2). One shift on the foot lane in the Gate Yard for Sergeant Rook: five come up the tunnel before the bell, and the fourth is Calla Wynn, a medic with a forged tag. Marks: w1 (1 offered and heard, 2 on the lane, 100 done), w1.q (who is at the head of the lane: 1 to 5, 6 when the last is through), w1.toll (litres in the tin), w1.short (people through with no litre taken), wynn (1 held by the book, 2 bought a real tag, 3 waved through, 4 her water taken and then held), wynn.took (her 12 L taken). Rook is at the Gate Yard here and not off shift at the Last Call, which is not built.",
+ "about": "W1, Gate duty (for-review/design/faction-quests.md, 2.2). One shift on the foot lane in the Gate Yard for Sergeant Rook: five come up the tunnel before the bell, and the fourth is Calla Wynn, a medic with a forged tag. Marks: w1 (1 offered and heard, 2 on the lane, 100 done), w1.q (who is at the head of the lane: 1 to 5, 6 when the last is through), w1.toll (litres in the tin), w1.short (people through with no litre taken), wynn (1 held by the book, 2 bought a real tag, 3 waved through, 4 her water taken and then held), wynn.took (her 12 L taken). Rook is at the Gate Yard here and not off shift at the Last Call, which is not built. Rook and Calla Wynn have bodies of their own since 25 November (TOWN in Tools/build_gut_metahuman.py).",
  "key": "w1",
  "name": "Gate duty",
  "faction": "wardens",
@@ -92,7 +92,7 @@
       {"id": "pays", "words": "A litre. I will remember a litre. Harrow remembers them for me."},
       {"id": "through", "words": "Quick learner."}]},
 
-    {"name": "Calla Wynn", "prompt": "Read her tag", "body": "Try02", "cloth": [0.08, 0.075, 0.065], "x": 1.75, "y": 5.4, "facing": 0, "stand": "stand_f",
+    {"name": "Calla Wynn", "prompt": "Read her tag", "body": "Wynn", "cloth": [0.08, 0.075, 0.065], "x": 1.75, "y": 5.4, "facing": 0, "stand": "stand_f",
      "when": "w1=2 w1.q=4",
      "ways": {"in": {"points": [[1.75, -25.0], [1.75, -19.5], [1.75, 0.6]]}, "through": {"points": [[1.75, 9.5], [2.0, 22.0], [2.0, 41.0], [2.0, 126.0]]}, "held": {"points": [[4.2, 6.6], [8.2, 3.4], [10.9, 1.3]]}},
      "lines": [
@@ -125,14 +125,14 @@
       {"id": "water", "words": "You did not hear it from a cart hand. The east tank is down a hand's width since Tuesday, and nobody has drawn from it. Work that out."},
       {"id": "level", "words": "Ring your bell, reader. That is the day."}]},
 
-    {"name": "Calla Wynn", "prompt": "Talk to Calla Wynn", "body": "Try02", "cloth": [0.08, 0.075, 0.065], "x": 6.4, "y": 87.6, "facing": 260, "stand": "stand_f",
+    {"name": "Calla Wynn", "prompt": "Talk to Calla Wynn", "body": "Wynn", "cloth": [0.08, 0.075, 0.065], "x": 6.4, "y": 87.6, "facing": 260, "stand": "stand_f",
      "when": "w1>=100 wynn=2",
      "lines": [
       {"id": "medic", "opens": true, "when": "!wynn.thanked", "words": "You. Sit down. No, sit. Somebody who fights for Rask does not get to say he is fine. I have slats and binding, and you have thirty litres of credit with me that I intend to work off.",
        "does": "bag.splint+1 wynn.thanked=1", "log": "Calla Wynn, tagged and working on Main Street, gave me a splint."},
       {"id": "later", "opens": true, "when": "wynn.thanked", "words": "The stall lets me work by her fire. When you are hurt, come to me before you go to the cutter. He charges for the saw."}]},
 
-    {"name": "Calla Wynn", "prompt": "Talk to the woman by the fire", "body": "Try02", "cloth": [0.08, 0.075, 0.065], "x": -7.25, "y": 119.6, "facing": 10, "stand": "shift_l",
+    {"name": "Calla Wynn", "prompt": "Talk to the woman by the fire", "body": "Wynn", "cloth": [0.08, 0.075, 0.065], "x": -7.25, "y": 119.6, "facing": 10, "stand": "shift_l",
      "when": "w1>=100 wynn=3",
      "lines": [
       {"id": "nobody", "opens": true, "when": "!wynn.took", "words": "I do not know you. I never came up any lane. But there are people under the dam who know who was reading that night, and they have long memories for a kindness."},
@@ -142,7 +142,7 @@
 
   "Block Square": {
    "people": [
-    {"name": "Calla Wynn", "prompt": "Talk to the woman held by the water cart", "body": "Try02", "cloth": [0.08, 0.075, 0.065], "x": 28.4, "y": 138.4, "facing": 270, "stand": "stand_f", "collared": true,
+    {"name": "Calla Wynn", "prompt": "Talk to the woman held by the water cart", "body": "Wynn", "cloth": [0.08, 0.075, 0.065], "x": 28.4, "y": 138.4, "facing": 270, "stand": "stand_f", "collared": true,
      "when": "w1>=100 wynn=1|wynn=4",
      "lines": [
       {"id": "held", "opens": true, "when": "wynn=1", "words": "Lot nine, tomorrow. Medic, it says on the card. Eighteen litres and six for the skill. I set bones. You read a stamp, and now I am twenty-four litres of somebody else's."},

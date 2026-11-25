@@ -21,7 +21,7 @@ MAPS = {"Diffuse": "basecolor", "nor_gl": "normal", "Rough": "roughness", "Metal
 
 
 def get(url, path=None):
-    request = urllib.request.Request(url, headers={"User-Agent": "ashmarket-prototype"})
+    request = urllib.request.Request(url, headers={"User-Agent": "asset-fetch/1.0"})
     with urllib.request.urlopen(request, timeout=120) as response:
         data = response.read()
     if path:

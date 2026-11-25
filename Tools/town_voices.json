@@ -46,6 +46,12 @@
   "Main Street/Calla Wynn#2": {"same_as": "Main Street/Calla Wynn"},
   "Main Street/Calla Wynn#3": {"same_as": "Main Street/Calla Wynn"},
   "Block Square/Calla Wynn": {"same_as": "Main Street/Calla Wynn"},
+  "Rotgut Row/Big Lottie": {"design": "A big woman of fifty who keeps a drum-top bar and a chalk fighting ring in a desert shanty town. A deep, warm, loud voice gone rough from years of shouting over drinkers: slow, amused, entirely sure of herself, with a West African lilt under plain English. She is the biggest person in any room and has never had to prove it. Not an announcer and not a narrator: close, easy, real."},
+  "Rotgut Row/Fen": {"design": "A man in his early thirties who buys stolen things at a tarp stall at night in a desert shanty town. Quiet, quick and dry; he talks low and fast, out of the side of his mouth, and never says more than the trade needs. A light, slightly nasal voice, tired and wary. Plain American speech. Not a narrator: close, guarded, real."},
+  "Rotgut Row/Mash": {"design": "A woman of thirty-eight who distils rough liquor and runs a bar out of an old school bus in a desert shanty town. Hoarse, flat and practical, with a smoker's roughness; she has not slept properly in years and misses nothing. Dry humour, no warmth wasted. Plain working American speech with a trace of Mexican Spanish. Not a narrator: close, tired, real."},
+  "Rotgut Row/A new keeper": {"design": "A hard woman in her forties who has just taken over a market stall she did not build, in a desert shanty town. Clipped, smug, a little bored; a thin sharp voice with nothing friendly in it. Plain American speech. Not a narrator: close, curt, real.",
+   "design_text": "Fen? Fen lost the pitch. The post said short, and the Row heard it. I pay three tenths, not four, and the cup is what it costs now. Buying or looking?"},
+  "Block Square/A Warden, sentenced": {"same_as": "Main Street/Lane Warden"},
   "Main Street/A cart hand": {"design": "A water-cart hand in his late fifties, at the end of a long day. Dry, low, quick, conspiratorial: he talks out of the side of his mouth as if somebody might be listening, and enjoys knowing something you do not. A worn, slightly cracked voice. Plain working American speech. Not a narrator: close, sly, real."}
  }
 }

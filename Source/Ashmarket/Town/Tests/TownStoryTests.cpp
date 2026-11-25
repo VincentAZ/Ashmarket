@@ -5,7 +5,11 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "GameFramework/HUD.h"
+#include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
 #include "Kismet/GameplayStatics.h"
@@ -15,6 +19,9 @@
  *  The town's story: its marks, what is asked of them and what changes them, and the work that is made of them.
  *
  *  Ashmarket.Town.Marks      what is asked of the marks and what is done to them, with no place needed but one to stand in
+ *  Ashmarket.Town.TheCut     the Wardens' second piece of work: taken from Rook, twelve litres from each of two bars
+ *                            on Rotgut Row, Tarp Nine found robbed, who robbed it learned from Mash and got back from
+ *                            him at the gate, and Rook told; then the other ways it can be counted to him
  *  Ashmarket.Town.GateDutyEnds   the other ways the shift can come out: she is held by the book, she is waved through
  *                            and the book finds it or does not, the tin is short, her water is taken and she is held anyway
  *  Ashmarket.Town.GateDuty   the Wardens' first piece of work, played through on the foot lane in the Gate Yard: taken
@@ -454,7 +461,10 @@ bool FTownGateDutyTest::RunTest(const FString& Parameters)
 
 		TestTrue(TEXT("Rook speaks of the next work"), Town->GetWords().Contains(TEXT("Row's cut")));
 
-		Town->Interact();
+		// (which he now has to give: it is left for another night)
+		Town->HandleBack();
+
+		TestFalse(TEXT("And can be left"), Town->IsTalking());
 	} });
 
 	// the town remembers: she is on Main Street, tagged, and pays it back
@@ -669,6 +679,429 @@ bool FTownGateDutyEndsTest::RunTest(const FString& Parameters)
 		Run->Story = Kept->Story;
 		Run->Bag = Kept->Bag;
 	}, []() { return IsStreetReady() && GetTown()->GetPeople()[Find(TEXT("Calla Wynn"), TEXT("w1.q=4"))] == nullptr; } });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownTheCutTest, "Ashmarket.Town.TheCut", GutTests::Flags)
+
+bool FTownTheCutTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	if (!AutomationOpenMap(StoryTests::MapPath, true))
+	{
+		AddError(TEXT("Could not open Main Street's level"));
+		return false;
+	}
+
+	TSharedRef<FKept> Kept = MakeShared<FKept>();
+
+	const auto In = [](const TCHAR* Name)
+	{
+		return [Name]() { return IsStreetReady() && GetTown()->GetPlace() && GetTown()->GetPlace()->Name == Name; };
+	};
+
+	// walks to another place of the town, arriving by one of its ways in
+	const auto GoTo = [](const TCHAR* Level, const TCHAR* Arrive)
+	{
+		UGutGameInstance* Run = GetRun();
+
+		Run->TownArrive = FName(Arrive);
+		Run->TownStood.Reset();
+
+		UGameplayStatics::OpenLevel(GetTown(), FName(Level), true);
+	};
+
+	// stands the player in reach of somebody, a little way off toward a side of them
+	const auto StandWith = [](const TCHAR* Name, const FVector2D& Off)
+	{
+		const ATownGameMode* Town = GetTown();
+		const int32 Who = Find(Name);
+
+		if (Who != INDEX_NONE)
+		{
+			const FVector Theirs = Town->GetPlace()->People[Who].Place;
+
+			StandOn(FVector2D(Theirs.X + Off.X, Theirs.Y + Off.Y), FVector(-Off.X, -Off.Y, 0.0f).Rotation().Yaw);
+		}
+
+		return Who;
+	};
+
+	TArray<FScript::FStep> Steps;
+
+	// somebody who has stood the gate shift, with 20 L
+	Steps.Add({ 0.5f, [Kept, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		Kept->bLadder = Run->bLadderStarted;
+		Kept->Ladder = Run->Ladder;
+		Kept->RungStart = Run->LadderAtRungStart;
+		Kept->Story = Run->Story;
+		Kept->Bag = Run->Bag;
+
+		Run->bStreetForced = true;
+		Run->Story = FTownStoryState();
+		Run->bLadderStarted = true;
+		Run->Ladder.Water = 20.0f;
+
+		Town->Apply(TEXT("w1=100 wynn=2 st.wardens=10"));
+
+		StandWith(TEXT("Sergeant Rook"), FVector2D(-185.0f, 0.0f));
+	}, In(TEXT("Main Street")) });
+
+	Steps.Add({ 1.0f, [this, GoTo]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Town->Tick(0.0f);
+		Town->Interact();
+
+		TestTrue(*FString::Printf(TEXT("With the shift stood, Rook has the Row's cut to be collected (%s)"), *Town->GetWords()), Town->GetWords().Contains(TEXT("The Row's cut is due")));
+		TestTrue(TEXT("Where the Row is can be asked"), Say(TEXT("Where is the Row")) && Town->GetWords().Contains(TEXT("under the overpass")));
+		TestTrue(TEXT("It is taken"), Say(TEXT("I will collect it")) && Town->GetMark(FName("w2")) == 2);
+
+		Town->Interact();
+
+		TestFalse(TEXT("And the talk ends"), Town->IsTalking());
+
+		GoTo(TEXT("/Game/Town/Lvl_RotgutRow"), TEXT("from_pool_street"));
+	} });
+
+	// the Row: The Sump pays
+	Steps.Add({ 0.8f, [this, StandWith]()
+	{
+		const ATownGameMode* Town = GetTown();
+
+		TestTrue(TEXT("The three who keep the bars are on the Row"), Find(TEXT("Big Lottie")) != INDEX_NONE && Find(TEXT("Fen")) != INDEX_NONE && Find(TEXT("Mash")) != INDEX_NONE
+			&& Town->GetPeople()[Find(TEXT("Big Lottie"))] && Town->GetPeople()[Find(TEXT("Fen"))] && Town->GetPeople()[Find(TEXT("Mash"))]);
+		TestTrue(TEXT("And nobody has Tarp Nine but Fen"), !Town->GetPeople()[Find(TEXT("A new keeper"))]);
+
+		StandWith(TEXT("Big Lottie"), FVector2D(0.0f, 140.0f));
+	}, In(TEXT("Rotgut Row")) });
+
+	Steps.Add({ 1.0f, [this, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Town->Tick(0.0f);
+
+		TestEqual(TEXT("Big Lottie, up on the lip, is in reach of somebody in the furrow"), Town->GetPersonInReach(), Find(TEXT("Big Lottie")));
+
+		Town->Interact();
+
+		TestTrue(*FString::Printf(TEXT("She has the cut ready (%s)"), *Town->GetWords()), Town->GetWords().Contains(TEXT("post's cut")));
+
+		GutTests::Screenshot(TEXT("57_big_lottie_and_the_cut"));
+	} });
+
+	Steps.Add({ 0.4f, [this, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		TestTrue(TEXT("Twelve from The Sump"), Say(TEXT("Twelve")) && Town->GetMark(FName("w2.sump")) == 1 && Town->GetMark(FName("w2.cut")) == 12);
+		TestEqual(TEXT("It is the post's water, and not the player's"), Town->GetMark(FName("water")), 20);
+
+		Town->Interact();
+
+		StandWith(TEXT("Mash"), FVector2D(-170.0f, 0.0f));
+	} });
+
+	// Detention pays; Tarp Nine has been robbed
+	Steps.Add({ 1.0f, [this, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Town->Tick(0.0f);
+		Town->Interact();
+
+		TestTrue(TEXT("Twelve from Detention"), Say(TEXT("Twelve")) && Town->GetMark(FName("w2.det")) == 1 && Town->GetMark(FName("w2.cut")) == 24);
+
+		Town->Interact();
+
+		StandWith(TEXT("Fen"), FVector2D(0.0f, 140.0f));
+	} });
+
+	Steps.Add({ 1.0f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Town->Tick(0.0f);
+		Town->Interact();
+
+		TestTrue(*FString::Printf(TEXT("Fen has been robbed (%s)"), *Town->GetWords()), Town->GetWords().Contains(TEXT("took the tin")) && Town->GetMark(FName("w2.fen")) == 1);
+		TestEqual(TEXT("There are four things to do about it"), Town->GetAnswers().Num(), 4);
+
+		GutTests::Screenshot(TEXT("57_fen_has_been_robbed"));
+	} });
+
+	Steps.Add({ 0.4f, [this, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		TestTrue(TEXT("Who took it can be asked"), Say(TEXT("Who took it")) && Town->GetMark(FName("w2.asked")) == 1 && Town->GetWords().Contains(TEXT("Ask Mash")));
+
+		Town->HandleBack();
+
+		TestFalse(TEXT("And Fen left, with nothing settled"), Town->IsTalking() || Town->GetMark(FName("w2.nine")) != 0);
+
+		StandWith(TEXT("Mash"), FVector2D(-170.0f, 0.0f));
+	} });
+
+	// Mash saw who; he is at the gate
+	Steps.Add({ 1.0f, [this, GoTo]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		Town->Tick(0.0f);
+		Town->Interact();
+
+		TestTrue(*FString::Printf(TEXT("Mash says who it was (%s)"), *Town->GetWords()), Town->GetWords().Contains(TEXT("A vest with plates in it")) && Town->GetMark(FName("w2.knows")) == 1);
+		TestEqual(TEXT("It is written down"), Run->Story.Journal.Num(), 2);
+
+		Town->Interact();
+
+		GoTo(TEXT("/Game/Town/Lvl_MainStreet"), TEXT("from_square"));
+	} });
+
+	Steps.Add({ 0.8f, [StandWith]()
+	{
+		StandWith(TEXT("Lane Warden"), FVector2D(180.0f, 0.0f));
+	}, In(TEXT("Main Street")) });
+
+	Steps.Add({ 1.0f, [this, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Town->Tick(0.0f);
+
+		TestEqual(TEXT("The Warden on the wagon lane is in reach"), Town->GetPersonInReach(), Find(TEXT("Lane Warden")));
+
+		Town->Interact();
+
+		TestTrue(*FString::Printf(TEXT("He knows why he is being spoken to (%s)"), *Town->GetWords()), Town->GetWords().Contains(TEXT("Fen's tin")));
+		TestTrue(TEXT("He hands it over"), Say(TEXT("Hand over the twelve")) && Town->GetMark(FName("w2.nine")) == 3 && Town->GetMark(FName("w2.cut")) == 36);
+
+		Town->Interact();
+
+		StandWith(TEXT("Sergeant Rook"), FVector2D(-185.0f, 0.0f));
+	} });
+
+	// the count: Rook is told whose vest it came out of
+	Steps.Add({ 1.0f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Town->Tick(0.0f);
+		Town->Interact();
+
+		TestTrue(TEXT("Rook asks for the count"), Town->GetWords().Contains(TEXT("Count")));
+		TestEqual(TEXT("There are three things that could be told him"), Town->GetAnswers().Num(), 3);
+		TestTrue(TEXT("He is told who"), Say(TEXT("your own man's vest")) && Town->GetWords().Contains(TEXT("Off my own shift")));
+		TestEqual(TEXT("He pays the walk"), Town->GetMark(FName("water")), 65);
+		TestEqual(TEXT("And thinks the better of who told him"), Town->GetMark(FName("st.wardens")), 25);
+		TestTrue(TEXT("The work is done, and a coat lent"), Town->GetMark(FName("w2")) == 100 && Town->GetMark(FName("coat")) == 1);
+		TestTrue(TEXT("The Warden who took it is walked off the lane"), Town->GetMark(FName("lanewarden.sold")) == 1 && Town->IsPersonLed(Find(TEXT("Lane Warden"))));
+
+		GutTests::Screenshot(TEXT("58_rook_is_told_who"));
+	} });
+
+	// the other ways it can be counted to him
+	struct FEnd
+	{
+		const TCHAR* Name;
+		const TCHAR* Stood;
+		int32 Throw;
+		const TCHAR* Told;
+		const TCHAR* Says;
+		int32 Held;
+		int32 Wardens;
+		const TCHAR* Then;
+	};
+
+	static const FEnd Ends[] =
+	{
+		{ TEXT("all three paid"), TEXT("w2.nine=2"), 3, TEXT("All three paid"), TEXT("a coat off the peg"), 45, 20, TEXT("coat") },
+		{ TEXT("Tarp Nine short"), TEXT(""), 3, TEXT("Twenty-four"), TEXT("a new keeper"), 30, 15, TEXT("fen.gone") },
+		{ TEXT("skimmed, and found out"), TEXT("w2.nine=1"), 1, TEXT("all short"), TEXT("a runner up the Row"), 0, -5, TEXT("w2.kept") },
+		{ TEXT("skimmed, and not found out"), TEXT("w2.nine=1"), 2, TEXT("all short"), TEXT("Short weeks happen"), 60, 20, TEXT("w2.kept") },
+	};
+
+	for (const FEnd& End : Ends)
+	{
+		Steps.Add({ 0.6f, [this, End]()
+		{
+			ATownGameMode* Town = GetTown();
+			UGutGameInstance* Run = GetRun();
+
+			if (Town->IsTalking())
+			{
+				Town->Interact();
+			}
+
+			Run->Story = FTownStoryState();
+			Run->Ladder.Water = 0.0f;
+
+			Town->Apply(FString(TEXT("w1=100 st.wardens=10 w2=2 w2.sump=1 w2.det=1 w2.fen=1 ")) + End.Stood);
+			Town->Thrown = End.Throw;
+
+			Town->Tick(0.0f);
+			Town->Interact();
+
+			TestTrue(*FString::Printf(TEXT("%s: he asks for the count"), End.Name), Town->GetWords().Contains(TEXT("Count")));
+			TestTrue(*FString::Printf(TEXT("%s: it can be told him so"), End.Name), Say(End.Told));
+
+			FString Last;
+
+			for (int32 i = 0; i < 6 && Town->IsTalking(); ++i)
+			{
+				Last = Town->GetWords();
+				Town->Interact();
+			}
+
+			TestFalse(*FString::Printf(TEXT("%s: the talk comes to an end"), End.Name), Town->IsTalking());
+			TestTrue(*FString::Printf(TEXT("%s: the last thing he says is the right one (%s)"), End.Name, *Last), Last.Contains(End.Says));
+			TestEqual(*FString::Printf(TEXT("%s: what the player holds"), End.Name), Town->GetMark(FName("water")), End.Held);
+			TestEqual(*FString::Printf(TEXT("%s: where the Wardens stand"), End.Name), Town->GetMark(FName("st.wardens")), End.Wardens);
+			TestTrue(*FString::Printf(TEXT("%s: the work is done, and %s is so"), End.Name, End.Then), Town->GetMark(FName("w2")) == 100 && Town->GetMark(FName(End.Then)) == 1);
+
+			Town->Thrown.Reset();
+		} });
+	}
+
+	// found out, he has no more work for whoever counted his water short to his face
+	Steps.Add({ 0.5f, [this, GoTo]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Town->Apply(TEXT("st.wardens=-5"));
+		Town->Tick(0.0f);
+		Town->Interact();
+
+		TestTrue(*FString::Printf(TEXT("Rook has nothing for somebody he caught (%s)"), *Town->GetWords()), Town->GetWords().Contains(TEXT("counted my water short")));
+
+		Town->Interact();
+
+		// and where Tarp Nine was short, it has changed hands
+		Town->Apply(TEXT("fen.gone=1"));
+
+		GoTo(TEXT("/Game/Town/Lvl_RotgutRow"), TEXT("from_pool_street"));
+	} });
+
+	Steps.Add({ 1.0f, [this, Kept]()
+	{
+		const ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		TestTrue(TEXT("Fen is gone from Tarp Nine, and somebody else has it"), !Town->GetPeople()[Find(TEXT("Fen"))] && Town->GetPeople()[Find(TEXT("A new keeper"))] != nullptr);
+
+		GutTests::Screenshot(TEXT("59_rotgut_row"));
+
+		Run->bLadderStarted = Kept->bLadder;
+		Run->Ladder = Kept->Ladder;
+		Run->LadderAtRungStart = Kept->RungStart;
+		Run->Story = Kept->Story;
+		Run->Bag = Kept->Bag;
+	}, In(TEXT("Rotgut Row")) });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Ashmarket.Look.RotgutRow   fixed views of the Row saved as pictures. Not part of a test run.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownLookRotgutRowTest, "Ashmarket.Look.RotgutRow", GutTests::Flags)
+
+bool FTownLookRotgutRowTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_RotgutRow"), true))
+	{
+		AddError(TEXT("Could not open Rotgut Row's level"));
+		return false;
+	}
+
+	// where each picture is taken from and what it looks at, in the map's own metres (x east, y north, z up)
+	struct FView
+	{
+		const TCHAR* Name;
+		FVector From;
+		FVector At;
+		float FieldOfView;
+	};
+
+	static const FView Views[] =
+	{
+		{ TEXT("row_01_coming_down_the_cut"), FVector(-38.6f, 294.0f, 10.7f), FVector(-46.0f, 300.0f, 10.6f), 70.0f },
+		{ TEXT("row_02_up_the_furrow"), FVector(-45.0f, 293.6f, 10.7f), FVector(-45.0f, 330.0f, 11.0f), 68.0f },
+		{ TEXT("row_03_the_sump"), FVector(-44.2f, 298.4f, 10.7f), FVector(-49.6f, 302.6f, 11.4f), 66.0f },
+		{ TEXT("row_04_under_the_wing"), FVector(-45.6f, 312.0f, 10.7f), FVector(-44.6f, 300.0f, 13.0f), 72.0f },
+		{ TEXT("row_05_tarp_nine"), FVector(-44.0f, 325.6f, 10.7f), FVector(-49.6f, 329.6f, 11.4f), 62.0f },
+		{ TEXT("row_06_detention"), FVector(-45.4f, 326.0f, 10.7f), FVector(-45.0f, 339.0f, 11.0f), 64.0f },
+		{ TEXT("row_07_back_down_to_the_tail"), FVector(-45.2f, 322.0f, 10.7f), FVector(-45.0f, 288.0f, 12.5f), 66.0f },
+		{ TEXT("row_08_east_stalls"), FVector(-46.6f, 305.0f, 10.7f), FVector(-40.2f, 309.0f, 11.3f), 66.0f },
+		{ TEXT("row_09_from_above"), FVector(-45.0f, 314.0f, 58.0f), FVector(-44.9f, 314.5f, 9.0f), 62.0f },
+		{ TEXT("row_10_from_the_west_bank"), FVector(-62.0f, 300.0f, 15.0f), FVector(-45.0f, 312.0f, 11.0f), 62.0f },
+	};
+
+	FString Only;
+	FParse::Value(FCommandLine::Get(), TEXT("GutLookOnly="), Only);
+
+	TSharedRef<TWeakObjectPtr<ACameraActor>> Camera = MakeShared<TWeakObjectPtr<ACameraActor>>();
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 10.0f, [Camera]()
+	{
+		ATownGameMode* Town = GetTown();
+		UWorld* World = Town->GetWorld();
+
+		*Camera = World->SpawnActor<ACameraActor>();
+
+		if (APlayerController* Eyes = World->GetFirstPlayerController())
+		{
+			Eyes->SetViewTarget(Camera->Get());
+
+			if (AHUD* Words = Eyes->GetHUD())
+			{
+				Words->bShowHUD = false;
+			}
+		}
+	}, []() { return IsStreetReady(); } });
+
+	for (const FView& View : Views)
+	{
+		if (!Only.IsEmpty() && !FString(View.Name).Contains(Only))
+		{
+			continue;
+		}
+
+		Steps.Add({ 0.1f, [Camera, View]()
+		{
+			const auto InLevel = [](const FVector& OnTheMap) { return FVector((OnTheMap.Y - 208.0f) * 100.0f, (OnTheMap.X - 95.0f) * 100.0f, (OnTheMap.Z - 3.0f) * 100.0f); };
+
+			if (ACameraActor* Seen = Camera->Get())
+			{
+				const FVector From = InLevel(View.From);
+
+				Seen->SetActorLocationAndRotation(From, (InLevel(View.At) - From).Rotation());
+				Seen->GetCameraComponent()->SetFieldOfView(View.FieldOfView);
+				Seen->GetCameraComponent()->SetConstraintAspectRatio(false);
+			}
+		} });
+
+		Steps.Add({ 1.2f, [View]() { GutTests::Screenshot(View.Name); } });
+	}
 
 	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
 

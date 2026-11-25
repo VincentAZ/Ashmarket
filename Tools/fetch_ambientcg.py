@@ -18,7 +18,7 @@ MAPS = {"Color": "basecolor", "Opacity": "opacity", "NormalDX": "normal", "Rough
 
 def fetch(asset, res):
     name = "{}_{}-JPG".format(asset, res)
-    request = urllib.request.Request("https://ambientcg.com/get?file={}.zip".format(name), headers={"User-Agent": "ashmarket-prototype"})
+    request = urllib.request.Request("https://ambientcg.com/get?file={}.zip".format(name), headers={"User-Agent": "asset-fetch/1.0"})
     with urllib.request.urlopen(request, timeout=300) as response:
         archive = zipfile.ZipFile(io.BytesIO(response.read()))
     folder = os.path.join(HERE, asset)

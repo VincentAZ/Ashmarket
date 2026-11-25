@@ -1,0 +1,168 @@
+{
+ "about": "Rotgut Row: the furrow the airliner plowed, north from the Last Call's tail (for-review/design/map-of-ashmarket.md, place 2). Read by Tools/build_town_level.py (GUT_TOWN_LIST=$PWD/Tools/town_rotgut_row.json Tools/build_town_level.sh). Places are in the map's own metres (x east, y north). Whoever walks is in the furrow, 1.2 m below the two lips the pitches stand on. BUILT SHORT: the map has the furrow 80 m long with fourteen pitches; this is its first 45 m with eight, the three named bars among them (The Sump under the wing, Tarp Nine, and Detention, the school bus across the north end). The wing, the tail, the drum bar and the tarp stall were made in Mixar for this place (ArtSource/mixar/row_*). Nothing lights it that is not seen to burn.",
+
+ "name": "Rotgut Row",
+ "level": "/Game/Town/Lvl_RotgutRow",
+ "data": "/Game/Town/DA_Town_RotgutRow",
+ "origin": {"x": 95.0, "y": 208.0, "z": 3.0},
+
+ "street_height": 9.0,
+ "alley": {"from_y": 1000.0, "rise_per_metre": 0.0},
+ "sky": {"x": -45.0, "y": 315.0, "z": 6.0, "size": 800},
+
+ "start": {"x": -40.0, "y": 294.0, "facing": 270},
+ "arrivals": [
+  {"name": "from_pool_street", "x": -40.0, "y": 294.0, "facing": 270}
+ ],
+
+ "beds": ["market"],
+
+ "errand": [
+  "ROTGUT ROW",
+  "The Sump, under the wing on the west bank: Big Lottie's.",
+  "Tarp Nine, further up on the west lip: Fen, who buys what is not asked about.",
+  "Detention, the bus across the top: Mash, who makes what the town drinks.",
+  "The cut in the east bank, by the tail: back to Pool Street."
+ ],
+
+ "surfaces": {
+  "Sand": {"from": "gravelly_sand", "size": 400},
+  "Earth": {"from": "dry_ground_01", "size": 360},
+  "Blockwork": {"from": "concrete_block_wall", "size": 200},
+  "Sheet": {"from": "rusty_corrugated_iron", "size": 200}
+ },
+
+ "ground": [
+  {"label": "Furrow", "x": [-47.5, -42.5], "y": [281.0, 341.0], "z": 9.0, "surface": "Sand"},
+  {"label": "Cut", "x": [-42.5, -30.0], "y": [292.6, 295.4], "z": 9.0, "surface": "Sand"},
+  {"label": "WestLip", "x": [-140.0, -47.5], "y": [220.0, 420.0], "z": 10.2, "surface": "Earth"},
+  {"label": "EastLipNorth", "x": [-42.5, 60.0], "y": [295.4, 420.0], "z": 10.2, "surface": "Earth"},
+  {"label": "EastLipSouth", "x": [-42.5, 60.0], "y": [220.0, 292.6], "z": 10.2, "surface": "Earth"},
+  {"label": "BeyondTheCut", "x": [-30.0, 60.0], "y": [292.6, 295.4], "z": 10.2, "surface": "Earth"},
+  {"label": "SouthOfTheFurrow", "x": [-47.5, -42.5], "y": [220.0, 281.0], "z": 10.2, "surface": "Earth"},
+  {"label": "NorthOfTheFurrow", "x": [-47.5, -42.5], "y": [341.0, 420.0], "z": 10.2, "surface": "Earth"}
+ ],
+
+ "walk_about": "The furrow's floor, and the cut in its east bank that carts are rolled down. The banks are what stop a walker: nobody climbs a lip.",
+ "walk": [
+  {"x": [-47.5, -42.5], "y": [292.6, 338.0]},
+  {"x": [-42.5, -38.0], "y": [292.6, 295.4]}
+ ],
+
+ "walls": [
+  {"label": "BankWest", "x": [-47.9, -47.5], "y": [281.0, 341.0], "height": 1.2, "surface": "Earth"},
+  {"label": "BankEastNorth", "x": [-42.5, -42.1], "y": [295.4, 341.0], "height": 1.2, "surface": "Earth"},
+  {"label": "BankEastSouth", "x": [-42.5, -42.1], "y": [281.0, 292.6], "height": 1.2, "surface": "Earth"},
+  {"label": "CutSouth", "x": [-42.5, -30.0], "y": [292.2, 292.6], "height": 1.2, "surface": "Earth"},
+  {"label": "CutNorth", "x": [-42.1, -30.0], "y": [295.4, 295.8], "height": 1.2, "surface": "Earth"}
+ ],
+
+ "rows": [],
+ "runs": [],
+
+ "things_about": "'z' is the height a thing stands at where that is not the furrow's floor: the lips are at 10.2. A model made facing Blender -Y faces east at yaw 0 and west at yaw 180; its long way then lies north and south.",
+ "things": [
+  {"model": "row_tail", "x": -45.0, "y": 286.4, "yaw": 0, "note": "the Last Call's tail and fin, at the furrow's south end: the rest of the wreck is beyond it and is not built"},
+  {"model": "row_wing", "x": -45.0, "y": 309.0, "z": 10.2, "yaw": 0, "hollow": true, "note": "the starboard wing on its oil-drum pillars, roofing the furrow's first stretch"},
+  {"model": "town_bus", "x": -45.0, "y": 339.7, "yaw": 90, "note": "Detention: the school bus across the north end"},
+
+  {"model": "row_drum_bar", "x": -49.7, "y": 307.9, "z": 10.2, "yaw": 0, "note": "The Sump, under the wing, between the second and third of its west pillars (the pillars stand at y 299.5, 304.7 and 311.1 on both lips)"},
+  {"model": "row_tarp_stall", "x": -49.8, "y": 330.0, "z": 10.2, "yaw": 0, "note": "Tarp Nine: pitch 9"},
+  {"model": "main_stall", "x": -49.8, "y": 314.6, "z": 10.2, "yaw": 0, "hollow": true, "note": "pitch 5"},
+  {"model": "main_stall", "x": -49.8, "y": 321.4, "z": 10.2, "yaw": 0, "hollow": true, "note": "pitch 7"},
+  {"model": "main_stall", "x": -40.2, "y": 302.1, "z": 10.2, "yaw": 180, "hollow": true, "note": "pitch 2"},
+  {"model": "main_stall", "x": -40.2, "y": 307.9, "z": 10.2, "yaw": 180, "hollow": true, "note": "pitch 4"},
+  {"model": "main_stall", "x": -40.2, "y": 318.6, "z": 10.2, "yaw": 180, "hollow": true, "note": "pitch 6"},
+  {"model": "main_stall", "x": -40.2, "y": 327.6, "z": 10.2, "yaw": 180, "hollow": true, "note": "pitch 8"},
+
+  {"model": "main_fire_drum", "x": -43.2, "y": 306.0, "yaw": 20, "light": {"candela": 2600, "reach": 9, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "shadows": true, "note": "the fire by The Sump's ring"}},
+  {"model": "main_fire_drum", "x": -43.1, "y": 322.6, "yaw": 70, "light": {"candela": 2400, "reach": 9, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "note": "a fire half way up the Row"}},
+  {"model": "main_fire_drum", "x": -46.8, "y": 335.4, "yaw": 140, "light": {"candela": 2600, "reach": 9, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "shadows": true, "note": "the fire in front of Detention"}},
+
+  {"model": "main_fire_drum", "x": -49.4, "y": 326.4, "z": 10.2, "yaw": 200, "light": {"candela": 1800, "reach": 8, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "note": "and one where Fen stands"}},
+  {"model": "main_fire_drum", "x": -41.2, "y": 296.8, "z": 10.2, "yaw": 0, "light": {"candela": 2600, "reach": 10, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "shadows": true, "note": "the fire at the head of the cut: the way in is lit"}},
+  {"model": "main_lantern", "x": -49.3, "y": 306.3, "z": 11.33, "yaw": 30, "light": {"candela": 1100, "reach": 7, "colour": "lantern", "flicker": true, "off": 0.0, "note": "The Sump's lantern, on the end of the counter"}},
+  {"model": "main_fire_drum", "x": -41.4, "y": 290.6, "z": 10.2, "yaw": 100, "light": {"candela": 3000, "reach": 12, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "shadows": true, "note": "a fire on the bank by the tail: the wreck is seen"}},
+  {"model": "Barrel_01", "x": -46.9, "y": 291.9, "note": "what stands either side of the tail's tip, so that the end of the furrow is something seen"},
+  {"model": "wooden_crate_02", "x": -46.1, "y": 291.8, "yaw": 20},
+  {"model": "barrel_03", "x": -43.2, "y": 291.9},
+  {"model": "old_tyre", "x": -44.0, "y": 291.8},
+  {"model": "main_lantern", "x": -48.9, "y": 328.8, "z": 11.2, "yaw": 200, "light": {"candela": 700, "reach": 5, "colour": "lantern", "flicker": true, "off": 0.0, "note": "Tarp Nine's lantern"}},
+  {"model": "main_lantern", "x": -41.1, "y": 301.5, "z": 11.1, "yaw": 90, "light": {"candela": 600, "reach": 5, "colour": "lantern", "flicker": true, "off": 0.0, "note": "pitch 2"}},
+  {"model": "main_lantern", "x": -41.1, "y": 318.0, "z": 11.1, "yaw": 250, "light": {"candela": 600, "reach": 5, "colour": "lantern", "flicker": true, "off": 0.0, "note": "pitch 6"}},
+  {"model": "main_lantern", "x": -48.9, "y": 315.2, "z": 11.1, "yaw": 120, "light": {"candela": 600, "reach": 5, "colour": "lantern", "flicker": true, "off": 0.0, "note": "pitch 5"}},
+
+  {"model": "plastic_monobloc_chair_01", "x": -46.6, "y": 300.4, "yaw": 300},
+  {"model": "plastic_monobloc_chair_01", "x": -43.3, "y": 309.6, "yaw": 250},
+  {"model": "metal_stool_02", "x": -43.3, "y": 334.6, "yaw": 10},
+  {"model": "metal_stool_02", "x": -44.3, "y": 335.9, "yaw": 80},
+  {"model": "wooden_crate_02", "x": -43.0, "y": 304.2, "yaw": 15},
+  {"model": "plastic_crate_02", "x": -43.2, "y": 312.5, "yaw": 60},
+  {"model": "plastic_jerrycan", "x": -46.9, "y": 317.3, "yaw": 100},
+  {"model": "plastic_bottle_gallon", "x": -43.1, "y": 328.7, "yaw": 200},
+  {"model": "can_rusted", "x": -45.6, "y": 310.4, "yaw": 40},
+  {"model": "can_rusted", "x": -44.2, "y": 325.1, "yaw": 310},
+  {"model": "trashbag", "x": -47.0, "y": 324.3, "yaw": 0},
+  {"model": "Barrel_01", "x": -43.0, "y": 336.9},
+  {"model": "barrel_03", "x": -47.0, "y": 337.2},
+  {"model": "old_tyre", "x": -43.0, "y": 297.2}
+ ],
+
+ "pictures": [],
+ "pasted": [],
+
+ "bulbs_about": "Bare bulbs strung under the wing off somebody's generator, hung where they are: the wing's own shadow is the Row's roof.",
+ "bulbs": [
+  {"x": -45.0, "y": 299.0, "up": 4.2, "candela": 1300, "reach": 9, "hung": true, "note": "under the wing, 1"},
+  {"x": -45.4, "y": 306.0, "up": 4.2, "candela": 1300, "reach": 9, "hung": true, "shadows": true, "note": "under the wing, over the ring"},
+  {"x": -44.6, "y": 313.0, "up": 4.2, "candela": 1100, "reach": 9, "hung": true, "note": "under the wing, 3"},
+  {"x": -45.0, "y": 320.0, "up": 4.2, "candela": 1100, "reach": 9, "hung": true, "note": "under the wing, at its tip"},
+  {"x": -45.0, "y": 337.2, "up": 3.0, "candela": 1500, "reach": 9, "hung": true, "shadows": true, "note": "over Detention's counter, off the bus's mirror arm"}
+ ],
+
+ "bystanders_about": "Drinkers, standing along the foot of each bank and looking at whoever is pouring: the middle of the furrow is left to whoever walks it.",
+ "bystanders": [
+  {"label": "AtTheSumpSouth", "count": 2, "x": [-46.2, -44.8], "y": [300.6, 303.2], "apart": 0.9, "look": [-48.15, 307.9]},
+  {"label": "AtTheSumpNorth", "count": 2, "x": [-46.9, -45.7], "y": [310.4, 312.6], "apart": 0.9, "look": [-48.15, 307.9]},
+  {"label": "EastStalls", "count": 2, "x": [-44.6, -43.2], "y": [312.0, 316.0], "apart": 1.0, "look": [-40.2, 318.6]},
+  {"label": "AtTarpNine", "count": 2, "x": [-47.2, -46.3], "y": [328.6, 331.4], "apart": 1.0, "look": [-49.8, 330.0]},
+  {"label": "AtDetention", "count": 4, "x": [-46.6, -43.4], "y": [334.2, 335.6], "apart": 1.0, "look": [-45.0, 338.2]}
+ ],
+
+ "people_about": "Big Lottie and Fen stand up on the west lip at its edge, beside their counters and over whoever is in the furrow ('on': on whatever is under them there): behind a counter they were out of anybody's reach. Mash is down in the furrow, in front of the bus. What they say when there is no work in hand is here; what a piece of work has them say is in its own list (Tools/missions/).",
+ "people": [
+  {
+   "name": "Big Lottie", "prompt": "Talk to Big Lottie, at The Sump", "body": "Lottie", "cloth": [0.07, 0.05, 0.04],
+   "x": -48.15, "y": 307.9, "facing": 90, "on": true, "stand": "hips",
+   "lines": [
+    {"id": "sump", "words": "The Sump. A cup is a cup and a fight in my ring is two cups to watch. You look like you have been in a ring with a floor. Mine is chalk, and people get up out of it."}
+   ]
+  },
+  {
+   "name": "Fen", "prompt": "Talk to Fen, at Tarp Nine", "body": "Fen", "cloth": [0.05, 0.05, 0.06], "when": "!fen.gone",
+   "x": -48.3, "y": 327.8, "facing": 90, "on": true, "stand": "stand",
+   "lines": [
+    {"id": "nine", "words": "Tarp Nine. I buy things. I do not ask where a thing has been, and you do not ask where it goes. Four tenths of what it is worth, and that is generous on this Row."}
+   ]
+  },
+  {
+   "name": "Mash", "prompt": "Talk to Mash, at Detention", "body": "Mash", "cloth": [0.06, 0.06, 0.05],
+   "x": -45.0, "y": 337.4, "facing": 180, "stand": "stand_f",
+   "lines": [
+    {"id": "bus", "words": "Detention. Everything anybody drinks in this town came out of my tubs, the Last Call's included, whatever she tells you it is. Sit down or move along. The bus is full."}
+   ]
+  }
+ ],
+
+ "doors": [
+  {"prompt": "Up the cut, and back to Pool Street", "x": -38.3, "y": 294.0, "deed": "go", "to": "/Game/Town/Lvl_PoolStreet", "arrive": "from_row", "walk_through": true,
+   "mouth": {"x": [-38.7, -37.9], "y": [292.6, 295.4]}},
+  {"prompt": "Look up at the Cot Room", "x": -47.2, "y": 308.6, "shut": "Two camper shells behind The Sump, with a blanket for a door and somebody paid to watch who looks at it."},
+  {"prompt": "Look in at the bus", "x": -43.4, "y": 337.6, "shut": "Twenty drinkers on the seats, and Mash's tubs where the driver sat. Full, as she said."}
+ ],
+
+ "finds": [
+  {"good": "smokes", "x": -43.2, "y": 316.4, "facing": 40},
+  {"good": "scrap", "x": -46.9, "y": 326.8, "facing": 200}
+ ]
+}

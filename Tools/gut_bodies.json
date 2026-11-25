@@ -9,6 +9,7 @@
  "Celeste": "woman",
  "Dominic": "man",
  "Etta": "woman",
+ "Fen": "man",
  "Grace": "woman",
  "Isaiah": "man",
  "Jelena": "woman",
@@ -16,6 +17,8 @@
  "Kelvin": "man",
  "Lani": "woman",
  "Lorenzo": "man",
+ "Lottie": "woman",
+ "Mash": "woman",
  "Mateo": "man",
  "Meat01": "man",
  "Meat02": "man",
@@ -54,6 +57,7 @@
  "Mix14": "man",
  "Omari": "man",
  "Orlando": "man",
+ "Rook": "man",
  "Sookja": "woman",
  "Sunita": "woman",
  "Trey": "man",
@@ -72,5 +76,6 @@
  "Victor": "man",
  "Vivian": "woman",
  "Walter": "man",
+ "Wynn": "woman",
  "Zuri": "woman"
 }
