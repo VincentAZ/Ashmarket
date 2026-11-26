@@ -223,6 +223,27 @@ void AGutHUD::DrawHUD()
 	const FGutSettlement& Settlement = GameMode->GetSettlement();
 	const FGutWindowSettlement& WindowSettlement = GameMode->GetWindowSettlement();
 
+	// somebody taken, dead, or gone: the last picture of a taking, whichever way it went. True if that is what this is.
+	const auto DrawTaken = [this, GameMode, Enemy, CenterX]()
+	{
+		if (!GameMode->IsTaking())
+		{
+			return false;
+		}
+
+		const FGutWho Who = GameMode->GetTakenWho();
+		const FString Name = Enemy ? Enemy->GetDisplayName().ToString() : FString(TEXT("Somebody"));
+		const int32 Outcome = GameMode->GetTakingOutcome();
+
+		DrawLabel(Outcome == 1 ? FString::Printf(TEXT("%s IS DOWN"), *Name.ToUpper()) : (Outcome == 2 ? FString::Printf(TEXT("%s IS DEAD"), *Name.ToUpper()) : FString::Printf(TEXT("%s GOT AWAY"), *Name.ToUpper())),
+			CenterX, 170.0f, 54, Outcome == 1 ? GutHUDColors::Text : GutHUDColors::Warning, true);
+		DrawLabel(Outcome == 1 ? FString::Printf(TEXT("%s is yours. Tie %s wrists and walk %s out."), Who.HeCap(), Who.His(), Who.Him())
+			: (Outcome == 2 ? FString(TEXT("You hit too hard. Nobody pays for that.")) : FString::Printf(TEXT("%s left you on the ground, and went through what you carry."), Who.HeCap())),
+			CenterX, 255.0f, 24, GutHUDColors::Text, true);
+
+		return true;
+	};
+
 	switch (Phase)
 	{
 	case EGutFightPhase::Card:
@@ -274,6 +295,19 @@ void AGutHUD::DrawHUD()
 		break;
 
 	case EGutFightPhase::Intro:
+
+		// somebody with no tag, run into a dead end: what is wanted of the player, said before a hand is raised
+		if (GameMode->IsTaking())
+		{
+			const FGutWho Who = GameMode->GetTakenWho();
+
+			DrawLabel(TEXT("THE DEAD END"), CenterX, 170.0f, 54, GutHUDColors::Text, true);
+			DrawLabel(FString::Printf(TEXT("No tag, and nowhere left to run. Beat %s down."), Who.Him()), CenterX, 250.0f, 24, GutHUDColors::Text, true);
+			DrawLabel(FString::Printf(TEXT("Do not kill %s: nobody buys the dead. And %s will hurt you if %s can."), Who.Him(), Who.He(), Who.He()), CenterX, 284.0f, 20, GutHUDColors::DimText, true);
+			DrawLabel(FString::Printf(TEXT("%d"), FMath::CeilToInt32(GameMode->GetIntroTimeRemaining())), CenterX, 330.0f, 40, GutHUDColors::Warning, true);
+			break;
+		}
+
 		DrawLabel(TEXT("THE GUT"), CenterX, 170.0f, 54, GutHUDColors::Text, true);
 		DrawLabel((bAtWindow || bAtStable) ? TEXT("One of them walks out.") : (GameMode->IsGamblersOwnFight() ? TEXT("This is what the cage does with a fixer.") : TEXT("One of you walks out.")), CenterX, 255.0f, 22, GutHUDColors::DimText, true);
 		DrawLabel(FString::Printf(TEXT("%d"), FMath::CeilToInt32(GameMode->GetIntroTimeRemaining())), CenterX, 300.0f, 40, GutHUDColors::Warning, true);
@@ -290,6 +324,11 @@ void AGutHUD::DrawHUD()
 		break;
 
 	case EGutFightPhase::PlayerWon:
+
+		if (DrawTaken())
+		{
+			break;
+		}
 
 		// a fight that was only watched: who is still standing
 		if ((WindowSettlement.bSettled && !WindowSettlement.bOwnFight) || StableSettlement.bSettled)
@@ -318,6 +357,11 @@ void AGutHUD::DrawHUD()
 		break;
 
 	case EGutFightPhase::PlayerLost:
+
+		if (DrawTaken())
+		{
+			break;
+		}
 
 		// beaten as arranged, and left alive as arranged
 		if (Settlement.bSettled && Settlement.bThrown)
@@ -2536,34 +2580,75 @@ float AGutHUD::MeasureLabel(const FString& Text, int32 Size)
 
 TArray<FString> AGutHUD::WrapLabel(const FString& Text, int32 Size, float MaxWidth)
 {
-	TArray<FString> Lines;
 	TArray<FString> Words;
 
 	Text.ParseIntoArray(Words, TEXT(" "), true);
 
-	FString Line;
+	// each word and a space measured once, however many measures are tried
+	TArray<float> Wide;
+	Wide.Reserve(Words.Num());
 
 	for (const FString& Word : Words)
 	{
-		const FString Longer = Line.IsEmpty() ? Word : Line + TEXT(" ") + Word;
+		Wide.Add(MeasureLabel(Word, Size));
+	}
 
-		if (!Line.IsEmpty() && MeasureLabel(Longer, Size) > MaxWidth)
+	const float Space = MeasureLabel(TEXT("n n"), Size) - (2.0f * MeasureLabel(TEXT("n"), Size));
+
+	const auto Broken = [&Words, &Wide, Space](float Within)
+	{
+		TArray<FString> Lines;
+		FString Line;
+		float Run = 0.0f;
+
+		for (int32 i = 0; i < Words.Num(); ++i)
+		{
+			if (!Line.IsEmpty() && Run + Space + Wide[i] > Within)
+			{
+				Lines.Add(Line);
+				Line.Reset();
+				Run = 0.0f;
+			}
+
+			Run += (Line.IsEmpty() ? 0.0f : Space) + Wide[i];
+			Line += (Line.IsEmpty() ? TEXT("") : TEXT(" ")) + Words[i];
+		}
+
+		if (!Line.IsEmpty())
 		{
 			Lines.Add(Line);
-			Line = Word;
+		}
+
+		return Lines;
+	};
+
+	// Set evenly, as ATownHUD::Wrap is: the narrowest measure that takes no more lines than the full one does, so that no
+	// line is left with a word or two alone on it. A long piece is not drawn in by more than a quarter.
+	const int32 Count = Broken(MaxWidth).Num();
+
+	if (Count <= 1)
+	{
+		return Broken(MaxWidth);
+	}
+
+	float Narrow = MaxWidth * (Count <= 3 ? 0.5f : 0.74f);
+	float Broad = MaxWidth;
+
+	for (int32 Tried = 0; Tried < 7; ++Tried)
+	{
+		const float Middle = (Narrow + Broad) * 0.5f;
+
+		if (Broken(Middle).Num() <= Count)
+		{
+			Broad = Middle;
 		}
 		else
 		{
-			Line = Longer;
+			Narrow = Middle;
 		}
 	}
 
-	if (!Line.IsEmpty())
-	{
-		Lines.Add(Line);
-	}
-
-	return Lines;
+	return Broken(Broad);
 }
 
 void AGutHUD::DrawLabelAtScreen(const FString& Text, float ScreenX, float ScreenY, int32 Size, const FLinearColor& Color, bool bCentered, float Shrink)

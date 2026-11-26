@@ -33,6 +33,13 @@ void ATownHUD::DrawHUD()
 		if (const UTownPlaceData* Place = Town->GetPlace())
 		{
 			DrawLabelAtScreen(Place->Name, Canvas->SizeX * 0.5f, Canvas->SizeY * 0.47f, 26, GutHUDColors::DimText, true);
+
+			// a day gone by since the player was last out in the town is said here, where nothing else is
+			if (Town->IsDayNew())
+			{
+				DrawLabelAtScreen(FString::Printf(TEXT("DAY %d"), Town->GetDay()), Canvas->SizeX * 0.5f, Canvas->SizeY * 0.47f - (64.0f * UIScale), 44, GutHUDColors::Warning, true);
+				DrawLabelAtScreen(TEXT("A day has gone by."), Canvas->SizeX * 0.5f, Canvas->SizeY * 0.47f + (40.0f * UIScale), 20, GutHUDColors::DimText, true);
+			}
 		}
 
 		return;
@@ -72,6 +79,13 @@ void ATownHUD::DrawHUD()
 	if (const UTownPlaceData* Place = Town->GetPlace())
 	{
 		DrawLabel(Place->Name.ToUpper(), 50.0f, 44.0f, 28, GutHUDColors::Text);
+
+		// And the day it is, for whoever keeps a yard and has days to pay for: beside the place's name, where it is always
+		// to be seen ("how do I know a day has passed?", 25 November). Lit for a while after it has turned.
+		if (const int32 Day = Town->GetDay(); Day > 0)
+		{
+			DrawLabel(FString::Printf(TEXT("DAY %d"), Day), 62.0f + MeasureLabel(Place->Name.ToUpper(), 28), 52.0f, 18, Town->IsDayNew() ? GutHUDColors::Warning : GutHUDColors::DimText);
+		}
 	}
 
 	// what the player holds, a line for each of the ways it has come to the cage, the last on the bottom
@@ -160,37 +174,134 @@ void ATownHUD::DrawHUD()
 	}
 
 	// what there is to do here, down the right-hand side, out of the way of the street
-	if (const UTownPlaceData* Place = Town->GetPlace(); Place && !Place->Errand.IsEmpty() && !Town->IsTalking() && !Town->IsShopping())
+	if (const UTownPlaceData* Place = Town->GetPlace(); Place && !Town->IsTalking() && !Town->IsShopping())
 	{
-		// no wider than leaves the slate over the middle of the street alone, when something is being called out on it
-		const float Column = 500.0f;
+		// No wider than leaves the slate over the middle of the street alone, when something is being called out on it. Set
+		// from its left edge, as everything else on the screen is, on a dark ground like the keys': it was set from its
+		// right edge, each line ending level and beginning wherever it fell, over whatever the sky was doing (25 November).
+		const float Column = 430.0f;
+		const float Left = LayoutWidth - 50.0f - Column;
 
-		float Y = 44.0f;
+		struct FSet
+		{
+			FString Words;
+			int32 Size;
+			FLinearColor Ink;
+			float Pitch;
+			float Before;
+
+			/** 1 a thing still to do, 2 a thing done, 3 a line that carries on under one: each set in from a mark */
+			int32 Mark = 0;
+		};
+
+		TArray<FSet> Set;
 
 		for (int32 i = 0; i < Place->Errand.Num(); ++i)
 		{
 			// the first line is the heading
 			const int32 Size = i == 0 ? 20 : 17;
+			bool bFirst = true;
 
 			for (const FString& Line : WrapLabel(Place->Errand[i], Size, Column))
 			{
-				DrawLabel(Line, LayoutWidth - 50.0f - MeasureLabel(Line, Size), Y, Size, i == 0 ? GutHUDColors::Warning : GutHUDColors::Text);
-
-				Y += i == 0 ? 32.0f : 25.0f;
+				Set.Add({ Line, Size, i == 0 ? GutHUDColors::Warning : GutHUDColors::Text, i == 0 ? 32.0f : 23.0f, (bFirst && i > 1) ? 7.0f : 0.0f });
+				bFirst = false;
 			}
 		}
 
 		// and, wherever the player is, where what it owns has got to
 		if (const FString Owned = Town->GetOwnedLine(); !Owned.IsEmpty())
 		{
-			Y += 4.0f;
+			bool bFirst = true;
 
 			for (const FString& Line : WrapLabel(Owned, 17, Column))
 			{
-				DrawLabel(Line, LayoutWidth - 50.0f - MeasureLabel(Line, 17), Y, 17, GutHUDColors::Stamina);
-
-				Y += 25.0f;
+				Set.Add({ Line, 17, GutHUDColors::Stamina, 23.0f, bFirst ? 10.0f : 0.0f });
+				bFirst = false;
 			}
+		}
+
+		// The work in hand, and how far it has got: its name, and each thing it is made of with a mark that is filled when
+		// it is done. ("how do I know which quest I am doing?", "show progress on the quest", 25 November: the work was
+		// only in the bag, and said only what it was.) Two pieces of work at most; the rest are in the bag.
+		TArray<const FTownMission*> Work;
+		Town->GetWorkInHand(Work);
+
+		for (int32 i = 0; i < Work.Num() && i < 2; ++i)
+		{
+			Set.Add({ FString::Printf(TEXT("IN HAND: %s"), *Work[i]->Name.ToUpper()), 17, GutHUDColors::Warning, 25.0f, 14.0f });
+
+			TArray<FString> Things;
+			TArray<bool> Done;
+
+			Town->GetMissionTally(*Work[i], Things, Done);
+
+			for (int32 Thing = 0; Thing < Things.Num(); ++Thing)
+			{
+				bool bFirst = true;
+
+				for (const FString& Line : WrapLabel(Things[Thing], 16, Column - 26.0f))
+				{
+					Set.Add({ Line, 16, Done[Thing] ? GutHUDColors::DimText : GutHUDColors::Text, 22.0f, 0.0f, bFirst ? (Done[Thing] ? 2 : 1) : 3 });
+					bFirst = false;
+				}
+			}
+
+			// a piece of work with nothing to tick off says what it is, in short
+			if (Things.IsEmpty())
+			{
+				for (const FString& Line : WrapLabel(Town->GetMissionStep(*Work[i]), 16, Column))
+				{
+					Set.Add({ Line, 16, GutHUDColors::Text, 22.0f, 0.0f });
+				}
+			}
+		}
+
+		if (Work.Num() > 2)
+		{
+			Set.Add({ FString::Printf(TEXT("and %d more, in your bag"), Work.Num() - 2), 15, GutHUDColors::DimText, 22.0f, 4.0f });
+		}
+
+		float High = 0.0f;
+
+		for (const FSet& One : Set)
+		{
+			High += One.Before + One.Pitch;
+		}
+
+		if (!Set.IsEmpty())
+		{
+			DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.5f), (Left - 14.0f) * UIScale, 34.0f * UIScale, (Column + 28.0f) * UIScale, (High + 18.0f) * UIScale);
+		}
+
+		float Y = 44.0f;
+
+		for (const FSet& One : Set)
+		{
+			Y += One.Before;
+
+			// the mark: an open square for what is to do, a filled one for what is done
+			if (One.Mark == 1 || One.Mark == 2)
+			{
+				const float Side = 11.0f;
+				const float BoxX = Left + 2.0f;
+				const float BoxY = Y + 6.0f;
+
+				DrawRect(GutHUDColors::Text, BoxX * UIScale, BoxY * UIScale, Side * UIScale, Side * UIScale);
+
+				if (One.Mark == 1)
+				{
+					DrawRect(FLinearColor(0.03f, 0.03f, 0.03f, 1.0f), (BoxX + 2.0f) * UIScale, (BoxY + 2.0f) * UIScale, (Side - 4.0f) * UIScale, (Side - 4.0f) * UIScale);
+				}
+				else
+				{
+					DrawRect(GutHUDColors::Warning, (BoxX + 2.0f) * UIScale, (BoxY + 2.0f) * UIScale, (Side - 4.0f) * UIScale, (Side - 4.0f) * UIScale);
+				}
+			}
+
+			DrawLabel(One.Words, Left + (One.Mark > 0 ? 24.0f : 0.0f), Y, One.Size, One.Ink);
+
+			Y += One.Pitch;
 		}
 	}
 
@@ -320,30 +431,79 @@ void ATownHUD::DrawHUD()
 
 TArray<FString> ATownHUD::Wrap(const FString& Words, int32 Length)
 {
-	TArray<FString> Lines;
+	// a new line in what is to be said is a new line on the page, each piece set on its own
+	if (Words.Contains(TEXT("\n")))
+	{
+		TArray<FString> Pieces;
+		Words.ParseIntoArray(Pieces, TEXT("\n"), true);
+
+		TArray<FString> All;
+
+		for (const FString& Piece : Pieces)
+		{
+			All.Append(Wrap(Piece, Length));
+		}
+
+		return All;
+	}
+
 	TArray<FString> Each;
 
 	Words.ParseIntoArray(Each, TEXT(" "), true);
 
-	FString Line;
-
-	for (const FString& Word : Each)
+	const auto Broken = [&Each](int32 Within)
 	{
-		if (!Line.IsEmpty() && Line.Len() + 1 + Word.Len() > Length)
+		TArray<FString> Lines;
+		FString Line;
+
+		for (const FString& Word : Each)
 		{
-			Lines.Add(Line);
-			Line.Reset();
+			if (!Line.IsEmpty() && Line.Len() + 1 + Word.Len() > Within)
+			{
+				Lines.Add(Line);
+				Line.Reset();
+			}
+
+			Line += (Line.IsEmpty() ? TEXT("") : TEXT(" ")) + Word;
 		}
 
-		Line += (Line.IsEmpty() ? TEXT("") : TEXT(" ")) + Word;
-	}
+		if (!Line.IsEmpty())
+		{
+			Lines.Add(Line);
+		}
 
-	if (!Line.IsEmpty())
+		return Lines;
+	};
+
+	// Set evenly: in as many lines as it takes at the full measure, and then in the narrowest measure that still takes no
+	// more. A sentence was broken wherever the measure ran out, which left a word or two alone on the last line of nearly
+	// everything said ("your general formatting of text is really bad", 25 November). A long piece is not drawn in by more
+	// than a quarter, so that it keeps the width of what is round it.
+	const int32 Count = Broken(Length).Num();
+
+	if (Count <= 1)
 	{
-		Lines.Add(Line);
+		return Broken(Length);
 	}
 
-	return Lines;
+	int32 Narrow = FMath::CeilToInt32(Length * (Count <= 3 ? 0.5f : 0.74f));
+	int32 Wide = Length;
+
+	while (Narrow < Wide)
+	{
+		const int32 Tried = (Narrow + Wide) / 2;
+
+		if (Broken(Tried).Num() <= Count)
+		{
+			Wide = Tried;
+		}
+		else
+		{
+			Narrow = Tried + 1;
+		}
+	}
+
+	return Broken(Wide);
 }
 
 void ATownHUD::DrawTalk(const ATownGameMode* Town, float CenterX)
@@ -954,7 +1114,8 @@ void ATownHUD::DrawBag(const ATownGameMode* Town, float CenterX)
 				PageY += 24.0f;
 			}
 
-			PageY += 7.0f;
+			// (a paragraph is seen to end: they ran together at seven)
+			PageY += 11.0f;
 		}
 	}
 	else

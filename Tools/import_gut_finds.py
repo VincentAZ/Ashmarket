@@ -47,7 +47,7 @@ def meshes_in(folder):
 
 def main():
     # (and the bag the player is seen to carry: AGutFighter::WearBag)
-    for name in ["find_" + good for good in FINDS] + ["rack_" + good for good in RACK] + ["worn_satchel"]:
+    for name in ["find_" + good for good in FINDS] + ["rack_" + good for good in RACK] + ["worn_satchel", "bag_strap"]:
         folder = "{}/{}".format(ROOT, name)
         meshes = meshes_in(folder)
 

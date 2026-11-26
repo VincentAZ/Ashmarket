@@ -140,9 +140,12 @@ def main():
                 continue
 
             settings = entry.get("settings", cast["settings"])
-            file = os.path.join(slug(place), name + ".mp3")
+            # uncompressed where the cast asks for it ("format": "pcm_44100", which the account's plan has to allow): a
+            # WAV file, and not the same recording as the MP3 there was of the same words
+            pcm = cast["format"].startswith("pcm_")
+            file = os.path.join(slug(place), name + (".wav" if pcm else ".mp3"))
             voice = entry.get("design") or entry["voice"]
-            mark = hashlib.sha1(json.dumps([words, voice, cast["model"], settings], sort_keys=True).encode()).hexdigest()
+            mark = hashlib.sha1(json.dumps([words, voice, cast["model"], settings] + ([cast["format"]] if pcm else []), sort_keys=True).encode()).hexdigest()
 
             if options.force or options.redesign or manifest.get(file, {}).get("mark") != mark or not os.path.exists(os.path.join(OUT, file)):
                 wanted.append((file, speaker, whose, entry, settings, words, mark))
@@ -294,9 +297,18 @@ def main():
         audio = client.text_to_speech.convert(text=words, voice_id=voices[whose], model_id=cast["model"], output_format=cast["format"],
                                               voice_settings=VoiceSettings(stability=settings["stability"], similarity_boost=settings["similarity_boost"]))
 
-        with open(os.path.join(OUT, file), "wb") as out:
-            for chunk in audio:
-                out.write(chunk)
+        if file.endswith(".wav"):
+            import wave
+
+            with wave.open(os.path.join(OUT, file), "wb") as out:
+                out.setnchannels(1)
+                out.setsampwidth(2)
+                out.setframerate(int(cast["format"].split("_")[1]))
+                out.writeframes(b"".join(audio))
+        else:
+            with open(os.path.join(OUT, file), "wb") as out:
+                for chunk in audio:
+                    out.write(chunk)
 
         manifest[file] = {"speaker": speaker, "voice": "designed for {}".format(whose) if entry.get("design") else entry["voice"], "voice_id": voices[whose],
                           "model": cast["model"], "settings": settings, "words": words, "mark": mark, "made_with": "ElevenLabs text to speech"}

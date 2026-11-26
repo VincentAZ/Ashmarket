@@ -444,6 +444,13 @@ public:
 	/** True from the moment the street is asked for until a level has begun: the cage's screens are not drawn while it is */
 	bool bGoingToStreet = false;
 
+	/** The last day the player was out in the town on, for telling them when one has gone by. Not saved: the first place opened is not news. */
+	int32 DaySeen = 0;
+
+	/** Somebody being taken, if somebody is: see FGutTaking. Not saved: a game shut in the middle of it never began it. */
+	UPROPERTY()
+	FGutTaking Taking;
+
 	/** Applies how loud the game is to whatever world this is */
 	void ApplyLoudness(const UObject* WorldContext) const;
 

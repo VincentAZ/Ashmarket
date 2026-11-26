@@ -148,6 +148,35 @@ struct FGutStableFighter
 	}
 };
 
+/**
+ *  Somebody with no tag being taken. "No tag means you're property" is the third law, and anybody may make it so who can
+ *  hold whoever it is: the player goes for them in the town, it is fought out bare-handed in a dead end between the
+ *  stacks (the cage's rules, a place of its own), and what it came to is settled when the player is back in the town.
+ *  ("Should be a way to capture people (for sale or fight or - can we do rent?) but an attempted capture is dangerous
+ *  for our protagonist - almost fight like but a little easier", 25 November.)
+ */
+USTRUCT(BlueprintType)
+struct FGutTaking
+{
+	GENERATED_BODY()
+
+	/** True from the moment the player goes for them until it is settled in the town */
+	UPROPERTY(BlueprintReadOnly, Category="Taking")
+	bool bOn = false;
+
+	/** Who: as they will be if they are taken, a fighter of the player's with a collar on */
+	UPROPERTY(BlueprintReadOnly, Category="Taking")
+	FGutStableFighter Who;
+
+	/** The town's mark that says they are gone from where they stood, however it came out */
+	UPROPERTY(BlueprintReadOnly, Category="Taking")
+	FName Mark;
+
+	/** Nought while it is undecided. 1 beaten down and taken, 2 killed, 3 got away with the player down */
+	UPROPERTY(BlueprintReadOnly, Category="Taking")
+	int32 Outcome = 0;
+};
+
 /** Where somebody who runs a stable of fighters stands */
 USTRUCT(BlueprintType)
 struct FGutStableState
@@ -333,6 +362,9 @@ namespace GutStableLines
 
 		/** The fourth thing taught: see EGutTraining::Cunning. (Not beside the other three, whose numbers are taken.) */
 		TrainCunning = 25,
+
+		/** Out for the day to whoever pays for a back: see AGutGameMode::HireOutFighter */
+		HireOut = 26,
 
 		/** Out of the yard gate to the street, with this one walking behind */
 		WalkOut = 19,

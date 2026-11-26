@@ -1,0 +1,261 @@
+{
+ "about": "A dead end between the stacks: where somebody with no tag is run down and taken (ATownGameMode's 'take' deed, AGutGameMode::IsTaking). It is a place the town's builder makes (GUT_TOWN_LIST=$PWD/Tools/town_alley.json Tools/build_town_level.sh) but it is fought in, not walked: 'fight' gives it the cage's rules and stands the one who is to be taken at its far end. Places are in the map's own metres (x east, y north). Twenty metres long, so that whoever looks over the player's shoulder has room behind them: at fourteen the gate was 2.3 m behind the player and the camera was inside the two of them.",
+ "name": "The Dead End",
+ "level": "/Game/Gut/Lvl_Alley",
+ "data": "/Game/Town/DA_Town_Alley",
+ "origin": {
+  "x": 300.0,
+  "y": 300.0,
+  "z": 3.0
+ },
+ "street_height": 5.25,
+ "alley": {
+  "from_y": 1000.0,
+  "rise_per_metre": 0.0
+ },
+ "start": {
+  "x": 295.5,
+  "y": 300.0,
+  "facing": 90
+ },
+ "fight": {
+  "enemy": {
+   "x": 304.5,
+   "y": 300.0,
+   "facing": 270
+  }
+ },
+ "arrivals": [
+  {
+   "name": "in",
+   "x": 295.5,
+   "y": 300.0,
+   "facing": 90
+  }
+ ],
+ "errand": [],
+ "surfaces": {
+  "Road": {
+   "from": "road_damaged",
+   "size": 320
+  },
+  "Yard": {
+   "from": "dirty_concrete",
+   "size": 300
+  },
+  "Blockwork": {
+   "from": "concrete_block_wall",
+   "size": 200
+  },
+  "Sheet": {
+   "from": "rusty_corrugated_iron",
+   "size": 200
+  }
+ },
+ "ground": [
+  {
+   "label": "Beyond",
+   "x": [
+    240,
+    360
+   ],
+   "y": [
+    250,
+    350
+   ],
+   "z": 5.17,
+   "surface": "Yard"
+  },
+  {
+   "label": "AlleyFloor",
+   "x": [
+    287.5,
+    312.5
+   ],
+   "y": [
+    295.5,
+    304.5
+   ],
+   "z": 5.25,
+   "surface": "Road"
+  }
+ ],
+ "walk": [
+  {
+   "x": [
+    289.6,
+    310.4
+   ],
+   "y": [
+    296.9,
+    303.1
+   ]
+  }
+ ],
+ "walls": [
+  {
+   "label": "EndWall",
+   "x": [
+    310.7,
+    311.4
+   ],
+   "y": [
+    295.0,
+    305.0
+   ],
+   "height": 4.4,
+   "surface": "Blockwork",
+   "stained": [
+    "west"
+   ]
+  },
+  {
+   "label": "MouthWall",
+   "x": [
+    288.6,
+    289.3
+   ],
+   "y": [
+    295.0,
+    305.0
+   ],
+   "height": 4.4,
+   "surface": "Blockwork",
+   "stained": [
+    "east"
+   ]
+  }
+ ],
+ "rows": [
+  {
+   "label": "NorthStacks",
+   "model": [
+    "town_container_red",
+    "town_container_blue"
+   ],
+   "yaw": 90,
+   "high": 2,
+   "along": "x",
+   "from": 289.3,
+   "to": 310.7,
+   "face": 303.4,
+   "side": "north"
+  },
+  {
+   "label": "SouthStacks",
+   "model": [
+    "town_container_red",
+    "town_container_blue"
+   ],
+   "yaw": 90,
+   "high": 2,
+   "along": "x",
+   "from": 289.3,
+   "to": 310.7,
+   "face": 296.6,
+   "side": "south"
+  }
+ ],
+ "runs": [
+  {
+   "label": "MouthGate",
+   "model": "street_gate",
+   "from": [
+    289.4,
+    298.0
+   ],
+   "to": [
+    289.4,
+    302.0
+   ],
+   "note": "the gate they came in by, shut behind them"
+  }
+ ],
+ "things": [
+  {
+   "model": "street_door",
+   "x": 310.65,
+   "y": 300.0,
+   "yaw": 180,
+   "note": "a steel door in the end wall, shut"
+  },
+  {
+   "model": "old_tyre",
+   "x": 290.6,
+   "y": 302.6
+  },
+  {
+   "model": "old_tyre",
+   "x": 291.1,
+   "y": 302.9
+  },
+  {
+   "model": "Barrel_01",
+   "x": 309.9,
+   "y": 302.6
+  },
+  {
+   "model": "barrel_03",
+   "x": 309.2,
+   "y": 302.8
+  },
+  {
+   "model": "trashbag",
+   "x": 309.8,
+   "y": 297.3,
+   "yaw": 30
+  },
+  {
+   "model": "trashbag",
+   "x": 309.1,
+   "y": 297.1,
+   "yaw": 200
+  },
+  {
+   "model": "plastic_crate_02",
+   "x": 299.0,
+   "y": 302.8,
+   "yaw": 20
+  },
+  {
+   "model": "cardboard_box_01",
+   "x": 300.4,
+   "y": 297.1,
+   "yaw": 70
+  }
+ ],
+ "pictures": [],
+ "pasted": [],
+ "bulbs": [
+  {
+   "x": 296.0,
+   "y": 300.0,
+   "up": 4.6,
+   "candela": 6000,
+   "reach": 20,
+   "shadows": true,
+   "note": "a lamp over the near half"
+  },
+  {
+   "x": 304.0,
+   "y": 300.0,
+   "up": 4.6,
+   "candela": 6000,
+   "reach": 20,
+   "shadows": true,
+   "note": "and one over the far half"
+  },
+  {
+   "x": 310.0,
+   "y": 300.0,
+   "up": 2.8,
+   "candela": 1800,
+   "reach": 8,
+   "note": "over the door in the end wall"
+  }
+ ],
+ "stalls": [],
+ "people": [],
+ "doors": [],
+ "finds": []
+}

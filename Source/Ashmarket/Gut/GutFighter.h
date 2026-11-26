@@ -1287,7 +1287,17 @@ public:
 	 *  worked out from the body standing at rest, so it comes out the same on anybody. -GutBagOut=, -GutBagDown= (cm),
 	 *  -GutBagRound=, -GutBagTip= (degrees) and -GutBagThin= (a share) try other places without a build.
 	 */
-	void WearBag(UStaticMesh* Bag);
+	void WearBag(UStaticMesh* Bag, UStaticMesh* Strap = nullptr);
+
+	/**
+	 *  The bag's strap: a loop that goes over the right shoulder and round the body to the bag ("give the bag a strap",
+	 *  25 November). The model is one flat oval loop, a metre long and 45 cm across in its own plane; it is stood from
+	 *  the shoulder to the bag and made as long as that is and as deep as the trunk is where it goes round it, measured as
+	 *  the arms' clearing measures it. It rides on the chest. -GutStrapDeep=, -GutStrapLong= (cm more), -GutStrapUp= (cm
+	 *  above the shoulder) try other fits without a build.
+	 */
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> BagStrap;
 
 	/** The bag at the hip, if one is worn */
 	UPROPERTY()
@@ -1623,6 +1633,18 @@ public:
 	bool AreFingersShutForIt() const { return bFingersShutForIt; }
 
 	UAnimSequenceBase* GetBoundArms() const { return BoundClip; }
+
+	/** The clip tied wrists are held in, fetched: for a place to have ready before anybody in it is tied */
+	UAnimSequenceBase* FetchBoundArms() const { return BoundArms.LoadSynchronous(); }
+
+	/**
+	 *  True if a clip can be played now. In the game as it is played here (uncooked) a clip is made ready after it is
+	 *  loaded, and one played before that holds the body in a pose that is nobody's, arms through the trunk, until it is:
+	 *  the yard hand on Pool Street, "misaligned, but in a second or two they look perfect" (24 November) and "still an
+	 *  issue" twice (25 November), each time just after the player came up to him (a nod) or spoke to him (a talking
+	 *  hand), which were fetched at that moment. Always true in a cooked game.
+	 */
+	static bool IsClipReady(const UAnimSequenceBase* Clip);
 
 	float GetBoundPast() const { return BoundPast; }
 

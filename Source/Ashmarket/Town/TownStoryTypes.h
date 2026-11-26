@@ -60,6 +60,30 @@ struct FTownMissionStep
 };
 
 /** A piece of work somebody has for the player */
+/**
+ *  One of the things a piece of work is made of, for showing how far it has got: "The Sump", done when "w2.sump" holds;
+ *  or a count, "Tags read", w1.q of 6. ("show progress on the quest", 25 November.)
+ */
+USTRUCT(BlueprintType)
+struct FTownMissionTally
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Story")
+	FString Words;
+
+	/** Done while this holds of the town's marks */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Story")
+	FString When;
+
+	/** Or: the mark that counts it, and how many it takes */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Story")
+	FName Count;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Story")
+	int32 Of = 0;
+};
+
 USTRUCT(BlueprintType)
 struct FTownMission
 {
@@ -83,6 +107,10 @@ struct FTownMission
 	/** The step that is shown is the last whose figure the mark has reached */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Story")
 	TArray<FTownMissionStep> Steps;
+
+	/** What it is made of, in the order it is likely done: see FTownMissionTally. May be empty. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Story")
+	TArray<FTownMissionTally> Tally;
 };
 
 /** The town's story as it is written down: its powers and its work. Written by Tools/build_town_story.py from Tools/town_story.json. */

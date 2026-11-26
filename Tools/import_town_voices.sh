@@ -11,7 +11,7 @@ LOG="$PROJECT_DIR/Saved/Logs/import_town_voices.log"
 
 VOICES="$PROJECT_DIR/ArtSource/voices"
 
-if ! compgen -G "$VOICES/*/*.mp3" >/dev/null; then
+if ! compgen -G "$VOICES/*/*.mp3" >/dev/null && ! compgen -G "$VOICES/*/*.wav" >/dev/null; then
 	echo "There are no recordings in $VOICES yet: run Tools/make_town_voices.sh" >&2
 	exit 1
 fi
@@ -27,15 +27,20 @@ fi
 mkdir -p "$VOICES/wav"
 echo "$LEVEL" > "$VOICES/wav/.level"
 
-for recording in "$VOICES"/*/*.mp3; do
+shopt -s nullglob
+
+for recording in "$VOICES"/*/*.mp3 "$VOICES"/*/*.wav; do
 	place="$(basename "$(dirname "$recording")")"
 
 	# wav is ours, and designed holds each made voice's first hearing, which nobody says in the game
 	[[ "$place" == "wav" || "$place" == "designed" ]] && continue
 
+	# a line recorded uncompressed (a .wav beside the .mp3 there was of it) is the one that is used
+	[[ "$recording" == *.mp3 && -f "${recording%.mp3}.wav" ]] && continue
+
 	mkdir -p "$VOICES/wav/$place"
 
-	wav="$VOICES/wav/$place/$(basename "${recording%.mp3}").wav"
+	wav="$VOICES/wav/$place/$(basename "${recording%.*}").wav"
 
 	# only what is new, or has been made again
 	if [[ ! -f "$wav" || "$recording" -nt "$wav" ]]; then

@@ -1343,10 +1343,6 @@
    "loop": true,
    "from": [
     {
-     "file": "ambience/city_night_quiet_distant_traffic_stereo_preview.mp3",
-     "seconds": 50
-    },
-    {
      "file": "ambience/night_desert_crickets_silent_breeze_preview.mp3",
      "seconds": 90.0
     },
@@ -1375,10 +1371,6 @@
      "seconds": 90.0
     },
     {
-     "file": "ambience/night_distant_voices_crickets_dogs_faraway_city_hum_preview.mp3",
-     "seconds": 90.0
-    },
-    {
      "file": "ambience/night_wind_strong_howling_open_desert_preview.mp3",
      "seconds": 90.0
     },
@@ -1387,7 +1379,7 @@
      "seconds": 90.0
     }
    ],
-   "about": "The night over the town, under everything: wind, insects, dogs and engines a long way off. A bed: the game goes from one of these to another, and never round and round one (UGutSoundSubsystem::StartBed). Real recordings, chosen by what their makers say is in them; nobody has listened.",
+   "about": "The night over the town, under everything: wind, insects, dogs and engines a long way off. A bed: the game goes from one of these to another, and never round and round one (UGutSoundSubsystem::StartBed). Real recordings, chosen by what their makers say is in them; nobody has listened. Two city recordings were taken out on 2026-11-25 (distant traffic, a faraway city hum): he heard a car horn, and there is no traffic in a town that walks.",
    "mean": -31.0
   },
   "room": {
@@ -2158,8 +2150,33 @@
     }
    ]
   },
-  "bag_open": {"about": "The bag opened: the flap of a satchel thrown back, and things shifting in it (freesound 531499 and 630021, CC0).", "volume": 0.55, "everywhere": true, "from": [{"file": "bag/open_bag_preview.mp3", "longest": 0.8}, {"file": "bag/shuffling_backpack_preview.mp3", "longest": 1.1, "fade": 0.3}]},
-  "bag_close": {"about": "The bag shut: its buckle done up (freesound 331719, CC0).", "volume": 0.4, "everywhere": true, "from": [{"file": "bag/belt_buckle_preview.mp3", "longest": 0.8}]},
+  "bag_open": {
+   "about": "The bag opened: the flap of a satchel thrown back, and things shifting in it (freesound 531499 and 630021, CC0).",
+   "volume": 0.55,
+   "everywhere": true,
+   "from": [
+    {
+     "file": "bag/open_bag_preview.mp3",
+     "longest": 0.8
+    },
+    {
+     "file": "bag/shuffling_backpack_preview.mp3",
+     "longest": 1.1,
+     "fade": 0.3
+    }
+   ]
+  },
+  "bag_close": {
+   "about": "The bag shut: its buckle done up (freesound 331719, CC0).",
+   "volume": 0.4,
+   "everywhere": true,
+   "from": [
+    {
+     "file": "bag/belt_buckle_preview.mp3",
+     "longest": 0.8
+    }
+   ]
+  },
   "gate_bell": {
    "about": "The gate bell: a truck's brake drum hung in the Gate Yard, struck with a hammer when the gate comes down for the night. A recording of a brake drum struck with a hammer (freesound 373398, CC0), set lower so that it is a truck's drum and not a car's. Heard all over the town.",
    "volume": 0.85,

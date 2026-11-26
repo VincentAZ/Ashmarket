@@ -1,70 +1,166 @@
 {
  "about": "Who speaks with which voice. Read by Tools/make_town_voices.py, which has ElevenLabs say every line the three places' lists give their people, and the calls from the Block. A speaker is 'Place/Name'; where a place has two people of one name the second is 'Place/Name#2', in the order the place's list has them. Vincent, 2026-11-19, after hearing seven ways of making them: the designed voice. So each speaker has 'design', a description of who is talking, from which ElevenLabs makes a voice for them alone; the voice it made is remembered in Tools/town_voices_designed.json. 'design_text' is what the voice is first heard saying, where the speaker's own lines come to under a hundred characters. Change a description here and run the tool again: that speaker gets a new voice and all their lines are made again. A speaker with 'voice' instead speaks with one of the account's own voices, by its name as far as the first ' - '.",
-
  "model_about": "Vincent, 2026-11-19, of the same saved voice through two speech models: this one, which keeps the pauses the voice had when it was first heard. The other (eleven_v3) is nearer it in tone and talks straight through.",
  "model": "eleven_v4",
  "design_model": "eleven_ttv_v3",
- "format": "mp3_44100_128",
- "settings": {"stability": 0.4, "similarity_boost": 0.75},
-
- "keep": ["Block Square/Caller Strand", "Block Square/Margin", "Pool Street/Chalk"],
+ "format": "pcm_44100",
+ "settings": {
+  "stability": 0.4,
+  "similarity_boost": 0.75
+ },
+ "keep": [
+  "Block Square/Caller Strand",
+  "Block Square/Margin",
+  "Pool Street/Chalk"
+ ],
  "keep_about": "Where the account can let a voice go, a voice is saved, speaks its lines and is let go for the next, and these three are made last and so are the ones left saved: the people likeliest to be given more to say. Since 2026-11-19 the account holds ten voices and its key cannot let any go, so ten speakers are saved and stay saved (name them one at a time with --only): Hasp, the yard hand, Mother Ledger, Caller Strand, Margin, Chalk, the stallholder, the scrap seller, the tea seller and Brass. Since 2026-11-20 the key may let a voice go, so all nineteen have been made: a voice is saved, speaks, and gives up its place to the next.",
-
  "speakers": {
-  "Pool Street/Chalk": {"design": "A woman in her forties who keeps the betting slate at a pit-fighting cage in a desert shanty town. Quick, dry, flat, a little hoarse, has heard every excuse and is bored of all of them. Plain working American speech, clipped, said through a window to a queue. Not an announcer and not a narrator: offhand, imperfect, real."},
-  "Pool Street/Hasp": {"design": "A man in his fifties who hands out weapons at a pit-fighting cage in a desert shanty town. Gravelly, worn, a smoker's rasp, low and unhurried, bored, with dry humour underneath. Plain working American speech with no polish. He talks close and quiet, like somebody who has said this a thousand times. Not an announcer and not a narrator: a little mumbled, imperfect, real."},
-  "Pool Street/Yard hand": {"design": "A man in his thirties who works the yard gate behind a pit-fighting cage in a desert shanty town. A light Mexican Spanish accent, easy and low, a little tired, friendly enough but watching you. Short sentences, no hurry, talks out of the side of his mouth. Not an announcer and not a narrator: offhand, a little mumbled, real.",
-   "design_text": "Alley's shut past the fence. Owners go round to the yard gate, and I walk them. You an owner? Then you wait here like everybody else."},
-  "Pool Street/Warden": {"design": "An ordinary American man in his forties, a night watchman on a street corner. A natural, relaxed, medium-low speaking voice, a little hoarse and tired. He talks quietly and plainly, the way a bored man repeats something he has said many times tonight, without acting it or performing it. Conversational, unhurried, understated, slightly mumbled. Perfect audio quality, recorded close on a studio microphone in a quiet room, dry, no effects."},
-
-  "Block Square/Margin": {"design": "A woman in her fifties, the clerk who keeps the book at an open-air auction in a desert shanty town. Precise, dry, brisk, a little nasal: the voice of somebody who reads figures back all night and never gets one wrong. No warmth and no malice, only business. Plain American speech, quick and even. Not a narrator and not an announcer: a tired official talking across a table."},
-  "Block Square/Mother Ledger": {"design": "A very old woman, late seventies, small and frail, a moneylender who has never needed to raise her voice. A high, thin, reedy voice with an old woman's quaver in it, light as paper, very calm and slow, faintly amused, patient in a way that frightens people. She speaks softly and close, as if across a small table at night. Not a narrator and not an actress: plain, exact, old.", "design_text": "People who signed. I have never collared anybody. People sign, and then they owe, and then they come back to this table. That is all a ledger is, dear: a list of people who came back."},
-  "Block Square/Warden": {"design": "An ordinary American man in his thirties working security at a crowded outdoor night market. A natural mid-pitched speaking voice with a slight Southwestern drawl, short of patience. He speaks casually and quickly while his attention is on the crowd, without acting it or performing it. Conversational, plain, understated. Perfect audio quality, recorded close on a studio microphone in a quiet room, dry, no effects."},
-  "Block Square/Caller Strand": {"design": "An auctioneer calling bids from the back of a trailer at an open-air night market. An androgynous voice in its thirties, hoarse from shouting every night, nasal and hard, fast and rhythmic like a livestock auctioneer's chant, thrown over the heads of a crowd, tired underneath. Rough and loud, not smooth, not a radio voice."},
-  "Block Square/Margin, at the table": {"same_as": "Block Square/Margin"},
-
-  "Main Street/Needle": {"design": "A woman in her late thirties who fits armor at a workshop counter in a desert shanty town. Low for a woman, level and sharp, sizing you up while she talks, and she says a thing once. Dry, a little smoky, practical, faintly scornful of anybody who has not been hit yet. Plain working American speech. Not a narrator: close, matter-of-fact, real."},
-  "Main Street/Thread": {"design": "A woman in her late thirties who sews at a machine in the back of an armor workshop. Softer and warmer than her twin sister at the counter: low, slow, a little amused, a little inviting, talking without looking up from her work. A slight rasp. Plain American speech. Not a narrator and not an actress: quiet, close, real."},
-  "Main Street/Brass": {"design": "A big older woman in her sixties with an unusually deep contralto voice, deeper than most men's: husky, rumbling, slow and heavy, rough from forty years of cigarettes. A gunsmith who trades from the back of a truck in a desert shanty town. Very few words and none wasted. Plain working American speech. Not an announcer and not a narrator: curt, close, real."},
-  "Main Street/Gate Warden": {"design": "An ordinary American man in his fifties who minds a gate at night. A natural low speaking voice, gravelly and tired, slow and final but quiet, a man who has said no all his life and no longer argues about it. Conversational, plain, understated, without acting it. Perfect audio quality, recorded close on a studio microphone in a quiet room: clean, full and dry, with no radio, telephone or loudspeaker sound, no echo and no distortion."},
-  "Main Street/Stallholder": {"design": "A woman in her sixties who sells bread from a market stall at night in a desert shanty town. Warm but loud, a market voice cracked from calling over a crowd, brisk and motherly and not to be argued with. Plain working American speech. Not an announcer and not a narrator: busy, rough, real.",
-   "design_text": "Bread's hot. Water first, then bread. That is the order everything goes in here. Next. You, are you buying or are you looking?"},
-  "Main Street/Scrap seller": {"design": "A woman in her fifties who sells scrap from a table at a night market in a desert shanty town. A faint Korean accent. Sly, dry, quick, quietly amused at her own jokes and never smiling when she says them. A thin, slightly hoarse voice. Not a narrator and not an actress: offhand, close, real."},
-  "Main Street/Tea seller": {"design": "A woman in her sixties who sells tea from a kiosk at a night market in a desert shanty town. A faint Eastern European accent. Deadpan and weary, low and a little cracked: she has told the same joke for twenty years and stopped finding it funny after the first. Slow. Not a narrator and not an actress: flat, close, real."},
-  "Main Street/Dealer": {"design": "A man in his forties who runs a dice game on a crate at a night market in a desert shanty town. Lazy, smooth, low, smiling as he talks: a gambler's easy drawl with smoke in it, friendly in a way you should not trust. Unhurried. Plain American speech with a little Southern in it. Not an announcer and not a narrator: close, offhand, real."},
-  "Main Street/Carrier": {"design": "A young woman of about twenty-five who hauls a water cart through a night market in a desert shanty town. A clear, bright, strong young voice, higher than the older women around her and with no rasp in it at all, a little out of breath from the work, blunt and wary. She says each thing like a rule she is tired of repeating. Plain working American speech. Not a narrator: short, guarded, real."},
-  "Main Street/Warden": {"design": "A militia guard in his twenties walking a patrol through a night market in a desert shanty town. A young man's voice trying to sound harder than he is: flat, clipped, a little nasal, bored. He talks while he walks. Plain working American speech. Not an announcer: curt, close, real.", "design_text": "Market Loop. Thirteen minutes if nobody makes it longer. Do not make it longer. Keep walking. Stalls are that way. Keep your hands where I can see them."},
-  "Main Street/Warden#2": {"design": "A militia guard in his forties walking a patrol through a night market in a desert shanty town. A very deep, slow, gravelly man's voice: a man of few words who resents every one of them. He mutters and barely opens his mouth. Plain working American speech. Not an announcer: low, close, real.",
-   "design_text": "Talk to the other one. I am counting. Forty-one. Forty-two. Forty-three. I said talk to the other one. Forty-four."},
-
-  "Main Street/Sergeant Rook": {"design": "A militia sergeant in his late forties who runs the gate of a desert shanty town at night. A level, dry, unhurried baritone with a little gravel in it. Exact with words and sparing with them; he never raises his voice and never needs to. A man who has counted heads for twenty years, has never taken a bribe, and is tired of being the only one. Plain working American speech with a trace of the rural Southwest. Not an announcer and not a narrator: close, quiet, matter-of-fact, real."},
-  "Main Street/Lane Warden": {"design": "A heavy militia guard in his thirties, bored on a night post in a desert shanty town. A thick, slow, nasal voice, sardonic, a little out of breath, amused at his own bad luck. Plain working American speech. Not an announcer: close, offhand, mumbled, real."},
-  "Main Street/A hauler": {"design": "A big haulage man in his fifties who has carried loads across a desert all his life. A deep, rough, good-humoured voice, short of breath from the walk, unhurried, with dust in it. Plain working American speech. Not a narrator: close, easy, real."},
-  "Main Street/A woman with no litre": {"design": "A woman in her late twenties at a checkpoint at night with no money for the toll. Quick, anxious, a little high, trying to sound reasonable and not quite managing it, talking too fast. Plain American speech. Not an actress: close, breathy, frightened underneath, real."},
-  "Main Street/A collector": {"design": "A slave-taker in his forties, back from a night's work in the desert. Soft-spoken, smooth, contemptuous, smiling as he talks, in no hurry at all: the voice of a man nobody has said no to in years. Low and a little oily, with a faint Mexican Spanish accent. Not a villain in a film: quiet, close, real."},
-  "Main Street/Calla Wynn": {"design": "A woman in her mid thirties, a field medic who has walked four days across a salt desert with almost no water. A low, steady, educated voice gone hoarse and dry with thirst, holding fear down by an effort, careful with every word. Warm underneath. Plain American speech. Not an actress and not a narrator: close, tired, real."},
-  "Main Street/Calla Wynn#2": {"same_as": "Main Street/Calla Wynn"},
-  "Main Street/Calla Wynn#3": {"same_as": "Main Street/Calla Wynn"},
-  "Block Square/Calla Wynn": {"same_as": "Main Street/Calla Wynn"},
-  "Rotgut Row/Big Lottie": {"design": "A big woman of fifty who keeps a drum-top bar and a chalk fighting ring in a desert shanty town. A deep, warm, loud voice gone rough from years of shouting over drinkers: slow, amused, entirely sure of herself, with a West African lilt under plain English. She is the biggest person in any room and has never had to prove it. Not an announcer and not a narrator: close, easy, real."},
-  "Rotgut Row/Fen": {"design": "A man in his early thirties who buys stolen things at a tarp stall at night in a desert shanty town. Quiet, quick and dry; he talks low and fast, out of the side of his mouth, and never says more than the trade needs. A light, slightly nasal voice, tired and wary. Plain American speech. Not a narrator: close, guarded, real."},
-  "Rotgut Row/Mash": {"design": "A woman of thirty-eight who distils rough liquor and runs a bar out of an old school bus in a desert shanty town. Hoarse, flat and practical, with a smoker's roughness; she has not slept properly in years and misses nothing. Dry humour, no warmth wasted. Plain working American speech with a trace of Mexican Spanish. Not a narrator: close, tired, real."},
-  "Rotgut Row/A new keeper": {"design": "A hard woman in her forties who has just taken over a market stall she did not build, in a desert shanty town. Clipped, smug, a little bored; a thin sharp voice with nothing friendly in it. Plain American speech. Not a narrator: close, curt, real.",
-   "design_text": "Fen? Fen lost the pitch. The post said short, and the Row heard it. I pay three tenths, not four, and the cup is what it costs now. Buying or looking?"},
-  "Block Square/A Warden, sentenced": {"same_as": "Main Street/Lane Warden"},
-  "The Last Call/Captain Dolores": {"design": "A wiry woman of sixty-four who keeps a bar in a wrecked airliner in a desert shanty town, and was cabin crew on it once. A flight attendant's voice gone hard with age: warm, brisk and practised, a little husky from smoke, with the rise and fall of a cabin announcement and a threat tucked inside the welcome. American. She calls everybody sweetheart. Not an actress and not a narrator: close, bright, dry, real."},
-  "The Last Call/A Warden corporal": {"design": "A gate guard in his thirties, off shift and half drunk at a bar table at night. A thick, slow, surly voice, a little slurred, used to being let off. Plain working American speech. Not an actor and not a narrator: close, loose, sour, real."},
-  "The Last Call/A winch hand": {"design": "A working woman in her forties who runs a cable winch in a salvage yard, drinking alone because there has been no work for four days. A low, flat, worn voice, ashamed and stubborn at once, with nothing left to perform. Plain working American speech. Not an actress and not a narrator: close, quiet, tired, real.",
-   "design_text": "Nine. I know it is nine. The Skip has been down four days, and nine is what I have in the world. Take it. That was the week's bread. Paid. The cable moves tomorrow, they say."},
-  "The Last Call/A Chainmen collector": {"same_as": "Main Street/A collector"},
-  "The Velvet Tin/Captain Voss": {"design": "A woman of forty-seven who commands the gate guards of a desert shanty town and has a price for every part of the job. A flat, tired, low voice, dry as paper, with a rasp from old smoke; she says every price out loud and never raises it. A former raider: no warmth, no anger, only arithmetic. Plain American speech. Not a villain in a film and not a narrator: close, quiet, transactional, real."},
-  "The Velvet Tin/Madam Corazon": {"design": "A woman of forty-nine who owns the one house in a desert shanty town where nobody is owned. Solid, unhurried, warm on the surface and iron under it; a rich low voice with a Mexican Spanish accent, amused, missing nothing. She calls everybody corazon. Not an actress and not a narrator: close, easy, real."},
-  "The Scrappers' Yard/Guildmaster Okafor-Reyes": {"design": "A thick-set man of fifty-eight, the elected head of a salvage guild in a desert shanty town, once a merchant who went broke. A deep, slow, careful voice, a little hoarse; fair-minded and tired of having to be; a trace of Nigerian English in plain speech. He weighs every word as he weighs scrap. Not an announcer and not a narrator: close, grave, real."},
-  "The Scrappers' Yard/Pike": {"design": "A salvage crew boss in his thirties, short of sleep and short of patience, standing guard over his sleeping crew at night. A hard, flat, clipped voice, low so as not to wake anybody, with a threat left unsaid in it. Plain working American speech. Not a narrator: close, curt, real."},
-  "The Scrappers' Yard/Ilya Brandt": {"design": "A pipe fitter of about thirty who has been hiding for three days from a hanging. A quiet, worn-out, steady voice: he has thought it through and is past pleading, and says what he did plainly. A faint Eastern European accent. Decent, frightened, very tired. Not an actor and not a narrator: close, low, real."},
-  "Block Square/Ilya Brandt": {"same_as": "The Scrappers' Yard/Ilya Brandt"},
-  "Main Street/Maren Brandt": {"design": "A woman of about thirty, just over a fever, standing under a gallows at night where her husband hangs. Hollow, level, emptied out: she is not crying and not shouting, and that is worse. A thin, hoarse voice. Plain American speech. Not an actress and not a narrator: close, flat, real.",
-   "design_text": "That is Ilya. Three days, they leave him up. I had the fever, and he had the wrench. I have twenty litres in the world, and all of it is on the board at the Last Call, against your name."},
-  "Main Street/A cart hand": {"design": "A water-cart hand in his late fifties, at the end of a long day. Dry, low, quick, conspiratorial: he talks out of the side of his mouth as if somebody might be listening, and enjoys knowing something you do not. A worn, slightly cracked voice. Plain working American speech. Not a narrator: close, sly, real."}
- }
+  "Pool Street/Chalk": {
+   "design": "A woman in her forties who keeps the betting slate at a pit-fighting cage in a desert shanty town. Quick, dry, flat, a little hoarse, has heard every excuse and is bored of all of them. Plain working American speech, clipped, said through a window to a queue. Not an announcer and not a narrator: offhand, imperfect, real."
+  },
+  "Pool Street/Hasp": {
+   "design": "A man in his fifties who hands out weapons at a pit-fighting cage in a desert shanty town. Gravelly, worn, a smoker's rasp, low and unhurried, bored, with dry humour underneath. Plain working American speech with no polish. He talks close and quiet, like somebody who has said this a thousand times. Not an announcer and not a narrator: a little mumbled, imperfect, real."
+  },
+  "Pool Street/Yard hand": {
+   "design": "A man in his thirties who works the yard gate behind a pit-fighting cage in a desert shanty town. A light Mexican Spanish accent, easy and low, a little tired, friendly enough but watching you. Short sentences, no hurry, talks out of the side of his mouth. Not an announcer and not a narrator: offhand, a little mumbled, real.",
+   "design_text": "Alley's shut past the fence. Owners go round to the yard gate, and I walk them. You an owner? Then you wait here like everybody else."
+  },
+  "Pool Street/Warden": {
+   "design": "An ordinary American man in his forties, a night watchman on a street corner. A natural, relaxed, medium-low speaking voice, a little hoarse and tired. He talks quietly and plainly, the way a bored man repeats something he has said many times tonight, without acting it or performing it. Conversational, unhurried, understated, slightly mumbled. Perfect audio quality, recorded close on a studio microphone in a quiet room, dry, no effects."
+  },
+  "Block Square/Margin": {
+   "design": "A woman in her fifties, the clerk who keeps the book at an open-air auction in a desert shanty town. She is talking quietly to one person who is standing at her table: low, dry, flat, quick and a little tired, with no warmth and no malice, only business. Plain American speech. A close, natural, conversational voice, as if recorded a hand's width from her mouth in a quiet room. She is not announcing, not reading aloud to a room, not presenting, and not heard through a loudspeaker, a megaphone or a radio: no echo, no projection."
+  },
+  "Block Square/Mother Ledger": {
+   "design": "A very old woman, late seventies, small and frail, a moneylender who has never needed to raise her voice. A high, thin, reedy voice with an old woman's quaver in it, light as paper, very calm and slow, faintly amused, patient in a way that frightens people. She speaks softly and close, as if across a small table at night. Not a narrator and not an actress: plain, exact, old.",
+   "design_text": "People who signed. I have never collared anybody. People sign, and then they owe, and then they come back to this table. That is all a ledger is, dear: a list of people who came back."
+  },
+  "Block Square/Warden": {
+   "design": "An ordinary American man in his thirties working security at a crowded outdoor night market. A natural mid-pitched speaking voice with a slight Southwestern drawl, short of patience. He speaks casually and quickly while his attention is on the crowd, without acting it or performing it. Conversational, plain, understated. Perfect audio quality, recorded close on a studio microphone in a quiet room, dry, no effects."
+  },
+  "Block Square/Caller Strand": {
+   "design": "An auctioneer calling bids from the back of a trailer at an open-air night market. An androgynous voice in its thirties, hoarse from shouting every night, nasal and hard, fast and rhythmic like a livestock auctioneer's chant, thrown over the heads of a crowd, tired underneath. Rough and loud, not smooth, not a radio voice."
+  },
+  "Block Square/Margin, at the table": {
+   "same_as": "Block Square/Margin"
+  },
+  "Main Street/Needle": {
+   "design": "A woman in her late thirties who fits armor at a workshop counter in a desert shanty town. Low for a woman, level and sharp, sizing you up while she talks, and she says a thing once. Dry, a little smoky, practical, faintly scornful of anybody who has not been hit yet. Plain working American speech. Not a narrator: close, matter-of-fact, real."
+  },
+  "Main Street/Thread": {
+   "design": "A woman in her late thirties who sews at a machine in the back of an armor workshop. Softer and warmer than her twin sister at the counter: low, slow, a little amused, a little inviting, talking without looking up from her work. A slight rasp. Plain American speech. Not a narrator and not an actress: quiet, close, real."
+  },
+  "Main Street/Brass": {
+   "design": "A big older woman in her sixties with an unusually deep contralto voice, deeper than most men's: husky, rumbling, slow and heavy, rough from forty years of cigarettes. A gunsmith who trades from the back of a truck in a desert shanty town. Very few words and none wasted. Plain working American speech. Not an announcer and not a narrator: curt, close, real."
+  },
+  "Main Street/Gate Warden": {
+   "design": "An ordinary American man in his fifties who minds a gate at night. A natural low speaking voice, gravelly and tired, slow and final but quiet, a man who has said no all his life and no longer argues about it. Conversational, plain, understated, without acting it. Perfect audio quality, recorded close on a studio microphone in a quiet room: clean, full and dry, with no radio, telephone or loudspeaker sound, no echo and no distortion."
+  },
+  "Main Street/Stallholder": {
+   "design": "A woman in her sixties who sells bread from a market stall at night in a desert shanty town. Warm but loud, a market voice cracked from calling over a crowd, brisk and motherly and not to be argued with. Plain working American speech. Not an announcer and not a narrator: busy, rough, real.",
+   "design_text": "Bread's hot. Water first, then bread. That is the order everything goes in here. Next. You, are you buying or are you looking?"
+  },
+  "Main Street/Scrap seller": {
+   "design": "A woman in her fifties who sells scrap from a table at a night market in a desert shanty town. A faint Korean accent. Sly, dry, quick, quietly amused at her own jokes and never smiling when she says them. A thin, slightly hoarse voice. Not a narrator and not an actress: offhand, close, real."
+  },
+  "Main Street/Tea seller": {
+   "design": "A woman in her sixties who sells tea from a kiosk at a night market in a desert shanty town. A faint Eastern European accent. Deadpan and weary, low and a little cracked: she has told the same joke for twenty years and stopped finding it funny after the first. Slow. Not a narrator and not an actress: flat, close, real."
+  },
+  "Main Street/Dealer": {
+   "design": "A man in his forties who runs a dice game on a crate at a night market in a desert shanty town. Lazy, smooth, low, smiling as he talks: a gambler's easy drawl with smoke in it, friendly in a way you should not trust. Unhurried. Plain American speech with a little Southern in it. Not an announcer and not a narrator: close, offhand, real."
+  },
+  "Main Street/Carrier": {
+   "design": "A young woman of about twenty-five who hauls a water cart through a night market in a desert shanty town. A clear, bright, strong young voice, higher than the older women around her and with no rasp in it at all, a little out of breath from the work, blunt and wary. She says each thing like a rule she is tired of repeating. Plain working American speech. Not a narrator: short, guarded, real."
+  },
+  "Main Street/Warden": {
+   "design": "A militia guard in his twenties walking a patrol through a night market in a desert shanty town. A young man's voice trying to sound harder than he is: flat, clipped, a little nasal, bored. He talks while he walks. Plain working American speech. Not an announcer: curt, close, real.",
+   "design_text": "Market Loop. Thirteen minutes if nobody makes it longer. Do not make it longer. Keep walking. Stalls are that way. Keep your hands where I can see them."
+  },
+  "Main Street/Warden#2": {
+   "design": "A militia guard in his forties walking a patrol through a night market in a desert shanty town. A very deep, slow, gravelly man's voice: a man of few words who resents every one of them. He mutters and barely opens his mouth. Plain working American speech. Not an announcer: low, close, real.",
+   "design_text": "Talk to the other one. I am counting. Forty-one. Forty-two. Forty-three. I said talk to the other one. Forty-four."
+  },
+  "Main Street/Sergeant Rook": {
+   "design": "A militia sergeant in his late forties who runs the gate of a desert shanty town at night. A level, dry, unhurried baritone with a little gravel in it. Exact with words and sparing with them; he never raises his voice and never needs to. A man who has counted heads for twenty years, has never taken a bribe, and is tired of being the only one. Plain working American speech with a trace of the rural Southwest. Not an announcer and not a narrator: close, quiet, matter-of-fact, real."
+  },
+  "Main Street/Lane Warden": {
+   "design": "A heavy militia guard in his thirties, bored on a night post in a desert shanty town. A thick, slow, nasal voice, sardonic, a little out of breath, amused at his own bad luck. Plain working American speech. Not an announcer: close, offhand, mumbled, real."
+  },
+  "Main Street/A hauler": {
+   "design": "A big haulage man in his fifties who has carried loads across a desert all his life. A deep, rough, good-humoured voice, short of breath from the walk, unhurried, with dust in it. Plain working American speech. Not a narrator: close, easy, real."
+  },
+  "Main Street/A woman with no litre": {
+   "design": "A woman in her late twenties at a checkpoint at night with no money for the toll. Quick, anxious, a little high, trying to sound reasonable and not quite managing it, talking too fast. Plain American speech. Not an actress: close, breathy, frightened underneath, real."
+  },
+  "Main Street/A collector": {
+   "design": "A slave-taker in his forties, back from a night's work in the desert. Soft-spoken, smooth, contemptuous, smiling as he talks, in no hurry at all: the voice of a man nobody has said no to in years. Low and a little oily, with a faint Mexican Spanish accent. Not a villain in a film: quiet, close, real."
+  },
+  "Main Street/Calla Wynn": {
+   "design": "A woman in her mid thirties, a field medic who has walked four days across a salt desert with almost no water. A low, steady, educated voice gone hoarse and dry with thirst, holding fear down by an effort, careful with every word. Warm underneath. Plain American speech. Not an actress and not a narrator: close, tired, real."
+  },
+  "Main Street/Calla Wynn#2": {
+   "same_as": "Main Street/Calla Wynn"
+  },
+  "Main Street/Calla Wynn#3": {
+   "same_as": "Main Street/Calla Wynn"
+  },
+  "Block Square/Calla Wynn": {
+   "same_as": "Main Street/Calla Wynn"
+  },
+  "Rotgut Row/Big Lottie": {
+   "design": "A big woman of fifty who keeps a drum-top bar and a chalk fighting ring in a desert shanty town. A deep, warm, loud voice gone rough from years of shouting over drinkers: slow, amused, entirely sure of herself, with a West African lilt under plain English. She is the biggest person in any room and has never had to prove it. Not an announcer and not a narrator: close, easy, real."
+  },
+  "Rotgut Row/Fen": {
+   "design": "A man in his early thirties who buys stolen things at a tarp stall at night in a desert shanty town. Quiet, quick and dry; he talks low and fast, out of the side of his mouth, and never says more than the trade needs. A light, slightly nasal voice, tired and wary. Plain American speech. Not a narrator: close, guarded, real."
+  },
+  "Rotgut Row/Mash": {
+   "design": "A woman of thirty-eight who distils rough liquor and runs a bar out of an old school bus in a desert shanty town. Hoarse, flat and practical, with a smoker's roughness; she has not slept properly in years and misses nothing. Dry humour, no warmth wasted. Plain working American speech with a trace of Mexican Spanish. Not a narrator: close, tired, real."
+  },
+  "Rotgut Row/A new keeper": {
+   "design": "A hard woman in her forties who has just taken over a market stall she did not build, in a desert shanty town. Clipped, smug, a little bored; a thin sharp voice with nothing friendly in it. Plain American speech. Not a narrator: close, curt, real.",
+   "design_text": "Fen? Fen lost the pitch. The post said short, and the Row heard it. I pay three tenths, not four, and the cup is what it costs now. Buying or looking?"
+  },
+  "Block Square/A Warden, sentenced": {
+   "same_as": "Main Street/Lane Warden"
+  },
+  "The Last Call/Captain Dolores": {
+   "design": "A wiry woman of sixty-four who keeps a bar in a wrecked airliner in a desert shanty town, and was cabin crew on it long ago. She is talking quietly to one person across a small table at night: low, close and unhurried, a little husky from smoke, friendly on top and hard underneath. American. She calls everybody sweetheart. A natural, conversational voice, as if recorded a hand's width from her mouth in a quiet room. She is not announcing, not presenting, not putting on a voice, and not heard through a loudspeaker, a cabin address system or a radio: no echo, no projection."
+  },
+  "The Last Call/A Warden corporal": {
+   "design": "A gate guard in his thirties, off shift and half drunk at a bar table at night. A thick, slow, surly voice, a little slurred, used to being let off. Plain working American speech. Not an actor and not a narrator: close, loose, sour, real."
+  },
+  "The Last Call/A winch hand": {
+   "design": "A working woman in her forties who runs a cable winch in a salvage yard, drinking alone because there has been no work for four days. A low, flat, worn voice, ashamed and stubborn at once, with nothing left to perform. Plain working American speech. Not an actress and not a narrator: close, quiet, tired, real.",
+   "design_text": "Nine. I know it is nine. The Skip has been down four days, and nine is what I have in the world. Take it. That was the week's bread. Paid. The cable moves tomorrow, they say."
+  },
+  "The Last Call/A Chainmen collector": {
+   "same_as": "Main Street/A collector"
+  },
+  "The Velvet Tin/Captain Voss": {
+   "design": "A woman of forty-seven who commands the gate guards of a desert shanty town and has a price for every part of the job. A flat, tired, low voice, dry as paper, with a rasp from old smoke; she says every price out loud and never raises it. A former raider: no warmth, no anger, only arithmetic. Plain American speech. Not a villain in a film and not a narrator: close, quiet, transactional, real."
+  },
+  "The Velvet Tin/Madam Corazon": {
+   "design": "A woman of forty-nine who owns the one house in a desert shanty town where nobody is owned. Solid, unhurried, warm on the surface and iron under it; a rich low voice with a Mexican Spanish accent, amused, missing nothing. She calls everybody corazon. Not an actress and not a narrator: close, easy, real."
+  },
+  "The Scrappers' Yard/Guildmaster Okafor-Reyes": {
+   "design": "A thick-set man of fifty-eight, the elected head of a salvage guild in a desert shanty town, once a merchant who went broke. A deep, slow, careful voice, a little hoarse; fair-minded and tired of having to be; a trace of Nigerian English in plain speech. He weighs every word as he weighs scrap. Not an announcer and not a narrator: close, grave, real."
+  },
+  "The Scrappers' Yard/Pike": {
+   "design": "A salvage crew boss in his thirties, short of sleep and short of patience, standing guard over his sleeping crew at night. A hard, flat, clipped voice, low so as not to wake anybody, with a threat left unsaid in it. Plain working American speech. Not a narrator: close, curt, real."
+  },
+  "The Scrappers' Yard/Ilya Brandt": {
+   "design": "A pipe fitter of about thirty who has been hiding for three days from a hanging. A quiet, worn-out, steady voice: he has thought it through and is past pleading, and says what he did plainly. A faint Eastern European accent. Decent, frightened, very tired. Not an actor and not a narrator: close, low, real."
+  },
+  "Block Square/Ilya Brandt": {
+   "same_as": "The Scrappers' Yard/Ilya Brandt"
+  },
+  "Main Street/Maren Brandt": {
+   "design": "A woman of about thirty, just over a fever, standing under a gallows at night where her husband hangs. Hollow, level, emptied out: she is not crying and not shouting, and that is worse. A thin, hoarse voice. Plain American speech. Not an actress and not a narrator: close, flat, real.",
+   "design_text": "That is Ilya. Three days, they leave him up. I had the fever, and he had the wrench. I have twenty litres in the world, and all of it is on the board at the Last Call, against your name."
+  },
+  "Main Street/A cart hand": {
+   "design": "A water-cart hand in his late fifties, at the end of a long day. Dry, low, quick, conspiratorial: he talks out of the side of his mouth as if somebody might be listening, and enjoys knowing something you do not. A worn, slightly cracked voice. Plain working American speech. Not a narrator: close, sly, real."
+  }
+ },
+ "format_about": "Uncompressed, 44.1 kHz, since the account went to Pro on 2026-11-25 (\"money is not a barrier - we want a AAA game\"): every line was made again in it. 'mp3_44100_128' is what any plan allows."
 }

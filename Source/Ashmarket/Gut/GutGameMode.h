@@ -1045,6 +1045,55 @@ public:
 	UFUNCTION(BlueprintPure, Category="Gut|Ladder")
 	bool IsOnLadder() const;
 
+	/**
+	 *  True if this is somebody with no tag being taken: see FGutTaking. Bare hands on both sides, nobody watching, and
+	 *  it is over when they are beaten down (TakenAtHealth of what they came with), when they are dead, or when the
+	 *  player is down, who is left there and not killed. Then back to the town, where it is settled.
+	 */
+	UFUNCTION(BlueprintPure, Category="Gut|Taking")
+	bool IsTaking() const;
+
+	/** How it came out, while its last picture is up: FGutTaking::Outcome */
+	int32 GetTakingOutcome() const;
+
+	/** He or she, of whoever is being taken */
+	FGutWho GetTakenWho() const;
+
+	/** Whoever is being taken gives up at this share of the health they came with */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Taking", meta = (ClampMin = 0.05, ClampMax = 0.9))
+	float TakenAtHealth = 0.3f;
+
+	/** Somebody with no tag has less in them than a fighter: this share of what their strength would give one */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Taking", meta = (ClampMin = 0.2, ClampMax = 1))
+	float TakenHealthShare = 0.8f;
+
+	/** How long the last picture of it stays up before the town */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Taking", meta = (ClampMin = 0.5, ClampMax = 20, Units = "s"))
+	float TakenLinger = 4.0f;
+
+	/** A name out of the cage's own, for somebody who has none the player knows: the same for the same number */
+	static FText GetCageName(int32 Number);
+
+	/** What the Block would ask for somebody of this making: what is asked of a buyer, and four fifths of it what a seller gets */
+	float GetBlockPrice(const FGutStableFighter& Who) const;
+
+	/**
+	 *  Hires one of the yard's out for the day to the Scrappers, who pay for a back by the day ("can we do rent?",
+	 *  25 November): what they bring back is the player's, it takes the day as training does, and somebody collared
+	 *  likes it no better than they like anything. Nobody hires the lame.
+	 */
+	bool HireOutFighter(int32 FighterIndex);
+
+	/** What a day of this one's work brings back */
+	float GetHirePay(const FGutStableFighter& Who) const;
+
+protected:
+	void BeginTaking();
+	void UpdateTaking();
+	void EndTaking(int32 Outcome);
+
+public:
+
 	/** True if the player has come as an owner */
 	bool IsAtStable() const;
 

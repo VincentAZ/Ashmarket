@@ -427,6 +427,15 @@ protected:
 	FString Notice;
 	float NoticeUntil = 0.0f;
 
+	/**
+	 *  Where the player stood when something read at a door was put up, and how far from there takes it down again. What
+	 *  is written on a board is read at the board: it stayed up its full ten seconds across the screen after the player
+	 *  had walked off ("this overlay and text persist for way too long once he walks away from the job board",
+	 *  25 November). Nought is a notice that only time takes down.
+	 */
+	FVector NoticeAt = FVector::ZeroVector;
+	float NoticeLeave = 0.0f;
+
 	bool bStoppedMenu = false;
 	int32 StoppedChoice = 0;
 
@@ -673,6 +682,19 @@ protected:
 	TObjectPtr<UAudioComponent> BarkVoice;
 
 public:
+	/**
+	 *  Goes for somebody with no tag (FTownPerson::Taken): it is fought out in the dead end, and settled by SettleTaking
+	 *  when the player is back. False, with why in the notice, if the player has nowhere to keep anybody.
+	 */
+	bool TakeSomebody(int32 Person);
+
+	/**
+	 *  What a taking came to, done as the place opens again: taken, they are the player's and in tow, wrists tied; dead,
+	 *  there is nothing; got away, and some of the player's water went with them. The Free Tags hear of it every time,
+	 *  and the Chainmen think better of somebody who does their work. Whoever it was is gone from where they stood.
+	 */
+	void SettleTaking();
+
 	/** The player walks into this person, now: see UpdateBumps. False if they are not somebody who can be. */
 	bool Bump(int32 Person);
 
@@ -792,6 +814,18 @@ protected:
 	 *  ("auctioneer is still not heard"). Fetched as the place opens, they are ready with everything else in it.
 	 */
 	void FetchAuctionSounds();
+
+	/**
+	 *  Fetches every clip that anybody in the place may be given to do without warning: the nods, the hands that go with
+	 *  talk, the listener's, what is done with a thing handed over, tied wrists, and the face for every line, call and
+	 *  bark the place has recorded. As with the caller's bidding, what is fetched at the moment it is wanted is not ready
+	 *  to be played: see AGutFighter::IsClipReady. Fetched as the place opens, they are ready with everything else in it.
+	 */
+	void FetchGestures();
+
+	/** What FetchGestures fetched, held so that it stays */
+	UPROPERTY()
+	TArray<TObjectPtr<UAnimSequenceBase>> FetchedClips;
 
 	/** The name of a figure's recording, or nothing if no such figure was recorded */
 	static FString GetFigurePart(float Figure);
@@ -1028,6 +1062,21 @@ public:
 
 	/** How a piece of work stands, in words: what is to be done next, or how it ended. Nothing if it has not been begun. */
 	FString GetMissionStep(const FTownMission& Mission) const;
+
+	/** How far a piece of work has got: each thing it is made of, as it is to be read, and whether it is done */
+	void GetMissionTally(const FTownMission& Mission, TArray<FString>& OutWords, TArray<bool>& OutDone) const;
+
+	/** The work the player has in hand, newest first: for the walking screen, which says what is being done and how far it has got */
+	void GetWorkInHand(TArray<const FTownMission*>& OutWork) const;
+
+	/** The day it is, for whoever keeps a yard; nought for whoever does not count days */
+	int32 GetDay() const;
+
+	/** True for a while after the player comes out into a place on a later day than they were last out in one */
+	bool IsDayNew() const { return bDayNew && GetWorld() && GetWorld()->GetTimeSeconds() < 40.0f; }
+
+	/** Set as the place opens: see IsDayNew */
+	bool bDayNew = false;
 
 	/** The performance of the face that goes with a recording of speech, if one has been made: Epic's speech-to-face, run by Tools/make_town_faces.sh */
 	UAnimSequenceBase* GetFaceFor(const USoundBase* Recording) const;

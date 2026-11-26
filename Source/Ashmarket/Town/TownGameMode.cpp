@@ -306,6 +306,17 @@ void ATownGameMode::InitGame(const FString& MapName, const FString& Options, FSt
 		StoryData = Story.LoadSynchronous();
 	}
 
+	// somebody gone for in the dead end: what it came to, before anybody is stood in the place
+	SettleTaking();
+
+	// a day gone by since the player was last out in the town: said on the dark the place opens out of, and lit by its name
+	if (UGutGameInstance* GameInstance = GetGutGameInstance(); GameInstance && GameInstance->Stable.bStarted)
+	{
+		bDayNew = GameInstance->DaySeen > 0 && GameInstance->Stable.Day > GameInstance->DaySeen;
+
+		GameInstance->DaySeen = GameInstance->Stable.Day;
+	}
+
 	// -GutMarks=w1=100,wynn=1 sets the town's marks as the place opens (commas for spaces): for seeing how something came
 	// out without doing it again
 	if (FString Marks; FParse::Value(FCommandLine::Get(), TEXT("GutMarks="), Marks, false))
@@ -389,6 +400,22 @@ void ATownGameMode::Tick(float DeltaTime)
 	UpdateSoundsDue();
 	UpdateLed(DeltaTime);
 	UpdateBumps(DeltaTime);
+
+	// something read at a door comes down when the player has walked off from it
+	if (NoticeLeave > 0.0f)
+	{
+		const float Now = GetWorld()->GetTimeSeconds();
+
+		if (Now >= NoticeUntil)
+		{
+			NoticeLeave = 0.0f;
+		}
+		else if (const AGutFighter* Reader = GetWalker(); Reader && FVector::DistSquared2D(Reader->GetActorLocation(), NoticeAt) > FMath::Square(NoticeLeave))
+		{
+			NoticeUntil = FMath::Min(NoticeUntil, Now + 0.25f);
+			NoticeLeave = 0.0f;
+		}
+	}
 	UpdateBeats(DeltaTime);
 	UpdateTow(DeltaTime);
 	UpdateFires();
@@ -609,7 +636,7 @@ void ATownGameMode::Settle()
 		Walker->SetAtEase(true);
 
 		// and what they carry is seen on them: the bag, at the hip
-		Walker->WearBag(FindThingMesh(TEXT("worn_satchel")));
+		Walker->WearBag(FindThingMesh(TEXT("worn_satchel")), FindThingMesh(TEXT("bag_strap")));
 
 		// What is loose in a place goes when it is walked into (a tyre, a crate, a can: the builder's LOOSE). It is shoved
 		// about as hard as a shin shoves, whatever it is, so its own weight decides how far it goes: a tyre skids off and a
@@ -797,6 +824,9 @@ void ATownGameMode::Settle()
 
 	// what the caller says in the bidding, fetched with the place so that it is ready with it
 	FetchAuctionSounds();
+
+	// and whatever anybody may be given to do with their hands, their head or their face
+	FetchGestures();
 
 	// and nobody is shown the place until everything in it is ready to be looked at
 	UGutGameInstance::FinishPreparing(PlaceData ? *PlaceData->Name : TEXT("a place"));
@@ -1655,6 +1685,8 @@ void ATownGameMode::Interact()
 		{
 			Notice = Door.Shut;
 			NoticeUntil = GetWorld()->GetTimeSeconds() + TownConstants::NoticeTime;
+			NoticeAt = GetWalker() ? GetWalker()->GetActorLocation() : FVector::ZeroVector;
+			NoticeLeave = 170.0f;
 		}
 		else if (Door.Deed == ETownDeed::None)
 		{
@@ -1666,6 +1698,8 @@ void ATownGameMode::Interact()
 
 			ShowNotice(Used.Said.IsEmpty() ? Came : (Came.IsEmpty() ? Used.Said : Used.Said + TEXT("   ") + Came));
 			NoticeUntil = GetWorld()->GetTimeSeconds() + TownConstants::GivenTime + 2.0f;
+			NoticeAt = GetWalker() ? GetWalker()->GetActorLocation() : FVector::ZeroVector;
+			NoticeLeave = 170.0f;
 
 			if (UGutGameInstance* GameInstance = GetGutGameInstance())
 			{
@@ -2006,6 +2040,15 @@ void ATownGameMode::AdvanceTalk()
 				OpenShop(Keeper);
 			}
 
+			return;
+		}
+		else if (Answer.Deed == ETownDeed::Take)
+		{
+			// whoever was being talked to is who is gone for
+			const int32 Whom = TalkingTo;
+
+			EndTalk();
+			TakeSomebody(Whom);
 			return;
 		}
 		else if (Answer.Deed != ETownDeed::None)
@@ -2606,6 +2649,75 @@ void ATownGameMode::SkipToCall(int32 Index)
 	}
 }
 
+void ATownGameMode::FetchGestures()
+{
+	FetchedClips.Reset();
+
+	const auto Fetch = [this](const FString& Path)
+	{
+		if (UAnimSequenceBase* Clip = Cast<UAnimSequenceBase>(FSoftObjectPath(Path).TryLoad()))
+		{
+			FetchedClips.AddUnique(Clip);
+		}
+	};
+
+	const auto Named = [&Fetch](const TCHAR* Name) { Fetch(FString::Printf(TEXT("/Game/Gut/Art/Motion/%s.%s"), Name, Name)); };
+
+	Named(TEXT("mc_am_stand_idle_greet_02_nod"));
+	Named(TEXT("mc_am_stand_idle_greet_04_nod"));
+	Named(TownConstants::ListenGesture);
+
+	for (const TCHAR* Talk : TownConstants::TalkGestures)
+	{
+		Named(Talk);
+	}
+
+	Fetch(TownConstants::GivenSmokes);
+	Fetch(TownConstants::GivenToMouth);
+
+	if (const AGutFighter* Walker = GetWalker())
+	{
+		if (UAnimSequenceBase* Tied = Walker->FetchBoundArms())
+		{
+			FetchedClips.AddUnique(Tied);
+		}
+	}
+
+	const int32 Hands = FetchedClips.Num();
+
+	// the face each recording is said with
+	const auto Face = [this](const USoundBase* Recording)
+	{
+		if (UAnimSequenceBase* Clip = GetFaceFor(Recording))
+		{
+			FetchedClips.AddUnique(Clip);
+		}
+	};
+
+	if (PlaceData)
+	{
+		for (const FTownPerson& Person : PlaceData->People)
+		{
+			for (const FTownLine& Line : Person.Lines)
+			{
+				Face(Line.Voice);
+			}
+
+			for (const FTownBark& Bark : Person.Bumped)
+			{
+				Face(Bark.Voice);
+			}
+		}
+
+		for (const FTownCall& Call : PlaceData->Calls)
+		{
+			Face(Call.Voice);
+		}
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Street: %d clips for hands and heads and %d faces are fetched with the place"), Hands, FetchedClips.Num() - Hands);
+}
+
 UAnimSequenceBase* ATownGameMode::GetFaceFor(const USoundBase* Recording) const
 {
 	if (!Recording)
@@ -2915,6 +3027,144 @@ void ATownGameMode::UpdateLed(float DeltaTime)
 		Body->SetActorLocationAndRotation(FVector(Flat.X, Flat.Y, Feet.Z + HalfHeight), Turned, false, nullptr, ETeleportType::None);
 		Body->SetLedVelocity(FVector(Going.X, Going.Y, 0.0f) * Pace);
 	}
+}
+
+bool ATownGameMode::TakeSomebody(int32 Index)
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+	const AGutGameMode* Rules = GetCageRules();
+
+	if (!GameInstance || !Rules || !PlaceData || !PlaceData->People.IsValidIndex(Index) || PlaceData->People[Index].Taken.IsNone())
+	{
+		return false;
+	}
+
+	const FTownPerson& Person = PlaceData->People[Index];
+
+	// nobody is taken by somebody with nowhere to keep them
+	if (GetOwnerState().Fighters.Num() >= Rules->GetStableMostFighters())
+	{
+		ShowNotice(FString::Printf(TEXT("Your yard holds %d and it is full. There is nowhere to keep anybody you took."), Rules->GetStableMostFighters()));
+		return false;
+	}
+
+	// Who they are, if they are taken: nobody much. What they have in them is drawn from who and where they are, so it is
+	// the same person whenever they are looked at; a name out of the cage's own, since nobody asked theirs.
+	const uint32 Drawn = GetTypeHash(Person.Taken);
+	FRandomStream Draw(static_cast<int32>(Drawn));
+
+	FGutTaking Taking;
+	Taking.bOn = true;
+	Taking.Mark = Person.Taken;
+	Taking.Who.FighterName = AGutGameMode::GetCageName(static_cast<int32>(Drawn % 100000));
+	Taking.Who.Body = Person.Body;
+	Taking.Who.Strength = Draw.RandRange(0, 2);
+	Taking.Who.Speed = Draw.RandRange(0, 2);
+	Taking.Who.Nerve = Draw.RandRange(0, 1);
+	Taking.Who.Cunning = Draw.RandRange(0, 1);
+	Taking.Who.bOwned = true;
+	// (nobody thanks whoever put the collar on)
+	Taking.Who.Resentment = 70.0f;
+	// what the Block would ask for them: what selling them is reckoned from
+	Taking.Who.Price = Rules->GetBlockPrice(Taking.Who);
+
+	GameInstance->Taking = Taking;
+
+	// the way back out of the dead end leads to where the player is standing now
+	if (const AGutFighter* Walker = GetWalker())
+	{
+		GameInstance->TownStood = FTransform(Walker->GetActorRotation(), Walker->GetActorLocation());
+	}
+
+	// fought under the cage's rules as a fight of its own: nobody's ladder, nobody's bet, nobody's yard
+	GameInstance->bAtDoor = false;
+	GameInstance->bCameByDoor = true;
+	GameInstance->bSandbox = true;
+	GameInstance->bStable = false;
+	GameInstance->bWindow = false;
+
+	UE_LOG(LogTown, Log, TEXT("Street: going for %s (%s), who would be %s: strength %d, speed %d, nerve %d, cunning %d"), *Person.Name, *Person.Taken.ToString(),
+		*Taking.Who.FighterName.ToString(), Taking.Who.Strength, Taking.Who.Speed, Taking.Who.Nerve, Taking.Who.Cunning);
+
+	// (a test that only wants to see somebody gone for holds the ways shut)
+	if (!bWaysHeld)
+	{
+		UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/Gut/Lvl_Alley")), true);
+	}
+
+	return true;
+}
+
+void ATownGameMode::SettleTaking()
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance || !GameInstance->Taking.bOn)
+	{
+		return;
+	}
+
+	const FGutTaking Taking = GameInstance->Taking;
+
+	GameInstance->Taking = FGutTaking();
+
+	// (left the game, or the level, before it was decided: it never happened)
+	if (Taking.Outcome == 0)
+	{
+		return;
+	}
+
+	const FGutWho Who = UGutSoundSubsystem::WhoIs(this, Taking.Who.Body);
+	const FString Name = Taking.Who.FighterName.ToString();
+
+	// gone from where they stood, whichever way it went
+	SetMark(Taking.Mark, 1);
+
+	FString Told;
+
+	if (Taking.Outcome == 1)
+	{
+		// the player's, and behind them with their wrists tied: an owner from now, if not one before
+		if (!GameInstance->Stable.bStarted)
+		{
+			GameInstance->PendingStory = EGutStory::Owner;
+		}
+
+		FGutStableState Stable = GetOwnerState();
+
+		FGutStableFighter Taken = Taking.Who;
+		Taken.bInTow = true;
+
+		Stable.bStarted = true;
+		Stable.Fighters.Add(Taken);
+
+		GameInstance->Stable = Stable;
+
+		const FString Came = Apply(TEXT("st.freetags-4 st.chainmen+2"));
+
+		Told = FString::Printf(TEXT("%s is yours: no tag, and nobody to say otherwise. %s is behind you with %s wrists tied. Walk %s to your yard on Pool Street: train %s, fight %s, or sell %s there.   %s"),
+			*Name, Who.HeCap(), Who.His(), Who.Him(), Who.Him(), Who.Him(), Who.Him(), *Came);
+	}
+	else if (Taking.Outcome == 2)
+	{
+		const FString Came = Apply(TEXT("st.freetags-8"));
+
+		Told = FString::Printf(TEXT("%s is dead in the dead end, and nobody pays for the dead.   %s"), *Name, *Came);
+	}
+	else
+	{
+		const FString Came = Apply(TEXT("water-8 st.freetags-2"));
+
+		Told = FString::Printf(TEXT("%s got away, and went through what you carry while you were down.   %s"), *Name, *Came);
+	}
+
+	GameInstance->SaveRun();
+
+	Notice = Told;
+	NoticeUntil = GetWorld()->GetTimeSeconds() + 14.0f;
+	NoticeLeave = 0.0f;
+
+	UE_LOG(LogTown, Log, TEXT("Street: the taking of %s is settled: %s"), *Name, *Told);
 }
 
 bool ATownGameMode::IsOpenGround(const FVector2D& At, float Clear) const
@@ -5264,6 +5514,20 @@ TArray<FTownBagLine> ATownGameMode::GetBagLines() const
 		Line.Picture = FName("bag_paper_wage");
 		Line.About.Add(GetMissionStep(Mission));
 
+		// and how far it has got, a thing to a line
+		if (Stands < TownStory::Ended)
+		{
+			TArray<FString> Things;
+			TArray<bool> Done;
+
+			GetMissionTally(Mission, Things, Done);
+
+			for (int32 i = 0; i < Things.Num(); ++i)
+			{
+				Line.About.Add(FString::Printf(TEXT("%s   %s"), Done[i] ? TEXT("[done]") : TEXT("[to do]"), *Things[i]));
+			}
+		}
+
 		Lines.Add(MoveTemp(Line));
 	}
 
@@ -5764,10 +6028,15 @@ void ATownGameMode::SettleYard()
 		{
 			KeepOnGround(Body);
 
-			// They stand plainly. They had a family of their own (stretches, aches, getting their breath back), and caught in
-			// the middle of one, on a dressed body, it read as a body gone wrong: reported three times as that ("still not
-			// fixed (as soon as he moves, it's fixed)", 25 November). What it was is known now, and it is not worth it.
-			Body->SetAtEaseFamily(FName("stand"));
+			// Somebody who fights for a living, in the owner's yard with a fight to come: they stretch, and they are sore.
+			// (For one build they stood plainly, because I took a body gone wrong that he reported three times for one of
+			// these stretches. It was not: it was the yard hand on Pool Street, in a clip that was not ready. See
+			// AGutFighter::IsClipReady.)
+			Body->SetAtEaseFamily(FName("yard"));
+
+			// and with what they fight with in their hand: it is theirs, and this is where it is kept ("why isn't he
+			// displayed holding his weapon?", 25 November)
+			Body->EquipWeapon(Fighter.Weapon);
 
 			YardBodies.Add(Body);
 			YardFighters.Add(i);
@@ -6083,18 +6352,18 @@ void ATownGameMode::OpenYardPage(int32 Which)
 	// a man or a woman, how old, and what he or she can do: the sheet had none of it (24 November)
 	const FGutWho Sex = UGutSoundSubsystem::WhoIs(this, Who.Body);
 
-	ShopSaid = FString::Printf(TEXT("A %s, about %d. Strength %d, speed %d, nerve %d, cunning %d, each out of %d; fights with %s. "), Sex.Man(), GetAgeOf(Who), Who.Strength, Who.Speed, Who.Nerve, Who.Cunning,
-		GetCageRules() ? GetCageRules()->GetStableMostTaught() : 5, Who.Weapon ? *(TEXT("the ") + Who.Weapon->DisplayName.ToString().ToLower()) : TEXT("bare hands"));
+	// Set as a sheet, a thing to a line: who, what they can do, what they are to the player, what a day costs. It was one
+	// paragraph of all of it, run together across the page ("formatting issues again", 25 November).
+	ShopSaid = FString::Printf(TEXT("A %s, about %d. Fights with %s.%s"), Sex.Man(), GetAgeOf(Who), Who.Weapon ? *(TEXT("the ") + Who.Weapon->DisplayName.ToString().ToLower()) : TEXT("bare hands"),
+		Who.Armor.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(" Wears %s."), *GetArmorWords(Who.Armor)));
 
-	if (!Who.Armor.IsEmpty())
-	{
-		ShopSaid += FString::Printf(TEXT("Has %s. "), *GetArmorWords(Who.Armor));
-	}
+	ShopSaid += FString::Printf(TEXT("\nStrength %d  \u00B7  Speed %d  \u00B7  Nerve %d  \u00B7  Cunning %d     (each out of %d)"), Who.Strength, Who.Speed, Who.Nerve, Who.Cunning,
+		GetCageRules() ? GetCageRules()->GetStableMostTaught() : 5);
 
-	ShopSaid += Who.Billing.ToString() + (Who.Wins > 0 ? FString::Printf(TEXT(" %d %s for you."), Who.Wins, Who.Wins == 1 ? TEXT("fight won") : TEXT("fights won")) : FString()) + Mood;
+	ShopSaid += TEXT("\n") + Who.Billing.ToString() + (Who.Wins > 0 ? FString::Printf(TEXT(" %d %s for you."), Who.Wins, Who.Wins == 1 ? TEXT("fight won") : TEXT("fights won")) : FString()) + Mood;
 
 	// what a day costs, said where a day can be spent: somebody on a wage who is not paid walks
-	ShopSaid += FString::Printf(TEXT(" A day gone by costs %.0f L in feed and wages; you hold %.0f."), GetDayDue(), GameInstance->Stable.Water);
+	ShopSaid += FString::Printf(TEXT("\nA day gone by costs %.0f L in feed and wages. You hold %.0f L. It is day %d."), GetDayDue(), GameInstance->Stable.Water, GameInstance->Stable.Day);
 
 	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
 	{
@@ -6162,7 +6431,7 @@ void ATownGameMode::GetYardPage(TArray<FTownShopLine>& OutLines, TArray<int32>& 
 
 	for (int32 i = 0; i < 4; ++i)
 	{
-		Add(i == 3 ? static_cast<int32>(TrainCunning) : TrainStrength + i, FString::Printf(TEXT("Train %s"), Taught[i]), FString::Printf(TEXT("%d of %d now  \u00B7  today is over when it is done, and the day's %.0f L falls due"), Has[i], Most, GetDayDue()),
+		Add(i == 3 ? static_cast<int32>(TrainCunning) : TrainStrength + i, FString::Printf(TEXT("Train %s"), Taught[i]), FString::Printf(TEXT("%d of %d  \u00B7  takes the rest of the day"), Has[i], Most),
 			Rules->GetTrainingCost(), FString(), Has[i] < Most, TEXT("taught"));
 
 		// The warning is under the list, where there is room for it: on the line it ran on under the price (24 November)
@@ -6176,6 +6445,13 @@ void ATownGameMode::GetYardPage(TArray<FTownShopLine>& OutLines, TArray<int32>& 
 	{
 		Add(Patch, TEXT("Mend a limb"), TEXT("Doc Stitch comes: the first that is gone"), Rules->GetStablePatchCost(), FString(), true, FString());
 	}
+
+	// out for the day to whoever pays for a back
+	Add(HireOut, FString::Printf(TEXT("Hire %s out for the day"), Sex.Him()), TEXT("hauling for the Scrappers  \u00B7  takes the rest of the day"), 0.0f,
+		FString::Printf(TEXT("+%.0f L"), Rules->GetHirePay(Who)), !Who.IsCrippled(), TEXT("lame"));
+
+	OutLines.Last().About = FString::Printf(TEXT("The Guild pays for a back by the day. %s hauls scrap until dark and brings you %.0f L. It is all that is done today: the day ends with it, and feed and wages for the day, %.0f L, fall due.%s"),
+		Sex.HeCap(), Rules->GetHirePay(Who), GetDayDue(), Who.bOwned ? *FString::Printf(TEXT(" %s will like you no better for it."), Sex.HeCap()) : TEXT(""));
 
 	Add(Dope, FString::Printf(TEXT("Give %s Dust"), Sex.Him()), Who.Habit >= 0.5f ? FString::Printf(TEXT("%s needs it now"), Sex.He()) : FString(TEXT("hits harder; comes to need it")), Rules->GetDopeCost(), FString(), !Who.bDoped, TEXT("dusted"));
 
@@ -6306,6 +6582,10 @@ bool ATownGameMode::DoYardLine(int32 Line)
 			bDone = Lent.Rules->TrainFighter(YardFocus, EGutTraining::Cunning);
 			break;
 
+		case HireOut:
+			bDone = Lent.Rules->HireOutFighter(YardFocus);
+			break;
+
 		case Patch:
 			bDone = Lent.Rules->PatchFighter(YardFocus);
 			break;
@@ -6358,11 +6638,12 @@ bool ATownGameMode::DoYardLine(int32 Line)
 
 	if (GameInstance->Stable.Day != DayBefore && !GameInstance->Stable.Fighters.IsValidIndex(YardFocus))
 	{
-		static const TCHAR* Worked[] = { TEXT("strength"), TEXT("speed"), TEXT("nerve") };
+		static const TCHAR* Worked[] = { TEXT("strength"), TEXT("speed"), TEXT("nerve"), TEXT("cunning") };
 
 		CloseShop();
 
-		ShowNotice(FString::Printf(TEXT("%s is worked at %s until dark.%s"), *Name, Worked[FMath::Clamp(Code - TrainStrength, 0, 2)], *Day));
+		ShowNotice(Code == HireOut ? FString::Printf(TEXT("%s hauls scrap for the Guild until dark.%s"), *Name, *Day)
+			: FString::Printf(TEXT("%s is worked at %s until dark.%s"), *Name, Worked[Code == TrainCunning ? 3 : FMath::Clamp(Code - TrainStrength, 0, 2)], *Day));
 
 		NoticeUntil = GetWorld()->GetTimeSeconds() + TownConstants::GivenTime;
 
@@ -6430,6 +6711,10 @@ bool ATownGameMode::DoYardLine(int32 Line)
 	case TrainSpeed:
 	case TrainNerve:
 		ShopSaid = FString::Printf(TEXT("%s is worked at %s until dark.%s"), *Name, Taught[Code - TrainStrength], *Day);
+		break;
+
+	case HireOut:
+		ShopSaid = FString::Printf(TEXT("%s hauls scrap for the Guild until dark, and what was paid for it is yours.%s"), *Name, *Day);
 		break;
 
 	case TrainCunning:

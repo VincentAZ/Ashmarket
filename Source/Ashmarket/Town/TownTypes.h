@@ -56,7 +56,10 @@ enum class ETownDeed : uint8
 	Rest,
 
 	/** To the yard's rack: what the owner keeps there, put on it out of the bag and taken off it again */
-	Rack
+	Rack,
+
+	/** Goes for whoever is being talked to, who has no tag: see FGutTaking */
+	Take
 };
 
 /** One thing the player can say back */
@@ -286,6 +289,13 @@ struct FTownPerson
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
 	TArray<FTownWay> Ways;
+
+	/**
+	 *  Somebody with no tag, who can be taken: the town's mark that says they have been gone for, however it came out.
+	 *  They stand in the place only while it is nought. None is somebody who cannot be.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
+	FName Taken;
 
 	/** Whose they are, by the power's key ("wardens"): walking into them is taken up with that power. None is nobody's. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")

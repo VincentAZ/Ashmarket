@@ -93,7 +93,7 @@ DEEDS = {"": unreal.TownDeed.NONE, "fight": unreal.TownDeed.FIGHT, "fight_afresh
          "spar": unreal.TownDeed.SPAR, "bet": unreal.TownDeed.BET, "own": unreal.TownDeed.OWN, "go": unreal.TownDeed.GO,
          "buy": unreal.TownDeed.BUY, "borrow": unreal.TownDeed.BORROW, "repay": unreal.TownDeed.REPAY,
          "armor": unreal.TownDeed.ARMOR, "trade": unreal.TownDeed.TRADE, "pit": unreal.TownDeed.PIT, "rest": unreal.TownDeed.REST,
-         "rack": unreal.TownDeed.RACK}
+         "rack": unreal.TownDeed.RACK, "take": unreal.TownDeed.TAKE}
 
 # the clip somebody with their wrists tied has their arms taken from (AGutFighter::BoundArms), which nobody else in a town stands in
 BOUND_STANCE = "crowd_watch_hands_behind"
@@ -578,6 +578,18 @@ def story():
             steps.append(step)
 
         mission.set_editor_property("steps", steps)
+
+        tally = []
+
+        for thing in entry.get("tally", []):
+            one = unreal.TownMissionTally()
+            one.set_editor_property("words", thing["words"])
+            one.set_editor_property("when", thing.get("when", ""))
+            one.set_editor_property("count", unreal.Name(thing.get("count", "")))
+            one.set_editor_property("of", int(thing.get("of", 0)))
+            tally.append(one)
+
+        mission.set_editor_property("tally", tally)
         missions.append(mission)
 
     data.set_editor_property("factions", factions)
@@ -1183,6 +1195,19 @@ def main():
     begin = actors.spawn_actor_from_class(unreal.PlayerStart, place(start["x"], start["y"], height(start["y"]) + 1.0), unreal.Rotator(roll=0.0, pitch=0.0, yaw=float(start["facing"])))
     begin.set_actor_label(PREFIX + "Start")
 
+    # A place that is fought in, not walked ("fight"): the cage's rules, and the one who is fought stood where it says.
+    # The rules find their two fighters as they do in the cage: whoever the player is, and the one other fighter there.
+    if listed.get("fight"):
+        enemy = listed["fight"]["enemy"]
+        world.get_world_settings().set_editor_property("default_game_mode", unreal.load_asset("/Game/Gut/Blueprints/BP_GutGameMode").generated_class())
+
+        begin.set_actor_location(place(start["x"], start["y"], height(start["y"]) + 0.92), False, False)
+
+        other = actors.spawn_actor_from_class(unreal.load_asset("/Game/Gut/Blueprints/BP_GutOpponent").generated_class(), place(enemy["x"], enemy["y"], height(enemy["y"]) + 0.92),
+                                              unreal.Rotator(roll=0.0, pitch=0.0, yaw=float(enemy["facing"])))
+        other.set_actor_label(PREFIX + "Opponent")
+        log("fought in: the cage's rules, and its opponent stood at ({}, {})".format(enemy["x"], enemy["y"]))
+
     # who is here and what they say, the ways out, and where the ground ends
     data_path = listed["data"]
     folder, name = data_path.rsplit("/", 1)
@@ -1312,6 +1337,7 @@ def main():
 
         # whose they are, and what they say when the player walks into them: spoken, if they have a voice
         person.set_editor_property("of", entry.get("of", ""))
+        person.set_editor_property("taken", entry.get("taken", ""))
 
         barks = []
 

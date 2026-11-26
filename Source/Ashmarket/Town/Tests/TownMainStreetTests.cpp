@@ -230,9 +230,10 @@ bool FTownMainStreetTest::RunTest(const FString& Parameters)
 		TestTrue(*FString::Printf(TEXT("And is on the street's ground where they have got to (%.0f cm over it)"), Feet - Place->GetGroundZ(Body->GetActorLocation().X)),
 			FMath::Abs(Feet - Place->GetGroundZ(Body->GetActorLocation().X)) < 3.0f);
 
-		// somebody on a round is talked to wherever they have got to, and stands while they are. (From their west: the
-		// other Warden walks on their east.)
-		StandAt(FVector2D(Body->GetActorLocation().X, Body->GetActorLocation().Y - 150.0f), 90.0f);
+		// somebody on a round is talked to wherever they have got to, and stands while they are. (From up the street of
+		// them, on their own line: the other Warden walks a metre to their east, and since 25 November the nameless walker a
+		// metre and a half to their west has something to say too, and was the one offered when the player stood there.)
+		StandAt(FVector2D(Body->GetActorLocation().X + 105.0f, Body->GetActorLocation().Y), 180.0f);
 
 		Town->Tick(0.0f);
 

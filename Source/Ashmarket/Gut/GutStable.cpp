@@ -167,6 +167,11 @@ void AGutGameMode::BeginStableState(FGutStableState& State, int32 Seed) const
 	State.Seed = Seed != 0 ? Seed : FMath::RandRange(1, 1000000);
 }
 
+FText AGutGameMode::GetCageName(int32 Number)
+{
+	return FText::FromString(GutStableConstants::Names[FMath::Abs(Number) % UE_ARRAY_COUNT(GutStableConstants::Names)]);
+}
+
 bool AGutGameMode::TakeBlockOffer(FGutStableState& State, const FGutStableFighter& Offer, int32 OfferIndex, FString* Why) const
 {
 	auto No = [Why](const FString& Because)
@@ -467,6 +472,51 @@ bool AGutGameMode::TrainFighter(int32 FighterIndex, EGutTraining What)
 	++Taught;
 
 	UE_LOG(LogGut, Log, TEXT("Stable: %s is trained: strength %d, speed %d, nerve %d, cunning %d"), *Fighter.FighterName.ToString(), Fighter.Strength, Fighter.Speed, Fighter.Nerve, Fighter.Cunning);
+
+	// it takes the day
+	AdvanceStableDay();
+
+	return true;
+}
+
+float AGutGameMode::GetBlockPrice(const FGutStableFighter& Who) const
+{
+	return FMath::RoundToFloat(BlockBasePrice + (BlockPricePerSkill * Who.GetTaught()) + (Who.Weapon ? BlockPricePerSkill : 0.0f));
+}
+
+float AGutGameMode::GetHirePay(const FGutStableFighter& Who) const
+{
+	// a back and a pair of legs: two litres for turning up, and more for whoever can carry more of it faster
+	return 2.0f + Who.Strength + FMath::FloorToFloat(Who.Speed * 0.5f);
+}
+
+bool AGutGameMode::HireOutFighter(int32 FighterIndex)
+{
+	if (!IsYardOpen())
+	{
+		return false;
+	}
+
+	FGutStableState& State = GetGutGameInstance()->Stable;
+
+	if (!State.Fighters.IsValidIndex(FighterIndex) || State.Fighters[FighterIndex].IsCrippled())
+	{
+		return false;
+	}
+
+	FGutStableFighter& Fighter = State.Fighters[FighterIndex];
+
+	const float Pay = GetHirePay(Fighter);
+
+	State.Water += Pay;
+
+	// somebody with a collar on knows whose water a day's hauling earned
+	if (Fighter.bOwned)
+	{
+		Fighter.Resentment = FMath::Min(100.0f, Fighter.Resentment + 6.0f);
+	}
+
+	UE_LOG(LogGut, Log, TEXT("Stable: %s is hired out for the day and brings back %.0f L"), *Fighter.FighterName.ToString(), Pay);
 
 	// it takes the day
 	AdvanceStableDay();
@@ -1186,7 +1236,19 @@ void AGutGameMode::UpdateYardBodies()
 
 		UGameplayStatics::FinishSpawningActor(Body, Stood);
 
-		Body->EquipWeapon(nullptr);
+		// with what they fight with in hand and what they have been given to wear on them: they were stood bare, and an
+		// owner looking at the pit boss's bill could not see what his fighter would go in with ("why isn't he displayed
+		// holding his weapon?", 25 November)
+		Body->EquipWeapon(Who.Weapon);
+
+		for (const FName& Name : Who.Armor)
+		{
+			if (UGutArmorData* Piece = FindArmorPiece(Name))
+			{
+				Body->WearArmor(Piece);
+			}
+		}
+
 		Body->SetCollared(Who.bOwned);
 		Body->SetAtEase(true);
 		Body->SetCombatEnabled(false);

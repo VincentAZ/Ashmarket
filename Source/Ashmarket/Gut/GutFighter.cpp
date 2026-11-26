@@ -2538,7 +2538,7 @@ bool AGutFighter::HasBody() const
 	return Body != nullptr;
 }
 
-void AGutFighter::WearBag(UStaticMesh* Bag)
+void AGutFighter::WearBag(UStaticMesh* Bag, UStaticMesh* Strap)
 {
 	USkeletalMeshComponent* Shown = GetShownMesh();
 
@@ -2552,6 +2552,11 @@ void AGutFighter::WearBag(UStaticMesh* Bag)
 		if (BagMesh)
 		{
 			BagMesh->SetVisibility(false);
+		}
+
+		if (BagStrap)
+		{
+			BagStrap->SetVisibility(false);
 		}
 
 		return;
@@ -2608,6 +2613,87 @@ void AGutFighter::WearBag(UStaticMesh* Bag)
 	BagMesh->AttachToComponent(Shown, FAttachmentTransformRules::SnapToTargetNotIncludingScale, Pelvis);
 	BagMesh->SetRelativeTransform(FTransform(Turn, At, FVector(1.0f, Thin, 1.0f)) * Hips.Inverse());
 	BagMesh->SetVisibility(true);
+
+	// its strap, over the right shoulder and round the body to it
+	static const FName Chest(TEXT("spine_03"));
+	static const FName Neck(TEXT("neck_01"));
+	static const FName RightArm(TEXT("upperarm_r"));
+
+	if (!Strap || Shown->GetBoneIndex(Chest) == INDEX_NONE || Shown->GetBoneIndex(Neck) == INDEX_NONE || Shown->GetBoneIndex(RightArm) == INDEX_NONE)
+	{
+		if (BagStrap)
+		{
+			BagStrap->SetVisibility(false);
+		}
+
+		return;
+	}
+
+	if (!BagStrap)
+	{
+		BagStrap = NewObject<UStaticMeshComponent>(this, TEXT("BagStrap"));
+		BagStrap->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		BagStrap->SetReceivesDecals(false);
+		BagStrap->SetupAttachment(Shown, Chest);
+		BagStrap->RegisterComponent();
+	}
+
+	static float StrapDeep = 5.0f;
+	static float StrapLong = 6.0f;
+	static float StrapUp = 3.0f;
+	static bool bStrapRead = false;
+
+	if (!bStrapRead)
+	{
+		bStrapRead = true;
+
+		FParse::Value(FCommandLine::Get(), TEXT("GutStrapDeep="), StrapDeep);
+		FParse::Value(FCommandLine::Get(), TEXT("GutStrapLong="), StrapLong);
+		FParse::Value(FCommandLine::Get(), TEXT("GutStrapUp="), StrapUp);
+	}
+
+	const FTransform Ribs = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Skeleton.FindBoneIndex(Chest));
+	const FVector NeckAt = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Skeleton.FindBoneIndex(Neck)).GetLocation();
+	const FVector ArmAt = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Skeleton.FindBoneIndex(RightArm)).GetLocation();
+
+	// from the top of the right shoulder, nearer the neck than the arm, to the top of the bag where its strap ends stand up
+	const FVector Top = FMath::Lerp(NeckAt, ArmAt, 0.5f) + FVector(0.0f, 0.0f, StrapUp);
+	const FVector Foot = At + FVector(0.0f, 0.0f, Bag->GetBoundingBox().GetSize().Z * 0.88f) - (Outward * Deep);
+
+	// how deep the trunk is, front to back, with what is worn on it: the deepest of its slices
+	float HalfDeep = 13.0f;
+	float Forward = 3.0f;
+
+	if (FGutClearShape Shape; MeasureShapeOf(BodyActor ? BodyActor.Get() : this, Shown, Shape))
+	{
+		for (const FGutClearShape::FSection& Slice : Shape.Trunk)
+		{
+			if (Slice.Half.Y > HalfDeep)
+			{
+				HalfDeep = Slice.Half.Y;
+				Forward = Slice.Middle.Y;
+			}
+		}
+	}
+
+	// The loop's plane holds the line from shoulder to bag and the way the body faces; its long way lies along that line
+	// and its short way goes through the body front to back, about the middle of the trunk and not the line's own middle,
+	// which is behind it (the bag hangs behind the hip).
+	const FVector Along = (Top - Foot).GetSafeNormal();
+	const FVector Flat = FVector::CrossProduct(Along, Ahead).GetSafeNormal();
+	const FVector Through = FVector::CrossProduct(Flat, Along).GetSafeNormal();
+
+	FVector Middle = (Top + Foot) * 0.5f;
+
+	Middle += Through * (FVector::DotProduct(Ribs.GetLocation() + (Ahead * Forward) - Middle, Through));
+
+	const FVector Model = Strap->GetBoundingBox().GetSize();
+	const FVector Stretch(((Top - Foot).Size() + StrapLong) / FMath::Max(Model.X, 1.0f), ((HalfDeep * 2.0f) + StrapDeep) / FMath::Max(Model.Y, 1.0f), 1.0f);
+
+	BagStrap->SetStaticMesh(Strap);
+	BagStrap->AttachToComponent(Shown, FAttachmentTransformRules::SnapToTargetNotIncludingScale, Chest);
+	BagStrap->SetRelativeTransform(FTransform(FRotationMatrix::MakeFromXY(Along, Through).ToQuat(), Middle, Stretch) * Ribs.Inverse());
+	BagStrap->SetVisibility(true);
 }
 
 USkeletalMeshComponent* AGutFighter::GetShownMesh() const
@@ -5290,6 +5376,18 @@ void AGutFighter::TakeInHand(UAnimSequenceBase* Taking)
 	FidgetIn = FMath::Max(FidgetIn, TakingLeft + 4.0f);
 }
 
+bool AGutFighter::IsClipReady(const UAnimSequenceBase* Clip)
+{
+#if WITH_EDITOR
+	if (const UAnimSequence* Sequence = Cast<UAnimSequence>(Clip))
+	{
+		return Sequence->IsCompressedDataValid();
+	}
+#endif
+
+	return Clip != nullptr;
+}
+
 void AGutFighter::Gesture(UAnimSequenceBase* Clip, bool bWithHead)
 {
 	const bool bStanding = GetVelocity().SizeSquared2D() < FMath::Square(25.0f) && LedVelocity.IsNearlyZero();
@@ -5297,6 +5395,13 @@ void AGutFighter::Gesture(UAnimSequenceBase* Clip, bool bWithHead)
 	// only with hands that are its own and free
 	if (!Clip || !IsAlive() || Beast || !bAtEase || !bStanding || BoundClip || bCelebrating || TakingLeft > 0.0f || State != EGutFighterState::Idle || (Weapon && Weapon->Mesh))
 	{
+		return;
+	}
+
+	// not one that is not ready to be played: it is let go this once
+	if (!IsClipReady(Clip))
+	{
+		UE_LOG(LogGut, Warning, TEXT("Gesture: %s is not ready to be played, and %s does not make it"), *Clip->GetName(), *GetDisplayName().ToString());
 		return;
 	}
 
@@ -5378,7 +5483,8 @@ void AGutFighter::UpdateFidget(float DeltaTime)
 	const bool bFamilys = AtEaseFamilies.IsValidIndex(Family);
 	const TArray<TObjectPtr<UAnimSequenceBase>>& Fidgets = bFamilys ? AtEaseFamilies[Family].Extras : AtEaseFidgets;
 
-	if (bOff || !bAtEase || !bStanding || !IsAlive() || Beast || BoundClip || bCelebrating || State != EGutFighterState::Idle || Fidgets.IsEmpty())
+	// (and with empty hands: nobody scratches their head with a club in it)
+	if (bOff || !bAtEase || !bStanding || !IsAlive() || Beast || BoundClip || bCelebrating || State != EGutFighterState::Idle || Fidgets.IsEmpty() || (Weapon && Weapon->Mesh))
 	{
 		return;
 	}
@@ -5409,7 +5515,7 @@ void AGutFighter::UpdateFidget(float DeltaTime)
 	FidgetLast = Pick;
 	FidgetIn = Draw.FRandRange(FidgetEvery.X, FidgetEvery.Y);
 
-	if (UAnimSequenceBase* Clip = Fidgets[Pick])
+	if (UAnimSequenceBase* Clip = Fidgets[Pick]; Clip && IsClipReady(Clip))
 	{
 		PlaySlotAnimation(Clip, 1.0f, 0.0f, 0.5f, 0.6f);
 

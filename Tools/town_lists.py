@@ -29,10 +29,33 @@ import hashlib
 import json
 import math
 import os
+import re
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 STORY = os.path.join(TOOLS, "town_story.json")
 BUMPS = os.path.join(TOOLS, "town_bumps.json")
+
+
+def untagged(listed):
+    """Somebody with "no_tag" can be taken (FGutTaking): they are given the mark that says they have been gone for, they
+    stand in the place only while it is nought, and they have something to say and the two answers to it."""
+    said = ["What are you looking at?", "I have nothing you want.", "Keep walking.", "I am waiting for somebody.", "Not tonight. Please."]
+    seen = {}
+
+    for person in listed["people"]:
+        if not person.get("no_tag"):
+            continue
+
+        seen[person["name"]] = seen.get(person["name"], 0) + 1
+        key = "took.{}_{}_{}".format(re.sub(r"[^a-z0-9]+", "_", listed["name"].lower()).strip("_"), re.sub(r"[^a-z0-9]+", "_", person["name"].lower()).strip("_"), seen[person["name"]])
+
+        person["taken"] = key
+        person["when"] = (person.get("when", "") + " !" + key).strip()
+
+        if not person.get("lines"):
+            first = int(hashlib.sha1(key.encode()).hexdigest(), 16) % len(said)
+            person["lines"] = [{"id": "sized", "opens": True, "words": said[first],
+                                "answers": [{"words": "Take hold. (No tag on that neck. It will be a fight.)", "deed": "take"}, {"words": "Walk on."}]}]
 
 
 def bumped(listed):
@@ -101,6 +124,7 @@ def place(path):
 
         listed.setdefault("doors", []).extend(graft.get("doors", []))
 
+    untagged(listed)
     bumped(listed)
 
     return listed

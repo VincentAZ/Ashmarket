@@ -137,6 +137,11 @@ void AGutGameMode::Tick(float DeltaTime)
 		StartFight();
 	}
 
+	if (IsTaking())
+	{
+		UpdateTaking();
+	}
+
 	// somebody who came to bet, or to watch what it owns, watches from the wall
 	if (IsAtWindow() || IsAtStable() || IsAtDoor())
 	{
@@ -1821,6 +1826,13 @@ void AGutGameMode::RequestRestart()
 		return;
 	}
 
+	// somebody taken, dead or gone: there is nothing to do over. Out to the town, now and not when the picture has had its time.
+	if (IsTaking())
+	{
+		GetGutGameInstance()->GoToStreet(this);
+		return;
+	}
+
 	// whoever watched and has had enough goes back down to the street: what the fight came to is already written down
 	if (IsLeaveChosen())
 	{
@@ -1973,6 +1985,85 @@ float AGutGameMode::GetIntroTimeRemaining() const
 	return Phase == EGutFightPhase::Intro ? FMath::Max(0.0f, IntroDuration - PhaseTime) : 0.0f;
 }
 
+bool AGutGameMode::IsTaking() const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	return GameInstance && GameInstance->Taking.bOn;
+}
+
+int32 AGutGameMode::GetTakingOutcome() const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	return GameInstance ? GameInstance->Taking.Outcome : 0;
+}
+
+FGutWho AGutGameMode::GetTakenWho() const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	return GameInstance ? UGutSoundSubsystem::WhoIs(this, GameInstance->Taking.Who.Body) : FGutWho(false);
+}
+
+void AGutGameMode::BeginTaking()
+{
+	const FGutTaking& Taking = GetGutGameInstance()->Taking;
+
+	// whoever it is, as a fighter of that making would be: and then with nothing in their hands, no collar yet, and less in
+	// them than somebody who is fed to fight
+	MakeStableFighter(EnemyFighter, Taking.Who, false);
+
+	EnemyFighter->EquipWeapon(nullptr);
+	EnemyFighter->SetCollared(false);
+	EnemyFighter->SetMaxHealth(EnemyFighter->GetMaxHealth() * TakenHealthShare);
+
+	// nobody carries a weapon in the street, and this began in the street: where the player wears no collar either
+	PlayerFighter->EquipWeapon(nullptr);
+	PlayerFighter->SetCollared(false);
+
+	UE_LOG(LogGut, Log, TEXT("Taking: %s, with %.0f in them, gives up at %.0f"), *Taking.Who.FighterName.ToString(), EnemyFighter->GetMaxHealth(), EnemyFighter->GetMaxHealth() * TakenAtHealth);
+
+	SetPhase(EGutFightPhase::Intro);
+}
+
+void AGutGameMode::UpdateTaking()
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (Phase == EGutFightPhase::Fighting && EnemyFighter && EnemyFighter->IsAlive() && EnemyFighter->GetHealth() <= EnemyFighter->GetMaxHealth() * TakenAtHealth)
+	{
+		EndTaking(1);
+		return;
+	}
+
+	// and when its last picture has been up long enough, the town
+	if (GameInstance->Taking.Outcome != 0 && (Phase == EGutFightPhase::PlayerWon || Phase == EGutFightPhase::PlayerLost) && PhaseTime >= TakenLinger && !GameInstance->bGoingToStreet)
+	{
+		GameInstance->GoToStreet(this);
+	}
+}
+
+void AGutGameMode::EndTaking(int32 Outcome)
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (GameInstance->Taking.Outcome != 0)
+	{
+		return;
+	}
+
+	GameInstance->Taking.Outcome = Outcome;
+
+	PlayerFighter->SetCombatEnabled(false);
+	EnemyFighter->SetCombatEnabled(false);
+
+	UE_LOG(LogGut, Log, TEXT("Taking: %s after %.1f seconds: %s"), *GameInstance->Taking.Who.FighterName.ToString(), FightTime,
+		Outcome == 1 ? TEXT("beaten down and taken") : (Outcome == 2 ? TEXT("dead") : TEXT("got away, with the player down")));
+
+	SetPhase(Outcome == 3 ? EGutFightPhase::PlayerLost : EGutFightPhase::PlayerWon);
+}
+
 bool AGutGameMode::CanRestart() const
 {
 	const bool bOver = Phase == EGutFightPhase::PlayerWon || Phase == EGutFightPhase::PlayerLost;
@@ -2062,7 +2153,11 @@ bool AGutGameMode::FindFighters()
 	// with nothing on the rack there is nothing to choose
 	RackWeapons.Remove(nullptr);
 
-	if (IsAtDoor())
+	if (IsTaking())
+	{
+		BeginTaking();
+	}
+	else if (IsAtDoor())
 	{
 		// nobody is driven and nothing is at stake: the two in the cage stand there, seen from the wall
 		StartSpectating();
@@ -2183,6 +2278,13 @@ void AGutGameMode::OnFighterDied(AGutFighter* Fighter, AGutFighter* Killer)
 	// the first death decides the fight
 	if (Phase != EGutFightPhase::Fighting)
 	{
+		return;
+	}
+
+	// somebody being taken who is hit too hard is dead, and worth nothing; the player hit too hard is left where they lie
+	if (IsTaking())
+	{
+		EndTaking(Fighter == PlayerFighter ? 3 : 2);
 		return;
 	}
 

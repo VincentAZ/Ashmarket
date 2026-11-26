@@ -390,13 +390,13 @@
    "lines": []
   },
   {
-   "name": "Somebody", "body": "Mix10", "cloth": [0.07, 0.065, 0.06],
+   "name": "Somebody", "no_tag": true, "body": "Mix10", "cloth": [0.07, 0.065, 0.06],
    "x": -2.9, "y": 60.0, "facing": 0, "stand": "shift_r", "pace": 0.7,
    "beat": [[-2.9, 60.0, 3], [-2.9, 74.0, 7, 270], [-2.9, 96.0, 8, 270], [-2.9, 116.0, 3]],
-   "lines": []
+   "lines": [], "note": "no tag: can be gone for (FGutTaking). Tools/town_lists.py gives them what they say"
   },
   {
-   "name": "Somebody", "body": "Mix12", "cloth": [0.06, 0.07, 0.06],
+   "name": "Somebody", "no_tag": true, "body": "Mix12", "cloth": [0.06, 0.07, 0.06],
    "x": 2.9, "y": 110.0, "facing": 180, "stand": "shift_l", "pace": 0.7,
    "beat": [[2.9, 110.0, 4], [2.9, 84.0, 8, 90], [2.9, 62.5, 6, 90], [2.9, 50.0, 3]],
    "lines": []

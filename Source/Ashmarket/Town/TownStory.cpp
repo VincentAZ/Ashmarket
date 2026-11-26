@@ -385,6 +385,53 @@ FString ATownGameMode::GetStandingWord(int32 Standing)
 		: Standing < 40 ? TEXT("trusted with work") : TEXT("one of theirs");
 }
 
+void ATownGameMode::GetMissionTally(const FTownMission& Mission, TArray<FString>& OutWords, TArray<bool>& OutDone) const
+{
+	OutWords.Reset();
+	OutDone.Reset();
+
+	for (const FTownMissionTally& One : Mission.Tally)
+	{
+		if (!One.Count.IsNone() && One.Of > 0)
+		{
+			const int32 Got = FMath::Clamp(GetMark(One.Count), 0, One.Of);
+
+			OutWords.Add(FString::Printf(TEXT("%s: %d of %d"), *One.Words, Got, One.Of));
+			OutDone.Add(Got >= One.Of);
+		}
+		else
+		{
+			OutWords.Add(One.Words);
+			OutDone.Add(Holds(One.When));
+		}
+	}
+}
+
+void ATownGameMode::GetWorkInHand(TArray<const FTownMission*>& OutWork) const
+{
+	OutWork.Reset();
+
+	if (!StoryData)
+	{
+		return;
+	}
+
+	for (const FTownMission& Mission : StoryData->Missions)
+	{
+		if (const int32 Stands = GetMark(Mission.Key); Stands > 0 && Stands < TownStory::Ended)
+		{
+			OutWork.Insert(&Mission, 0);
+		}
+	}
+}
+
+int32 ATownGameMode::GetDay() const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	return (GameInstance && GameInstance->Stable.bStarted) ? GameInstance->Stable.Day : 0;
+}
+
 FString ATownGameMode::GetMissionStep(const FTownMission& Mission) const
 {
 	const int32 Stands = GetMark(Mission.Key);
