@@ -157,7 +157,8 @@
    "lines": [
     {"id": "bus", "words": "Detention. Everything anybody drinks in this town came out of my tubs, the Last Call's included, whatever she tells you it is. Sit down or piss off. The bus is full."}
    ]
-  }
+  },
+  {"name": "A drifter", "no_tag": true, "cloth": [0.065, 0.06, 0.055], "body": "Mix05", "x": -43.4, "y": 318.0, "facing": 270, "stand": "shift_l", "lines": [], "note": "no tag: can be gone for (FGutTaking)"}
  ],
 
  "doors": [

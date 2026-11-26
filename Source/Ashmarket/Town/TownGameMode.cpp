@@ -3050,7 +3050,8 @@ bool ATownGameMode::TakeSomebody(int32 Index)
 
 	// Who they are, if they are taken: nobody much. What they have in them is drawn from who and where they are, so it is
 	// the same person whenever they are looked at; a name out of the cage's own, since nobody asked theirs.
-	const uint32 Drawn = GetTypeHash(Person.Taken);
+	// (from the mark's letters, not the name's own number, which is not the same from one day's play to the next)
+	const uint32 Drawn = GetTypeHash(Person.Taken.ToString());
 	FRandomStream Draw(static_cast<int32>(Drawn));
 
 	FGutTaking Taking;

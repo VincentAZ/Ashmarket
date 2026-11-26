@@ -149,7 +149,8 @@
    "lines": [
     {"id": "book", "words": "I collect for the Block. In here I am only drinking, and so are you. Keep it that way."}
    ]
-  }
+  },
+  {"name": "A drifter", "no_tag": true, "cloth": [0.065, 0.06, 0.055], "body": "Mix09", "x": -24.0, "y": 246.4, "facing": 0, "stand": "stand", "lines": [], "note": "no tag: can be gone for (FGutTaking)"}
  ],
 
  "doors": [

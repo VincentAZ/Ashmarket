@@ -2973,3 +2973,121 @@ bool FGutTakingTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+/**
+ *  Ashmarket.Town.TakingThrough  a taking from one end to the other, with nothing held shut: somebody on Main Street is
+ *                                gone for, the dead end opens with the two of them in it, they are beaten down, the town
+ *                                opens again where the player stood, and they are behind the player with their wrists
+ *                                tied. The parts are each tested in Ashmarket.Town.Taking and Ashmarket.Gut.Taking: this
+ *                                is the joins between them.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownTakingThroughTest, "Ashmarket.Town.TakingThrough", GutTests::Flags)
+
+bool FTownTakingThroughTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	struct FNotes
+	{
+		FTownStoryState Story;
+		FGutStableState Stable;
+		FName Mark;
+		FVector Stood = FVector::ZeroVector;
+		bool bAsked = false;
+	};
+
+	TSharedRef<FNotes> Notes = MakeShared<FNotes>();
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_MainStreet"), true))
+	{
+		AddError(TEXT("Could not open Main Street's level"));
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 0.8f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+		const UTownPlaceData* Place = Town->GetPlace();
+
+		Notes->Story = Run->Story;
+		Notes->Stable = Run->Stable;
+
+		Run->Stable = FGutStableState();
+		Run->Taking = FGutTaking();
+
+		const int32 Who = Place->People.IndexOfByPredicate([Town](const FTownPerson& Person) { return !Person.Taken.IsNone() && Town->GetMark(Person.Taken) == 0; });
+
+		if (!TestTrue(TEXT("Somebody on Main Street has no tag"), Who != INDEX_NONE && Town->GetPeople().IsValidIndex(Who) && Town->GetPeople()[Who]))
+		{
+			return;
+		}
+
+		Notes->Mark = Place->People[Who].Taken;
+
+		const FVector At = Town->GetPeople()[Who]->GetActorLocation();
+
+		StandOn(FVector2D(At.X - 105.0f, At.Y), 0.0f);
+
+		Town->Tick(0.0f);
+		Town->Interact();
+
+		Notes->Stood = Town->GetWalker()->GetActorLocation();
+		Notes->bAsked = TestTrue(TEXT("Going for them"), Town->IsTalking() && Say(TEXT("Take hold")));
+	}, []() { return IsStreetReady(); } });
+
+	// the dead end, with the two of them in it, at the bell
+	Steps.Add({ 0.5f, [this, Notes]()
+	{
+		const GutTests::FFight Fight = GutTests::GetFight();
+
+		if (!Notes->bAsked || !TestTrue(TEXT("The dead end opened with the two of them in it"), Fight.IsValid() && Fight.GameMode->IsTaking()))
+		{
+			return;
+		}
+
+		TestTrue(*FString::Printf(TEXT("It is fought in the dead end (%s)"), *Fight.GameMode->GetWorld()->GetMapName()), Fight.GameMode->GetWorld()->GetMapName().Contains(TEXT("Alley")));
+		TestTrue(TEXT("Bare hands on both sides, and no collar on the player"), !Fight.Player->GetWeapon() && !Fight.Enemy->GetWeapon() && !Fight.Player->IsCollared());
+
+		GutTests::Screenshot(TEXT("83_through_the_dead_end"));
+
+		Fight.Enemy->SetHealth(Fight.Enemy->GetMaxHealth() * (Fight.GameMode->TakenAtHealth - 0.05f));
+	}, [Notes]()
+	{
+		const GutTests::FFight Fight = GutTests::GetFight();
+
+		return !Notes->bAsked || (Fight.IsValid() && Fight.GameMode->GetPhase() == EGutFightPhase::Fighting);
+	} });
+
+	// back in the town, by itself, when the last picture of it has had its time
+	Steps.Add({ 1.2f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		if (Notes->bAsked && TestNotNull(TEXT("The town opened again"), Town))
+		{
+			TestTrue(*FString::Printf(TEXT("It is Main Street the player comes back to (%s)"), *Town->GetPlace()->Name), Town->GetPlace()->Name == TEXT("Main Street"));
+			TestTrue(*FString::Printf(TEXT("Where they stood (%.0f cm from it)"), FVector::Dist2D(Town->GetWalker()->GetActorLocation(), Notes->Stood)),
+				FVector::Dist2D(Town->GetWalker()->GetActorLocation(), Notes->Stood) < 150.0f);
+			TestTrue(TEXT("Whoever was taken is the player's and behind them, wrists tied"), Run->Stable.Fighters.Num() == 1 && Run->Stable.Fighters[0].bInTow && Town->GetTowCount() == 1
+				&& Town->GetTowBody(0) && Town->GetTowBody(0)->IsBound());
+			TestEqual(TEXT("And gone from where they stood"), Town->GetMark(Notes->Mark), 1);
+			TestTrue(*FString::Printf(TEXT("The player is told (%s)"), *Town->GetNotice()), Town->GetNotice().Contains(TEXT("is yours")));
+			TestFalse(TEXT("Nobody is being taken any more, and the cage is nobody's"), Run->Taking.bOn || Run->bSandbox);
+
+			GutTests::Screenshot(TEXT("84_through_back_in_the_street"));
+		}
+
+		Run->Story = Notes->Story;
+		Run->Stable = Notes->Stable;
+		Run->Taking = FGutTaking();
+	}, [Notes]() { return !Notes->bAsked || IsStreetReady(); } });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
