@@ -1,6 +1,11 @@
 // Ashmarket prototype: the Gut.
 
 #include "GutGameInstance.h"
+
+#if WITH_EDITOR
+#include "AssetCompilingManager.h"
+#include "ShaderCompiler.h"
+#endif
 #include "AudioDevice.h"
 #include "Engine/World.h"
 #include "GutArmorData.h"
@@ -149,6 +154,52 @@ void UGutGameInstance::AddToBag(FName Good, int32 Count)
 	Bag.RemoveAll([](const FGutBagItem& One) { return One.Count <= 0; });
 }
 
+int32 UGutGameInstance::GetRackCount(FName Good) const
+{
+	const FGutBagItem* Item = Rack.FindByPredicate([Good](const FGutBagItem& One) { return One.Good == Good; });
+
+	return Item ? Item->Count : 0;
+}
+
+void UGutGameInstance::AddToRack(FName Good, int32 Count)
+{
+	FGutBagItem* Item = Rack.FindByPredicate([Good](const FGutBagItem& One) { return One.Good == Good; });
+
+	if (!Item)
+	{
+		Item = &Rack.AddDefaulted_GetRef();
+		Item->Good = Good;
+	}
+
+	Item->Count = FMath::Max(0, Item->Count + Count);
+
+	Rack.RemoveAll([](const FGutBagItem& One) { return One.Count <= 0; });
+}
+
+void UGutGameInstance::FinishPreparing(const TCHAR* Where)
+{
+#if WITH_EDITOR
+	const int32 Assets = FAssetCompilingManager::Get().GetNumRemainingAssets();
+	const int32 Shaders = GShaderCompilingManager ? GShaderCompilingManager->GetNumRemainingJobs() : 0;
+
+	if (Assets <= 0 && Shaders <= 0)
+	{
+		return;
+	}
+
+	const double Began = FPlatformTime::Seconds();
+
+	FAssetCompilingManager::Get().FinishAllCompilation();
+
+	if (GShaderCompilingManager)
+	{
+		GShaderCompilingManager->FinishAllCompilation();
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[preparing] %s: waited %.1f s for %d things and %d shaders to be made ready"), Where, FPlatformTime::Seconds() - Began, Assets, Shaders);
+#endif
+}
+
 void UGutGameInstance::WriteDebt(const FString& What, float Counted, float Written, float After)
 {
 	FGutDebtLine Line;
@@ -268,6 +319,7 @@ bool UGutGameInstance::SaveRun()
 	Save->Window = Window;
 	Save->Stable = Stable;
 	Save->Bag = Bag;
+	Save->Rack = Rack;
 	Save->Roster = Roster;
 	Save->Purse = Purse;
 	Save->bOnePurse = bOnePurse;
@@ -304,6 +356,7 @@ bool UGutGameInstance::LoadRun()
 	Window = Save->Window;
 	Stable = Save->Stable;
 	Bag = Save->Bag;
+	Rack = Save->Rack;
 	Roster = Save->Roster;
 
 	// the purse as it was written down: the three are set to it the next time water is shared, with nothing counted as

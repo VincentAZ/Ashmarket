@@ -333,6 +333,12 @@ namespace GutStableLines
 		/** Plus which of the pieces of armor in the bag: put on the fighter */
 		GiveArmor = 300,
 
+		/** Plus which of the kinds of thing in the bag: one of them put on the yard's rack */
+		RackPut = 400,
+
+		/** Plus which of the kinds of thing on the rack: one of them taken into the bag */
+		RackTake = 500,
+
 		/** Plus the place on today's bill */
 		TakeFight = 300,
 

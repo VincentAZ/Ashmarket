@@ -813,6 +813,34 @@ bool AGutGameMode::MakeMatch(int32 FighterIndex, int32 Against)
 
 	FGutStableFighter& Fighter = State.Fighters[FighterIndex];
 
+	// Whoever goes in from the yard eats and drinks off its rack first, if there is bread or tea on it: what the yard
+	// keeps is for that (25 November). Said when the owner is next in the yard.
+	if (UGutGameInstance* Run = GetGutGameInstance(); Run && !LentTo)
+	{
+		FString Had;
+
+		if (!Fighter.bFed && Run->GetRackCount(FName("bread")) > 0)
+		{
+			Fighter.bFed = true;
+			Run->AddToRack(FName("bread"), -1);
+			Had = TEXT("bread");
+		}
+
+		if (!Fighter.bSteadied && Run->GetRackCount(FName("tea")) > 0)
+		{
+			Fighter.bSteadied = true;
+			Run->AddToRack(FName("tea"), -1);
+			Had += Had.IsEmpty() ? TEXT("tea") : TEXT(" and tea");
+		}
+
+		if (!Had.IsEmpty())
+		{
+			State.News += FString::Printf(TEXT("%s had %s off the rack before the fight. "), *Fighter.FighterName.ToString(), *Had);
+
+			UE_LOG(LogGut, Log, TEXT("Stable: %s has %s off the rack before going in"), *Fighter.FighterName.ToString(), *Had);
+		}
+	}
+
 	// sent in hurt: it will remember who sent it
 	if (Fighter.IsCrippled() && Fighter.bOwned)
 	{

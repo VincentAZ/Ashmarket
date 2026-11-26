@@ -53,7 +53,10 @@ enum class ETownDeed : uint8
 	Pit,
 
 	/** Sits the day out in the yard: everybody is fed and paid, and it is tomorrow */
-	Rest
+	Rest,
+
+	/** To the yard's rack: what the owner keeps there, put on it out of the bag and taken off it again */
+	Rack
 };
 
 /** One thing the player can say back */

@@ -790,6 +790,9 @@ void ATownGameMode::Settle()
 		}
 	}
 
+	// and nobody is shown the place until everything in it is ready to be looked at
+	UGutGameInstance::FinishPreparing(PlaceData ? *PlaceData->Name : TEXT("a place"));
+
 	bSettled = true;
 
 	UE_LOG(LogTown, Log, TEXT("Street: %s, %d people, %d doors, %d fires"), PlaceData ? *PlaceData->Name : TEXT("nowhere"), People.Num(), PlaceData ? PlaceData->Doors.Num() : 0, Fires.Num());
@@ -2174,12 +2177,12 @@ FString ATownGameMode::GetOwnedLine() const
 
 	if (!With.IsEmpty())
 	{
-		Line = FString::Printf(TEXT("%s %s with you. Your yard: Pool Street, the yard hand at the gate beside the Gut."), *FString::Join(With, TEXT(" and ")), With.Num() == 1 ? TEXT("is") : TEXT("are"));
+		Line = FString::Printf(TEXT("%s %s with you. Your yard, by the yard hand's gate on Pool Street, is where a day is spent training, where a fight is made at the pit boss's hatch, and where the rack keeps food and armor."), *FString::Join(With, TEXT(" and ")), With.Num() == 1 ? TEXT("is") : TEXT("are"));
 	}
 
 	if (!Yard.IsEmpty())
 	{
-		Line += FString::Printf(TEXT("%s%s %s in your yard beside the Gut. The yard hand on Pool Street lets you in, to see to your fighters or to walk out with one."),
+		Line += FString::Printf(TEXT("%s%s %s in your yard beside the Gut. The yard hand on Pool Street lets you in: to train, to make a fight at the hatch, to the rack, or to walk out with one of them."),
 			Line.IsEmpty() ? TEXT("") : TEXT(" "), *FString::Join(Yard, TEXT(", ")), Yard.Num() == 1 ? TEXT("is") : TEXT("are"));
 	}
 
@@ -2347,6 +2350,12 @@ void ATownGameMode::Do(ETownDeed Deed, const FTownDoor* Door)
 	if (Deed == ETownDeed::Buy)
 	{
 		OpenBook(INDEX_NONE);
+		return;
+	}
+
+	if (Deed == ETownDeed::Rack)
+	{
+		OpenRack();
 		return;
 	}
 
@@ -3392,6 +3401,7 @@ void ATownGameMode::CloseShop()
 	bAtStall = false;
 	bAtBag = false;
 	bAtYardPage = false;
+	bAtRack = false;
 	bBagAsking = false;
 	ShopKeeper = INDEX_NONE;
 	ShopSaid.Reset();
@@ -5523,6 +5533,141 @@ void ATownGameMode::SettleYard()
 	}
 }
 
+FString ATownGameMode::GetKeptName(const FName& Good) const
+{
+	if (const UGutArmorData* Piece = FindArmor(Good))
+	{
+		return Piece->DisplayName.ToString();
+	}
+
+	// what was bought to be used, not what was picked up to be sold
+	const TownConstants::FGood* Known = TownConstants::FindGood(Good);
+
+	return (Known && Known->Price > 0.0f) ? FString(Known->Name) : FString();
+}
+
+void ATownGameMode::OpenRack()
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance || !GameInstance->Stable.bStarted)
+	{
+		return;
+	}
+
+	YardFocus = INDEX_NONE;
+
+	ShopKeeper = INDEX_NONE;
+	ShopChoice = 0;
+	bShopping = true;
+	bAtBook = false;
+	bAtStall = false;
+	bAtBag = false;
+	bAtYardPage = true;
+	bAtRack = true;
+
+	ShopSaid = TEXT("What you keep in the yard. Bread and tea on the rack are for whoever you send in at the hatch: he or she eats and drinks off it before the fight, without being handed it. Armor here is nobody's until you put it on somebody: on a fighter's own page, or out of your bag.");
+
+	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		Hands->SetIgnoreMoveInput(true);
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Yard: at the rack, %d kinds of thing on it"), GameInstance->Rack.Num());
+}
+
+void ATownGameMode::GetRackPage(TArray<FTownShopLine>& OutLines, TArray<int32>& OutCodes) const
+{
+	using namespace GutStableLines;
+
+	OutLines.Reset();
+	OutCodes.Reset();
+
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	const auto Add = [this, &OutLines, &OutCodes](int32 Code, const TCHAR* Does, const FGutBagItem& Item, const TCHAR* Where)
+	{
+		const FString Name = GetKeptName(Item.Good);
+
+		if (Name.IsEmpty() || Item.Count <= 0)
+		{
+			return;
+		}
+
+		FTownShopLine Line;
+
+		Line.Name = FString::Printf(TEXT("%s: %s"), Does, *Name.ToLower());
+		Line.Detail = FString::Printf(TEXT("%d %s"), Item.Count, Where);
+		Line.PriceText = TEXT(" ");
+		Line.bCanBuy = true;
+
+		OutLines.Add(MoveTemp(Line));
+		OutCodes.Add(Code);
+	};
+
+	for (int32 i = 0; i < GameInstance->Rack.Num(); ++i)
+	{
+		Add(RackTake + i, TEXT("Take off the rack"), GameInstance->Rack[i], TEXT("on the rack"));
+	}
+
+	for (int32 i = 0; i < GameInstance->Bag.Num(); ++i)
+	{
+		Add(RackPut + i, TEXT("Put on the rack"), GameInstance->Bag[i], TEXT("in your bag"));
+	}
+}
+
+bool ATownGameMode::DoRackLine(int32 Code)
+{
+	using namespace GutStableLines;
+
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance)
+	{
+		return false;
+	}
+
+	const bool bTake = Code >= RackTake;
+	const TArray<FGutBagItem>& From = bTake ? GameInstance->Rack : GameInstance->Bag;
+	const int32 Which = Code - (bTake ? RackTake : RackPut);
+
+	if (!From.IsValidIndex(Which) || From[Which].Count <= 0)
+	{
+		return false;
+	}
+
+	const FName Good = From[Which].Good;
+	const FString Name = GetKeptName(Good).ToLower();
+
+	GameInstance->AddToRack(Good, bTake ? -1 : 1);
+	GameInstance->AddToBag(Good, bTake ? 1 : -1);
+	GameInstance->SaveRun();
+
+	ShopSaid = bTake ? FString::Printf(TEXT("The %s is off the rack and in your bag. %d left on the rack."), *Name, GameInstance->GetRackCount(Good))
+		: FString::Printf(TEXT("The %s is on the rack. %d there now."), *Name, GameInstance->GetRackCount(Good));
+
+	// the list is shorter or longer by a line: the arrow stays on something
+	TArray<FTownShopLine> Lines;
+	TArray<int32> Codes;
+	GetRackPage(Lines, Codes);
+
+	ShopChoice = FMath::Min(ShopChoice, Lines.Num());
+
+	if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
+	{
+		Sounds->Play(FName("cash"), FVector::ZeroVector, 0.4f);
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Yard: %s"), *ShopSaid);
+
+	return true;
+}
+
 void ATownGameMode::OpenYardPage(int32 Which)
 {
 	const UGutGameInstance* GameInstance = GetGutGameInstance();
@@ -5541,6 +5686,7 @@ void ATownGameMode::OpenYardPage(int32 Which)
 	bAtStall = false;
 	bAtBag = false;
 	bAtYardPage = true;
+	bAtRack = false;
 
 	const FGutStableFighter& Who = GameInstance->Stable.Fighters[YardFocus];
 
@@ -5592,6 +5738,12 @@ void ATownGameMode::OpenYardPage(int32 Which)
 void ATownGameMode::GetYardPage(TArray<FTownShopLine>& OutLines, TArray<int32>& OutCodes) const
 {
 	using namespace GutStableLines;
+
+	if (bAtRack)
+	{
+		GetRackPage(OutLines, OutCodes);
+		return;
+	}
 
 	OutLines.Reset();
 	OutCodes.Reset();
@@ -5695,6 +5847,11 @@ bool ATownGameMode::DoYardLine(int32 Line)
 	TArray<FTownShopLine> Lines;
 	TArray<int32> Codes;
 	GetYardPage(Lines, Codes);
+
+	if (bAtRack)
+	{
+		return Codes.IsValidIndex(Line) && DoRackLine(Codes[Line]);
+	}
 
 	UGutGameInstance* GameInstance = GetGutGameInstance();
 	const AGutGameMode* Rules = GetCageRules();
@@ -6110,6 +6267,11 @@ FString ATownGameMode::GetShopTitle() const
 		return FString::Printf(TEXT("%s'S STALL"), *GetShopKeeper().ToUpper());
 	}
 
+	if (bAtYardPage && bAtRack)
+	{
+		return TEXT("THE RACK  \u00B7  WHAT YOU KEEP IN THE YARD");
+	}
+
 	if (const UGutGameInstance* GameInstance = GetGutGameInstance(); bAtYardPage && GameInstance && GameInstance->Stable.Fighters.IsValidIndex(YardFocus))
 	{
 		const FGutStableFighter& Who = GameInstance->Stable.Fighters[YardFocus];
@@ -6165,7 +6327,8 @@ FString ATownGameMode::GetShopPurse() const
 			: FString::Printf(TEXT("You hold %.0f L  \u00B7  day %d"), GameInstance->Stable.Water, GameInstance->Stable.Day);
 	}
 
-	return HasFighter() ? FString::Printf(TEXT("You hold %.0f L"), GetShopWater()) : FString();
+	// (an owner or a gambler at the counter holds water too, and is sold to since 25 November)
+	return (HasFighter() || GetMarketWater()) ? FString::Printf(TEXT("You hold %.0f L"), GetShopWater()) : FString();
 }
 
 const FTownCall* ATownGameMode::GetCall() const

@@ -2153,6 +2153,13 @@ void AGutGameMode::SetPhase(EGutFightPhase NewPhase)
 	Phase = NewPhase;
 	PhaseTime = 0.0f;
 
+	// Nobody is looked at before they are ready to be: whoever is in the cage has been made, or made over as somebody
+	// else, by the time a phase begins. Not once blows are being struck: a wait there would be felt.
+	if (NewPhase != EGutFightPhase::Fighting && NewPhase != EGutFightPhase::PlayerWon && NewPhase != EGutFightPhase::PlayerLost)
+	{
+		UGutGameInstance::FinishPreparing(*UEnum::GetDisplayValueAsText(NewPhase).ToString());
+	}
+
 	UE_LOG(LogGut, Log, TEXT("Fight phase: %s"), *UEnum::GetDisplayValueAsText(NewPhase).ToString());
 
 	BP_OnPhaseChanged(NewPhase);

@@ -1580,6 +1580,139 @@ bool FTownArmorForOwnedTest::RunTest(const FString& Parameters)
 }
 
 /**
+ *  Ashmarket.Town.Rack   the yard is where things are kept (25 November: "the yard is for what? ... food I store there?").
+ *                        At the rack in the yard, bread and tea go out of the bag onto it and come off it again, one at a
+ *                        time, and the rack remembers what it holds.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownRackTest, "Ashmarket.Town.Rack", GutTests::Flags)
+
+bool FTownRackTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	// an owner with one fighter standing in the yard, and bread and tea in the bag: before the yard is opened, which stands them
+	struct FWas
+	{
+		bool bLadder = false;
+		FGutStableState Stable;
+		TArray<FGutBagItem> Bag;
+		TArray<FGutBagItem> Rack;
+	};
+
+	TSharedRef<FWas> Was = MakeShared<FWas>();
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_Yard"), true))
+	{
+		AddError(TEXT("Could not open the yard's level"));
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 0.6f, [this, Was]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		Was->bLadder = Run->bLadderStarted;
+		Was->Stable = Run->Stable;
+		Was->Bag = Run->Bag;
+		Was->Rack = Run->Rack;
+
+		Run->bLadderStarted = false;
+		Run->Stable = FGutStableState();
+		Run->Stable.bStarted = true;
+		Run->Stable.Water = 20.0f;
+		Run->Bag.Reset();
+		Run->Rack.Reset();
+		Run->AddToBag(FName("bread"), 2);
+		Run->AddToBag(FName("tea"), 1);
+
+		const UTownPlaceData* Place = Town->GetPlace();
+		const int32 Door = Place ? Place->Doors.IndexOfByPredicate([](const FTownDoor& One) { return One.Deed == ETownDeed::Rack; }) : INDEX_NONE;
+
+		if (!TestTrue(TEXT("The yard has a rack to go to"), Door != INDEX_NONE))
+		{
+			return;
+		}
+
+		StandOn(FVector2D(Place->Doors[Door].Place.X - 90.0f, Place->Doors[Door].Place.Y), 0.0f);
+	}, []() { return IsStreetReady(); } });
+
+	Steps.Add({ 1.0f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		Town->Tick(0.0f);
+
+		TestTrue(*FString::Printf(TEXT("Standing at it, the rack is what is offered (%s)"), *Town->GetPrompt()), Town->GetPrompt().Contains(TEXT("rack")));
+
+		Town->Interact();
+
+		if (!TestTrue(TEXT("Its page opens"), Town->IsAtYardPage()))
+		{
+			return;
+		}
+
+		TArray<FTownShopLine> Lines = Town->GetShopLines();
+
+		TestEqual(TEXT("With nothing on it, there are the two kinds of thing in the bag to put on it"), Lines.Num(), 2);
+		TestTrue(*FString::Printf(TEXT("The first is the bread (%s)"), Lines.IsEmpty() ? TEXT("") : *Lines[0].Name), !Lines.IsEmpty() && Lines[0].Name.Contains(TEXT("Put on the rack")) && Lines[0].Name.Contains(TEXT("bread")));
+
+		// one loaf onto the rack
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestEqual(TEXT("One loaf is on the rack"), Run->GetRackCount(FName("bread")), 1);
+		TestEqual(TEXT("And one is left in the bag"), Run->GetBagCount(FName("bread")), 1);
+
+		Lines = Town->GetShopLines();
+
+		TestTrue(*FString::Printf(TEXT("What is on the rack is listed first, to be taken off (%s)"), Lines.IsEmpty() ? TEXT("") : *Lines[0].Name),
+			Lines.Num() == 3 && Lines[0].Name.Contains(TEXT("Take off the rack")) && Lines[0].Name.Contains(TEXT("bread")));
+
+		// the tea too: the third line now
+		Town->HandleMenuInput(EGutMenuInput::Down);
+		Town->HandleMenuInput(EGutMenuInput::Down);
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestEqual(TEXT("The tea is on the rack"), Run->GetRackCount(FName("tea")), 1);
+		TestEqual(TEXT("And out of the bag"), Run->GetBagCount(FName("tea")), 0);
+
+		// and the loaf back off it: the first line
+		Town->HandleMenuInput(EGutMenuInput::Up);
+		Town->HandleMenuInput(EGutMenuInput::Up);
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestEqual(TEXT("The loaf is off the rack"), Run->GetRackCount(FName("bread")), 0);
+		TestEqual(TEXT("And both are in the bag again"), Run->GetBagCount(FName("bread")), 2);
+		TestTrue(*FString::Printf(TEXT("What was done is said (%s)"), *Town->GetBagSaid()), Town->GetBagSaid().Contains(TEXT("off the rack")));
+
+		GutTests::Screenshot(TEXT("72_the_rack"));
+	} });
+
+	Steps.Add({ 0.5f, [this, Was]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		Town->HandleBack();
+
+		TestFalse(TEXT("Leaving shuts the page"), Town->IsAtYardPage());
+
+		Run->bLadderStarted = Was->bLadder;
+		Run->Stable = Was->Stable;
+		Run->Bag = Was->Bag;
+		Run->Rack = Was->Rack;
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
  *  Ashmarket.Town.NoteBook   Mother Ledger's note has her book on it (25 November: "THE NOTE is incomplete - I need to see
  *                            what I borrowed and what I owe and what I paid back - transaction by transaction on the
  *                            sheet"). Two loans and a payment at her table are three rows on the note in the bag, each
@@ -1849,6 +1982,146 @@ namespace StoryTests
 	}
 }
 
+
+/**
+ *  Ashmarket.Probe.Tow   Not a test: a look. Somebody the player owns walks behind them into a place, and is photographed
+ *                        from in front, from close and from further off, over the first seconds: to catch what a
+ *                        follower's body does that a fighter's in the cage does not (25 November: bright green forearms
+ *                        and legs on a follower beside Rook). -GutProbeBody=Isaiah is whose body; -GutProbePlace=MainStreet
+ *                        the place; -GutProbeHurt gives it the hurts of a fight; -GutProbeArmor has it wear the first
+ *                        piece on the counter. Rendered runs only.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownProbeTowTest, "Ashmarket.Probe.Tow", GutTests::Flags)
+
+bool FTownProbeTowTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+
+	if (!FApp::CanEverRender())
+	{
+		return true;
+	}
+
+	FString Body = TEXT("Isaiah");
+	FString Place = TEXT("MainStreet");
+
+	FParse::Value(FCommandLine::Get(), TEXT("GutProbeBody="), Body);
+	FParse::Value(FCommandLine::Get(), TEXT("GutProbePlace="), Place);
+
+	const bool bHurt = FParse::Param(FCommandLine::Get(), TEXT("GutProbeHurt"));
+
+	// the owner and whoever is in tow are made before the place is: it stands them as it opens
+	{
+		UGutGameInstance* Run = Cast<UGutGameInstance>(GEngine->GetWorldContexts().IsEmpty() ? nullptr : GEngine->GetWorldContexts()[0].OwningGameInstance.Get());
+
+		for (const FWorldContext& Context : GEngine->GetWorldContexts())
+		{
+			if (UGutGameInstance* One = Cast<UGutGameInstance>(Context.OwningGameInstance))
+			{
+				Run = One;
+			}
+		}
+
+		if (!Run)
+		{
+			AddError(TEXT("There is no run to put an owner in"));
+			return false;
+		}
+
+		Run->bLadderStarted = false;
+		Run->Stable = FGutStableState();
+		Run->Stable.bStarted = true;
+		Run->Stable.Water = 30.0f;
+
+		FGutStableFighter Mine;
+
+		Mine.FighterName = FText::FromString(TEXT("Crow"));
+		Mine.Body = TSoftClassPtr<AActor>(FSoftObjectPath(FString::Printf(TEXT("/Game/Gut/Art/MetaHumans/%s/BP_%s.BP_%s_C"), *Body, *Body, *Body)));
+		Mine.bOwned = false;
+		Mine.bInTow = true;
+
+		if (bHurt)
+		{
+			Mine.LimbHealth[0] = 12.0f;
+			Mine.LimbHealth[2] = 9.0f;
+			Mine.LimbHealth[3] = 15.0f;
+		}
+
+		Run->Stable.Fighters.Add(Mine);
+	}
+
+	if (!AutomationOpenMap(FString::Printf(TEXT("/Game/Town/Lvl_%s"), *Place), true))
+	{
+		AddError(TEXT("Could not open the place"));
+		return false;
+	}
+
+	TSharedRef<TWeakObjectPtr<ACameraActor>> Camera = MakeShared<TWeakObjectPtr<ACameraActor>>();
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 0.2f, [Camera]()
+	{
+		ATownGameMode* Town = GetTown();
+		UWorld* World = Town->GetWorld();
+
+		*Camera = World->SpawnActor<ACameraActor>();
+
+		if (APlayerController* Eyes = World->GetFirstPlayerController())
+		{
+			Eyes->SetViewTarget(Camera->Get());
+
+			if (AHUD* Words = Eyes->GetHUD())
+			{
+				Words->bShowHUD = false;
+			}
+		}
+	}, []() { return IsStreetReady(); } });
+
+	struct FShot
+	{
+		float After;
+		float Off;
+		float Side;
+		const TCHAR* Name;
+	};
+
+	static const FShot Shots[] =
+	{
+		{ 0.3f, 260.0f, 60.0f, TEXT("tow_1_at_once_close") },
+		{ 1.2f, 600.0f, 200.0f, TEXT("tow_2_soon_far") },
+		{ 2.5f, 260.0f, -80.0f, TEXT("tow_3_after_3s_close") },
+		{ 4.0f, 900.0f, 0.0f, TEXT("tow_4_after_7s_far") },
+		{ 6.0f, 240.0f, 240.0f, TEXT("tow_5_after_13s_side") },
+	};
+
+	for (const FShot& Shot : Shots)
+	{
+		Steps.Add({ Shot.After, [this, Camera, Shot]()
+		{
+			const ATownGameMode* Town = GetTown();
+			const AGutFighter* Towed = Town->GetTowBody(0);
+
+			if (!TestNotNull(TEXT("Somebody is in tow"), Towed) || !Camera->IsValid())
+			{
+				return;
+			}
+
+			const FVector Middle = Towed->GetActorLocation() + FVector(0.0f, 0.0f, 10.0f);
+			const FVector From = Middle + (Towed->GetActorForwardVector() * Shot.Off) + (Towed->GetActorRightVector() * Shot.Side) + FVector(0.0f, 0.0f, 40.0f);
+
+			Camera->Get()->SetActorLocationAndRotation(From, (Middle - From).Rotation());
+			Camera->Get()->GetCameraComponent()->SetFieldOfView(Shot.Off > 500.0f ? 30.0f : 50.0f);
+			Camera->Get()->GetCameraComponent()->SetConstraintAspectRatio(false);
+		} });
+
+		Steps.Add({ 0.5f, [Shot]() { GutTests::Screenshot(Shot.Name); } });
+	}
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
 
 /**
  *  Ashmarket.Look.RotgutRow, .VelvetTin, .ScrappersYard   fixed views of a place saved as pictures. Not part of a test run.

@@ -176,7 +176,7 @@
    "name": "Hasp", "prompt": "Talk to Hasp, who keeps the rack", "body": "Omari", "cloth": [0.07, 0.05, 0.035],
    "x": 98.6, "y": 179.25, "facing": 180, "stand": "hips",
    "lines": [
-    {"id": "rack", "words": "Rack's inside. The club for most of them. The blade for anybody wearing rubber. And nobody ever thanked me for handing them a chain against a shield. That's free. Are you going in?",
+    {"id": "rack", "words": "Rack's inside. The club for most of them. The blade for anybody wearing rubber. And nobody ever fucking thanked me for handing them a chain against a shield. That's free. Are you going in?",
      "answers": [
       {"words": "I'm fighting. Let me in.", "deed": "fight"},
       {"words": "A spar. One fight, nothing on it.", "deed": "spar"},
@@ -189,9 +189,9 @@
    "name": "Yard hand", "prompt": "Talk to the yard hand", "body": "Jorge", "cloth": [0.045, 0.055, 0.04],
    "x": 78.3, "y": 201.6, "facing": 180, "stand": "shift_l",
    "lines": [
-    {"id": "yard", "words": "Alley's shut past the fence. Owners go round to the yard gate, and I walk them. You an owner?",
+    {"id": "yard", "words": "Alley's shut past the fence. Owners go round to the yard gate, and I walk their sorry asses in. You an owner?",
      "answers": [
-      {"words": "I have fighters to see to.", "deed": "own"},
+      {"words": "Let me into my yard.", "deed": "own"},
       {"words": "No."}
      ]}
    ]
@@ -200,7 +200,7 @@
    "name": "Warden", "prompt": "Talk to the Warden", "body": "Lorenzo", "cloth": [0.035, 0.04, 0.055],
    "x": 3.2, "y": 177.3, "facing": 120, "stand": "clasp",
    "lines": [
-    {"id": "sale", "words": "Sale night. The square is open until the last lot is down: south, down the lane. Keep your hands where the Chainmen can see them."}
+    {"id": "sale", "words": "Sale night. The square is open until the last lot is down: south, down the lane. Keep your fucking hands where the Chainmen can see them."}
    ]
   }
  ],

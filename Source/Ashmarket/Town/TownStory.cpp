@@ -484,6 +484,9 @@ void ATownGameMode::RefreshPresent()
 				WalkPerson(i, TownStoryWords::WayIn, false);
 			}
 
+			// (seen whole from the first: somebody not yet ready is grey squares, or worse)
+			UGutGameInstance::FinishPreparing(*Who.Name);
+
 			UE_LOG(LogTownStory, Log, TEXT("Story: %s is in the place now"), *Who.Name);
 		}
 		else if (!bHere && People[i])

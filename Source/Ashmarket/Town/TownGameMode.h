@@ -492,6 +492,9 @@ protected:
 	TMap<int32, double> Nodded;
 	bool bAtYardPage = false;
 
+	/** The yard's page is the rack's and nobody's: what is kept there, to put on it and take off it */
+	bool bAtRack = false;
+
 	/** Stands the player's people in their places in the yard */
 	void SettleYard();
 
@@ -811,6 +814,18 @@ protected:
 
 	/** The piece of armor of that name, off whichever rank's shelf it is on: or none, if the name is not a piece of armor */
 	UGutArmorData* FindArmor(const FName& Name) const;
+
+	/** Opens the yard's rack: see ETownDeed::Rack */
+	void OpenRack();
+
+	/** The rack's lines: each kind of thing in the bag that can be kept, to put one on it, and each kind on it, to take one off */
+	void GetRackPage(TArray<FTownShopLine>& OutLines, TArray<int32>& OutCodes) const;
+
+	/** Does one of the rack's lines */
+	bool DoRackLine(int32 Code);
+
+	/** What a thing that can be kept is called, whether it is a good of the market's or a piece of armor: or nothing, if it cannot be kept */
+	FString GetKeptName(const FName& Good) const;
 
 	/** The pieces of armor in the bag, by name */
 	TArray<FName> GetBagArmor() const;

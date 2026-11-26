@@ -229,6 +229,9 @@ public:
 	TArray<FGutDebtLine> DebtBook;
 
 	UPROPERTY()
+	TArray<FGutBagItem> Rack;
+
+	UPROPERTY()
 	int32 BlockSoldSeed = 0;
 };
 
@@ -311,6 +314,17 @@ public:
 	 */
 	UPROPERTY()
 	TArray<int32> BlockSold;
+
+	/**
+	 *  What the owner keeps on the rack in their yard: food and physic bought at the market, armor not on anybody. The
+	 *  yard is where things are kept (25 November: "the yard is for what? ... food I store there?"). Whoever is sent in to
+	 *  a fight from the yard eats and drinks off it first, if there is bread or tea on it.
+	 */
+	UPROPERTY()
+	TArray<FGutBagItem> Rack;
+
+	int32 GetRackCount(FName Good) const;
+	void AddToRack(FName Good, int32 Count);
 
 	/** Mother Ledger's book against the player, oldest first: see WriteDebt */
 	UPROPERTY()
@@ -435,6 +449,16 @@ public:
 
 	/** Reads the run back from disk, if there is one */
 	virtual void Init() override;
+
+	/**
+	 *  Waits until everything that has been loaded is ready to be looked at. The game is played uncooked: a texture, a
+	 *  shader, a body's mesh or the binding of its hair is made ready in the background after whatever uses it is
+	 *  loaded, and until then the engine draws a stand-in: grey squares for a texture, its own bright green for a decal,
+	 *  a beard's cards flung out from the body. All of those were seen on 25 November, on a machine that was busy
+	 *  building at the time ("still some artifacts"; "what is this - why did it freeze"). So a place is not shown, and a
+	 *  fight not begun, until nothing is left to make ready. Nothing to wait for costs nothing.
+	 */
+	static void FinishPreparing(const TCHAR* Where);
 
 	/**
 	 *  Buys the fighter a piece of armor from what a rank sells, to be worn in place of whatever it had on that part of

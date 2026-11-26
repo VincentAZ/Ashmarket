@@ -92,7 +92,8 @@ HUNG_BULB = "main_bulb"
 DEEDS = {"": unreal.TownDeed.NONE, "fight": unreal.TownDeed.FIGHT, "fight_afresh": unreal.TownDeed.FIGHT_AFRESH,
          "spar": unreal.TownDeed.SPAR, "bet": unreal.TownDeed.BET, "own": unreal.TownDeed.OWN, "go": unreal.TownDeed.GO,
          "buy": unreal.TownDeed.BUY, "borrow": unreal.TownDeed.BORROW, "repay": unreal.TownDeed.REPAY,
-         "armor": unreal.TownDeed.ARMOR, "trade": unreal.TownDeed.TRADE, "pit": unreal.TownDeed.PIT, "rest": unreal.TownDeed.REST}
+         "armor": unreal.TownDeed.ARMOR, "trade": unreal.TownDeed.TRADE, "pit": unreal.TownDeed.PIT, "rest": unreal.TownDeed.REST,
+         "rack": unreal.TownDeed.RACK}
 
 # the clip somebody with their wrists tied has their arms taken from (AGutFighter::BoundArms), which nobody else in a town stands in
 BOUND_STANCE = "crowd_watch_hands_behind"

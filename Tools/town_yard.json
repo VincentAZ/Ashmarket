@@ -474,6 +474,12 @@
    "x": 70.6,
    "y": 207.2,
    "deed": "rest"
+  },
+  {
+   "prompt": "The rack: what you keep in the yard",
+   "x": 76.0,
+   "y": 217.0,
+   "deed": "rack"
   }
  ],
  "finds": []

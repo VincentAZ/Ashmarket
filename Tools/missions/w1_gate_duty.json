@@ -19,7 +19,7 @@
        {"words": "What is the work?", "next": "w1_how"},
        {"words": "I will stand it.", "does": "w1=2 w1.q=1", "next": "w1_brief"},
        {"words": "Not tonight."}]},
-     {"id": "w1_how", "words": "Everybody who comes up shows a tag. You read it. A litre a head goes in the tin. No tag is property: you stand them by the post, and I send them up the stair. Nobody goes through on a story. That is all of it, and you would be surprised how few can do it."},
+     {"id": "w1_how", "words": "Everybody who comes up shows a tag. You read it. A litre a head goes in the tin. No tag is property: you stand them by the post, and I send them up the stair. Nobody goes through on a story. That is all of it, and you would be surprised how few can fucking do it."},
      {"id": "w1_brief", "words": "Foot lane. East side of the barrier, at its head. They come up one at a time. Read the tag, take the litre, send them on. Bring me the count when the last of them is through.",
       "log": "Took a shift reading tags on the foot lane for Sergeant Rook of the Wardens."},
      {"id": "w1_waiting", "opens": true, "when": "w1=2 w1.q<6", "words": "The lane is that way. The count comes to me when the last of them is through, and not before."},
@@ -47,7 +47,7 @@
       "answers": [
        {"words": "", "when": "w1.roll=1", "next": "w1_caught"},
        {"words": "", "when": "w1.roll>1", "next": "w1_clean"}]},
-     {"id": "w1_caught", "words": "I count heads as well as litres. Five came up, and four of them have a number in the register. I will not ask you which. Twenty-five for the shift, because you stood it. Do not do that on my lane again.",
+     {"id": "w1_caught", "words": "I count heads as well as litres. Five came up, and four of them have a number in the register. I will not ask you which. Twenty-five for the shift, because you stood it. Do not ever fucking do that on my lane again.",
       "does": "water+25 st.wardens+5 w1=100 sound:gate_bell*3", "log": "Stood the shift at the gate. Rook paid 25 L, and knows somebody went through unread."},
      {"id": "w1_clean", "words": "Five and five. Twenty-five for the shift, and one fine at the post's discretion, the next time you earn one.",
       "does": "water+25 st.wardens+10 waived+1 w1=100 sound:gate_bell*3", "log": "Stood the shift at the gate. Rook paid 25 L."},
@@ -65,7 +65,7 @@
        "answers": [
         {"words": "One litre. Through.", "does": "w1.toll+1 w1.q+1 walk:through", "next": "thanks"},
         {"words": "What is out on the Flats tonight?", "next": "flats"}]},
-      {"id": "flats", "words": "Wind. A convoy stuck on the salt with its lights off, and people out there who are waiting for the lights to go on. Same as every night."},
+      {"id": "flats", "words": "Wind. A convoy stuck on the salt with its lights off, and people out there who are waiting for the lights to go on. Same shit as every night."},
       {"id": "thanks", "words": "New reader. Do not let them rush you. The ones who rush you are the ones to read twice."}]},
 
     {"name": "A woman with no litre", "prompt": "Read her tag", "body": "Try10", "cloth": [0.09, 0.07, 0.06], "x": 1.75, "y": 5.4, "facing": 0, "stand": "shift_l",
@@ -77,7 +77,7 @@
         {"words": "Then you wait outside until somebody pays it for you.", "does": "fear+1 w1.q+1 walk:back", "next": "back"},
         {"words": "I will put your litre in the tin. (1 L)", "needs": "water>=1", "does": "water-1 trust+1 w1.toll+1 w1.q+1 walk:through", "next": "paid"},
         {"words": "Go through. Bring it tomorrow.", "does": "w1.short+1 w1.q+1 walk:through", "next": "owed"}]},
-      {"id": "back", "words": "Out there? At night? You know what is out there at night."},
+      {"id": "back", "words": "Out there? At night? You know what the fuck is out there at night."},
       {"id": "paid", "words": "You... all right. I will not forget who did that."},
       {"id": "owed", "words": "Tomorrow. First thing. Thank you."}]},
 
@@ -85,7 +85,7 @@
      "when": "w1=2 w1.q=3",
      "ways": {"in": {"points": [[1.75, -25.0], [1.75, -19.5], [1.75, 0.6]]}, "through": {"points": [[1.75, 9.5], [2.0, 22.0], [2.0, 41.0], [2.0, 126.0]]}},
      "lines": [
-      {"id": "tag", "words": "Chainmen. I do not pay at the lane. The Block settles with the post by the month. Ask your sergeant, when you have been here longer than an hour.", "note": "The tag is good. On his belt hang four empty collars.",
+      {"id": "tag", "words": "Chainmen. I do not pay at the lane. The Block settles with the post by the month. Ask your sergeant, when you have been here longer than a fucking hour.", "note": "The tag is good. On his belt hang four empty collars.",
        "answers": [
         {"words": "The post takes a litre from everybody. Pay.", "does": "st.chainmen-2 w1.toll+1 w1.q+1 walk:through", "next": "pays"},
         {"words": "Go through.", "does": "w1.short+1 w1.q+1 walk:through", "next": "through"}]},
@@ -111,8 +111,8 @@
       {"id": "held", "words": "I set bones. I would have set yours."},
       {"id": "tagged", "words": "Thirty litres. For somebody you have known for a minute. Wynn. Remember it. I will remember yours."},
       {"id": "waved", "words": "Thank you. I will not forget the lane, or who was reading on it."},
-      {"id": "waved_robbed", "words": "You are worse than the man at the Drive-In. He at least sold me something."},
-      {"id": "held_robbed", "words": "You took it and... of course. Of course you did."}]},
+      {"id": "waved_robbed", "words": "You are worse than the bastard at the Drive-In. He at least sold me something."},
+      {"id": "held_robbed", "words": "You took it and... of course. Of course you fucking did."}]},
 
     {"name": "A cart hand", "prompt": "Read the cart hand's tag", "body": "Try03", "cloth": [0.05, 0.06, 0.075], "x": 1.75, "y": 5.4, "facing": 0, "stand": "hips",
      "when": "w1=2 w1.q=5",

@@ -153,7 +153,7 @@
    "name": "Mash", "prompt": "Talk to Mash, at Detention", "body": "Mash", "cloth": [0.06, 0.06, 0.05],
    "x": -45.0, "y": 337.4, "facing": 180, "stand": "stand_f",
    "lines": [
-    {"id": "bus", "words": "Detention. Everything anybody drinks in this town came out of my tubs, the Last Call's included, whatever she tells you it is. Sit down or move along. The bus is full."}
+    {"id": "bus", "words": "Detention. Everything anybody drinks in this town came out of my tubs, the Last Call's included, whatever she tells you it is. Sit down or piss off. The bus is full."}
    ]
   }
  ],

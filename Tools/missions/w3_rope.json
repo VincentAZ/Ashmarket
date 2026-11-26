@@ -71,7 +71,7 @@
   "Main Street": {
    "lines": {
     "Sergeant Rook": [
-     {"id": "w3_take", "opens": true, "when": "w3=2 w3.have !brandt", "words": "Brandt. I fitted that man's tag myself. Up the stair with him. Fifty litres, the Captain's water, counted by me. The bell goes once in the morning.",
+     {"id": "w3_take", "opens": true, "when": "w3=2 w3.have !brandt", "words": "Brandt. Shit. I fitted that man's tag myself. Up the stair with him. Fifty litres, the Captain's water, counted by me. The bell goes once in the morning.",
       "does": "water+50 st.wardens+15 st.pump+5 brandt=1 w3.have=0 bounty=20 w3=100 sound:gate_bell", "log": "Handed Ilya Brandt to the Wardens at the gate. Rook paid 50 L. He hangs."},
      {"id": "w3_gone", "opens": true, "when": "w3=2 brandt=2", "words": "The Captain's man from the yard. You have come down without him.",
       "answers": [

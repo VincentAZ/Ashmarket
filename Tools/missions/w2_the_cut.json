@@ -18,7 +18,7 @@
        {"words": "Where is the Row?", "next": "w2_where"},
        {"words": "I will collect it.", "does": "w2=2", "next": "w2_brief"},
        {"words": "Not tonight."}]},
-     {"id": "w2_where", "words": "Up Main Street, through the square, up the lane to Pool Street, and west off the end of it under the overpass. The furrow the airliner left. You will smell it before you see it."},
+     {"id": "w2_where", "words": "Up Main Street, through the square, up the lane to Pool Street, and west off the end of it under the overpass. The furrow the airliner left. You will smell the shithole before you see it."},
      {"id": "w2_brief", "words": "Thirty-six. If a bar is short, it is short: bring me what there is and tell me which. What the post does about a short bar is the post's business, not yours.",
       "log": "Took the Wardens' cut to collect from the three bars of Rotgut Row."},
      {"id": "w2_waiting", "opens": true, "when": "w2=2", "words": "Three bars. I will hear the count when you have been to all three, and not a count of two."},
@@ -33,32 +33,32 @@
 
      {"id": "w2_full", "words": "Thirty-six. Forty-five for the walk, and a coat off the peg. Wear it and half this town looks straight through you.",
       "does": "water+45 st.wardens+10 coat=1 w2=100", "log": "Brought Rook the whole of the Row's cut. He paid 45 L and lent a Warden's coat."},
-     {"id": "w2_exposed", "words": "Off my own shift. Nine years on that lane. He will be on the Block before the week is out, and what he took goes back where it came from. Forty-five, the coat, and I do not forget who told me.",
+     {"id": "w2_exposed", "words": "Off my own shift. Nine years on that lane, the thieving bastard. He will be on the Block before the week is out, and what he took goes back where it came from. Forty-five, the coat, and I do not forget who told me.",
       "does": "water+45 st.wardens+15 coat=1 lanewarden.sold=1 w2=100", "log": "Told Rook which of his own Wardens robbed Tarp Nine. The man is to be sold at the Block."},
      {"id": "w2_short", "words": "Then Tarp Nine has a new keeper by the end of the week. That is not a threat. It is the Row. Forty-five was for thirty-six: it is thirty for twenty-four.",
       "does": "water+30 st.wardens+5 fen.gone=1 w2=100", "log": "Brought Rook 24 L of the Row's 36. Tarp Nine was short, and changes hands."},
 
-     {"id": "w2_skim", "words": "Twenty-one. From three bars that have never once been short together. Stand there.", "does": "w2.roll=?3",
+     {"id": "w2_skim", "words": "Bullshit. Twenty-one, from three bars that have never once been short together. Stand there.", "does": "w2.roll=?3",
       "answers": [
        {"words": "", "when": "w2.roll=1", "next": "w2_skim_caught"},
        {"words": "", "when": "w2.roll>1", "next": "w2_skim_clean"}]},
-     {"id": "w2_skim_caught", "words": "I had a runner up the Row before you were back down it. They paid thirty-six. Put the fifteen on the desk. You are finished at this post until I say you are not.",
+     {"id": "w2_skim_caught", "words": "I had a runner up the Row before you were back down it. They paid thirty-six. Put the fifteen on the desk, you little shit. You are finished at this post until I say you are not.",
       "does": "water-15 st.wardens-15 w2=100", "log": "Rook had the Row counted behind me. He took the 15 L back, and I am not welcome at the post."},
      {"id": "w2_skim_clean", "words": "Twenty-one, then. Short weeks happen. Forty-five for the walk.",
       "does": "water+45 st.wardens+10 w2=100", "log": "Rook took 21 L for the Row's cut and paid 45 L for the walk."},
 
      {"id": "w2_after", "opens": true, "when": "w2>=100 st.wardens>=0 !w3", "words": "Captain Voss wants a man brought in. That is the Captain's to ask, not mine, and the Captain does the asking at a back table in the Velvet Tin: west out of Block Square, through the red curtain."},
-     {"id": "w2_cold", "opens": true, "when": "w2>=100 st.wardens<0", "words": "You counted my water short to my face. The lane is that way, and the street is the other."}
+     {"id": "w2_cold", "opens": true, "when": "w2>=100 st.wardens<0", "words": "You counted my water short to my face. Fuck off. The lane is that way, and the street is the other."}
     ],
     "Lane Warden": [
-     {"id": "w2_tin", "opens": true, "when": "w2=2 w2.knows !w2.nine !w2.told !w2.split", "words": "Fen's tin. You have been talking to the bus. All right. It was sitting there, and a fence's tin is nobody's water.",
+     {"id": "w2_tin", "opens": true, "when": "w2=2 w2.knows !w2.nine !w2.told !w2.split", "words": "Fen's tin. You have been talking to the bus. All right. Shit. It was sitting there, and a fence's tin is nobody's water.",
       "answers": [
        {"words": "Hand over the twelve. It goes back in the cut, and nobody hears.", "does": "w2.nine=3 w2.cut+12", "log": "Got Tarp Nine's twelve litres back from the Warden who took it.", "next": "w2_gave"},
        {"words": "Rook will hear it from me.", "does": "w2.told=1", "next": "w2_hears"},
        {"words": "Six to me, and I was never down this lane.", "does": "water+6 w2.split=1 trust-2", "log": "Took 6 L from the Warden who robbed Tarp Nine, to say nothing.", "next": "w2_six"}]},
-     {"id": "w2_gave", "words": "Twelve. Count it. And you were never down this lane."},
-     {"id": "w2_hears", "words": "Then he hears it. I have stood this lane nine years, and I will stand it tomorrow."},
-     {"id": "w2_six", "words": "Six. A pleasure. Now go and be somewhere else."}
+     {"id": "w2_gave", "words": "Twelve. Count it, you prick. And you were never down this lane."},
+     {"id": "w2_hears", "words": "Then he fucking hears it. I have stood this lane nine years, and I will stand it tomorrow."},
+     {"id": "w2_six", "words": "Six. A pleasure. Now fuck off and be somewhere else."}
     ]
    }
   },
@@ -70,7 +70,7 @@
       "answers": [
        {"words": "Twelve. It is right.", "does": "w2.sump=1 w2.cut+12", "next": "w2_paid"},
        {"words": "Later."}]},
-     {"id": "w2_paid", "words": "Tell your sergeant The Sump has never once been short. And when you get up the Row, look at who is."}
+     {"id": "w2_paid", "words": "Tell your sergeant The Sump has never once been short. And when you get up the Row, look at who the hell is."}
     ],
     "Mash": [
      {"id": "w2_cut", "opens": true, "when": "w2=2 !w2.det", "words": "Twelve, on the counter. Detention pays on the night. I cannot afford a Warden who does not like me.",
@@ -78,11 +78,11 @@
        {"words": "Twelve. It is right.", "does": "w2.det=1 w2.cut+12", "next": "w2_paid"},
        {"words": "Later."}]},
      {"id": "w2_paid", "words": "You will find Tarp Nine lighter than you want it. That was not Fen's doing."},
-     {"id": "w2_saw", "opens": true, "when": "w2=2 w2.asked !w2.knows", "words": "Who robbed Fen? I see the whole west lip from this bus, and I do not sleep. Boots, not sandals. A vest with plates in it. Heavy, and breathing like the walk up the cut was the most he had done all week. Whoever stands at your gate with nothing to do.",
+     {"id": "w2_saw", "opens": true, "when": "w2=2 w2.asked !w2.knows", "words": "Who robbed Fen? I see the whole west lip from this bus, and I do not sleep. Boots, not sandals. A vest with plates in it. Heavy, and breathing like the walk up the cut was the most the fat bastard had done all week. Whoever stands at your gate with nothing to do.",
       "does": "w2.knows=1", "log": "Mash saw who took Tarp Nine's tin: a heavy Warden in a plate vest, off the gate."}
     ],
     "Fen": [
-     {"id": "w2_cut", "opens": true, "when": "w2=2 !w2.nine", "words": "The cut. Yes. Somebody came down off the lip in the night and took the tin, and what was in the tin, and the cut was in the tin. I have stock. I have no water.",
+     {"id": "w2_cut", "opens": true, "when": "w2=2 !w2.nine", "words": "The cut. Yes. Somebody came down off the lip in the night and took the tin, and what was in the tin, and the cut was in the tin. I have stock. I have no fucking water.",
       "does": "w2.fen=1",
       "answers": [
        {"words": "Who took it?", "does": "w2.asked=1", "next": "w2_who"},
@@ -91,7 +91,7 @@
        {"words": "Then the post hears Tarp Nine is short."}]},
      {"id": "w2_who", "words": "Somebody who knew which night the tin was full. Ask Mash. She sees this lip from the bus, and she does not sleep."},
      {"id": "w2_covered", "words": "Nobody does that. Not on this Row. There is a cot behind the tarp: if you ever need not to be found for a night, it is yours."},
-     {"id": "w2_squeezed", "words": "Stop. Stop. Here. That was to buy next week's stock. You have closed Tarp Nine a week early, and you may tell your sergeant so."},
+     {"id": "w2_squeezed", "words": "Stop. Stop! Shit. Here. That was to buy next week's stock. You have closed Tarp Nine a week early, and you may tell your sergeant so."},
      {"id": "w2_back", "opens": true, "when": "w2.nine=3", "words": "Mash told me who, and that you got it out of him. So the post robs me at night and collects from me in the morning. Still. You did not have to."},
      {"id": "w2_bed", "opens": true, "when": "w2>=100 fen.bed", "words": "The cot is behind the tarp. Nobody asks at Tarp Nine. That is the whole trade."}
     ]
@@ -100,7 +100,7 @@
     {"name": "A new keeper", "prompt": "Talk to whoever has Tarp Nine now", "body": "Try08", "cloth": [0.06, 0.05, 0.05], "x": -48.3, "y": 327.8, "facing": 90, "on": true, "stand": "hip_r",
      "when": "fen.gone",
      "lines": [
-      {"id": "new", "words": "Fen? Fen lost the pitch. The post said short, and the Row heard it. I pay three tenths, not four, and the cup is what it costs now."}]}
+      {"id": "new", "words": "Fen? Fen lost the pitch. The post said short, and the Row heard it. Tough shit for Fen. I pay three tenths, not four, and the cup is what it costs now."}]}
    ]
   },
 
@@ -109,7 +109,7 @@
     {"name": "A Warden, sentenced", "prompt": "Talk to the Warden in the collar", "body": "Try06", "cloth": [0.035, 0.04, 0.055], "x": 28.2, "y": 136.4, "facing": 270, "stand": "stand", "collared": true,
      "when": "lanewarden.sold",
      "lines": [
-      {"id": "sold", "words": "Nine years on that lane. They read me my own sentence off my own desk. Do you know what a Warden fetches on that Block? Everybody he ever fined is going to bid."}]}
+      {"id": "sold", "words": "Nine years on that fucking lane. They read me my own sentence off my own desk. Do you know what a Warden fetches on that Block? Everybody he ever fined is going to bid."}]}
    ]
   }
  }
