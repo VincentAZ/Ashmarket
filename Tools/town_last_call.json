@@ -1,0 +1,158 @@
+{
+ "about": "The Last Call's Apron (for-review/design/map-of-ashmarket.md, place 1): the ground between the airliner's fuselage and the overpass piers, set with tables made of seat rows. Read by Tools/build_town_level.py (GUT_TOWN_LIST=$PWD/Tools/town_last_call.json Tools/build_town_level.sh). Places are in the map's own metres (x east, y north). BUILT AS FAR AS THE APRON: nobody goes into the fuselage, and Captain Dolores serves at the foot of the north door's stair. The wreck lies north and south here (the map has it ten degrees off), so that its tail is the tail that stands at the foot of Rotgut Row. The fuselage, the tables, the fire pit and the jobs board were made in Mixar for this place (ArtSource/mixar/call_*). Nothing lights it that is not seen to burn. Nobody new here has a voice yet: the voice account was at its month's limit when it was made (25 November), and they speak in written words until it is not.",
+
+ "name": "The Last Call",
+ "level": "/Game/Town/Lvl_LastCall",
+ "data": "/Game/Town/DA_Town_LastCall",
+ "origin": {"x": 95.0, "y": 208.0, "z": 3.0},
+
+ "street_height": 10.2,
+ "alley": {"from_y": 1000.0, "rise_per_metre": 0.0},
+ "sky": {"x": -32.0, "y": 258.0, "z": 6.0, "size": 800},
+
+ "start": {"x": -37.0, "y": 274.4, "facing": 180},
+ "arrivals": [
+  {"name": "from_row", "x": -37.0, "y": 274.4, "facing": 180}
+ ],
+
+ "beds": ["market"],
+
+ "errand": [
+  "THE LAST CALL",
+  "Captain Dolores's bar, in the wreck. Tonight she serves on the Apron.",
+  "Captain Dolores, at her table by the foot of the north door's stair.",
+  "The jobs board stands by her.",
+  "Rotgut Row: north, round the tail."
+ ],
+
+ "surfaces": {
+  "Yard": {"from": "dirty_concrete", "size": 300},
+  "Road": {"from": "road_damaged", "size": 320},
+  "Earth": {"from": "dry_ground_01", "size": 360}
+ },
+
+ "ground": [
+  {"label": "Beyond", "x": [-130.0, 60.0], "y": [170.0, 350.0], "z": 10.15, "surface": "Earth"},
+  {"label": "Apron", "x": [-42.4, -18.0], "y": [239.0, 278.0], "z": 10.2, "surface": "Yard"},
+  {"label": "ShadeStreet", "x": [-42.4, -18.0], "y": [262.0, 268.0], "z": 10.21, "surface": "Road", "note": "Shade Street, which the wreck lies across"}
+ ],
+
+ "walk": [
+  {"x": [-41.7, -21.0], "y": [241.0, 276.6]}
+ ],
+
+ "walls": [],
+
+ "rows": [
+  {"label": "SouthStacks", "model": ["town_container_red", "town_container_blue"], "yaw": 90, "high": 2, "along": "x", "from": -42.0, "to": -18.5, "face": 240.6, "side": "south"},
+  {"label": "EastStacks", "model": ["town_container_blue", "town_container_red"], "yaw": 180, "high": 2, "along": "y", "from": 238.0, "to": 279.0, "face": -18.6, "side": "east"},
+  {"label": "NorthStacks", "model": ["town_container_blue"], "yaw": 90, "high": 1, "along": "x", "from": -35.4, "to": -18.5, "face": 277.0, "side": "north", "note": "the north side, with the way round the tail left open at its west end"}
+ ],
+
+ "runs": [],
+
+ "things": [
+  {"model": "call_fuselage", "x": -45.0, "y": 252.4, "z": 9.4, "yaw": 0, "note": "the wreck: nose south, lying in its own trench. The two doors are on this side"},
+  {"model": "row_tail", "x": -45.0, "y": 280.4, "z": 9.0, "yaw": 0, "scale": 2.0, "note": "its tail and fin: the same that stand at the foot of Rotgut Row"},
+  {"model": "town_overpass", "x": -22.6, "y": 259.0, "yaw": 0, "legs": true, "hollow": true, "note": "a span of the overpass, on its piers along the Apron's east side"},
+
+  {"model": "square_card_table", "x": -38.3, "y": 258.6, "yaw": 0, "note": "what the Captain serves across tonight"},
+  {"model": "call_jobs_board", "x": -39.2, "y": 261.4, "yaw": 0, "note": "the jobs board: the card rack from by the east door"},
+
+  {"model": "call_seat_table", "x": -36.0, "y": 246.0, "yaw": 0, "scale": 0.8},
+  {"model": "call_seat_table", "x": -30.6, "y": 244.6, "yaw": 90, "scale": 0.8},
+  {"model": "call_seat_table", "x": -36.4, "y": 252.4, "yaw": 20, "scale": 0.8},
+  {"model": "call_seat_table", "x": -30.2, "y": 251.6, "yaw": 0, "scale": 0.8},
+  {"model": "call_seat_table", "x": -34.6, "y": 269.6, "yaw": 0, "scale": 0.8},
+  {"model": "call_seat_table", "x": -28.6, "y": 271.6, "yaw": 90, "scale": 0.8},
+  {"model": "call_seat_table", "x": -27.0, "y": 258.6, "yaw": 0, "scale": 0.8},
+
+  {"model": "call_cowl_fire", "x": -32.6, "y": 262.4, "yaw": 0, "light": {"candela": 5200, "reach": 16, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.3, "shadows": true, "note": "the fire pit: one of the engines' cowls"}},
+  {"model": "main_lantern", "x": -38.4, "y": 258.5, "z": 10.98, "yaw": 30, "light": {"candela": 1100, "reach": 7, "colour": "lantern", "flicker": true, "off": 0.0, "note": "on the Captain's table"}},
+  {"model": "main_lamp_mast", "x": -28.0, "y": 241.8, "yaw": 315, "light": {"kind": "spot", "candela": 16000, "reach": 30, "cone": 75, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "a work lamp at the south end, on the wreck's side"}},
+  {"model": "main_lamp_mast", "x": -27.0, "y": 275.6, "yaw": 225, "light": {"kind": "spot", "candela": 14000, "reach": 30, "cone": 75, "colour": "lamp", "shadows": true, "off": 0.15, "size": 0.12, "note": "and one at the north end"}},
+  {"model": "main_lantern", "x": -36.0, "y": 246.0, "z": 10.58, "yaw": 0, "light": {"candela": 1300, "reach": 8, "colour": "lantern", "flicker": true, "off": 0.0}},
+  {"model": "main_lantern", "x": -30.6, "y": 244.6, "z": 10.58, "yaw": 47, "light": {"candela": 1300, "reach": 8, "colour": "lantern", "flicker": true, "off": 0.0}},
+  {"model": "main_lantern", "x": -36.4, "y": 252.4, "z": 10.58, "yaw": 94, "light": {"candela": 1300, "reach": 8, "colour": "lantern", "flicker": true, "off": 0.0}},
+  {"model": "main_lantern", "x": -30.2, "y": 251.6, "z": 10.58, "yaw": 141, "light": {"candela": 1300, "reach": 8, "colour": "lantern", "flicker": true, "off": 0.0}},
+  {"model": "main_lantern", "x": -34.6, "y": 269.6, "z": 10.58, "yaw": 188, "light": {"candela": 1300, "reach": 8, "colour": "lantern", "flicker": true, "off": 0.0}},
+  {"model": "main_lantern", "x": -28.6, "y": 271.6, "z": 10.58, "yaw": 235, "light": {"candela": 1300, "reach": 8, "colour": "lantern", "flicker": true, "off": 0.0}},
+  {"model": "main_lantern", "x": -27.0, "y": 258.6, "z": 10.58, "yaw": 282, "light": {"candela": 1300, "reach": 8, "colour": "lantern", "flicker": true, "off": 0.0}},
+  {"model": "main_fire_drum", "x": -26.4, "y": 264.8, "yaw": 40, "light": {"candela": 2000, "reach": 9, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2}},
+
+  {"model": "Barrel_01", "x": -38.4, "y": 250.0},
+  {"model": "barrel_03", "x": -38.3, "y": 250.9},
+  {"model": "plastic_crate_02", "x": -22.4, "y": 252.4, "yaw": 50},
+  {"model": "old_tyre", "x": -22.2, "y": 268.4},
+  {"model": "plastic_bottle_gallon", "x": -38.0, "y": 259.4, "yaw": 0},
+  {"model": "can_rusted", "x": -33.9, "y": 264.6, "yaw": 80},
+  {"model": "trashbag", "x": -22.6, "y": 243.0, "yaw": 0}
+ ],
+
+ "pictures": [
+  {"picture": "sign_last_call_by_hand", "x": -42.3, "y": 250.0, "faces": "east", "up": 3.1, "tall": 1.1, "deep": 0.6, "note": "painted along the wreck's side, between its two doors"}
+ ],
+ "pasted": [],
+
+ "bulbs_about": "Reading lamps strung along the wreck's side, hung from it. Out on the Apron the tables have lanterns: a lamp hung over open ground hangs from nothing.",
+ "bulbs": [
+  {"x": -41.5, "y": 244.4, "up": 3.4, "candela": 1500, "reach": 11, "hung": true},
+  {"x": -41.5, "y": 249.6, "up": 3.4, "candela": 1700, "reach": 11, "hung": true},
+  {"x": -41.5, "y": 253.0, "up": 3.4, "candela": 1500, "reach": 11, "hung": true},
+  {"x": -41.5, "y": 259.8, "up": 3.4, "candela": 1700, "reach": 11, "hung": true, "shadows": true},
+  {"x": -41.5, "y": 263.6, "up": 3.4, "candela": 1500, "reach": 11, "hung": true},
+  {"x": -41.5, "y": 267.0, "up": 3.4, "candela": 1300, "reach": 11, "hung": true}
+ ],
+
+ "bystanders": [
+  {"label": "AtTheFire", "count": 5, "x": [-35.4, -29.8], "y": [259.6, 265.2], "apart": 1.2, "look": [-32.6, 262.4]},
+  {"label": "SouthTables", "count": 4, "x": [-38.0, -28.4], "y": [247.6, 250.4], "apart": 1.3, "look": [-33.0, 246.0]},
+  {"label": "NorthTables", "count": 3, "x": [-33.0, -29.6], "y": [268.6, 273.6], "apart": 1.3, "look": [-32.0, 270.6]}
+ ],
+
+ "people": [
+  {
+   "name": "Captain Dolores", "prompt": "Talk to Captain Dolores", "body": "Dolores", "cloth": [0.09, 0.1, 0.14],
+   "x": -39.5, "y": 258.6, "facing": 90, "stand": "stand_f",
+   "lines": [
+    {"id": "aboard", "words": "Welcome aboard the Last Call. Exits are here, here, and through anybody who starts something. We don't expect turbulence, but then we didn't last time.",
+     "answers": [
+      {"words": "Why are you serving outside?", "next": "outside"},
+      {"words": "Another night."}]},
+    {"id": "outside", "words": "The cabin floor is up for the week, sweetheart. Somebody slept in the hold and came up through it. So tonight the bar is the Apron, the board is by my elbow, and you may sit anywhere that is not on fire."}
+   ]
+  },
+  {
+   "name": "A Warden corporal", "prompt": "Talk to the Warden at the table", "body": "Mix13", "cloth": [0.05, 0.06, 0.07],
+   "x": -34.6, "y": 247.4, "facing": 200, "stand": "crossed",
+   "lines": [
+    {"id": "off", "words": "Off shift. The Captain pours, and I do not ask what it is."}
+   ]
+  },
+  {
+   "name": "A winch hand", "prompt": "Talk to the winch hand", "body": "Mix08", "cloth": [0.07, 0.065, 0.05],
+   "x": -33.2, "y": 270.9, "facing": 150, "stand": "shift_r",
+   "lines": [
+    {"id": "skip", "words": "Winch on the Skip. Four days the cable has not moved, and nobody pays a hand for a cable that is not moving."}
+   ]
+  },
+  {
+   "name": "A Chainmen collector", "prompt": "Talk to the collector", "body": "Try04", "cloth": [0.1, 0.05, 0.04],
+   "x": -28.4, "y": 259.6, "facing": 270, "stand": "stand",
+   "lines": [
+    {"id": "book", "words": "I collect for the Block. In here I am only drinking, and so are you. Keep it that way."}
+   ]
+  }
+ ],
+
+ "doors": [
+  {"prompt": "North, round the tail, to Rotgut Row", "x": -36.9, "y": 276.4, "deed": "go", "to": "/Game/Town/Lvl_RotgutRow", "arrive": "from_last_call", "walk_through": true,
+   "mouth": {"x": [-38.2, -35.7], "y": [275.9, 276.9]}},
+  {"prompt": "Try the stair to the north door", "x": -38.7, "y": 255.6, "shut": "The door at the top stands open on a cabin with its floor panels stacked against the seats. \"Not this week,\" the Captain says, without turning round."},
+  {"prompt": "Try the stair to the south door", "x": -39.2, "y": 244.4, "shut": "Roped off, with a seat-belt buckled across it."}
+ ],
+
+ "finds": [
+  {"good": "smokes", "x": -23.2, "y": 256.4, "facing": 30}
+ ]
+}

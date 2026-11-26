@@ -58,6 +58,8 @@ bool FTownReachTest::RunTest(const FString& Parameters)
 		TEXT("/Game/Town/DA_Town_RotgutRow"),
 		TEXT("/Game/Town/DA_Town_VelvetTin"),
 		TEXT("/Game/Town/DA_Town_ScrappersYard"),
+		TEXT("/Game/Town/DA_Town_LastCall"),
+		TEXT("/Game/Town/DA_Town_Yard"),
 	};
 
 	// the ways anybody would take, in the map's own metres (x east, y north): each a line from one place to the next
@@ -77,6 +79,8 @@ bool FTownReachTest::RunTest(const FString& Parameters)
 		{ TEXT("Rotgut Row"), TEXT("down the cut and up the furrow to the bus"), { FVector2D(-39.0f, 294.0f), FVector2D(-45.0f, 294.0f), FVector2D(-45.0f, 335.5f) } },
 		{ TEXT("The Velvet Tin"), TEXT("in at the curtain and across the court to the middle trailer"), { FVector2D(-86.0f, 188.9f), FVector2D(-86.0f, 192.0f), FVector2D(-96.0f, 204.6f) } },
 		{ TEXT("The Scrappers' Yard"), TEXT("in at the gate and up the yard to the weighbridge"), { FVector2D(113.2f, 176.2f), FVector2D(118.0f, 180.0f), FVector2D(124.6f, 195.2f) } },
+		{ TEXT("Rotgut Row"), TEXT("from the foot of the cut to the way round the tail"), { FVector2D(-43.0f, 294.0f), FVector2D(-46.8f, 293.6f) } },
+		{ TEXT("The Last Call"), TEXT("in round the tail and down the Apron to the Captain's table"), { FVector2D(-37.0f, 274.4f), FVector2D(-37.0f, 266.0f), FVector2D(-37.4f, 259.0f) } },
 		{ TEXT("Block Square"), TEXT("from Pool Street's lane across the square to the mouth of Tin Lane"), { FVector2D(5.2f, 165.4f), FVector2D(0.0f, 154.6f), FVector2D(-7.2f, 154.6f) } },
 	};
 

@@ -799,6 +799,15 @@ bool FGutFitShieldTest::RunTest(const FString& Parameters)
 		{
 			Fight.Player->SetBody(TSoftClassPtr<AActor>(FSoftObjectPath(FString::Printf(TEXT("/Game/Gut/Art/MetaHumans/%s/BP_%s.BP_%s_C"), *Other, *Other, *Other))), Fight.Player->GetBodyRetargeter());
 			Fight.Player->ClearArmor();
+
+			// -GutFitArmor has them wear the Butcher's armor all the same: to see how it sits on a body it was not cut on
+			if (FParse::Param(FCommandLine::Get(), TEXT("GutFitArmor")))
+			{
+				for (UGutArmorData* Piece : Butcher->Armor)
+				{
+					Fight.Player->WearArmor(Piece);
+				}
+			}
 		}
 		else
 		{
@@ -815,7 +824,8 @@ bool FGutFitShieldTest::RunTest(const FString& Parameters)
 			}
 		}
 
-		Fight.Player->EquipWeapon(Butcher->Weapon);
+		// (-GutFitBare: nothing in the hands, to see the body)
+		Fight.Player->EquipWeapon(FParse::Param(FCommandLine::Get(), TEXT("GutFitBare")) ? nullptr : Butcher->Weapon.Get());
 
 		// the other one out of the picture
 		PlaceAt(Fight.Enemy, 550.0f, 350.0f, 180.0f);

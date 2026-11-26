@@ -1,6 +1,7 @@
 // Ashmarket: the town outside the cage.
 
 #include "TownGameMode.h"
+#include "ContentStreaming.h"
 #include "AssetRegistry/IAssetRegistry.h"
 #include "AssetRegistry/AssetData.h"
 #include "Engine/StaticMeshActor.h"
@@ -790,10 +791,17 @@ void ATownGameMode::Settle()
 		}
 	}
 
+	// what the caller says in the bidding, fetched with the place so that it is ready with it
+	FetchAuctionSounds();
+
 	// and nobody is shown the place until everything in it is ready to be looked at
 	UGutGameInstance::FinishPreparing(PlaceData ? *PlaceData->Name : TEXT("a place"));
 
+	// its pictures too, at the size they will be seen at from where the player stands: fetched now, not as they are looked at
+	IStreamingManager::Get().StreamAllResources(4.0f);
+
 	bSettled = true;
+	SettledAt = GetWorld()->GetTimeSeconds();
 
 	UE_LOG(LogTown, Log, TEXT("Street: %s, %d people, %d doors, %d fires"), PlaceData ? *PlaceData->Name : TEXT("nowhere"), People.Num(), PlaceData ? PlaceData->Doors.Num() : 0, Fires.Num());
 }
@@ -3238,15 +3246,8 @@ bool ATownGameMode::PutArmorOn(int32 Fighter, const FName& Good, FString& OutSai
 		DressOwned(Fighter);
 	}
 
-	const UGutLadderData* Shelf = LadderData;
-
-	while (Shelf && Shelf->ArmorShop.IsEmpty())
-	{
-		Shelf = Shelf->NextLadder;
-	}
-
-	OutSaid = FString::Printf(TEXT("%s %s the %s on%s. The cage lets armor in from %s rank up: in a fight under that it stays off."), *Name, bSelf ? TEXT("have") : TEXT("has"), *What,
-		Off.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(", and the %s is back in your bag"), *Off), Shelf ? *Shelf->RankName.ToString() : TEXT("Butcher"));
+	OutSaid = FString::Printf(TEXT("%s %s the %s on%s, and %s it in the cage."), *Name, bSelf ? TEXT("have") : TEXT("has"), *What,
+		Off.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(", and the %s is back in your bag"), *Off), bSelf ? TEXT("wear") : TEXT("wears"));
 
 	GameInstance->SaveRun();
 
@@ -3361,8 +3362,7 @@ void ATownGameMode::OpenShop(int32 Keeper)
 	}
 	else if (!HasFighter() || Own != Shelf)
 	{
-		ShopSaid = FString::Printf(TEXT("The cage lets armor in from %s rank up. What you buy here goes in your bag, to give to a fighter of yours: he or she has it on in any fight at that rank or over, and it stays off in a fight under it."),
-			*Shelf->RankName.ToString());
+		ShopSaid = TEXT("What you buy here goes in your bag. Give it there to a fighter of yours, or put it on one in your yard: he or she wears it in the cage from then on.");
 	}
 	else
 	{
@@ -3379,6 +3379,15 @@ void ATownGameMode::OpenShop(int32 Keeper)
 
 void ATownGameMode::CloseShop()
 {
+	// the bag shut is heard: its buckle
+	if (bShopping && bAtBag)
+	{
+		if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
+		{
+			Sounds->Play(FName("bag_close"), FVector::ZeroVector);
+		}
+	}
+
 	if (!bShopping)
 	{
 		return;
@@ -4631,6 +4640,12 @@ void ATownGameMode::ToggleBag()
 
 	ShopSaid.Reset();
 
+	// heard: the flap thrown back ("need a sfx for opening and closing the bag", 25 November)
+	if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
+	{
+		Sounds->Play(FName("bag_open"), FVector::ZeroVector);
+	}
+
 	// whoever looks in a bag stands still to do it
 	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
 	{
@@ -4820,7 +4835,7 @@ TArray<FTownBagLine> ATownGameMode::GetBagLines() const
 		Line.Verb = TEXT("give it");
 
 		Line.About.Add(TEXT("Armor, to give to a fighter of yours: whoever is walking with you, or anybody standing in your yard while you are in it. One piece to a part of the body: a second for the same part takes the first one's place, and the first comes back to the bag."));
-		Line.About.Add(TEXT("The cage lets armor in from Butcher rank up. In a fight at that rank or over, he or she has it on. In a fight under it both corners go in bare, and it stays off."));
+		Line.About.Add(TEXT("Whoever has it on wears it into the cage, at any rank, and in the street and the yard."));
 
 		const TArray<FTownBagTaker> Takers = GetBagTakers(Item.Good);
 
@@ -5510,8 +5525,10 @@ void ATownGameMode::SettleYard()
 		{
 			KeepOnGround(Body);
 
-			// with a fight to come or one just had: they stretch, they are sore, they get their breath
-			Body->SetAtEaseFamily(FName("yard"));
+			// They stand plainly. They had a family of their own (stretches, aches, getting their breath back), and caught in
+			// the middle of one, on a dressed body, it read as a body gone wrong: reported three times as that ("still not
+			// fixed (as soon as he moves, it's fixed)", 25 November). What it was is known now, and it is not worth it.
+			Body->SetAtEaseFamily(FName("stand"));
 
 			YardBodies.Add(Body);
 			YardFighters.Add(i);
@@ -5540,10 +5557,11 @@ FString ATownGameMode::GetKeptName(const FName& Good) const
 		return Piece->DisplayName.ToString();
 	}
 
-	// what was bought to be used, not what was picked up to be sold
+	// anything the bag holds can be kept: what was bought, and what was picked up ("why can I only put that 1 item on the
+	// rack?", 25 November: it took only what was bought to be used)
 	const TownConstants::FGood* Known = TownConstants::FindGood(Good);
 
-	return (Known && Known->Price > 0.0f) ? FString(Known->Name) : FString();
+	return Known ? FString(Known->Name) : FString();
 }
 
 void ATownGameMode::OpenRack()

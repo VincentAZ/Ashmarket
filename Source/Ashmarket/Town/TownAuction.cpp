@@ -13,6 +13,7 @@
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "Sound/SoundWave.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogTownAuction, Log, All);
 
@@ -210,7 +211,51 @@ USoundBase* ATownGameMode::GetAuctionSound(const FString& Part)
 
 	AuctionSounds.Add(Key, Sound);
 
+	// (and made ready, if it was fetched late: a sound not yet ready is not heard)
+	if (Sound && bSettled)
+	{
+		UGutGameInstance::FinishPreparing(*Part);
+	}
+
 	return Sound;
+}
+
+void ATownGameMode::FetchAuctionSounds()
+{
+	if (!PlaceData || PlaceData->Calls.IsEmpty())
+	{
+		return;
+	}
+
+	for (int32 Figure = TownAuctionRules::LeastSpoken; Figure <= TownAuctionRules::MostSpoken; ++Figure)
+	{
+		GetAuctionSound(FString::Printf(TEXT("num_%d"), Figure));
+	}
+
+	for (int32 Lot = 1; Lot <= 12; ++Lot)
+	{
+		GetAuctionSound(FString::Printf(TEXT("lot_%d"), Lot));
+	}
+
+	for (int32 House = 0; House < UE_ARRAY_COUNT(TownAuctionRules::Houses); ++House)
+	{
+		GetAuctionSound(FString::Printf(TEXT("house_%d"), House));
+	}
+
+	for (const TCHAR* Part : { TEXT("who_opens"), TEXT("at_the_table"), TEXT("any_more"), TEXT("against_you"), TEXT("nobody_at"), TEXT("once"), TEXT("twice"), TEXT("going_once"),
+		TEXT("going_twice"), TEXT("sold"), TEXT("to_the_table"), TEXT("no_bid") })
+	{
+		GetAuctionSound(Part);
+	}
+
+	int32 There = 0;
+
+	for (const TPair<FName, TObjectPtr<USoundBase>>& One : AuctionSounds)
+	{
+		There += One.Value ? 1 : 0;
+	}
+
+	UE_LOG(LogTownAuction, Log, TEXT("Auction: %d of %d parts of the caller's bidding are fetched"), There, AuctionSounds.Num());
 }
 
 void ATownGameMode::SayAuction(const TArray<FString>& Parts)
@@ -257,6 +302,16 @@ void ATownGameMode::UpdateAuctionVoice(float DeltaTime)
 
 		// each runs into the next as a caller's words do: the last of one is under the first of the other
 		AuctionPartLeft = FMath::Max(0.1f, Sound->GetDuration() - TownAuctionRules::RunsOn);
+
+		UE_LOG(LogTownAuction, Log, TEXT("Auction: says \"%s\" (%.2f s long, at %.2f of full, %s)"), *AuctionParts[AuctionPart - 1], Sound->GetDuration(), IsTalking() ? 0.25f : 0.9f,
+			CallVoice ? (CallVoice->IsPlaying() ? TEXT("playing") : TEXT("made, not playing")) : TEXT("NOT MADE"));
+
+#if WITH_EDITOR
+		if (const USoundWave* Wave = Cast<USoundWave>(Sound); Wave && Wave->IsCompiling())
+		{
+			UE_LOG(LogTownAuction, Warning, TEXT("Auction: \"%s\" is not yet ready to be played, and will not be heard"), *AuctionParts[AuctionPart - 1]);
+		}
+#endif
 	}
 }
 

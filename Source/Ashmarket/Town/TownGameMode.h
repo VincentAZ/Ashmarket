@@ -739,6 +739,14 @@ protected:
 	/** The recorded part of that name, or none: "num_36" */
 	USoundBase* GetAuctionSound(const FString& Part);
 
+	/**
+	 *  Fetches every recorded part of the bidding, where the place has a caller. A recording fetched at the moment it
+	 *  is wanted is not yet ready to be played (the game is uncooked: its sound is made ready after it is loaded), and
+	 *  is not heard: which is why the bidding was silent in the builds of 25 November though every part was there
+	 *  ("auctioneer is still not heard"). Fetched as the place opens, they are ready with everything else in it.
+	 */
+	void FetchAuctionSounds();
+
 	/** The name of a figure's recording, or nothing if no such figure was recorded */
 	static FString GetFigurePart(float Figure);
 
@@ -958,6 +966,16 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Town")
 	bool IsSettled() const { return bSettled; }
+
+	/**
+	 *  True once the place can be shown: everybody stood, everything ready, and a moment more for clothes to hang and the
+	 *  light to find its level. The screen that says where the player is going stays up until then ("ensure the env is
+	 *  fully loaded before dismissing the screen", 25 November).
+	 */
+	bool IsShown() const { return bSettled && GetWorld() && GetWorld()->GetTimeSeconds() - SettledAt >= 0.7f; }
+
+	/** When the place was settled, by the world's clock */
+	float SettledAt = 0.0f;
 
 	const UTownPlaceData* GetPlace() const { return PlaceData; }
 

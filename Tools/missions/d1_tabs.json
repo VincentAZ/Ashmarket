@@ -1,0 +1,94 @@
+{
+ "about": "The Last Call's first piece of work, 'Tabs close at dawn' (for-review/design/characters-and-vendor-quests.md, Part C, 1, Part 1). Three regulars have let one night's tab run a week, and Captain Dolores will not write it down. Marks: d1 (2 taken, 100 done), tab.w, tab.g, tab.c (the Warden corporal's twelve, the winch hand's nine, the collector's thirteen: 1 got out of them, 2 sold to the book), d1.how (1 collected, 3 paid out of the player's own water), d1.sold (the three names sold to Mother Ledger), dolores (what she thinks: -1 an enemy). CALLS THAT ARE MINE: 'win it at her tables' is not here, since neither of her games is built; the winch hand can be met half way.",
+ "key": "d1",
+ "name": "Tabs close at dawn",
+ "faction": "",
+ "giver": "Captain Dolores, on the Apron of the Last Call",
+ "steps": [
+  [2, "Three regulars at the Last Call owe a week-old tab: a Warden corporal 12 L, a winch hand 9 L, a Chainmen collector 13 L. They are on the Apron. Bring Captain Dolores the 34 L, however it is come by."],
+  [100, "The tabs at the Last Call are settled, one way or another."]
+ ],
+
+ "places": {
+  "The Last Call": {
+   "lines": {
+    "Captain Dolores": [
+     {"id": "d1_offer", "opens": true, "when": "!d1", "words": "Tabs close at dawn. I don't write debts down, sweetheart. Writing them down is how she gets you. Three of mine have let one night's tab run a week. The corporal owes twelve. The winch hand, nine. The Chainmen's collector, thirteen. Thirty-four, before I restock. Bring it in, and there is eight in it for you and the good cards off my board.",
+      "answers": [
+       {"words": "I will bring it in.", "does": "d1=2", "next": "d1_brief", "log": "Took Captain Dolores's work: three tabs at the Last Call, 34 L in all."},
+       {"words": "Why are you serving outside?", "next": "outside"},
+       {"words": "Not my trade."}]},
+     {"id": "d1_brief", "words": "They are all out there tonight. How you ask is your business. Nothing gets written down: that is the one rule of this bar."},
+     {"id": "d1_waiting", "opens": true, "when": "d1=2", "words": "Thirty-four, sweetheart, and it is not all on my table yet.",
+      "answers": [
+       {"words": "I will cover it myself. (34 L)", "needs": "water>=34", "does": "water-34 water+8 trust+3 d1.how=3 d1=100", "log": "Paid three strangers' tabs at the Last Call out of my own water.", "next": "d1_paid"},
+       {"words": "Not yet."}]},
+     {"id": "d1_count", "opens": true, "when": "d1=2 tab.w=1 tab.g=1 tab.c=1", "words": "All three. Then count it onto my table, and we are square before the sign goes off.",
+      "answers": [
+       {"words": "Thirty-four, Captain. (34 L)", "needs": "water>=34", "does": "water-34 water+8 trust+1 d1.how=1 d1=100", "log": "Brought Captain Dolores the three tabs: 34 L. She paid 8.", "next": "d1_done"},
+       {"words": "Not yet."}]},
+     {"id": "d1_done", "words": "That is the bar square. Eight for you. And the board has better cards on it for people I can count on."},
+     {"id": "d1_paid", "words": "You paid for three people you do not know. I will know by morning whether that makes you kind or a fool, and either way you drink here. Eight back, and the good cards."},
+     {"id": "d1_sold", "opens": true, "when": "d1.sold d1<100", "words": "You sold my regulars to the book. Three people with pages, out of my bar, and my bar had none. The exits are here, and here. Use one.",
+      "does": "d1=100 dolores=-1 trust-3", "log": "Captain Dolores knows who sold her regulars' tabs to Mother Ledger."},
+     {"id": "d1_enemy", "opens": true, "when": "d1>=100 dolores<0", "words": "Seat-belt sign is on for you, sweetheart. Sit down somewhere else."},
+     {"id": "d1_after", "opens": true, "when": "d1>=100 dolores>=0", "words": "Seat-belt sign is off. Sit anywhere. If you hear anything worth a drink, you know which table is mine.",
+      "answers": [
+       {"words": "Why are you serving outside?", "next": "outside"},
+       {"words": "Another night."}]}
+    ],
+    "A Warden corporal": [
+     {"id": "d1_tab", "opens": true, "when": "d1=2 !tab.w", "words": "Twelve? The Captain can whistle for it. I am Wardens. We drink where we like and the bar is glad of it.",
+      "answers": [
+       {"words": "Twelve litres. Now.", "does": "tab.w=1 water+12 fear+1", "next": "d1_leaned"},
+       {"words": "She stops pouring for the post until it is paid. Her words.", "does": "tab.w=1 water+12", "next": "d1_talked"},
+       {"words": "Leave it."}]},
+     {"id": "d1_leaned", "words": "All right. All right! Here. Twelve. You have a face I will know again."},
+     {"id": "d1_talked", "words": "She would, too. Twelve. Tell her it was a slow week on the wall."},
+     {"id": "d1_paid", "opens": true, "when": "tab.w=1", "words": "It is paid. Go and lean on somebody else."},
+     {"id": "d1_booked", "opens": true, "when": "tab.w=2", "words": "I have a page. Twelve litres, and now I have a page in her book. Do you know what the Captain does to a Warden with a page? Neither do I. Yet."}
+    ],
+    "A winch hand": [
+     {"id": "d1_tab", "opens": true, "when": "d1=2 !tab.g", "words": "Nine. I know it is nine. The Skip has been down four days, and nine is what I have in the world.",
+      "answers": [
+       {"words": "Nine litres.", "does": "tab.g=1 water+9 fear+1", "next": "d1_took"},
+       {"words": "Give me five. I will find the other four.", "does": "tab.g=1 water+5 trust+1 st.scrappers+2", "next": "d1_half"},
+       {"words": "Leave it."}]},
+     {"id": "d1_took", "words": "Take it. That was the week's bread."},
+     {"id": "d1_half", "words": "You would... yes. Five. I will not forget who stood four litres for a winch hand."},
+     {"id": "d1_paid", "opens": true, "when": "tab.g=1", "words": "Paid. The cable moves tomorrow, they say. They said that yesterday."},
+     {"id": "d1_booked", "opens": true, "when": "tab.g=2", "words": "Nine litres. For nine litres I am in the book. My mother was in the book."}
+    ],
+    "A Chainmen collector": [
+     {"id": "d1_tab", "opens": true, "when": "d1=2 !tab.c", "words": "Thirteen. I collect. I am not collected from. Ask Harrow how that goes.",
+      "answers": [
+       {"words": "Thirteen, or the Captain says your name at the bar with the other two.", "does": "tab.c=1 water+13 st.chainmen-5 fear+1", "next": "d1_paid_last"},
+       {"words": "Leave it."}]},
+     {"id": "d1_paid_last", "words": "Thirteen. Harrow will hear who leans on a collector over a bar tab."},
+     {"id": "d1_paid", "opens": true, "when": "tab.c=1", "words": "You have had your thirteen. Do not stand there."},
+     {"id": "d1_booked", "opens": true, "when": "tab.c=2", "words": "She bought my tab. Mother Ledger bought a collector's bar tab. I write pages. I do not have one. Somebody is laughing, and it is not me."}
+    ]
+   },
+   "doors": [
+    {"prompt": "Read the jobs board", "x": -38.5, "y": 261.4, "when": "bounty",
+     "said": "A new card, in a careful hand: TWENTY LITRES for the reader who brought ILYA BRANDT to the gate. M. Brandt. Somebody has torn the corner off it already."},
+    {"prompt": "Read the jobs board", "x": -38.5, "y": 261.4, "when": "!bounty d1>=100 dolores>=0",
+     "said": "The good cards are out. A hauler wants a second pair of eyes on the salt road. Hide & Plate wants road signs, any. Brass wants somebody who does not ask what is in the crate. None of them can be taken up yet."},
+    {"prompt": "Read the jobs board", "x": -38.5, "y": 261.4, "when": "!bounty d1<100|dolores<0",
+     "said": "Cards, tucked in rows. Somebody has lost a dog and will pay for the collar back. Somebody wants a wall watched. The Captain keeps the good cards for people she can count on."}
+   ]
+  },
+
+  "Block Square": {
+   "lines": {
+    "Mother Ledger": [
+     {"id": "d1_tabs", "opens": true, "when": "d1=2 !d1.sold !tab.w|!tab.g|!tab.c", "words": "Three tabs at the Last Call. I have wanted a page out of that bar for eleven years. Seventeen litres, for the three names.",
+      "answers": [
+       {"words": "Sell her the three names. (17 L)", "does": "d1.sold=1 water+17 st.chainmen+5 tab.w=2 tab.g=2 tab.c=2", "log": "Sold three bar tabs from the Last Call to Mother Ledger for 17 L. Three people have pages.", "next": "d1_bought"},
+       {"words": "No.", "next": "book"}]},
+     {"id": "d1_bought", "words": "Written down. Each of them has a page by morning. She will know before she next restocks. They always know."}
+    ]
+   }
+  }
+ }
+}

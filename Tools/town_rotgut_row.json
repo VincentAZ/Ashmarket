@@ -12,7 +12,8 @@
 
  "start": {"x": -40.0, "y": 294.0, "facing": 270},
  "arrivals": [
-  {"name": "from_pool_street", "x": -40.0, "y": 294.0, "facing": 270}
+  {"name": "from_pool_street", "x": -40.0, "y": 294.0, "facing": 270},
+  {"name": "from_last_call", "x": -46.6, "y": 294.6, "facing": 0}
  ],
 
  "beds": ["market"],
@@ -22,7 +23,8 @@
   "The Sump, under the wing on the west bank: Big Lottie's.",
   "Tarp Nine, further up on the west lip: Fen, who buys what is not asked about.",
   "Detention, the bus across the top: Mash, who makes what the town drinks.",
-  "The cut in the east bank, by the tail: back to Pool Street."
+  "The cut in the east bank, by the tail: back to Pool Street.",
+  "The Last Call: south, round the west side of the tail."
  ],
 
  "surfaces": {
@@ -87,8 +89,8 @@
   {"model": "main_fire_drum", "x": -41.2, "y": 296.8, "z": 10.2, "yaw": 0, "light": {"candela": 2600, "reach": 10, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "shadows": true, "note": "the fire at the head of the cut: the way in is lit"}},
   {"model": "main_lantern", "x": -49.3, "y": 306.3, "z": 11.33, "yaw": 30, "light": {"candela": 1100, "reach": 7, "colour": "lantern", "flicker": true, "off": 0.0, "note": "The Sump's lantern, on the end of the counter"}},
   {"model": "main_fire_drum", "x": -41.4, "y": 290.6, "z": 10.2, "yaw": 100, "light": {"candela": 3000, "reach": 12, "colour": "fire", "flicker": true, "off": 0.3, "size": 0.2, "shadows": true, "note": "a fire on the bank by the tail: the wreck is seen"}},
-  {"model": "Barrel_01", "x": -46.9, "y": 291.9, "note": "what stands either side of the tail's tip, so that the end of the furrow is something seen"},
-  {"model": "wooden_crate_02", "x": -46.1, "y": 291.8, "yaw": 20},
+  {"model": "Barrel_01", "x": -45.1, "y": 291.9, "note": "what stands either side of the tail's tip, so that the end of the furrow is something seen"},
+  {"model": "main_lantern", "x": -48.4, "y": 293.0, "z": 10.2, "yaw": 80, "light": {"candela": 1200, "reach": 7, "colour": "lantern", "flicker": true, "off": 0.0, "note": "on the west bank over the way round the tail, to the Last Call"}},
   {"model": "barrel_03", "x": -43.2, "y": 291.9},
   {"model": "old_tyre", "x": -44.0, "y": 291.8},
   {"model": "main_lantern", "x": -48.9, "y": 328.8, "z": 11.2, "yaw": 200, "light": {"candela": 700, "reach": 5, "colour": "lantern", "flicker": true, "off": 0.0, "note": "Tarp Nine's lantern"}},
@@ -161,6 +163,8 @@
  "doors": [
   {"prompt": "Up the cut, and back to Pool Street", "x": -38.3, "y": 294.0, "deed": "go", "to": "/Game/Town/Lvl_PoolStreet", "arrive": "from_row", "walk_through": true,
    "mouth": {"x": [-38.7, -37.9], "y": [292.6, 295.4]}},
+  {"prompt": "South, round the tail, to the Last Call", "x": -46.8, "y": 292.9, "deed": "go", "to": "/Game/Town/Lvl_LastCall", "arrive": "from_row", "walk_through": true,
+   "mouth": {"x": [-47.5, -46.1], "y": [292.5, 293.35]}, "note": "the furrow's south-west corner, by the tail's tip: a lantern marks it"},
   {"prompt": "Look up at the Cot Room", "x": -47.2, "y": 308.6, "shut": "Two camper shells behind The Sump, with a blanket for a door and somebody paid to watch who looks at it."},
   {"prompt": "Look in at the bus", "x": -43.4, "y": 337.6, "shut": "Twenty drinkers on the seats, and Mash's tubs where the driver sat. Full, as she said."}
  ],

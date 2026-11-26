@@ -111,7 +111,7 @@
    "name": "Pike", "prompt": "Talk to the crew boss", "body": "CrewBoss", "cloth": [0.055, 0.06, 0.05],
    "x": 132.9, "y": 206.5, "facing": 215, "stand": "crossed",
    "lines": [
-    {"id": "crew", "words": "Pike's crew. We pull plate out of the Bones and we sleep where we pull it to. If you are not weighing something, you are standing where I look."}
+    {"id": "crew", "words": "Pike's crew. We pull plate out of the Bones and we sleep where we pull it to. If you are not weighing something, you are standing where I look. So fuck off."}
    ]
   }
  ],

@@ -46,7 +46,7 @@ struct FGutStableFighter
 	/**
 	 *  What it has been given to wear, by the names of the pieces. Armor is bought at Needle's by anybody who holds the
 	 *  water, carried in the bag and given to a fighter (25 November: "what if I want to buy armor for my slaves?"). The
-	 *  cage lets it in from the rank it is sold at, up: in a fight under that it stays off (AGutGameMode::IsArmorLetIn).
+	 *  fighter wears it in the cage at whatever rank the fight is.
 	 */
 	UPROPERTY()
 	TArray<FName> Armor;

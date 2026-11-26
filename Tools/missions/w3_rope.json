@@ -23,7 +23,7 @@
       "log": "Took Captain Voss's work: bring in Ilya Brandt, who tapped the Pump's line."},
      {"id": "w3_waiting", "opens": true, "when": "w3=2", "words": "The gate. Not this table."},
      {"id": "w3_hung", "opens": true, "when": "w3>=100 brandt=1", "words": "He was up before the bell. The Pump has stopped asking, which is what the Pump pays me for. You will be asked for again."},
-     {"id": "w3_lost", "opens": true, "when": "w3>=100 brandt>1", "words": "Fifty litres of mine walked out of this town on its own legs, and your name is on it. I price everything. I have priced that."}
+     {"id": "w3_lost", "opens": true, "when": "w3>=100 brandt>1", "words": "Fifty litres of mine walked out of this town on its own fucking legs, and your name is on it. I price everything. I have priced that."}
     ]
    }
   },
@@ -39,11 +39,11 @@
        {"words": "Not now."}]},
      {"id": "w3_sick", "words": "His partner had the fever. A litre of clean costs what it costs, and he fits the pipe it runs in. You would have done it, and so would I."},
      {"id": "w3_shown", "words": "North-east corner, behind the tarp. Tell Pike I said so. And tell nobody else, ever, what forty litres bought you here."},
-     {"id": "w3_forced", "words": "You would do that. To sixty families, for one fitter. North-east corner, behind the tarp. The Guild keeps a ledger too, and you have just gone in it."}
+     {"id": "w3_forced", "words": "You would do that. To sixty families, for one fitter. God damn you. North-east corner, behind the tarp. The Guild keeps a ledger too, and you have just gone in it."}
     ],
     "Pike": [
-     {"id": "w3_nobody", "opens": true, "when": "w3=2 !w3.where", "words": "Nobody here by that name. Look all you like. My people are asleep, and they wake up badly."},
-     {"id": "w3_said", "opens": true, "when": "w3=2 w3.where !brandt !w3.have", "words": "So the Guildmaster said. Then take him, and get out from where I look."}
+     {"id": "w3_nobody", "opens": true, "when": "w3=2 !w3.where", "words": "Nobody here by that name. Look all you fucking like. My people are asleep, and they wake up badly."},
+     {"id": "w3_said", "opens": true, "when": "w3=2 w3.where !brandt !w3.have", "words": "So the Guildmaster said. Then take him, and get the fuck out from where I look."}
     ]
    },
    "people": [
@@ -58,7 +58,7 @@
         {"words": "You are twenty-four litres on the Block, and nobody hangs property.", "does": "brandt=3 water+24 st.chainmen+5 trust-2", "log": "Sold Ilya Brandt at the Block for 24 L, and not to the rope.", "next": "sold"}]},
       {"id": "taken", "words": "Tell Maren it was quick. It will not be, but tell her."},
       {"id": "freed", "words": "Why? No. I am not asking. There is a drain under the wall that nobody is paid to watch. If you ever need it opened, once, find me."},
-      {"id": "sold", "words": "A collar. For two litres of water. It is longer than the rope, I will say that for it."}]}
+      {"id": "sold", "words": "A collar. For two litres of water. Christ. It is longer than the rope, I will say that for it."}]}
    ],
    "doors": [
     {"prompt": "Go in quietly under the tarp, among the sleepers, and find him yourself", "x": 135.7, "y": 207.0, "when": "w3=2 !w3.where",

@@ -7,6 +7,7 @@
 #   GUT_MODE=row Tools/play_gut.sh                 Rotgut Row, which is otherwise a walk west off the end of Pool Street
 #   GUT_MODE=tin Tools/play_gut.sh                 the Velvet Tin's court, which is otherwise a walk west out of Block Square
 #   GUT_MODE=yard Tools/play_gut.sh                the Scrappers' yard, which is otherwise in at the gate at the east end of Pool Street
+#   GUT_MODE=call Tools/play_gut.sh                the Last Call's Apron, which is otherwise south round the tail from Rotgut Row
 #   GUT_RANK=butcher GUT_MODE=main Tools/play_gut.sh   the same as a Butcher holding 60 L, to buy armor at Hide & Plate: a fighter made up
 #                                                  for the sitting, with nothing read from or written to the run kept on disk
 #   GUT_MODE=card Tools/play_gut.sh                the street as the card it was before it was a place, with the ways in listed on it
@@ -45,6 +46,8 @@ elif [[ "${GUT_MODE:-}" == "tin" && -f "$PROJECT_DIR/Content/Town/Lvl_VelvetTin.
 	MAP="/Game/Town/Lvl_VelvetTin"
 elif [[ "${GUT_MODE:-}" == "yard" && -f "$PROJECT_DIR/Content/Town/Lvl_ScrappersYard.umap" ]]; then
 	MAP="/Game/Town/Lvl_ScrappersYard"
+elif [[ "${GUT_MODE:-}" == "call" && -f "$PROJECT_DIR/Content/Town/Lvl_LastCall.umap" ]]; then
+	MAP="/Game/Town/Lvl_LastCall"
 elif [[ "${GUT_MODE:-}" == "card" || ( -z "${GUT_MODE:-}" && -z "${GUT_WEAPONS:-}" && "${GUT_NEW:-0}" != "1" ) ]]; then
 	MAP="$MAP?Door=1"
 elif [[ "${GUT_MODE:-}" == "window" ]]; then

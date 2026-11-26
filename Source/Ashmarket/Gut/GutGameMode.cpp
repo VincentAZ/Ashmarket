@@ -754,6 +754,17 @@ void AGutGameMode::ConfirmCard()
 				PlayerFighter->WearArmor(Piece);
 			}
 		}
+
+		// and whatever the fighter was given out of the bag that this rank's shelf does not have on it
+		for (const FName& Name : IsOnLadder() ? GetLadderState().Armor : TArray<FName>())
+		{
+			UGutArmorData* Piece = FindArmorPiece(Name);
+
+			if (Piece && !GetLadder()->ArmorShop.Contains(Piece))
+			{
+				PlayerFighter->WearArmor(Piece);
+			}
+		}
 	}
 
 	// what the player has taken, what it needs and has not had, and what its heart has already paid

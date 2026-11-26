@@ -319,7 +319,7 @@ bool FTownMainStreetTest::RunTest(const FString& Parameters)
 		const TArray<FGutBagItem> BagBefore = Run->Bag;
 		const float VestPrice = Town->GetShopLines().IsEmpty() ? 0.0f : Town->GetShopLines()[0].Price;
 
-		TestTrue(TEXT("A Dog is told the cage lets armor in from Butcher rank, and that what is bought goes in the bag"), Town->GetShopSaid().Contains(TEXT("Butcher")) && Town->GetShopSaid().Contains(TEXT("your bag")));
+		TestTrue(TEXT("A Dog is told that what is bought goes in the bag"), Town->GetShopSaid().Contains(TEXT("your bag")));
 		TestTrue(TEXT("And is sold it all the same"), Town->BuyAtShop(0));
 		TestEqual(TEXT("It is paid for"), Run->Ladder.Water, 60.0f - VestPrice);
 		TestTrue(TEXT("And is in the bag, not on the Dog's back"), Run->Ladder.Armor.IsEmpty() && Run->Bag.Num() == BagBefore.Num() + 1);

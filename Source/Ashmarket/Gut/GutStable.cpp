@@ -136,23 +136,6 @@ UGutArmorData* AGutGameMode::FindArmorPiece(const FName& Name) const
 	return nullptr;
 }
 
-bool AGutGameMode::IsArmorLetIn(int32 AgainstCode) const
-{
-	TArray<const UGutLadderData*> Ranks;
-	GetRanks(Ranks);
-
-	// let in at the first rank that has a shelf of it, and at every rank over that
-	for (int32 i = 0; i < Ranks.Num() && AgainstCode >= 0 && i <= AgainstCode / 100; ++i)
-	{
-		if (Ranks[i] && !Ranks[i]->ArmorShop.IsEmpty())
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
 const FGutLadderRung* AGutGameMode::FindRung(int32 Code) const
 {
 	const UGutLadderData* Rank = FindRank(Code);
@@ -918,22 +901,15 @@ void AGutGameMode::MakeStableFighter(AGutFighter* Fighter, const FGutStableFight
 	Fighter->ClearArmor();
 	Fighter->SetCollared(Who.bOwned);
 
-	// What it has been given to wear: in a fight the cage lets armor into, and standing about with no fight made
-	if (const UGutGameInstance* Run = GetGutGameInstance(); Run && !Who.Armor.IsEmpty())
+	// What it has been given to wear, on it: whatever rank the fight is at. (For half a day the cage let armor in only
+	// from the rank it is sold at, and a vest put on a fighter was gone when he went in to fight, with nothing to say
+	// why: "I put a vest on Lye and then when he went in to fight, it was missing", 25 November.)
+	for (const FName& Name : Who.Armor)
 	{
-		const int32 Against = Run->Stable.MatchedAgainst;
-		const bool bLetIn = Against < 0 || IsArmorLetIn(Against);
-
-		for (const FName& Name : bLetIn ? Who.Armor : TArray<FName>())
+		if (UGutArmorData* Piece = FindArmorPiece(Name))
 		{
-			if (UGutArmorData* Piece = FindArmorPiece(Name))
-			{
-				Fighter->WearArmor(Piece);
-			}
+			Fighter->WearArmor(Piece);
 		}
-
-		UE_LOG(LogGut, Log, TEXT("Stable: %s owns %d pieces of armor, and %s"), *Who.FighterName.ToString(), Who.Armor.Num(),
-			bLetIn ? TEXT("has them on") : TEXT("is sent in without them: the cage lets no armor in at this rank"));
 	}
 
 	// it comes to the fight in the state the last one left it. Empty its hands first: an arm that arrives crippled has nothing to drop.

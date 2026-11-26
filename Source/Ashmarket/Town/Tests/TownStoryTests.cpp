@@ -1393,8 +1393,8 @@ bool FTownRopeTest::RunTest(const FString& Parameters)
  *                                 rank via me fighting?? what if I want to buy armor for my slaves?"). Somebody who owns
  *                                 a fighter and fights nowhere themselves buys a vest at Needle's counter: it is in the
  *                                 bag; given from the bag it is on the fighter who walks with them; a second piece for
- *                                 the same part takes its place and the first comes back; and the cage lets armor in at
- *                                 the rank it is sold at and over, and at no rank under.
+ *                                 the same part takes its place and the first comes back; and the cage knows the piece
+ *                                 by its name, to put it on whoever has it.
  */
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownArmorForOwnedTest, "Ashmarket.Town.ArmorForOwned", GutTests::Flags)
 
@@ -1545,24 +1545,7 @@ bool FTownArmorForOwnedTest::RunTest(const FString& Parameters)
 			return;
 		}
 
-		// (a fighter's code is a hundred times its rank, and its place in it)
-		int32 Sold = INDEX_NONE;
-
-		for (int32 Rank = 0; Rank < 8 && Sold == INDEX_NONE; ++Rank)
-		{
-			if (Rules->IsArmorLetIn(Rank * 100))
-			{
-				Sold = Rank;
-			}
-		}
-
-		if (TestTrue(TEXT("Armor is let in at some rank that is not the first"), Sold > 0))
-		{
-			TestFalse(TEXT("The cage lets no armor in under that rank"), Rules->IsArmorLetIn(((Sold - 1) * 100) + 2));
-			TestTrue(TEXT("And lets it in at every rank over it"), Rules->IsArmorLetIn(((Sold + 1) * 100) + 3));
-			TestFalse(TEXT("And into no fight that has not been made"), Rules->IsArmorLetIn(-1));
-			TestTrue(TEXT("And the piece is found by its name"), Rules->FindArmorPiece(First) != nullptr);
-		}
+		TestTrue(TEXT("And the piece is found by its name, to be put on in the cage"), Rules->FindArmorPiece(First) != nullptr);
 	}, []() { return IsStreetReady(); } });
 
 	Steps.Add({ 0.3f, [Was]()
@@ -1705,6 +1688,234 @@ bool FTownRackTest::RunTest(const FString& Parameters)
 		Run->Stable = Was->Stable;
 		Run->Bag = Was->Bag;
 		Run->Rack = Was->Rack;
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Ashmarket.Town.Tabs   the Last Call's first piece of work: taken from Captain Dolores on the Apron, the three tabs got
+ *                        out of the three who owe them (one leaned on, one met half way, one threatened), counted onto
+ *                        her table, and the board read afterwards; then the two other ways it can come out: paid out of
+ *                        the player's own water, and the names sold to Mother Ledger.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownTabsTest, "Ashmarket.Town.Tabs", GutTests::Flags)
+
+bool FTownTabsTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_LastCall"), true))
+	{
+		AddError(TEXT("Could not open the Last Call's level"));
+		return false;
+	}
+
+	TSharedRef<FKept> Kept = MakeShared<FKept>();
+
+	// stood by somebody, so far to their north and east (the level's X and Y), facing them
+	const auto StandWith = [](const TCHAR* Name, const FVector2D& Off)
+	{
+		const ATownGameMode* Town = GetTown();
+		const int32 Who = Find(Name);
+
+		if (Who != INDEX_NONE)
+		{
+			const FVector Theirs = Town->GetPlace()->People[Who].Place;
+
+			StandOn(FVector2D(Theirs.X + Off.X, Theirs.Y + Off.Y), FVector(-Off.X, -Off.Y, 0.0f).Rotation().Yaw);
+		}
+
+		return Who;
+	};
+
+	// talks to whoever is in reach, says the one thing, and hears them out
+	const auto Ask = [this](const TCHAR* Of, const TCHAR* Hears, const TCHAR* Says)
+	{
+		ATownGameMode* Town = GetTown();
+
+		Town->Tick(0.0f);
+
+		TestEqual(*FString::Printf(TEXT("%s is in reach"), Of), Town->GetPersonInReach(), Find(Of));
+
+		Town->Interact();
+
+		TestTrue(*FString::Printf(TEXT("%s says the thing (%s)"), Of, *Town->GetWords()), Town->GetWords().Contains(Hears));
+
+		if (FCString::Strlen(Says) > 0)
+		{
+			TestTrue(*FString::Printf(TEXT("%s can be told \"%s\""), Of, Says), Say(Says));
+		}
+
+		for (int32 i = 0; i < 4 && Town->IsTalking(); ++i)
+		{
+			Town->Interact();
+		}
+
+		if (Town->IsTalking())
+		{
+			Town->HandleBack();
+		}
+	};
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 0.5f, [this, Kept, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		Kept->bLadder = Run->bLadderStarted;
+		Kept->Ladder = Run->Ladder;
+		Kept->RungStart = Run->LadderAtRungStart;
+		Kept->Story = Run->Story;
+		Kept->Bag = Run->Bag;
+
+		Run->bStreetForced = true;
+		Run->Story = FTownStoryState();
+		Run->bLadderStarted = true;
+		Run->Ladder.Water = 10.0f;
+
+		for (const TCHAR* Name : { TEXT("Captain Dolores"), TEXT("A Warden corporal"), TEXT("A winch hand"), TEXT("A Chainmen collector") })
+		{
+			TestTrue(*FString::Printf(TEXT("%s is on the Apron"), Name), Find(Name) != INDEX_NONE && Town->GetPeople()[Find(Name)] != nullptr);
+		}
+
+		StandWith(TEXT("Captain Dolores"), FVector2D(0.0f, 205.0f));
+	}, []() { return IsStreetReady() && GetTown()->GetPlace() && GetTown()->GetPlace()->Name == TEXT("The Last Call"); } });
+
+	Steps.Add({ 1.0f, [this, Ask, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Ask(TEXT("Captain Dolores"), TEXT("Tabs close at dawn"), TEXT("I will bring it in"));
+
+		TestEqual(TEXT("The work is taken"), Town->GetMark(FName("d1")), 2);
+
+		StandWith(TEXT("A Warden corporal"), FVector2D(0.0f, 150.0f));
+	} });
+
+	Steps.Add({ 0.8f, [this, Ask, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Ask(TEXT("A Warden corporal"), TEXT("whistle"), TEXT("Twelve litres. Now."));
+
+		TestTrue(TEXT("Leaned on, the corporal pays twelve and is the more afraid"), Town->GetMark(FName("tab.w")) == 1 && Town->GetMark(FName("water")) == 22 && Town->GetMark(FName("fear")) == 1);
+
+		StandWith(TEXT("A winch hand"), FVector2D(0.0f, 150.0f));
+	} });
+
+	Steps.Add({ 0.8f, [this, Ask, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Ask(TEXT("A winch hand"), TEXT("Nine"), TEXT("Give me five"));
+
+		TestTrue(TEXT("Met half way, the winch hand gives five"), Town->GetMark(FName("tab.g")) == 1 && Town->GetMark(FName("water")) == 27);
+		TestEqual(TEXT("And the Guild thinks the better of it"), Town->GetMark(FName("st.scrappers")), 2);
+
+		StandWith(TEXT("A Chainmen collector"), FVector2D(0.0f, -150.0f));
+	} });
+
+	Steps.Add({ 0.8f, [this, Ask, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Ask(TEXT("A Chainmen collector"), TEXT("I am not collected from"), TEXT("Thirteen, or"));
+
+		TestTrue(TEXT("The collector pays last"), Town->GetMark(FName("tab.c")) == 1 && Town->GetMark(FName("water")) == 40);
+		TestEqual(TEXT("And the Chainmen remember it"), Town->GetMark(FName("st.chainmen")), -5);
+
+		StandWith(TEXT("Captain Dolores"), FVector2D(0.0f, 205.0f));
+	} });
+
+	Steps.Add({ 0.8f, [this, Ask]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Ask(TEXT("Captain Dolores"), TEXT("All three"), TEXT("Thirty-four, Captain"));
+
+		TestEqual(TEXT("Thirty-four goes onto her table and eight comes back"), Town->GetMark(FName("water")), 14);
+		TestEqual(TEXT("The work is done"), Town->GetMark(FName("d1")), 100);
+
+		Ask(TEXT("Captain Dolores"), TEXT("Seat-belt sign is off"), TEXT(""));
+
+		// the board, which stands by her: a little along from her table
+		StandOn(OnMap(-37.5f, 262.0f), 270.0f);
+	} });
+
+	Steps.Add({ 0.8f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Town->Tick(0.0f);
+
+		if (Town->GetPersonInReach() == INDEX_NONE)
+		{
+			TestTrue(*FString::Printf(TEXT("The board is offered to be read (%s)"), *Town->GetPrompt()), Town->GetPrompt().Contains(TEXT("jobs board")));
+
+			Town->Interact();
+
+			TestTrue(*FString::Printf(TEXT("With her work done it shows the good cards (%s)"), *Town->GetNotice()), Town->GetNotice().Contains(TEXT("good cards are out")));
+
+			Town->Apply(TEXT("bounty=20"));
+			Town->Tick(0.0f);
+			Town->Interact();
+
+			TestTrue(*FString::Printf(TEXT("And a bounty against the player is on it (%s)"), *Town->GetNotice()), Town->GetNotice().Contains(TEXT("TWENTY LITRES")));
+		}
+		else
+		{
+			AddError(TEXT("Somebody is nearer than the jobs board where the test stands to read it"));
+		}
+
+		GutTests::Screenshot(TEXT("75_the_jobs_board"));
+	} });
+
+	// paid out of the player's own water
+	Steps.Add({ 0.6f, [this, Ask, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		Run->Story = FTownStoryState();
+		Run->Ladder.Water = 40.0f;
+
+		Town->Apply(TEXT("d1=2"));
+
+		StandWith(TEXT("Captain Dolores"), FVector2D(0.0f, 205.0f));
+
+		Ask(TEXT("Captain Dolores"), TEXT("not all on my table"), TEXT("I will cover it myself"));
+
+		TestTrue(TEXT("Covered, it costs thirty-four and pays eight, and she trusts the more"), Town->GetMark(FName("water")) == 14 && Town->GetMark(FName("trust")) == 43 && Town->GetMark(FName("d1")) == 100);
+
+		// and the names sold to the book
+		Run->Story = FTownStoryState();
+
+		Town->Apply(TEXT("d1=2 d1.sold=1 tab.w=2 tab.g=2 tab.c=2"));
+
+		Ask(TEXT("Captain Dolores"), TEXT("sold my regulars"), TEXT(""));
+
+		TestTrue(TEXT("She knows, and it is over between them"), Town->GetMark(FName("d1")) == 100 && Town->GetMark(FName("dolores")) == -1);
+
+		Ask(TEXT("Captain Dolores"), TEXT("Seat-belt sign is on for you"), TEXT(""));
+
+		GutTests::Screenshot(TEXT("76_captain_dolores"));
+	} });
+
+	Steps.Add({ 0.4f, [Kept]()
+	{
+		UGutGameInstance* Run = GetRun();
+
+		Run->bLadderStarted = Kept->bLadder;
+		Run->Ladder = Kept->Ladder;
+		Run->LadderAtRungStart = Kept->RungStart;
+		Run->Story = Kept->Story;
+		Run->Bag = Kept->Bag;
 	} });
 
 	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
@@ -2047,6 +2258,20 @@ bool FTownProbeTowTest::RunTest(const FString& Parameters)
 			Mine.LimbHealth[3] = 15.0f;
 		}
 
+		// -GutProbeArmor=DA_Gut_Armor_RubberVest,DA_Gut_Armor_RubberGreaves has it wear those pieces
+		FString Pieces;
+
+		if (FParse::Value(FCommandLine::Get(), TEXT("GutProbeArmor="), Pieces, false))
+		{
+			TArray<FString> Names;
+			Pieces.ParseIntoArray(Names, TEXT(","));
+
+			for (const FString& Name : Names)
+			{
+				Mine.Armor.Add(FName(*Name));
+			}
+		}
+
 		Run->Stable.Fighters.Add(Mine);
 	}
 
@@ -2170,6 +2395,27 @@ bool FTownLookVelvetTinTest::RunTest(const FString& Parameters)
 	};
 
 	return StoryTests::Look(this, TEXT("/Game/Town/Lvl_VelvetTin"), Views);
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownLookLastCallTest, "Ashmarket.Look.LastCall", GutTests::Flags)
+
+bool FTownLookLastCallTest::RunTest(const FString& Parameters)
+{
+	using StoryTests::FView;
+
+	static const FView Views[] =
+	{
+		{ TEXT("call_01_in_round_the_tail"), FVector(-37.0f, 275.4f, 11.9f), FVector(-36.0f, 255.0f, 11.6f), 75.0f },
+		{ TEXT("call_02_the_captains_table"), FVector(-35.4f, 260.0f, 11.8f), FVector(-39.5f, 258.6f, 11.6f), 62.0f },
+		{ TEXT("call_03_the_wreck_from_the_apron"), FVector(-24.0f, 258.0f, 11.9f), FVector(-45.0f, 254.0f, 13.0f), 85.0f },
+		{ TEXT("call_04_the_fire"), FVector(-28.6f, 266.6f, 11.8f), FVector(-33.6f, 261.6f, 11.2f), 70.0f },
+		{ TEXT("call_05_south_tables"), FVector(-32.0f, 255.0f, 11.8f), FVector(-34.0f, 246.0f, 11.2f), 72.0f },
+		{ TEXT("call_06_the_board"), FVector(-36.2f, 262.6f, 11.8f), FVector(-39.2f, 261.4f, 11.4f), 60.0f },
+		{ TEXT("call_07_from_above"), FVector(-33.0f, 258.0f, 60.0f), FVector(-32.9f, 259.0f, 10.0f), 62.0f },
+		{ TEXT("call_08_from_the_south_east"), FVector(-8.0f, 228.0f, 24.0f), FVector(-38.0f, 260.0f, 11.0f), 60.0f },
+	};
+
+	return StoryTests::Look(this, TEXT("/Game/Town/Lvl_LastCall"), Views);
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownLookScrappersYardTest, "Ashmarket.Look.ScrappersYard", GutTests::Flags)

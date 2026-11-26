@@ -109,13 +109,16 @@ NEW_MEAT = _new_meat()
 TOWN = {"Rook": ("Walter", "Isaiah"), "Wynn": ("Celeste", "Etta"), "Mash": ("Tuya", "Zuri"), "Lottie": ("Grace", "Asha"), "Fen": ("Aoi", "Kelvin"),
         # the Wardens' third piece of work: the Captain, the Tin's owner, the Guildmaster, the man who tapped the line, his partner, and a crew boss
         "Voss": ("Jelena", "Grace"), "Corazon": ("Sunita", "Ada"), "OkaforReyes": ("Victor", "Omari"), "Brandt": ("Mateo", "Trey"), "Maren": ("Aera", "Zuri"),
-        "CrewBoss": ("Cameron", "Mikel")}
+        "CrewBoss": ("Cameron", "Mikel"),
+        # the Last Call
+        "Dolores": ("Vivian", "Etta")}
 MIXES.update(TOWN)
 
 # a medic four days off the salt does not have Celeste's dyed bob: her hair is tied back
 GROOMING["Wynn"] = {"Hair": GROOMS + "Hair/WI_Hair_S_LowPonytail"}
 GROOMING["Voss"] = {"Hair": GROOMS + "Hair/WI_Hair_S_PulledBack"}
 GROOMING["Corazon"] = {"Hair": GROOMS + "Hair/WI_Hair_S_Updo"}
+GROOMING["Dolores"] = {"Hair": GROOMS + "Hair/WI_Hair_S_PulledBack"}
 
 # People dressed out of what Vincent has from Fab (2026-11-19; unpacked into Content/Outfits by Tools/unpack_fab_outfits.py,
 # and never in the repository). Each is (the preset it is, the wardrobe items it wears): one whole outfit, or pieces worn
@@ -194,6 +197,7 @@ DRESSED = {
     "Brandt": (None, [TEE, JEANS, BOOTS]),                     # Ilya Brandt, who tapped the Pump's line
     "Maren": (None, [TEE_LONG, JEANS_ANKLE, FLATS]),           # Maren Brandt
     "CrewBoss": (None, [HOODIE, CARGO, BOOTS]),                # who has the crew that is hiding him
+    "Dolores": (None, [TECHWEAR]),                             # "Captain" Dolores, who keeps the Last Call
 
     # the first people the wardrobe was tried on, kept for the pictures of them
     "Try01": ("Vivian", [SCAVENGER]),

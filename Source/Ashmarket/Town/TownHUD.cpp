@@ -24,7 +24,7 @@ void ATownHUD::DrawHUD()
 
 	// Until everybody has been stood where they stand (a frame each, and their clothes a few more to hang), the place is
 	// not shown: only its name. For a few seconds at most: a place that never comes to be settled is not left dark.
-	if (Canvas && Town && !Town->IsSettled() && GetWorld()->GetTimeSeconds() < 6.0f)
+	if (Canvas && Town && !Town->IsShown() && GetWorld()->GetTimeSeconds() < 12.0f)
 	{
 		UIScale = Canvas->SizeY / 1080.0f;
 
@@ -288,8 +288,28 @@ void ATownHUD::DrawHUD()
 
 	if (const FString Notice = Town->GetNotice(); !Notice.IsEmpty())
 	{
-		DrawPanel(CenterX, 880.0f, 900.0f, 84.0f, EGutPanel::Steel);
-		DrawLabel(Notice, CenterX, 908.0f, 22, GutHUDColors::Text, true);
+		// Something long is set on as many lines as it needs, at a size that can be read, on a panel tall enough for them.
+		// It was set smaller and smaller until it fitted on one: what the jobs board said, and what is on the gantry, came
+		// out too small to read (25 November).
+		const TArray<FString> Lines = WrapLabel(Notice, 22, 1040.0f);
+
+		if (Lines.Num() <= 1)
+		{
+			DrawPanel(CenterX, 880.0f, 900.0f, 84.0f, EGutPanel::Steel);
+			DrawLabel(Notice, CenterX, 908.0f, 22, GutHUDColors::Text, true);
+		}
+		else
+		{
+			const float High = 44.0f + (Lines.Num() * 30.0f);
+			const float Top = 964.0f - High;
+
+			DrawPanel(CenterX, Top, 1120.0f, High, EGutPanel::Steel);
+
+			for (int32 i = 0; i < Lines.Num(); ++i)
+			{
+				DrawLabel(Lines[i], CenterX, Top + 24.0f + (i * 30.0f), 22, GutHUDColors::Text, true);
+			}
+		}
 	}
 	else if (const FString Prompt = Town->GetPrompt(); !Prompt.IsEmpty())
 	{
