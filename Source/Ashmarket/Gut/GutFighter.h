@@ -1281,6 +1281,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Gut|Actions")
 	void WearArmor(UGutArmorData* Piece);
 
+	/**
+	 *  Hangs a bag at the left hip of the body that is seen, or takes it off (none). What the player carries in the town
+	 *  is in it, and it is seen on them ("the bag needs to be visible on the person", 25 November). Where on the hip is
+	 *  worked out from the body standing at rest, so it comes out the same on anybody. -GutBagOut=, -GutBagDown= (cm),
+	 *  -GutBagRound=, -GutBagTip= (degrees) and -GutBagThin= (a share) try other places without a build.
+	 */
+	void WearBag(UStaticMesh* Bag);
+
+	/** The bag at the hip, if one is worn */
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> BagMesh;
+
 	/** Takes off all armor */
 	UFUNCTION(BlueprintCallable, Category="Gut|Actions")
 	void ClearArmor();

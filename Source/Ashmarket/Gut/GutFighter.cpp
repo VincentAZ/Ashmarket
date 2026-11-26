@@ -2538,6 +2538,78 @@ bool AGutFighter::HasBody() const
 	return Body != nullptr;
 }
 
+void AGutFighter::WearBag(UStaticMesh* Bag)
+{
+	USkeletalMeshComponent* Shown = GetShownMesh();
+
+	static const FName Pelvis(TEXT("pelvis"));
+	static const FName LeftThigh(TEXT("thigh_l"));
+
+	const USkinnedAsset* Asset = Shown ? Shown->GetSkinnedAsset() : nullptr;
+
+	if (!Bag || !Asset || Shown->GetBoneIndex(Pelvis) == INDEX_NONE || Shown->GetBoneIndex(LeftThigh) == INDEX_NONE)
+	{
+		if (BagMesh)
+		{
+			BagMesh->SetVisibility(false);
+		}
+
+		return;
+	}
+
+	if (!BagMesh)
+	{
+		BagMesh = NewObject<UStaticMeshComponent>(this, TEXT("Bag"));
+		BagMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		BagMesh->SetReceivesDecals(false);
+		BagMesh->SetupAttachment(Shown, Pelvis);
+		BagMesh->RegisterComponent();
+	}
+
+	static float Out = 1.0f;
+	static float Down = 22.0f;
+	static float Round = 32.0f;
+	static float Tip = 4.0f;
+	static float Thin = 0.62f;
+	static bool bRead = false;
+
+	if (!bRead)
+	{
+		bRead = true;
+
+		FParse::Value(FCommandLine::Get(), TEXT("GutBagOut="), Out);
+		FParse::Value(FCommandLine::Get(), TEXT("GutBagDown="), Down);
+		FParse::Value(FCommandLine::Get(), TEXT("GutBagRound="), Round);
+		FParse::Value(FCommandLine::Get(), TEXT("GutBagTip="), Tip);
+		FParse::Value(FCommandLine::Get(), TEXT("GutBagThin="), Thin);
+	}
+
+	// Where the hip is and which way is out from it, from the body standing at rest. It hangs behind the hip, not beside
+	// it: beside it is where the hand hangs, and the hand went into the bag. Round is how far round toward the back, in
+	// degrees from straight out to the side. The bag's own face is its +Y and its top its +Z: the face is turned outward,
+	// the top up, and its back lies against the body. It is made a little thinner than it was modelled, which was fat.
+	const FReferenceSkeleton& Skeleton = Asset->GetRefSkeleton();
+	const FTransform Hips = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Skeleton.FindBoneIndex(Pelvis));
+	const FTransform Thigh = FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Skeleton.FindBoneIndex(LeftThigh));
+
+	const FVector Side(FMath::Sign(Thigh.GetLocation().X - Hips.GetLocation().X), 0.0f, 0.0f);
+	const FVector Ahead = FVector::CrossProduct(FVector::UpVector, Side) * Side.X;
+	const float Turned = FMath::DegreesToRadians(Round);
+	const FVector Outward = ((Side * FMath::Cos(Turned)) - (Ahead * FMath::Sin(Turned))).GetSafeNormal();
+
+	const float Deep = Bag->GetBoundingBox().GetSize().Y * 0.5f * Thin;
+	const float HipOut = FMath::Abs(Thigh.GetLocation().X - Hips.GetLocation().X);
+
+	// (the hips are wider than they are deep: about a hand's width past the joint to the side, and less than that behind)
+	const FVector At = Hips.GetLocation() + (Side * FMath::Cos(Turned) * (HipOut + 8.0f)) - (Ahead * FMath::Sin(Turned) * 13.0f) + (Outward * (Deep + Out)) - FVector(0.0f, 0.0f, Down);
+	const FQuat Turn = FQuat(FVector::CrossProduct(FVector::UpVector, Outward), FMath::DegreesToRadians(Tip)) * FRotationMatrix::MakeFromYZ(Outward, FVector::UpVector).ToQuat();
+
+	BagMesh->SetStaticMesh(Bag);
+	BagMesh->AttachToComponent(Shown, FAttachmentTransformRules::SnapToTargetNotIncludingScale, Pelvis);
+	BagMesh->SetRelativeTransform(FTransform(Turn, At, FVector(1.0f, Thin, 1.0f)) * Hips.Inverse());
+	BagMesh->SetVisibility(true);
+}
+
 USkeletalMeshComponent* AGutFighter::GetShownMesh() const
 {
 	return Body ? Body.Get() : GetMesh();

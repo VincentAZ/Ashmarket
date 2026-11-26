@@ -1,0 +1,23 @@
+{
+ "about": "What somebody says when the player walks into them, and whose people they are (for what it does to the player's standing). Tools/town_lists.py gives every person who can be walked into three of their mouth's lines, the same three wherever they stand, unless the person's own entry has \"bumped\" or \"of\". A lot on the Block says nothing. Not everybody curses: \"else the game starts smelling of too much effort\" (25 November).",
+ "mouths": {
+  "foul": ["Hey! Fuck off.", "Watch it, shithead.", "Walk into me again and I'll break your fucking nose.", "Mind your fucking feet.", "Are you blind, or just stupid?", "Christ. Go round.", "Shove me again. Go on.", "Piss off out of it."],
+  "plain": ["Hey.", "Watch where you're going.", "Easy.", "Mind yourself.", "There's room to go round.", "Do you mind?", "Steady.", "I'm standing here."],
+  "cold": ["You will want to stop doing that.", "Careful.", "I will remember that.", "Not twice.", "That goes against your name."],
+  "law": ["Back off.", "Hands to yourself.", "Touch me again and you sleep in the cage.", "Step back. Now.", "That's a Warden you're shoving.", "You want the fence? Keep pushing."],
+  "meek": ["Sorry. Sorry.", "I'm moving. I'm moving.", "Don't.", "Please.", "I wasn't in your way."]
+ },
+ "who": {
+  "Mother Ledger": "cold", "Madam Corazon": "cold", "Maren Brandt": "cold", "A collector": "cold", "A Chainmen collector": "cold",
+  "Warden": "law", "Gate Warden": "law", "Sergeant Rook": "law", "Lane Warden": "law", "A Warden corporal": "law", "Captain Voss": "law",
+  "Caller Strand": "foul", "Ilya Brandt": "foul", "Captain Dolores": "foul", "A winch hand": "foul", "Brass": "foul", "Scrap seller": "foul",
+  "Dealer": "foul", "A hauler": "foul", "Chalk": "foul", "Big Lottie": "foul", "Mash": "foul", "Guildmaster Okafor-Reyes": "foul", "Pike": "foul",
+  "Carrier": "meek", "A woman with no litre": "meek", "A new keeper": "meek", "A Warden, sentenced": "meek"
+ },
+ "of": {
+  "Warden": "wardens", "Gate Warden": "wardens", "Sergeant Rook": "wardens", "Lane Warden": "wardens", "A Warden corporal": "wardens", "Captain Voss": "wardens",
+  "Margin": "chainmen", "Mother Ledger": "chainmen", "Caller Strand": "chainmen", "A collector": "chainmen", "A Chainmen collector": "chainmen",
+  "Guildmaster Okafor-Reyes": "scrappers", "Pike": "scrappers", "Scrap seller": "scrappers", "A winch hand": "scrappers",
+  "Calla Wynn": "freetags"
+ }
+}

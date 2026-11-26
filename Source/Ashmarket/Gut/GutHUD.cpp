@@ -992,8 +992,8 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 	/** How a fighter reads on one line: what it has been taught, what state it is in, and what it thinks */
 	auto Describe = [GameMode](const FGutStableFighter& Fighter, bool bMood)
 	{
-		FString Text = FString::Printf(TEXT("%s  \u00B7  strength %d, speed %d, nerve %d  \u00B7  %s"), *Fighter.FighterName.ToString().ToUpper(),
-			Fighter.Strength, Fighter.Speed, Fighter.Nerve, Fighter.Weapon ? *Fighter.Weapon->DisplayName.ToString() : TEXT("bare hands"));
+		FString Text = FString::Printf(TEXT("%s  \u00B7  strength %d, speed %d, nerve %d, cunning %d  \u00B7  %s"), *Fighter.FighterName.ToString().ToUpper(),
+			Fighter.Strength, Fighter.Speed, Fighter.Nerve, Fighter.Cunning, Fighter.Weapon ? *Fighter.Weapon->DisplayName.ToString() : TEXT("bare hands"));
 
 		if (Fighter.Wins > 0)
 		{
@@ -1165,12 +1165,14 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 			case TrainStrength:
 			case TrainSpeed:
 			case TrainNerve:
+			case TrainCunning:
 			{
-				static const TCHAR* What[] = { TEXT("strength"), TEXT("speed"), TEXT("nerve") };
+				static const TCHAR* What[] = { TEXT("strength"), TEXT("speed"), TEXT("nerve"), TEXT("cunning") };
 
-				const int32 Taught = !Fighter ? 0 : (Code == TrainStrength ? Fighter->Strength : (Code == TrainSpeed ? Fighter->Speed : Fighter->Nerve));
+				const int32 Which = Code == TrainCunning ? 3 : Code - TrainStrength;
+				const int32 Taught = !Fighter ? 0 : (Which == 0 ? Fighter->Strength : (Which == 1 ? Fighter->Speed : (Which == 2 ? Fighter->Nerve : Fighter->Cunning)));
 
-				Line = FString::Printf(TEXT("Train %s  \u00B7  %.0f L and the day"), What[Code - TrainStrength], GameMode->GetTrainingCost());
+				Line = FString::Printf(TEXT("Train %s  \u00B7  %.0f L and the day"), What[Which], GameMode->GetTrainingCost());
 
 				bAvailable = Taught < GameMode->GetStableMostTaught() && GameMode->GetTrainingCost() <= State.Water;
 				break;

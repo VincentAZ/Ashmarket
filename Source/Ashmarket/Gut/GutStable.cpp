@@ -5,6 +5,7 @@
 // These are members of the cage's game mode, kept in a file of their own.
 
 #include "GutGameMode.h"
+#include "Algo/IndexOf.h"
 #include "Camera/CameraActor.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -202,8 +203,10 @@ bool AGutGameMode::TakeBlockOffer(FGutStableState& State, const FGutStableFighte
 	return true;
 }
 
-void AGutGameMode::GetBlockOffersFor(const FGutStableState& State, TArray<FGutStableFighter>& OutOffers) const
+void AGutGameMode::GetBlockOffersFor(const FGutStableState& State, TArray<FGutStableFighter>& OutOffers, int32 Count) const
 {
+	const int32 Offered = Count > 0 ? Count : BlockOffersPerDay;
+
 	OutOffers.Reset();
 
 	TArray<const UGutLadderData*> Ranks;
@@ -226,14 +229,22 @@ void AGutGameMode::GetBlockOffersFor(const FGutStableState& State, TArray<FGutSt
 	// the same seed and the same day are the same people at the Block
 	FRandomStream Draw(State.Seed + (State.Day * 104729));
 
-	for (int32 i = 0; i < BlockOffersPerDay; ++i)
+	for (int32 i = 0; i < Offered; ++i)
 	{
 		FGutStableFighter Offer;
 
 		// the last on the list is somebody with a tag, who will sign and cannot be bought
-		Offer.bOwned = i < BlockOffersPerDay - 1;
+		Offer.bOwned = i < Offered - 1;
 
 		Offer.FighterName = FText::FromString(GutStableConstants::Names[Draw.RandRange(0, UE_ARRAY_COUNT(GutStableConstants::Names) - 1)]);
+
+		// (nobody on one day's list has another's name: the next name along that is free)
+		for (int32 Tried = 0; Tried < UE_ARRAY_COUNT(GutStableConstants::Names) && OutOffers.ContainsByPredicate([&Offer](const FGutStableFighter& Other) { return Other.FighterName.EqualTo(Offer.FighterName); }); ++Tried)
+		{
+			const int32 Was = FMath::Max(0, static_cast<int32>(Algo::IndexOfByPredicate(GutStableConstants::Names, [&Offer](const TCHAR* Name) { return Offer.FighterName.ToString() == Name; })));
+
+			Offer.FighterName = FText::FromString(GutStableConstants::Names[(Was + 1) % UE_ARRAY_COUNT(GutStableConstants::Names)]);
+		}
 
 		Offer.Billing = FText::FromString(Offer.bOwned
 			? GutStableConstants::Owned[Draw.RandRange(0, UE_ARRAY_COUNT(GutStableConstants::Owned) - 1)]
@@ -257,12 +268,15 @@ void AGutGameMode::GetBlockOffersFor(const FGutStableState& State, TArray<FGutSt
 		Offer.Speed = Draw.RandRange(Least, Most);
 		Offer.Nerve = Draw.RandRange(Least, Most);
 
-		const int32 Taught = Offer.Strength + Offer.Speed + Offer.Nerve;
+		// (drawn on its own, so that who is at the Block on a day is who was before there was a fourth thing to draw)
+		Offer.Cunning = FRandomStream(State.Seed + (State.Day * 104729) + (i * 31)).RandRange(Least, Most);
+
+		const float Taught = Offer.GetTaught();
 
 		if (Offer.bOwned)
 		{
 			// the document's rule: health, skills and reputation make the price
-			Offer.Price = BlockBasePrice + (BlockPricePerSkill * Taught) + (Offer.Weapon ? BlockPricePerSkill : 0.0f);
+			Offer.Price = FMath::RoundToFloat(BlockBasePrice + (BlockPricePerSkill * Taught) + (Offer.Weapon ? BlockPricePerSkill : 0.0f));
 			Offer.Resentment = 20.0f;
 		}
 		else
@@ -321,7 +335,7 @@ float AGutGameMode::GetStableBookChance() const
 	const FGutStableFighter& Fighter = State.Fighters[State.Matched];
 
 	// what the book would give a newcomer against the stable's fighter: the more it has been taught, the less
-	const float Own = FMath::Clamp(0.92f - (0.045f * (Fighter.Strength + Fighter.Speed + Fighter.Nerve)), 0.2f, 0.92f);
+	const float Own = FMath::Clamp(0.92f - (0.045f * Fighter.GetTaught()), 0.2f, 0.92f);
 
 	float Chance = 0.5f + (Rung->BookChance - Own);
 
@@ -443,7 +457,7 @@ bool AGutGameMode::TrainFighter(int32 FighterIndex, EGutTraining What)
 
 	FGutStableFighter& Fighter = State.Fighters[FighterIndex];
 
-	int32& Taught = What == EGutTraining::Strength ? Fighter.Strength : (What == EGutTraining::Speed ? Fighter.Speed : Fighter.Nerve);
+	int32& Taught = What == EGutTraining::Strength ? Fighter.Strength : (What == EGutTraining::Speed ? Fighter.Speed : (What == EGutTraining::Nerve ? Fighter.Nerve : Fighter.Cunning));
 
 	if (Taught >= StableMostTaught || !SpendStableWater(TrainingCost))
 	{
@@ -452,7 +466,7 @@ bool AGutGameMode::TrainFighter(int32 FighterIndex, EGutTraining What)
 
 	++Taught;
 
-	UE_LOG(LogGut, Log, TEXT("Stable: %s is trained: strength %d, speed %d, nerve %d"), *Fighter.FighterName.ToString(), Fighter.Strength, Fighter.Speed, Fighter.Nerve);
+	UE_LOG(LogGut, Log, TEXT("Stable: %s is trained: strength %d, speed %d, nerve %d, cunning %d"), *Fighter.FighterName.ToString(), Fighter.Strength, Fighter.Speed, Fighter.Nerve, Fighter.Cunning);
 
 	// it takes the day
 	AdvanceStableDay();
@@ -587,7 +601,7 @@ bool AGutGameMode::GiveTag(int32 FighterIndex)
 		Fighter.bOwned = false;
 		Fighter.bPromisedTag = false;
 		Fighter.Resentment = 0.0f;
-		Fighter.Wage = SignedBaseWage + (0.5f * (Fighter.Strength + Fighter.Speed + Fighter.Nerve));
+		Fighter.Wage = SignedBaseWage + (0.5f * Fighter.GetTaught());
 	}
 	else
 	{
@@ -858,6 +872,7 @@ void AGutGameMode::MakeStableFighter(AGutFighter* Fighter, const FGutStableFight
 	int32 Strength = Who.Strength;
 	int32 Speed = Who.Speed;
 	int32 Nerve = Who.Nerve;
+	int32 Cunning = Who.Cunning;
 
 	if (Who.bDoped)
 	{
@@ -872,6 +887,7 @@ void AGutGameMode::MakeStableFighter(AGutFighter* Fighter, const FGutStableFight
 		Strength = FMath::Max(0, Strength - Lack);
 		Speed = FMath::Max(0, Speed - Lack);
 		Nerve = FMath::Max(0, Nerve - Lack);
+		Cunning = FMath::Max(0, Cunning - Lack);
 	}
 
 	if (Who.bOwned && Who.Resentment >= SulksAtResentment)
@@ -941,6 +957,14 @@ void AGutGameMode::MakeStableFighter(AGutFighter* Fighter, const FGutStableFight
 		Taught.DodgeHeavyChance = FMath::Lerp(0.1f, 0.3f, Share);
 		Taught.CounterChance = FMath::Lerp(0.4f, 0.95f, Share);
 		Taught.PunishChance = FMath::Lerp(0.25f, 0.75f, Share);
+
+		// and how well it uses the cage, and its head
+		const float Wits = FMath::Clamp(Cunning / GutStableConstants::MostTaught, 0.0f, 1.2f);
+
+		Taught.Cunning = FMath::Clamp(Wits, 0.0f, 1.0f);
+		Taught.HeavyChanceIntoHazard = FMath::Lerp(0.2f, 0.95f, Wits);
+		Taught.HeavyChanceAgainstGuard = FMath::Lerp(0.25f, 0.75f, Wits);
+		Taught.AttackStaminaReserve = FMath::Lerp(4.0f, 26.0f, Wits);
 
 		if (bLayDown)
 		{
@@ -1327,6 +1351,7 @@ void AGutGameMode::GetStableCardItems(TArray<FGutCardItem>& Items) const
 			Line(TrainStrength);
 			Line(TrainSpeed);
 			Line(TrainNerve);
+			Line(TrainCunning);
 
 			if (Fighter.IsCrippled())
 			{
@@ -1549,6 +1574,10 @@ void AGutGameMode::ActivateStableLine(int32 Code)
 
 	case TrainNerve:
 		TrainFighter(StableFocus, EGutTraining::Nerve);
+		break;
+
+	case TrainCunning:
+		TrainFighter(StableFocus, EGutTraining::Cunning);
 		break;
 
 	case Patch:

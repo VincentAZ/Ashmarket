@@ -388,6 +388,7 @@ void ATownGameMode::Tick(float DeltaTime)
 	UpdateAuctionVoice(DeltaTime);
 	UpdateSoundsDue();
 	UpdateLed(DeltaTime);
+	UpdateBumps(DeltaTime);
 	UpdateBeats(DeltaTime);
 	UpdateTow(DeltaTime);
 	UpdateFires();
@@ -606,6 +607,9 @@ void ATownGameMode::Settle()
 		// the player stands plainly, whatever they would have been dealt: a hand on the hip all day is somebody else's habit
 		Walker->SetAtEaseFamily(FName("stand"));
 		Walker->SetAtEase(true);
+
+		// and what they carry is seen on them: the bag, at the hip
+		Walker->WearBag(FindThingMesh(TEXT("worn_satchel")));
 
 		// What is loose in a place goes when it is walked into (a tyre, a crate, a can: the builder's LOOSE). It is shoved
 		// about as hard as a shin shoves, whatever it is, so its own weight decides how far it goes: a tyre skids off and a
@@ -2848,7 +2852,7 @@ void ATownGameMode::UpdateLed(float DeltaTime)
 
 		const float HalfHeight = Body->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 		const float OwnPace = Body->GetCharacterMovement()->MaxWalkSpeed;
-		const float Pace = (OwnPace > 1.0f ? OwnPace : 150.0f) * LotPace;
+		const float Pace = (OwnPace > 1.0f ? OwnPace : 150.0f) * LotPace * One.Haste;
 
 		FVector Feet = Body->GetActorLocation() - FVector(0.0f, 0.0f, HalfHeight);
 		FVector2D Flat(Feet.X, Feet.Y);
@@ -2913,11 +2917,239 @@ void ATownGameMode::UpdateLed(float DeltaTime)
 	}
 }
 
+bool ATownGameMode::IsOpenGround(const FVector2D& At, float Clear) const
+{
+	if (!PlaceData)
+	{
+		return false;
+	}
+
+	bool bOn = false;
+
+	for (const FBox2D& Patch : PlaceData->Ground)
+	{
+		if (Patch.IsInside(At) || Patch.GetClosestPointTo(At).Equals(At, 0.01f))
+		{
+			bOn = true;
+			break;
+		}
+	}
+
+	for (int32 i = 0; bOn && i < PlaceData->Blocks.Num(); ++i)
+	{
+		bOn = PlaceData->Blocks[i].GetDistance(At) >= Clear;
+	}
+
+	return bOn;
+}
+
+const FTownCall* ATownGameMode::GetBark() const
+{
+	return (GetWorld() && GetWorld()->GetTimeSeconds() < BarkUntil) ? &BarkCall : nullptr;
+}
+
+bool ATownGameMode::Bump(int32 Index)
+{
+	const AGutFighter* Walker = GetWalker();
+
+	if (!PlaceData || !Walker || !PlaceData->People.IsValidIndex(Index) || !People.IsValidIndex(Index) || !People[Index])
+	{
+		return false;
+	}
+
+	const FTownPerson& Person = PlaceData->People[Index];
+	AGutFighter* Body = People[Index];
+
+	if (Person.Lot > 0 || Person.bStandsOnWhatIsThere || !Person.Beat.IsEmpty() || Index == TalkingTo || IsLed(Index))
+	{
+		return false;
+	}
+
+	const float Now = GetWorld()->GetTimeSeconds();
+
+	// what they have to say about it: the next of theirs, and not on top of the last
+	if (!Person.Bumped.IsEmpty() && Now >= BarkUntil)
+	{
+		const FTownBark& Bark = Person.Bumped[Barks++ % Person.Bumped.Num()];
+
+		BarkCall = FTownCall();
+		BarkCall.Speaker = Person.Name;
+		BarkCall.Words = Bark.Words;
+		BarkCall.Seconds = 2.2f;
+
+		if (const UGutGameInstance* GameInstance = GetGutGameInstance(); GameInstance && GameInstance->HearsSpeech() && Bark.Voice)
+		{
+			if (BarkVoice)
+			{
+				BarkVoice->Stop();
+			}
+
+			BarkVoice = UGameplayStatics::SpawnSound2D(this, Bark.Voice, TownConstants::CallVoiceVolume);
+
+			const USoundWave* Wave = Cast<USoundWave>(Bark.Voice);
+
+			BarkCall.Seconds = FMath::Max(BarkCall.Seconds, (Wave ? Wave->Duration : Bark.Voice->GetDuration()) + 0.6f);
+
+			Body->Speak(GetFaceFor(Bark.Voice));
+		}
+
+		BarkUntil = Now + BarkCall.Seconds;
+	}
+
+	BumpedAt.Add(Index, Now);
+
+	// whose they are hears of it: once for each of them on a visit, so it cannot be ground at
+	FString Cost;
+
+	if (!Person.Of.IsNone() && !BumpCosted.Contains(Index))
+	{
+		BumpCosted.Add(Index);
+
+		Cost = Apply(FString::Printf(TEXT("st.%s-1"), *Person.Of.ToString()));
+
+		if (!Cost.IsEmpty())
+		{
+			Notice = FString::Printf(TEXT("You walked into %s. %s"), *Person.Name, *Cost);
+			NoticeUntil = Now + TownConstants::NoticeTime;
+		}
+	}
+
+	// and they give way: to open ground beside them, on the side they are already off to, or straight back
+	const FVector Here = Body->GetActorLocation();
+	const FVector2D Flat(Here.X, Here.Y);
+	const FVector2D From(Walker->GetActorLocation().X, Walker->GetActorLocation().Y);
+	const FVector2D Away = (Flat - From).GetSafeNormal();
+
+	FVector2D Heading(Walker->GetActorForwardVector().X, Walker->GetActorForwardVector().Y);
+
+	if (const UCharacterMovementComponent* Legs = Walker->GetCharacterMovement(); Legs && !Legs->GetCurrentAcceleration().IsNearlyZero())
+	{
+		Heading = FVector2D(Legs->GetCurrentAcceleration().X, Legs->GetCurrentAcceleration().Y);
+	}
+
+	Heading = Heading.GetSafeNormal();
+
+	const FVector2D Side(-Heading.Y, Heading.X);
+	const float Off = FVector2D::DotProduct(Flat - From, Side);
+	const float Sign = FMath::Abs(Off) > 3.0f ? FMath::Sign(Off) : ((Index % 2) ? 1.0f : -1.0f);
+
+	bool bMoved = false;
+
+	for (const FVector2D& Way : { Side * Sign, ((Side * Sign) + Away).GetSafeNormal(), Side * -Sign, Away })
+	{
+		const FVector2D To = Flat + (Way * 80.0f);
+
+		// (clear of whatever blocks, and not onto somebody else's feet)
+		bool bFree = IsOpenGround(To);
+
+		for (int32 Other = 0; bFree && Other < People.Num(); ++Other)
+		{
+			bFree = Other == Index || !People[Other] || FVector::DistSquared2D(People[Other]->GetActorLocation(), FVector(To.X, To.Y, 0.0f)) > FMath::Square(75.0f);
+		}
+
+		if (!bFree)
+		{
+			continue;
+		}
+
+		FTownLed Step;
+		Step.Person = Index;
+		Step.Way.Add(FVector(To.X, To.Y, Here.Z));
+		// and they end looking at whoever did it
+		Step.Facing = FVector(From.X - To.X, From.Y - To.Y, 0.0f).Rotation().Yaw;
+		Step.Haste = 1.7f;
+
+		Led.Add(MoveTemp(Step));
+		SteppedAside.Add(Index);
+
+		bMoved = true;
+		break;
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Street: walked into %s, who %s%s%s"), *Person.Name, bMoved ? TEXT("steps aside") : TEXT("has nowhere to go"),
+		BarkUntil > Now ? *FString::Printf(TEXT(" and says \"%s\""), *BarkCall.Words) : TEXT(""), Cost.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(" (%s)"), *Cost));
+
+	return true;
+}
+
+void ATownGameMode::UpdateBumps(float DeltaTime)
+{
+	const AGutFighter* Walker = GetWalker();
+
+	if (!bSettled || !PlaceData || !Walker || IsTalking() || bShopping)
+	{
+		BumpPressed.Reset();
+		return;
+	}
+
+	const UCharacterMovementComponent* Legs = Walker->GetCharacterMovement();
+	const FVector Wanted = Legs ? Legs->GetCurrentAcceleration() : FVector::ZeroVector;
+	const FVector2D Push = FVector2D(Wanted.X, Wanted.Y).GetSafeNormal();
+	const FVector2D From(Walker->GetActorLocation().X, Walker->GetActorLocation().Y);
+	const float Now = GetWorld()->GetTimeSeconds();
+
+	for (int32 i = 0; i < People.Num() && i < PlaceData->People.Num(); ++i)
+	{
+		const AGutFighter* Body = People[i];
+
+		if (!Body)
+		{
+			continue;
+		}
+
+		const FVector2D At(Body->GetActorLocation().X, Body->GetActorLocation().Y);
+		const float Apart = FVector2D::Distance(At, From);
+
+		// Pushed against: as near as two bodies get, and the player still walking at them. Coming up to somebody to speak to
+		// them stops short of this, and brushing past them is over before it counts.
+		const float Touching = Walker->GetCapsuleComponent()->GetScaledCapsuleRadius() + Body->GetCapsuleComponent()->GetScaledCapsuleRadius() + 9.0f;
+
+		if (!Push.IsNearlyZero() && Apart < Touching && FVector2D::DotProduct(Push, (At - From).GetSafeNormal()) > 0.55f)
+		{
+			float& Pressed = BumpPressed.FindOrAdd(i);
+
+			Pressed += DeltaTime;
+
+			if (Pressed >= 0.3f && Now - BumpedAt.FindRef(i) > 2.0f)
+			{
+				Pressed = 0.0f;
+
+				Bump(i);
+			}
+		}
+		else
+		{
+			BumpPressed.Remove(i);
+		}
+
+		// and back to where they stood, when whoever shoved them is well gone
+		if (SteppedAside.Contains(i) && !IsLed(i) && i != TalkingTo && Now - BumpedAt.FindRef(i) > 3.0f
+			&& FVector2D::Distance(From, FVector2D(PlaceData->People[i].Place.X, PlaceData->People[i].Place.Y)) > 260.0f)
+		{
+			FTownLed Back;
+			Back.Person = i;
+			Back.Way.Add(PlaceData->People[i].Place);
+			Back.Facing = PlaceData->People[i].Facing;
+
+			Led.Add(MoveTemp(Back));
+			SteppedAside.Remove(i);
+		}
+	}
+}
+
 FVector ATownGameMode::GetPersonPlace(int32 Person) const
 {
 	if (!PlaceData || !PlaceData->People.IsValidIndex(Person))
 	{
 		return FVector::ZeroVector;
+	}
+
+	// somebody who has stepped aside, or is on the way back, is where they are
+	if ((SteppedAside.Contains(Person) || BumpedAt.Contains(Person)) && People.IsValidIndex(Person) && People[Person])
+	{
+		const FVector Stood = People[Person]->GetActorLocation();
+
+		return FVector(Stood.X, Stood.Y, PlaceData->People[Person].Place.Z);
 	}
 
 	// somebody who walks a round is wherever it has taken them
@@ -3605,8 +3837,6 @@ void ATownGameMode::GetBookOffers(TArray<FGutStableFighter>& OutOffers, TArray<i
 
 	const FGutStableState State = GetOwnerState();
 
-	Rules->GetBlockOffersFor(State, OutOffers);
-
 	// the lots standing in the place, by their numbers
 	TArray<int32> Standing;
 
@@ -3620,17 +3850,21 @@ void ATownGameMode::GetBookOffers(TArray<FGutStableFighter>& OutOffers, TArray<i
 
 	Standing.Sort([this](int32 A, int32 B) { return PlaceData->People[A].Lot < PlaceData->People[B].Lot; });
 
-	// which of them the book's people are: the same on the same day. Whoever is bought is the body that was seen on the Block.
-	FRandomStream Draw(State.Seed + (State.Day * 7919));
+	// The book and the Block are the same people: a line of the book for everybody who stands on the Block for sale, in
+	// the order of their numbers, and one more for whoever signs, who stands by the clerk's table. (The book had three
+	// lines whoever stood there, two of them drawn from the six on the Block: "three people for sale/rent - but only 1
+	// on platform. they must synch for realism", 25 November.) Whoever is bought is the body that was seen on the Block.
+	Rules->GetBlockOffersFor(State, OutOffers, Standing.IsEmpty() ? 0 : Standing.Num() + 1);
+
+	int32 Next = 0;
 
 	for (FGutStableFighter& Offer : OutOffers)
 	{
 		int32 Lot = 0;
 
-		if (Offer.bOwned && !Standing.IsEmpty())
+		if (Offer.bOwned && Standing.IsValidIndex(Next))
 		{
-			const int32 Picked = Draw.RandRange(0, Standing.Num() - 1);
-			const FTownPerson& Person = PlaceData->People[Standing[Picked]];
+			const FTownPerson& Person = PlaceData->People[Standing[Next++]];
 
 			Lot = Person.Lot;
 
@@ -3638,8 +3872,6 @@ void ATownGameMode::GetBookOffers(TArray<FGutStableFighter>& OutOffers, TArray<i
 			{
 				Offer.Body = Person.Body;
 			}
-
-			Standing.RemoveAt(Picked);
 		}
 
 		OutLots.Add(Lot);
@@ -3679,7 +3911,7 @@ TArray<FTownShopLine> ATownGameMode::GetBookLines() const
 			? FString::Printf(TEXT("Lot %d  \u00B7  %s"), Lots[i], *Offer.FighterName.ToString().ToUpper())
 			: FString::Printf(TEXT("Signs  \u00B7  %s"), *Offer.FighterName.ToString().ToUpper());
 
-		Line.Detail = FString::Printf(TEXT("strength %d, speed %d, nerve %d"), Offer.Strength, Offer.Speed, Offer.Nerve);
+		Line.Detail = FString::Printf(TEXT("strength %d, speed %d, nerve %d, cunning %d"), Offer.Strength, Offer.Speed, Offer.Nerve, Offer.Cunning);
 
 		// what they are led out holding, and how they came to be here
 		Line.About = (Offer.Weapon ? FString::Printf(TEXT("Fights with the %s. "), *Offer.Weapon->DisplayName.ToString().ToLower()) : FString(TEXT("Fights with bare hands. "))) + Offer.Billing.ToString();
@@ -3711,6 +3943,13 @@ TArray<FTownShopLine> ATownGameMode::GetBookLines() const
 				Line.bCanBuy = false;
 				Line.PriceText = TEXT("sold");
 				Line.Why = FString::Printf(TEXT("went to %s"), *To);
+			}
+			else if (Lots[i] > 0 && IsLotGone(Lots[i]) && Line.Why != TEXT("taken") && !State.BoughtToday.Contains(i))
+			{
+				// knocked down in the caller's own sale while the player was elsewhere, and walked off the Block
+				Line.bCanBuy = false;
+				Line.PriceText = TEXT("sold");
+				Line.Why = TEXT("went in the sale");
 			}
 		}
 		else
@@ -4882,8 +5121,8 @@ TArray<FTownBagLine> ATownGameMode::GetBagLines() const
 				: FString::Printf(TEXT("Bought at the Block for %.0f L. The paper is all the Block gives: whoever holds it owns %s."), Fighter.Price, Sex.Him()))
 			: FString::Printf(TEXT("Signed for %.0f L a day and a share of every purse. No collar: %s can walk away, and the paper says so."), Fighter.Wage, Sex.He()));
 
-		Line.About.Add(FString::Printf(TEXT("%s skills, each out of %d: strength %d, speed %d, nerve %d.  Fights with %s.  Fights won: %d."), Sex.HisCap(), GetCageRules() ? GetCageRules()->GetStableMostTaught() : 5,
-			Fighter.Strength, Fighter.Speed, Fighter.Nerve, Fighter.Weapon ? *(TEXT("the ") + Fighter.Weapon->DisplayName.ToString().ToLower()) : TEXT("bare hands"), Fighter.Wins));
+		Line.About.Add(FString::Printf(TEXT("%s skills, each out of %d: strength %d, speed %d, nerve %d, cunning %d.  Fights with %s.  Fights won: %d."), Sex.HisCap(), GetCageRules() ? GetCageRules()->GetStableMostTaught() : 5,
+			Fighter.Strength, Fighter.Speed, Fighter.Nerve, Fighter.Cunning, Fighter.Weapon ? *(TEXT("the ") + Fighter.Weapon->DisplayName.ToString().ToLower()) : TEXT("bare hands"), Fighter.Wins));
 
 		// how they are
 		bool bHurt = false;
@@ -5537,6 +5776,9 @@ void ATownGameMode::SettleYard()
 
 	UE_LOG(LogTown, Log, TEXT("Yard: %d of the player's people stand in it, day %d, %.0f L held"), YardBodies.Num(), GameInstance->Stable.Day, GameInstance->Stable.Water);
 
+	// what is kept on the rack, on its shelves
+	ShowRack();
+
 	// what has happened to the yard that its owner was not there to see: said now, once
 	if (UGutGameInstance* Run = GetGutGameInstance(); Run && !Run->Stable.News.IsEmpty())
 	{
@@ -5592,6 +5834,118 @@ void ATownGameMode::OpenRack()
 	}
 
 	UE_LOG(LogTown, Log, TEXT("Yard: at the rack, %d kinds of thing on it"), GameInstance->Rack.Num());
+}
+
+UStaticMesh* ATownGameMode::FindThingMesh(const FString& Folder)
+{
+	TArray<FAssetData> Assets;
+
+	if (const IAssetRegistry* Registry = IAssetRegistry::Get())
+	{
+		Registry->GetAssetsByPath(FName(*(FString(TEXT("/Game/Gut/Art/Mixar/")) + Folder)), Assets, true);
+	}
+
+	for (const FAssetData& Asset : Assets)
+	{
+		if (Asset.AssetClassPath == UStaticMesh::StaticClass()->GetClassPathName())
+		{
+			return Cast<UStaticMesh>(Asset.GetAsset());
+		}
+	}
+
+	return nullptr;
+}
+
+void ATownGameMode::ShowRack()
+{
+	for (AActor* Thing : RackThings)
+	{
+		if (Thing)
+		{
+			Thing->Destroy();
+		}
+	}
+
+	RackThings.Reset();
+
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+	const int32 Door = PlaceData ? PlaceData->Doors.IndexOfByPredicate([](const FTownDoor& One) { return One.Deed == ETownDeed::Rack; }) : INDEX_NONE;
+
+	if (!GameInstance || Door == INDEX_NONE || GameInstance->Rack.IsEmpty())
+	{
+		return;
+	}
+
+	// the rack itself: the model of that name nearest where the rack is gone to
+	const AStaticMeshActor* Rack = nullptr;
+
+	for (TActorIterator<AStaticMeshActor> It(GetWorld()); It; ++It)
+	{
+		const UStaticMesh* Mesh = It->GetStaticMeshComponent() ? It->GetStaticMeshComponent()->GetStaticMesh().Get() : nullptr;
+
+		if (Mesh && Mesh->GetName().Contains(TEXT("metal_rack"))
+			&& (!Rack || FVector::DistSquared2D(It->GetActorLocation(), PlaceData->Doors[Door].Place) < FVector::DistSquared2D(Rack->GetActorLocation(), PlaceData->Doors[Door].Place)))
+		{
+			Rack = *It;
+		}
+	}
+
+	if (!Rack)
+	{
+		return;
+	}
+
+	// its shelves, in its own shape: three across each of three, the one at the waist filled first, then the chest's, then the knee's
+	const FBox Shape = Rack->GetStaticMeshComponent()->GetStaticMesh()->GetBoundingBox();
+	const bool bWideIsX = Shape.GetSize().X >= Shape.GetSize().Y;
+	const float Wide = bWideIsX ? Shape.GetSize().X : Shape.GetSize().Y;
+
+	static const float Shelves[] = { 0.49f, 0.725f, 0.225f };
+
+	int32 Slot = 0;
+
+	for (const FGutBagItem& Item : GameInstance->Rack)
+	{
+		const bool bArmor = FindArmor(Item.Good) != nullptr;
+
+		UStaticMesh* Mesh = bArmor ? FindThingMesh(TEXT("rack_armor")) : FindThingMesh(FString(TEXT("rack_")) + Item.Good.ToString());
+
+		if (!Mesh)
+		{
+			Mesh = FindThingMesh(FString(TEXT("find_")) + Item.Good.ToString());
+		}
+
+		if (!Mesh)
+		{
+			UE_LOG(LogTown, Log, TEXT("Yard: nothing to show on the rack for %s"), *Item.Good.ToString());
+			continue;
+		}
+
+		for (int32 i = 0; i < FMath::Min(Item.Count, 2) && Slot < 9; ++i, ++Slot)
+		{
+			const float Across = ((Slot % 3) - 1) * Wide * 0.29f;
+			const float Up = Shape.Min.Z + (Shape.GetSize().Z * Shelves[Slot / 3]) + 1.5f - Mesh->GetBoundingBox().Min.Z;
+
+			const FVector Own(bWideIsX ? Shape.GetCenter().X + Across : Shape.GetCenter().X, bWideIsX ? Shape.GetCenter().Y : Shape.GetCenter().Y + Across, Up);
+
+			FActorSpawnParameters Params;
+			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			AStaticMeshActor* Thing = GetWorld()->SpawnActor<AStaticMeshActor>(Rack->GetActorTransform().TransformPosition(Own),
+				FRotator(0.0f, Rack->GetActorRotation().Yaw + ((Slot * 47) % 60) - 30.0f, 0.0f), Params);
+
+			if (Thing)
+			{
+				Thing->SetMobility(EComponentMobility::Movable);
+				Thing->GetStaticMeshComponent()->SetStaticMesh(Mesh);
+				Thing->GetStaticMeshComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+				RackThings.Add(Thing);
+			}
+		}
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Yard: %d things are on the rack's shelves, of %d kinds kept there"), RackThings.Num(), GameInstance->Rack.Num());
 }
 
 void ATownGameMode::GetRackPage(TArray<FTownShopLine>& OutLines, TArray<int32>& OutCodes) const
@@ -5666,6 +6020,8 @@ bool ATownGameMode::DoRackLine(int32 Code)
 	GameInstance->AddToBag(Good, bTake ? 1 : -1);
 	GameInstance->SaveRun();
 
+	ShowRack();
+
 	ShopSaid = bTake ? FString::Printf(TEXT("The %s is off the rack and in your bag. %d left on the rack."), *Name, GameInstance->GetRackCount(Good))
 		: FString::Printf(TEXT("The %s is on the rack. %d there now."), *Name, GameInstance->GetRackCount(Good));
 
@@ -5727,7 +6083,7 @@ void ATownGameMode::OpenYardPage(int32 Which)
 	// a man or a woman, how old, and what he or she can do: the sheet had none of it (24 November)
 	const FGutWho Sex = UGutSoundSubsystem::WhoIs(this, Who.Body);
 
-	ShopSaid = FString::Printf(TEXT("A %s, about %d. Strength %d, speed %d, nerve %d, each out of %d; fights with %s. "), Sex.Man(), GetAgeOf(Who), Who.Strength, Who.Speed, Who.Nerve,
+	ShopSaid = FString::Printf(TEXT("A %s, about %d. Strength %d, speed %d, nerve %d, cunning %d, each out of %d; fights with %s. "), Sex.Man(), GetAgeOf(Who), Who.Strength, Who.Speed, Who.Nerve, Who.Cunning,
 		GetCageRules() ? GetCageRules()->GetStableMostTaught() : 5, Who.Weapon ? *(TEXT("the ") + Who.Weapon->DisplayName.ToString().ToLower()) : TEXT("bare hands"));
 
 	if (!Who.Armor.IsEmpty())
@@ -5797,16 +6153,16 @@ void ATownGameMode::GetYardPage(TArray<FTownShopLine>& OutLines, TArray<int32>& 
 
 	const int32 Most = Rules->GetStableMostTaught();
 
-	static const TCHAR* Taught[] = { TEXT("strength"), TEXT("speed"), TEXT("nerve") };
+	static const TCHAR* Taught[] = { TEXT("strength"), TEXT("speed"), TEXT("nerve"), TEXT("cunning") };
 
-	const int32 Has[] = { Who.Strength, Who.Speed, Who.Nerve };
+	const int32 Has[] = { Who.Strength, Who.Speed, Who.Nerve, Who.Cunning };
 
 	// training takes the day, and the day has to be paid for out of what the training leaves
 	const bool bShortAfter = State.Water - Rules->GetTrainingCost() < GetDayDue();
 
-	for (int32 i = 0; i < 3; ++i)
+	for (int32 i = 0; i < 4; ++i)
 	{
-		Add(TrainStrength + i, FString::Printf(TEXT("Train %s"), Taught[i]), FString::Printf(TEXT("%d of %d now  \u00B7  today is over when it is done, and the day's %.0f L falls due"), Has[i], Most, GetDayDue()),
+		Add(i == 3 ? static_cast<int32>(TrainCunning) : TrainStrength + i, FString::Printf(TEXT("Train %s"), Taught[i]), FString::Printf(TEXT("%d of %d now  \u00B7  today is over when it is done, and the day's %.0f L falls due"), Has[i], Most, GetDayDue()),
 			Rules->GetTrainingCost(), FString(), Has[i] < Most, TEXT("taught"));
 
 		// The warning is under the list, where there is room for it: on the line it ran on under the price (24 November)
@@ -5946,6 +6302,10 @@ bool ATownGameMode::DoYardLine(int32 Line)
 			bDone = Lent.Rules->TrainFighter(YardFocus, static_cast<EGutTraining>(Code - TrainStrength));
 			break;
 
+		case TrainCunning:
+			bDone = Lent.Rules->TrainFighter(YardFocus, EGutTraining::Cunning);
+			break;
+
 		case Patch:
 			bDone = Lent.Rules->PatchFighter(YardFocus);
 			break;
@@ -6070,6 +6430,11 @@ bool ATownGameMode::DoYardLine(int32 Line)
 	case TrainSpeed:
 	case TrainNerve:
 		ShopSaid = FString::Printf(TEXT("%s is worked at %s until dark.%s"), *Name, Taught[Code - TrainStrength], *Day);
+		break;
+
+	case TrainCunning:
+		// (not sweated into anybody: walked round the cage and shown where a body goes when it is hit there)
+		ShopSaid = FString::Printf(TEXT("%s is walked round a cage until dark and shown where a body goes when it is hit, and where not to stand.%s"), *Name, *Day);
 		break;
 
 	case Patch:
@@ -6354,6 +6719,12 @@ const FTownCall* ATownGameMode::GetCall() const
 	if (Auction.bOn)
 	{
 		return &AuctionCall;
+	}
+
+	// somebody walked into has the floor for as long as it takes to say
+	if (const FTownCall* Bark = GetBark())
+	{
+		return Bark;
 	}
 
 	return (bSettled && PlaceData && PlaceData->Calls.IsValidIndex(CallIndex)) ? &PlaceData->Calls[CallIndex] : nullptr;

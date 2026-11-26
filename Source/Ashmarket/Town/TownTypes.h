@@ -182,6 +182,20 @@ struct FTownBeatStop
 	float Facing = -1.0f;
 };
 
+/** Something somebody says without being spoken to: when the player walks into them */
+USTRUCT(BlueprintType)
+struct FTownBark
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bark")
+	FString Words;
+
+	/** As it is spoken, if it has been recorded */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bark")
+	TObjectPtr<USoundBase> Voice;
+};
+
 /** Somebody who stands in a place and can be spoken to */
 USTRUCT(BlueprintType)
 struct FTownPerson
@@ -272,6 +286,14 @@ struct FTownPerson
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
 	TArray<FTownWay> Ways;
+
+	/** Whose they are, by the power's key ("wardens"): walking into them is taken up with that power. None is nobody's. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
+	FName Of;
+
+	/** What they say when the player walks into them: one of these, in turn */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Person")
+	TArray<FTownBark> Bumped;
 
 	const FTownWay* FindWay(const FName& Named) const
 	{

@@ -70,6 +70,10 @@ def lines_of(listed):
             name = "{}{}_{}".format(slug(person["name"]), "" if nth == 1 else str(nth), slug(str(line.get("id", index))))
             found.append((speaker, name, line["words"]))
 
+        # and what they say when they are walked into (Tools/town_bumps.json)
+        for index, words in enumerate(person.get("bumped", [])):
+            found.append((speaker, "{}{}_bump_{}".format(slug(person["name"]), "" if nth == 1 else str(nth), index + 1), words))
+
     for index, call in enumerate(listed.get("calls", [])):
         if call.get("words") and call.get("speaker") and "{" not in call["words"]:
             found.append(("{}/{}".format(place, call["speaker"]), "call_{:02d}".format(index), call["words"]))

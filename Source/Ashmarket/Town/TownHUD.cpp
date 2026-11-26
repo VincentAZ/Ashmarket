@@ -668,8 +668,8 @@ void ATownHUD::DrawBook(const ATownGameMode* Town, float CenterX)
 
 		AboutY += 38.0f;
 
-		// each of the three things a fighter is taught, as marks out of five
-		const TPair<const TCHAR*, int32> Taught[] = { { TEXT("Strength"), Person.Strength }, { TEXT("Speed"), Person.Speed }, { TEXT("Nerve"), Person.Nerve } };
+		// each of the four things a fighter is taught, as marks out of five
+		const TPair<const TCHAR*, int32> Taught[] = { { TEXT("Strength"), Person.Strength }, { TEXT("Speed"), Person.Speed }, { TEXT("Nerve"), Person.Nerve }, { TEXT("Cunning"), Person.Cunning } };
 
 		for (const TPair<const TCHAR*, int32>& One : Taught)
 		{

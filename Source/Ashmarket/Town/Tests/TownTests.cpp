@@ -1752,16 +1752,25 @@ bool FTownSquareTest::RunTest(const FString& Parameters)
 
 		const TArray<FTownShopLine> Lines = Town->GetShopLines();
 
-		TestEqual(TEXT("Three are in it today"), Lines.Num(), 3);
+		// (the book and the Block are the same people since 25 November: a line for each lot that stands there, and one for
+		// whoever signs. It had three lines, whoever stood on the Block.)
+		const int32 OnTheBlock = Place->People.FilterByPredicate([](const FTownPerson& Person) { return Person.Lot > 0; }).Num();
 
-		if (Lines.Num() != 3)
+		TestEqual(TEXT("Everybody who stands on the Block is in it, and one more who signs"), Lines.Num(), OnTheBlock + 1);
+
+		if (Lines.Num() != OnTheBlock + 1 || OnTheBlock < 2)
 		{
 			return;
 		}
 
+		for (int32 i = 0; i < OnTheBlock; ++i)
+		{
+			TestTrue(*FString::Printf(TEXT("Line %d of the book is lot %d (%s)"), i + 1, i + 1, *Lines[i].Name), Lines[i].Name.StartsWith(FString::Printf(TEXT("Lot %d "), i + 1)));
+		}
+
 		TestTrue(*FString::Printf(TEXT("The first is one of the lots on the Block, and can be had with what an owner comes with (%s, %.0f L, %s)"), *Lines[0].Name, Lines[0].Price, *Lines[0].Why),
 			Lines[0].Name.StartsWith(TEXT("Lot ")) && Lines[0].bCanBuy && !Lines[0].About.IsEmpty() && Lines[0].Price >= 18.0f);
-		TestTrue(TEXT("The last is nobody's lot: somebody with a tag, who signs for a wage"), Lines[2].Name.StartsWith(TEXT("Signs")) && !Lines[2].PriceText.IsEmpty());
+		TestTrue(TEXT("The last is nobody's lot: somebody with a tag, who signs for a wage"), Lines.Last().Name.StartsWith(TEXT("Signs")) && !Lines.Last().PriceText.IsEmpty());
 		TestFalse(TEXT("Nobody is made an owner by looking"), Run->Stable.bStarted);
 		TestTrue(TEXT("The book says what an owner comes with"), Town->GetShopPurse().Contains(TEXT("70 L")));
 

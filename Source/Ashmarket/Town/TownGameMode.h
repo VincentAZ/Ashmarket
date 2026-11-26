@@ -57,6 +57,9 @@ struct FTownLed
 
 	/** If true they are gone from the place when they get there: somebody who has walked off out of it */
 	bool bGoes = false;
+
+	/** How much faster than a lot is led they go: somebody shoved does not dawdle */
+	float Haste = 1.0f;
 };
 
 /** Somebody else who wants a lot at the Block, and how far they will go for it */
@@ -643,6 +646,49 @@ protected:
 	/** True if one of the place's people is being walked somewhere just now */
 	bool IsLed(int32 Person) const { return Led.ContainsByPredicate([Person](const FTownLed& One) { return One.Person == Person; }); }
 
+	/**
+	 *  Walking into people. Whoever the player pushes against for a moment gives way: they say something (one of their
+	 *  FTownPerson::Bumped, spoken if it is recorded), step aside to open ground if there is any beside them, and go back
+	 *  to where they stood when the player has gone. If they are somebody's (FTownPerson::Of), the first time on a visit
+	 *  costs a point of standing with that power, and the player is told. ("bumping into people should shove them out of
+	 *  the way - the NPC says something... it needs to do something to standing", 25 November.) Not lots on the Block,
+	 *  nobody up on something, nobody on a round or being led, and not whoever is being talked to.
+	 */
+	void UpdateBumps(float DeltaTime);
+
+	/** How long each person has been pushed against, and when each last said something about it */
+	TMap<int32, float> BumpPressed;
+	TMap<int32, float> BumpedAt;
+
+	/** Who has stepped aside and not yet gone back, and who has already cost standing on this visit */
+	TSet<int32> SteppedAside;
+	TSet<int32> BumpCosted;
+
+	/** What was last said by somebody walked into, shown as a call is until BarkUntil */
+	FTownCall BarkCall;
+	float BarkUntil = 0.0f;
+	int32 Barks = 0;
+
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> BarkVoice;
+
+public:
+	/** The player walks into this person, now: see UpdateBumps. False if they are not somebody who can be. */
+	bool Bump(int32 Person);
+
+	/** True if the place's ground is open there for somebody to stand: on it, and that far clear of whatever blocks */
+	bool IsOpenGround(const FVector2D& At, float Clear = 34.0f) const;
+
+	bool IsAside(int32 Person) const { return SteppedAside.Contains(Person); }
+
+	/** Where a person is to be spoken to: see GetPersonPlace */
+	FVector GetPersonStood(int32 Person) const { return GetPersonPlace(Person); }
+
+	/** What somebody walked into is saying now, if anybody is */
+	const FTownCall* GetBark() const;
+
+protected:
+
 	/** Keeps whoever walks on the ground the place has, and out of everything that stands on it */
 	void KeepOnGround(AGutFighter* Walker) const;
 
@@ -825,6 +871,28 @@ protected:
 
 	/** Opens the yard's rack: see ETownDeed::Rack */
 	void OpenRack();
+
+	/**
+	 *  Puts what is kept on the rack onto its shelves, to be seen: a model for each kind of thing, two of a kind at most,
+	 *  three to a shelf. ("I see nothing on the rack even though I put my splint and bandage on it", 25 November: the
+	 *  rack was a page of words.) Called when the yard opens and whenever something goes on or comes off.
+	 */
+	void ShowRack();
+
+	/** The first model under a folder of the made things: "rack_bread", "find_flask" */
+	static UStaticMesh* FindThingMesh(const FString& Folder);
+
+	/** What stands on the rack's shelves now */
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> RackThings;
+
+public:
+	const TArray<TObjectPtr<AActor>>& GetRackThings() const { return RackThings; }
+
+	/** The shelves filled again from what is kept: for a test that has changed what is kept */
+	void ShowRackNow() { ShowRack(); }
+
+protected:
 
 	/** The rack's lines: each kind of thing in the bag that can be kept, to put one on it, and each kind on it, to take one off */
 	void GetRackPage(TArray<FTownShopLine>& OutLines, TArray<int32>& OutCodes) const;

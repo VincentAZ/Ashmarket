@@ -12,6 +12,9 @@ import os
 import unreal
 
 FINDS = ["flask", "scrap", "smokes", "tag"]
+# what is seen on the yard's rack when it is kept there, where it is not something found: made in Mixar too, and written
+# to ArtSource/mixar/rack_<name>/rack_<name>.gltf (ATownGameMode::ShowRack)
+RACK = ["bread", "tea", "splint", "armor"]
 ROOT = "/Game/Gut/Art/Mixar"
 SOURCE = os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()), "ArtSource", "mixar")
 
@@ -43,13 +46,16 @@ def meshes_in(folder):
 
 
 def main():
-    for good in FINDS:
-        name = "find_" + good
+    # (and the bag the player is seen to carry: AGutFighter::WearBag)
+    for name in ["find_" + good for good in FINDS] + ["rack_" + good for good in RACK] + ["worn_satchel"]:
         folder = "{}/{}".format(ROOT, name)
         meshes = meshes_in(folder)
 
         if not meshes:
             path = os.path.join(SOURCE, name, name + ".glb")
+
+            if not os.path.exists(path):
+                path = os.path.join(SOURCE, name, name + ".gltf")
 
             if not os.path.exists(path):
                 log("skipped {}: no {}".format(name, path))

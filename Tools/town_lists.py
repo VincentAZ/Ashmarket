@@ -25,11 +25,35 @@ Words that can be said, and what they ask and do, are the same everywhere (see A
 """
 
 import glob
+import hashlib
 import json
+import math
 import os
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 STORY = os.path.join(TOOLS, "town_story.json")
+BUMPS = os.path.join(TOOLS, "town_bumps.json")
+
+
+def bumped(listed):
+    """What each person says when walked into, and whose they are: see Tools/town_bumps.json."""
+    told = json.load(open(BUMPS)) if os.path.exists(BUMPS) else {}
+
+    for person in listed["people"]:
+        name = person["name"]
+
+        if person.get("lot"):
+            continue
+
+        if "of" not in person and name in told.get("of", {}):
+            person["of"] = told["of"][name]
+
+        if "bumped" not in person:
+            mouth = told.get("mouths", {}).get(told.get("who", {}).get(name, "plain"), [])
+            # the same three for the same name, wherever they stand: and not the same three as the next of that mouth
+            first = int(hashlib.sha1(name.encode()).hexdigest(), 16) % max(1, len(mouth))
+            step = next((step for step in (3, 2, 5, 7) if math.gcd(step, len(mouth)) == 1), 1) if mouth else 1
+            person["bumped"] = [mouth[(first + (index * step)) % len(mouth)] for index in range(min(3, len(mouth)))]
 
 
 def missions():
@@ -76,5 +100,7 @@ def place(path):
             same[which]["lines"] = same[which]["lines"] + lines
 
         listed.setdefault("doors", []).extend(graft.get("doors", []))
+
+    bumped(listed)
 
     return listed

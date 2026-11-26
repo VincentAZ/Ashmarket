@@ -1663,6 +1663,17 @@ bool FTownRackTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("The tea is on the rack"), Run->GetRackCount(FName("tea")), 1);
 		TestEqual(TEXT("And out of the bag"), Run->GetBagCount(FName("tea")), 0);
 
+		// and they are there to be seen: a loaf and a kettle on its shelves ("I see nothing on the rack", 25 November)
+		TestEqual(TEXT("What is on the rack stands on its shelves"), Town->GetRackThings().Num(), 2);
+
+		for (const AActor* Thing : Town->GetRackThings())
+		{
+			const FVector At = Thing ? Thing->GetActorLocation() : FVector::ZeroVector;
+			const float Up = At.Z - Town->GetPlace()->GetGroundZ(At.X);
+
+			TestTrue(*FString::Printf(TEXT("%.0f cm off the ground, on a shelf, within the rack"), Up), Thing && Up > 30.0f && Up < 170.0f);
+		}
+
 		// and the loaf back off it: the first line
 		Town->HandleMenuInput(EGutMenuInput::Up);
 		Town->HandleMenuInput(EGutMenuInput::Up);
@@ -1683,6 +1694,9 @@ bool FTownRackTest::RunTest(const FString& Parameters)
 		Town->HandleBack();
 
 		TestFalse(TEXT("Leaving shuts the page"), Town->IsAtYardPage());
+		TestEqual(TEXT("With the loaf taken back, the kettle is what is left on the shelves"), Town->GetRackThings().Num(), 1);
+
+		GutTests::Screenshot(TEXT("72b_on_the_rack"));
 
 		Run->bLadderStarted = Was->bLadder;
 		Run->Stable = Was->Stable;
@@ -2441,3 +2455,295 @@ bool FTownLookScrappersYardTest::RunTest(const FString& Parameters)
 }
 
 #endif
+
+/**
+ *  Ashmarket.Town.Bump   walking into somebody: the player is stood in front of one of Main Street's Wardens and walks at
+ *                        him. He says something, steps aside onto open ground, the Wardens think a point less of the
+ *                        player (once, however many times it is done), and he goes back to his mark when the player
+ *                        has gone. ("bumping into people should shove them out of the way", 25 November.)
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownBumpTest, "Ashmarket.Town.Bump", GutTests::Flags)
+
+bool FTownBumpTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	struct FNotes
+	{
+		FTownStoryState Story;
+		int32 Who = INDEX_NONE;
+		int32 Stood = 0;
+		FVector2D From = FVector2D::ZeroVector;
+		FVector2D Toward = FVector2D::ZeroVector;
+		float Walked = 0.0f;
+	};
+
+	TSharedRef<FNotes> Notes = MakeShared<FNotes>();
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_MainStreet"), true))
+	{
+		AddError(TEXT("Could not open Main Street's level"));
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 0.8f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+		const UTownPlaceData* Place = Town->GetPlace();
+
+		Notes->Story = GetRun()->Story;
+
+		// a Warden who can be walked up to: open ground a body's reach from him on some side
+		for (int32 i = 0; i < Place->People.Num() && Notes->Who == INDEX_NONE; ++i)
+		{
+			const FTownPerson& Person = Place->People[i];
+
+			if (Person.Of != FName("wardens") || Person.Bumped.IsEmpty() || !Person.Beat.IsEmpty() || !Town->GetPeople().IsValidIndex(i) || !Town->GetPeople()[i])
+			{
+				continue;
+			}
+
+			const FVector2D At(Person.Place.X, Person.Place.Y);
+
+			for (const FVector2D& Side : { FVector2D(1.0f, 0.0f), FVector2D(-1.0f, 0.0f), FVector2D(0.0f, 1.0f), FVector2D(0.0f, -1.0f) })
+			{
+				if (Town->IsOpenGround(At + (Side * 130.0f)) && Town->IsOpenGround(At + (Side * 100.0f)) && Town->IsOpenGround(At - (Side * 90.0f)))
+				{
+					Notes->Who = i;
+					Notes->From = At + (Side * 130.0f);
+					Notes->Toward = Side * -1.0f;
+					break;
+				}
+			}
+		}
+
+		if (!TestTrue(TEXT("There is a Warden on Main Street who can be walked up to"), Notes->Who != INDEX_NONE))
+		{
+			return;
+		}
+
+		Notes->Stood = Town->GetMark(FName("st.wardens"));
+
+		StandOn(Notes->From, FVector(Notes->Toward.X, Notes->Toward.Y, 0.0f).Rotation().Yaw);
+	}, []() { return IsStreetReady(); } });
+
+	// walks at him until he says something, or for three seconds
+	Steps.Add({ 0.1f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (Notes->Who == INDEX_NONE)
+		{
+			return;
+		}
+
+		const FTownPerson& Person = Town->GetPlace()->People[Notes->Who];
+		const FTownCall* Bark = Town->GetBark();
+
+		if (TestNotNull(TEXT("Walked into, he says something"), Bark))
+		{
+			TestTrue(*FString::Printf(TEXT("It is one of his own lines, under his name (%s: %s)"), *Bark->Speaker, *Bark->Words),
+				Bark->Speaker == Person.Name && Person.Bumped.ContainsByPredicate([Bark](const FTownBark& One) { return One.Words == Bark->Words; }));
+			TestTrue(TEXT("And it is what is shown as called over the place while he says it"), Town->GetCall() == Bark);
+		}
+
+		TestEqual(TEXT("The Wardens think a point less of whoever shoves one of theirs"), Town->GetMark(FName("st.wardens")), Notes->Stood - 1);
+		TestTrue(*FString::Printf(TEXT("And the player is told so (%s)"), *Town->GetNotice()), Town->GetNotice().Contains(Person.Name));
+		TestTrue(TEXT("He steps aside"), Town->IsAside(Notes->Who) && Town->IsPersonLed(Notes->Who));
+
+		GutTests::Screenshot(TEXT("73_walked_into"));
+	}, [Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (Notes->Who == INDEX_NONE)
+		{
+			return true;
+		}
+
+		Town->GetWalker()->AddMovementInput(FVector(Notes->Toward.X, Notes->Toward.Y, 0.0f), 1.0f);
+
+		Notes->Walked += Town->GetWorld()->GetDeltaSeconds();
+
+		return Town->GetBark() != nullptr || Notes->Walked >= 3.0f;
+	} });
+
+	Steps.Add({ 2.0f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (Notes->Who == INDEX_NONE)
+		{
+			return;
+		}
+
+		const FTownPerson& Person = Town->GetPlace()->People[Notes->Who];
+		const float Off = FVector::Dist2D(Town->GetPeople()[Notes->Who]->GetActorLocation(), Person.Place);
+
+		TestTrue(*FString::Printf(TEXT("He has stepped aside from where he stood (%.0f cm)"), Off), Off > 50.0f && Off < 110.0f);
+		TestTrue(*FString::Printf(TEXT("Onto open ground")), Town->IsOpenGround(FVector2D(Town->GetPeople()[Notes->Who]->GetActorLocation())));
+		TestTrue(TEXT("And where he is to be spoken to is where he now stands"), FVector::Dist2D(Town->GetPersonStood(Notes->Who), Town->GetPeople()[Notes->Who]->GetActorLocation()) < 1.0f);
+
+		GutTests::Screenshot(TEXT("74_stepped_aside"));
+
+		// walked into again: something said, nothing more lost
+		TestTrue(TEXT("He can be walked into again"), Town->Bump(Notes->Who));
+		TestEqual(TEXT("And the Wardens do not count it twice on one visit"), Town->GetMark(FName("st.wardens")), Notes->Stood - 1);
+
+		// and the player goes off up the street
+		StandOn(Notes->From - (Notes->Toward * 600.0f), 0.0f);
+	}, [Notes]() { return Notes->Who == INDEX_NONE || !GetTown()->IsPersonLed(Notes->Who); } });
+
+	Steps.Add({ 0.3f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (Notes->Who != INDEX_NONE)
+		{
+			const FTownPerson& Person = Town->GetPlace()->People[Notes->Who];
+			const AGutFighter* Body = Town->GetPeople()[Notes->Who];
+
+			TestTrue(*FString::Printf(TEXT("When the player has gone he is back on his mark (%.0f cm off it)"), FVector::Dist2D(Body->GetActorLocation(), Person.Place)),
+				FVector::Dist2D(Body->GetActorLocation(), Person.Place) < 8.0f && !Town->IsAside(Notes->Who));
+			TestTrue(TEXT("Facing as he did"), FMath::Abs(FRotator::NormalizeAxis(Body->GetActorRotation().Yaw - Person.Facing)) < 3.0f);
+		}
+
+		GetRun()->Story = Notes->Story;
+	}, [Notes]()
+	{
+		const ATownGameMode* Town = GetTown();
+
+		// (he goes back when whoever shoved him is well gone, and three seconds after the last of it)
+		return Notes->Who == INDEX_NONE || (!Town->IsAside(Notes->Who) && !Town->IsPersonLed(Notes->Who));
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Ashmarket.Look.Kept   pictures of what is kept and carried: the yard's rack with one of everything on it, and the bag
+ *                        at the player's hip from the front, the side and behind. Asserts only that they are there.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownLookKeptTest, "Ashmarket.Look.Kept", GutTests::Flags)
+
+bool FTownLookKeptTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	struct FNotes
+	{
+		TArray<FGutBagItem> Rack;
+		TWeakObjectPtr<ACameraActor> Camera;
+	};
+
+	TSharedRef<FNotes> Notes = MakeShared<FNotes>();
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_Yard"), true))
+	{
+		AddError(TEXT("Could not open the yard's level"));
+		return false;
+	}
+
+	const auto LookFrom = [Notes](const FVector& From, const FVector& At, float FieldOfView)
+	{
+		if (ACameraActor* Seen = Notes->Camera.Get())
+		{
+			Seen->SetActorLocationAndRotation(From, (At - From).Rotation());
+			Seen->GetCameraComponent()->SetFieldOfView(FieldOfView);
+			Seen->GetCameraComponent()->SetConstraintAspectRatio(false);
+		}
+	};
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 1.0f, [this, Notes, LookFrom]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+		UWorld* World = Town->GetWorld();
+
+		Notes->Rack = Run->Rack;
+		Run->Rack.Reset();
+
+		for (const TCHAR* Good : { TEXT("bread"), TEXT("tea"), TEXT("splint"), TEXT("DA_Gut_Armor_RubberVest"), TEXT("flask"), TEXT("smokes"), TEXT("scrap") })
+		{
+			Run->AddToRack(FName(Good), FCString::Strcmp(Good, TEXT("bread")) == 0 ? 2 : 1);
+		}
+
+		Town->ShowRackNow();
+
+		TestTrue(*FString::Printf(TEXT("What is kept is on the shelves (%d things)"), Town->GetRackThings().Num()), Town->GetRackThings().Num() >= 5);
+
+		Notes->Camera = World->SpawnActor<ACameraActor>();
+
+		if (APlayerController* Eyes = World->GetFirstPlayerController())
+		{
+			Eyes->SetViewTarget(Notes->Camera.Get());
+
+			if (AHUD* Words = Eyes->GetHUD())
+			{
+				Words->bShowHUD = false;
+			}
+		}
+
+		// the rack, from where somebody stands to use it and a little to one side
+		FVector Middle = FVector::ZeroVector;
+
+		for (const AActor* Thing : Town->GetRackThings())
+		{
+			Middle += Thing->GetActorLocation() / Town->GetRackThings().Num();
+		}
+
+		const UTownPlaceData* Place = Town->GetPlace();
+		const int32 Door = Place->Doors.IndexOfByPredicate([](const FTownDoor& One) { return One.Deed == ETownDeed::Rack; });
+		const FVector Stood = Place->Doors.IsValidIndex(Door) ? Place->Doors[Door].Place : Middle;
+		const FVector Out = (FVector(Stood.X, Stood.Y, Middle.Z) - Middle).GetSafeNormal2D();
+
+		// the player out of the way of it
+		StandOn(FVector2D(Stood.X, Stood.Y) + (FVector2D(Out.X, Out.Y) * 260.0f) + (FVector2D(-Out.Y, Out.X) * 260.0f), 0.0f);
+
+		LookFrom(Middle + (Out * 190.0f) + (FVector(-Out.Y, Out.X, 0.0f) * 60.0f) + FVector(0.0f, 0.0f, 45.0f), Middle, 60.0f);
+	}, []() { return IsStreetReady(); } });
+
+	Steps.Add({ 0.6f, []() { GutTests::Screenshot(TEXT("kept_01_the_rack")); } });
+
+	const TPair<const TCHAR*, FVector> Sides[] =
+	{
+		{ TEXT("kept_02_bag_from_the_front"), FVector(210.0f, -60.0f, 10.0f) },
+		{ TEXT("kept_03_bag_from_its_side"), FVector(0.0f, -200.0f, 0.0f) },
+		{ TEXT("kept_04_bag_from_behind"), FVector(-200.0f, -80.0f, 20.0f) },
+		{ TEXT("kept_05_bag_close"), FVector(60.0f, -110.0f, -10.0f) },
+	};
+
+	for (const TPair<const TCHAR*, FVector>& Side : Sides)
+	{
+		Steps.Add({ 0.5f, [this, Side, LookFrom]()
+		{
+			const AGutFighter* Walker = GetTown()->GetWalker();
+
+			TestTrue(TEXT("The player's bag is on them"), Walker->BagMesh && Walker->BagMesh->IsVisible() && Walker->BagMesh->GetStaticMesh());
+
+			const FVector Hips = Walker->GetActorLocation() + FVector(0.0f, 0.0f, 5.0f);
+
+			LookFrom(Hips + Walker->GetActorTransform().TransformVector(Side.Value), Hips, FCString::Strstr(Side.Key, TEXT("close")) ? 50.0f : 44.0f);
+		} });
+
+		Steps.Add({ 0.5f, [Side]() { GutTests::Screenshot(Side.Key); } });
+	}
+
+	Steps.Add({ 0.1f, [Notes]()
+	{
+		GetRun()->Rack = Notes->Rack;
+		GetTown()->ShowRackNow();
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}

@@ -38,7 +38,7 @@
  ],
 
  "walk": [
-  {"x": [-41.7, -21.0], "y": [241.0, 276.6]}
+  {"x": [-41.7, -18.9], "y": [240.9, 276.7]}
  ],
 
  "walls": [],
@@ -49,7 +49,14 @@
   {"label": "NorthStacks", "model": ["town_container_blue"], "yaw": 90, "high": 1, "along": "x", "from": -35.4, "to": -18.5, "face": 277.0, "side": "north", "note": "the north side, with the way round the tail left open at its west end"}
  ],
 
- "runs": [],
+ "runs": [
+  {"label": "SouthGap1", "model": "concrete_road_barrier", "from": [-36.3, 240.95], "to": [-34.1, 240.95], "note": "road barriers shoved into the gaps between the stacks, so that nobody is stopped there by nothing (the builder's OPEN EDGE)"},
+  {"label": "SouthGap2", "model": "concrete_road_barrier", "from": [-26.4, 240.95], "to": [-24.2, 240.95]},
+  {"label": "EastGap1", "model": "concrete_road_barrier", "from": [-18.95, 245.7], "to": [-18.95, 247.9]},
+  {"label": "EastGap2", "model": "concrete_road_barrier", "from": [-18.95, 252.75], "to": [-18.95, 254.95]},
+  {"label": "EastGap3", "model": "concrete_road_barrier", "from": [-18.95, 262.05], "to": [-18.95, 264.25]},
+  {"label": "EastGap4", "model": "concrete_road_barrier", "from": [-18.95, 269.1], "to": [-18.95, 271.3]}
+ ],
 
  "things": [
   {"model": "call_fuselage", "x": -45.0, "y": 252.4, "z": 9.4, "yaw": 0, "note": "the wreck: nose south, lying in its own trench. The two doors are on this side"},

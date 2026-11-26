@@ -1057,7 +1057,8 @@ public:
 	 *  The same for a stable that stands as the one given does. It reads nothing but the cage's own rules, so the Block's
 	 *  clerk in the town can ask it of the cage's defaults without the cage being open.
 	 */
-	void GetBlockOffersFor(const FGutStableState& State, TArray<FGutStableFighter>& OutOffers) const;
+	/** Count is how many there are that day, the last of them somebody who signs: nought is the cage's own number */
+	void GetBlockOffersFor(const FGutStableState& State, TArray<FGutStableFighter>& OutOffers, int32 Count = 0) const;
 
 	/** Makes a stable of what an owner comes with, for somebody who had none */
 	void BeginStableState(FGutStableState& State, int32 Seed) const;

@@ -107,6 +107,16 @@ struct FGutOpponentTuning
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Attack", meta = (ClampMin = 0, ClampMax = 1))
 	float HeavyChanceIntoHazard = 0.7f;
 
+	/**
+	 *  How far it works the cage, nought to one. With any, when it changes the way it circles it takes the way that puts
+	 *  it on the far side of its target from the nearest spikes or cable, so the target's back comes round to them; it
+	 *  is likelier to attack at all when a heavy blow would carry the target onto them; and it keeps its own body that
+	 *  much further off them (up to GutOpponentConstants::CunningMargin more). Nought is a fighter who circles as it
+	 *  falls out: what every fighter was before 25 November.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Attack", meta = (ClampMin = 0, ClampMax = 1))
+	float Cunning = 0.0f;
+
 	/** Longest light chain the opponent plans */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Attack", meta = (ClampMin = 1, ClampMax = 10))
 	int32 MaxLightChain = 3;
@@ -334,6 +344,9 @@ protected:
 
 	/** The hazard the opponent means to knock its staggered target onto, if it means to let the cage finish it */
 	TWeakObjectPtr<AGutHazard> CageFinish;
+
+	/** Whom it is fighting, as of its last thought: for what is worked out without being told (which way to circle) */
+	TWeakObjectPtr<const AGutFighter> Fought;
 
 	/** If true the blow that is to drive the target onto it has been thrown */
 	bool bCageBlowThrown = false;

@@ -1309,6 +1309,22 @@ def main():
             lines.append(line)
 
         person.set_editor_property("lines", lines)
+
+        # whose they are, and what they say when the player walks into them: spoken, if they have a voice
+        person.set_editor_property("of", entry.get("of", ""))
+
+        barks = []
+
+        for index, words in enumerate(entry.get("bumped", [])):
+            bark = unreal.TownBark()
+            bark.set_editor_property("words", words)
+
+            if entry.get("lines"):
+                bark.set_editor_property("voice", voice("{}{}_bump_{}".format(worded(entry["name"]), "" if nth == 1 else str(nth), index + 1)))
+
+            barks.append(bark)
+
+        person.set_editor_property("bumped", barks)
         people.append(person)
 
     doors = []

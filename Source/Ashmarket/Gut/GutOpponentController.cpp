@@ -55,6 +55,15 @@ namespace GutOpponentConstants
 	/** How far clear of a hazard the opponent keeps the edge of its body */
 	const float HazardMargin = 45.0f;
 
+	/** How much further off a hazard the most cunning fighter keeps its own body */
+	const float CunningMargin = 40.0f;
+
+	/** How near its target has to be to a hazard for a cunning fighter to start working it round to it */
+	const float CunningReach = 420.0f;
+
+	/** How much likelier the most cunning fighter is to attack when a heavy blow would put its target onto a hazard */
+	const float CunningAttack = 0.4f;
+
 	/** Turns, in degrees away from the way it wants to go, that the opponent tries when a hazard is in the way */
 	const float HazardDetourAngles[] = { 30.0f, 60.0f, 90.0f, 120.0f, 150.0f };
 
@@ -142,6 +151,8 @@ void AGutOpponentController::OnFightStopped(AGutFighter* Fighter)
 
 void AGutOpponentController::TickBrain(AGutFighter* Fighter, AGutFighter* Target, float DeltaTime)
 {
+	Fought = Target;
+
 	// see what is coming before deciding anything else
 	UpdateReaction(Fighter, Target);
 
@@ -774,11 +785,15 @@ void AGutOpponentController::Decide(AGutFighter* Fighter, AGutFighter* Target)
 
 	const float Roll = FMath::FRand();
 
-	if (Roll < Tuning.AttackChance)
+	// somebody who uses the cage does not let a target stand with its back to the spikes for long
+	const float AttackChance = Tuning.AttackChance + ((Tuning.Cunning > 0.0f && WouldKnockOntoHazard(Fighter, Target, Fighter->GetHeavyAttack().Knockback))
+		? GutOpponentConstants::CunningAttack * Tuning.Cunning : 0.0f);
+
+	if (Roll < AttackChance)
 	{
 		BeginAttack(Fighter, Target);
 	}
-	else if (Roll < Tuning.AttackChance + GetGuardChance(Fighter, Tuning.GuardChance))
+	else if (Roll < AttackChance + GetGuardChance(Fighter, Tuning.GuardChance))
 	{
 		EnterGuard(Fighter, Now + FMath::FRandRange(Tuning.MinGuardTime, Tuning.MaxGuardTime));
 	}
@@ -798,6 +813,25 @@ bool AGutOpponentController::Circle(AGutFighter* Fighter, const FVector& ToTarge
 		if (FMath::RandBool())
 		{
 			CircleDirection = -CircleDirection;
+		}
+
+		// Somebody who uses the cage goes round the way that brings the target's back to the nearest spikes or cable:
+		// toward the side of the target that is away from them, so that the target is between the two.
+		if (Tuning.Cunning > 0.0f && FMath::FRand() < Tuning.Cunning)
+		{
+			const FVector Theirs = Fought.IsValid() ? Fought->GetActorLocation() : Fighter->GetActorLocation();
+
+			FVector Away;
+
+			if (Fought.IsValid() && GetHazardDistance(Theirs, Away) < GutOpponentConstants::CunningReach && !Away.IsNearlyZero())
+			{
+				const FVector Round = FVector::CrossProduct(FVector::UpVector, ToTarget).GetSafeNormal2D();
+
+				if (const float Better = FVector::DotProduct(Round, Away.GetSafeNormal2D()); FMath::Abs(Better) > 0.1f)
+				{
+					CircleDirection = Better > 0.0f ? 1.0f : -1.0f;
+				}
+			}
 		}
 	}
 
@@ -829,7 +863,7 @@ void AGutOpponentController::Move(AGutFighter* Fighter, const FVector& Direction
 		return;
 	}
 
-	const float Clearance = Fighter->GetCapsuleComponent()->GetScaledCapsuleRadius() + GutOpponentConstants::HazardMargin;
+	const float Clearance = Fighter->GetCapsuleComponent()->GetScaledCapsuleRadius() + GutOpponentConstants::HazardMargin + (GutOpponentConstants::CunningMargin * Tuning.Cunning);
 
 	// already too close to one: get clear first, sliding along it rather than stepping further in
 	FVector Away;

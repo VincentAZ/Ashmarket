@@ -19,7 +19,15 @@ enum class EGutTraining : uint8
 	Speed,
 
 	/** Sees it coming: guards, answers and punishes like somebody who has done this before */
-	Nerve
+	Nerve,
+
+	/**
+	 *  Uses the cage: works the other round until their back is to the spikes or the cable and then hits them onto it,
+	 *  keeps their own back off both, knows a heavy blow is the answer to a raised guard, and keeps something in hand.
+	 *  ("the more a fighter has, the better he can fight - better at directing their opponent to the spike or cable",
+	 *  25 November.)
+	 */
+	Cunning
 };
 
 /** Somebody the player owns, or pays, to fight in the cage for it */
@@ -60,6 +68,12 @@ struct FGutStableFighter
 
 	UPROPERTY(BlueprintReadOnly, Category="Stable")
 	int32 Nerve = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	int32 Cunning = 0;
+
+	/** Everything taught, as the Block prices it and the book reckons it: four things counted as the three there were */
+	float GetTaught() const { return (Strength + Speed + Nerve + Cunning) * 0.75f; }
 
 	/** If true it was bought at the Block and wears a collar. If false it signed for a wage and a share of its purses, and can walk away. */
 	UPROPERTY(BlueprintReadOnly, Category="Stable")
@@ -315,7 +329,10 @@ namespace GutStableLines
 		Sell = 18,
 
 		/** Everything the fighter has on, back into the bag */
-		TakeArmor = 23,
+		TakeArmor = 24,
+
+		/** The fourth thing taught: see EGutTraining::Cunning. (Not beside the other three, whose numbers are taken.) */
+		TrainCunning = 25,
 
 		/** Out of the yard gate to the street, with this one walking behind */
 		WalkOut = 19,
