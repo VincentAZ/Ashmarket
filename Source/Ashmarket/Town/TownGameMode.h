@@ -507,6 +507,9 @@ protected:
 	/** The yard's page is the rack's and nobody's: what is kept there, to put on it and take off it */
 	bool bAtRack = false;
 
+	/** True while the yard's page is the Block's table with somebody in tow to sell: see OpenSale */
+	bool bAtSale = false;
+
 	/** Stands the player's people in their places in the yard */
 	void SettleYard();
 
@@ -682,6 +685,19 @@ protected:
 	TObjectPtr<UAudioComponent> BarkVoice;
 
 public:
+	/**
+	 *  Opens the Block's table for selling whoever is behind the player and is theirs to sell (bought, or taken):
+	 *  somebody sold there is sold as from the yard, the Chainmen keeping their fifth, and walks nowhere again. So
+	 *  that somebody taken on Main Street need not be walked to the yard on Pool Street to be turned into water.
+	 */
+	void OpenSale(int32 Keeper);
+
+	void GetSalePage(TArray<FTownShopLine>& OutLines, TArray<int32>& OutCodes) const;
+	bool DoSaleLine(int32 Code);
+
+	/** How many of those behind the player are theirs to sell: "tow" in a line's or an answer's "when" */
+	int32 GetTowToSell() const;
+
 	/**
 	 *  Goes for somebody with no tag (FTownPerson::Taken): it is fought out in the dead end, and settled by SettleTaking
 	 *  when the player is back. False, with why in the notice, if the player has nowhere to keep anybody.

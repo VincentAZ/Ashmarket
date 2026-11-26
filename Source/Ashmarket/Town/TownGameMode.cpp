@@ -2042,6 +2042,15 @@ void ATownGameMode::AdvanceTalk()
 
 			return;
 		}
+		else if (Answer.Deed == ETownDeed::Sell)
+		{
+			// to the clerk's table, with whoever is behind the player
+			const int32 Keeper = TalkingTo;
+
+			EndTalk();
+			OpenSale(Keeper);
+			return;
+		}
 		else if (Answer.Deed == ETownDeed::Take)
 		{
 			// whoever was being talked to is who is gone for
@@ -3029,6 +3038,157 @@ void ATownGameMode::UpdateLed(float DeltaTime)
 	}
 }
 
+int32 ATownGameMode::GetTowToSell() const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	int32 Count = 0;
+
+	for (const FTownTow& One : Tow)
+	{
+		Count += (GameInstance && GameInstance->Stable.Fighters.IsValidIndex(One.Fighter) && GameInstance->Stable.Fighters[One.Fighter].bOwned) ? 1 : 0;
+	}
+
+	return Count;
+}
+
+void ATownGameMode::OpenSale(int32 Keeper)
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance || !GameInstance->Stable.bStarted)
+	{
+		return;
+	}
+
+	YardFocus = INDEX_NONE;
+
+	ShopKeeper = Keeper;
+	ShopChoice = 0;
+	bShopping = true;
+	bAtBook = false;
+	bAtStall = false;
+	bAtBag = false;
+	bAtYardPage = true;
+	bAtRack = false;
+	bAtSale = true;
+
+	ShopSaid = TEXT("The Block buys whoever is yours to sell, here and now.\nThe Chainmen keep a fifth of what he or she would fetch. Somebody lame goes for half.");
+
+	if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		Hands->SetIgnoreMoveInput(true);
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Square: at the clerk's table with %d to sell"), GetTowToSell());
+}
+
+void ATownGameMode::GetSalePage(TArray<FTownShopLine>& OutLines, TArray<int32>& OutCodes) const
+{
+	using namespace GutStableLines;
+
+	OutLines.Reset();
+	OutCodes.Reset();
+
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	for (int32 i = 0; i < Tow.Num(); ++i)
+	{
+		if (!GameInstance->Stable.Fighters.IsValidIndex(Tow[i].Fighter))
+		{
+			continue;
+		}
+
+		const FGutStableFighter& Who = GameInstance->Stable.Fighters[Tow[i].Fighter];
+		const FGutWho Sex = UGutSoundSubsystem::WhoIs(this, Who.Body);
+
+		FTownShopLine Line;
+
+		Line.Name = FString::Printf(TEXT("Sell %s"), *Who.FighterName.ToString());
+		Line.Detail = FString::Printf(TEXT("strength %d, speed %d, nerve %d, cunning %d%s"), Who.Strength, Who.Speed, Who.Nerve, Who.Cunning, Who.IsCrippled() ? TEXT("  \u00B7  lame") : TEXT(""));
+		Line.bCanBuy = Who.bOwned;
+		Line.PriceText = Who.bOwned ? FString::Printf(TEXT("+%.0f L"), FMath::RoundToFloat(Who.Price * 0.8f * (Who.IsCrippled() ? 0.5f : 1.0f))) : FString(TEXT(" "));
+		Line.Why = Who.bOwned ? FString() : FString(TEXT("signed"));
+		Line.About = Who.bOwned ? FString::Printf(TEXT("%s goes up on the Block at the next sale, and is nothing to do with you after."), Sex.HeCap())
+			: FString::Printf(TEXT("%s signed with you for a wage. Somebody with a tag is nobody's to sell."), Sex.HeCap());
+
+		OutLines.Add(MoveTemp(Line));
+		OutCodes.Add(SaleSell + i);
+	}
+}
+
+bool ATownGameMode::DoSaleLine(int32 Code)
+{
+	using namespace GutStableLines;
+
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+	const AGutGameMode* Rules = GetCageRules();
+
+	const int32 Which = Code - SaleSell;
+
+	if (!GameInstance || !Rules || !Tow.IsValidIndex(Which) || !GameInstance->Stable.Fighters.IsValidIndex(Tow[Which].Fighter))
+	{
+		return false;
+	}
+
+	const int32 Sold = Tow[Which].Fighter;
+	const FString Name = GameInstance->Stable.Fighters[Sold].FighterName.ToString();
+	const float Before = GameInstance->Stable.Water;
+
+	bool bDone = false;
+
+	{
+		FTownLentRules Lent(Rules, GameInstance);
+
+		bDone = GameInstance->Stable.Fighters[Sold].bOwned && Lent.Rules->SellFighter(Sold);
+	}
+
+	if (!bDone)
+	{
+		ShopSaid = TEXT("It cannot be done.");
+		ShopRefusedAt = GetWorld()->GetTimeSeconds();
+
+		return false;
+	}
+
+	// out from behind the player, and everybody after them in the stable moves up one
+	if (TowBodies.IsValidIndex(Which))
+	{
+		if (TowBodies[Which])
+		{
+			TowBodies[Which]->Destroy();
+		}
+
+		TowBodies.RemoveAt(Which);
+	}
+
+	Tow.RemoveAt(Which);
+
+	for (FTownTow& One : Tow)
+	{
+		One.Fighter -= One.Fighter > Sold ? 1 : 0;
+	}
+
+	GameInstance->SaveRun();
+
+	if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
+	{
+		Sounds->Play(FName("cash"), FVector::ZeroVector);
+	}
+
+	ShopSaid = FString::Printf(TEXT("%s is the Block's now. %.0f L, the Chainmen's fifth taken: you hold %.0f L."), *Name, GameInstance->Stable.Water - Before, GameInstance->Stable.Water);
+	ShopChoice = 0;
+
+	UE_LOG(LogTown, Log, TEXT("Square: %s"), *ShopSaid);
+
+	return true;
+}
+
 bool ATownGameMode::TakeSomebody(int32 Index)
 {
 	UGutGameInstance* GameInstance = GetGutGameInstance();
@@ -3894,6 +4054,7 @@ void ATownGameMode::CloseShop()
 	bAtBag = false;
 	bAtYardPage = false;
 	bAtRack = false;
+	bAtSale = false;
 	bBagAsking = false;
 	ShopKeeper = INDEX_NONE;
 	ShopSaid.Reset();
@@ -6095,6 +6256,7 @@ void ATownGameMode::OpenRack()
 	bAtBag = false;
 	bAtYardPage = true;
 	bAtRack = true;
+	bAtSale = false;
 
 	ShopSaid = TEXT("What you keep in the yard. Bread and tea on the rack are for whoever you send in at the hatch: he or she eats and drinks off it before the fight, without being handed it. Armor here is nobody's until you put it on somebody: on a fighter's own page, or out of your bag.");
 
@@ -6331,6 +6493,7 @@ void ATownGameMode::OpenYardPage(int32 Which)
 	bAtBag = false;
 	bAtYardPage = true;
 	bAtRack = false;
+	bAtSale = false;
 
 	const FGutStableFighter& Who = GameInstance->Stable.Fighters[YardFocus];
 
@@ -6386,6 +6549,12 @@ void ATownGameMode::GetYardPage(TArray<FTownShopLine>& OutLines, TArray<int32>& 
 	if (bAtRack)
 	{
 		GetRackPage(OutLines, OutCodes);
+		return;
+	}
+
+	if (bAtSale)
+	{
+		GetSalePage(OutLines, OutCodes);
 		return;
 	}
 
@@ -6502,6 +6671,11 @@ bool ATownGameMode::DoYardLine(int32 Line)
 	if (bAtRack)
 	{
 		return Codes.IsValidIndex(Line) && DoRackLine(Codes[Line]);
+	}
+
+	if (bAtSale)
+	{
+		return Codes.IsValidIndex(Line) && DoSaleLine(Codes[Line]);
 	}
 
 	UGutGameInstance* GameInstance = GetGutGameInstance();
@@ -6939,6 +7113,11 @@ FString ATownGameMode::GetShopTitle() const
 	if (bAtYardPage && bAtRack)
 	{
 		return TEXT("THE RACK  \u00B7  WHAT YOU KEEP IN THE YARD");
+	}
+
+	if (bAtYardPage && bAtSale)
+	{
+		return TEXT("THE BLOCK  \u00B7  WHO YOU HAVE TO SELL");
 	}
 
 	if (const UGutGameInstance* GameInstance = GetGutGameInstance(); bAtYardPage && GameInstance && GameInstance->Stable.Fighters.IsValidIndex(YardFocus))

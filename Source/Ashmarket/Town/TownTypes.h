@@ -59,7 +59,10 @@ enum class ETownDeed : uint8
 	Rack,
 
 	/** Goes for whoever is being talked to, who has no tag: see FGutTaking */
-	Take
+	Take,
+
+	/** To the Block's clerk with somebody in tow who is the player's to sell: see ATownGameMode::OpenSale */
+	Sell
 };
 
 /** One thing the player can say back */

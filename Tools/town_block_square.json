@@ -993,6 +993,11 @@
        "deed": "buy"
       },
       {
+       "words": "I have somebody to sell.",
+       "when": "tow",
+       "deed": "sell"
+      },
+      {
        "words": "What does a person cost?",
        "next": "price"
       },

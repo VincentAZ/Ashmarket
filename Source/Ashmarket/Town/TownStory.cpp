@@ -66,6 +66,12 @@ int32 ATownGameMode::GetMark(const FName& Key) const
 		return Held ? FMath::FloorToInt(FMath::Max(*Held, 0.0f) + 0.01f) : 0;
 	}
 
+	// how many of those behind the player are theirs to sell
+	if (Named == TEXT("tow"))
+	{
+		return GetTowToSell();
+	}
+
 	if (Named == TEXT("day"))
 	{
 		return GameInstance->Stable.Day;

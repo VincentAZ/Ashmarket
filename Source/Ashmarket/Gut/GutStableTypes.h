@@ -366,6 +366,9 @@ namespace GutStableLines
 		/** Out for the day to whoever pays for a back: see AGutGameMode::HireOutFighter */
 		HireOut = 26,
 
+		/** Plus which of those in tow: sold at the Block's table, where they stand (ATownGameMode::OpenSale) */
+		SaleSell = 600,
+
 		/** Out of the yard gate to the street, with this one walking behind */
 		WalkOut = 19,
 

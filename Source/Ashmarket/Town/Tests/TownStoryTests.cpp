@@ -3091,3 +3091,129 @@ bool FTownTakingThroughTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+/**
+ *  Ashmarket.Town.SellAtBlock  somebody the player owns and has behind them is sold at the clerk's table on Block Square:
+ *                              the answer is there only while somebody is in tow to sell, the table lists them with what
+ *                              the Block gives, and sold they are gone from behind the player and out of the stable.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownSellAtBlockTest, "Ashmarket.Town.SellAtBlock", GutTests::Flags)
+
+bool FTownSellAtBlockTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	struct FNotes
+	{
+		FGutStableState Stable;
+		FTownStoryState Story;
+	};
+
+	TSharedRef<FNotes> Notes = MakeShared<FNotes>();
+
+	// an owner with one taken person behind them, before the square is opened, which stands them there
+	if (UGutGameInstance* Run = GetRun())
+	{
+		Notes->Stable = Run->Stable;
+		Notes->Story = Run->Story;
+
+		Run->Stable = FGutStableState();
+		Run->Stable.bStarted = true;
+		Run->Stable.Water = 5.0f;
+
+		FGutStableFighter Taken;
+		Taken.FighterName = FText::FromString(TEXT("Nettle"));
+		Taken.Strength = 2;
+		Taken.Speed = 1;
+		Taken.bOwned = true;
+		Taken.bInTow = true;
+		Taken.Price = 40.0f;
+
+		Run->Stable.Fighters.Add(Taken);
+		Run->Taking = FGutTaking();
+	}
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_BlockSquare"), true))
+	{
+		AddError(TEXT("Could not open Block Square's level"));
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 1.0f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+		const UTownPlaceData* Place = Town->GetPlace();
+
+		TestEqual(TEXT("Somebody is behind the player, and theirs to sell"), Town->GetTowToSell(), 1);
+
+		const int32 Clerk = Find(TEXT("Margin"));
+
+		if (!TestTrue(TEXT("The clerk is at her table"), Clerk != INDEX_NONE))
+		{
+			return;
+		}
+
+		const FTownPerson& Margin = Place->People[Clerk];
+		const FVector Before = Margin.Place + (FRotator(0.0f, Margin.Facing, 0.0f).Vector() * 115.0f);
+
+		StandOn(FVector2D(Before.X, Before.Y), Margin.Facing + 180.0f);
+
+		Town->Tick(0.0f);
+
+		TestEqual(TEXT("The clerk is in reach"), Town->GetPersonInReach(), Clerk);
+
+		Town->Interact();
+
+		TestTrue(*FString::Printf(TEXT("With somebody in tow, selling is one of the things to say (%d answers)"), Town->GetAnswers().Num()),
+			Town->GetAnswers().ContainsByPredicate([](const FString& Answer) { return Answer.Contains(TEXT("somebody to sell")); }));
+		TestTrue(TEXT("Saying it"), Say(TEXT("somebody to sell")));
+		TestTrue(TEXT("Opens the table, and not the book"), Town->IsShopping() && Town->IsAtYardPage() && !Town->IsAtBook());
+
+		const TArray<FTownShopLine> Lines = Town->GetShopLines();
+
+		TestTrue(*FString::Printf(TEXT("Whoever is in tow is on it, with what the Block gives (%s, %s)"), Lines.IsEmpty() ? TEXT("") : *Lines[0].Name, Lines.IsEmpty() ? TEXT("") : *Lines[0].PriceText),
+			Lines.Num() == 1 && Lines[0].Name.Contains(TEXT("Nettle")) && Lines[0].PriceText == TEXT("+32 L") && Lines[0].bCanBuy);
+
+		GutTests::Screenshot(TEXT("85_somebody_to_sell"));
+
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestTrue(TEXT("Sold, they are out of the stable"), Run->Stable.Fighters.IsEmpty());
+		TestEqual(TEXT("And the water is the player's, the Chainmen's fifth taken"), Run->Stable.Water, 37.0f);
+		TestEqual(TEXT("Nobody is behind the player"), Town->GetTowCount(), 0);
+		TestTrue(*FString::Printf(TEXT("It is said (%s)"), *Town->GetShopSaid()), Town->GetShopSaid().Contains(TEXT("Nettle")) && Town->GetShopSaid().Contains(TEXT("32 L")));
+		TestTrue(TEXT("And there is nobody left to sell"), Town->GetShopLines().IsEmpty());
+
+		Town->HandleBack();
+	}, []() { return IsStreetReady(); } });
+
+	Steps.Add({ 0.4f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		const int32 Clerk = Find(TEXT("Margin"));
+
+		Town->Tick(0.0f);
+
+		if (Town->GetPersonInReach() == Clerk)
+		{
+			Town->Interact();
+
+			TestFalse(TEXT("With nobody in tow, there is nothing to say about selling"),
+				Town->GetAnswers().ContainsByPredicate([](const FString& Answer) { return Answer.Contains(TEXT("somebody to sell")); }));
+
+			Town->HandleBack();
+		}
+
+		GetRun()->Stable = Notes->Stable;
+		GetRun()->Story = Notes->Story;
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
