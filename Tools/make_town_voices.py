@@ -44,6 +44,10 @@ def slug(text):
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
 
 
+def saved_names(client):
+    return [voice.name for voice in client.voices.get_all().voices]
+
+
 def lines_of(listed):
     """Everything said aloud in a place: (speaker as the cast names them, the recording's name, the words)."""
     place = listed["name"]
@@ -85,6 +89,7 @@ def main():
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--redesign", action="store_true")
     parser.add_argument("--only", default="")
+    parser.add_argument("--usage", action="store_true", help="what the account has used and is allowed, and nothing else")
     options = parser.parse_args()
 
     if options.redesign and not options.only:
@@ -147,7 +152,7 @@ def main():
 
     print("{} lines to make, {} characters".format(len(wanted), sum(len(item[5]) for item in wanted)))
 
-    if options.list or not wanted:
+    if (options.list or not wanted) and not options.usage:
         for file, speaker, whose, entry, _, words, _ in wanted:
             print("  {:44s} {:34s} {:9s} {}".format(file, speaker, "designed" if entry.get("design") else entry["voice"], words[:60]))
 
@@ -166,6 +171,27 @@ def main():
         sys.exit("there is no ELEVENLABS_API_KEY in .env.local: run npx -y @elevenlabs/cli@latest onboard init")
 
     client = ElevenLabs(api_key=os.environ["ELEVENLABS_API_KEY"])
+
+    if options.usage:
+        # what the plan allows and how much of it is gone: asked for when a limit is met, to say when it comes back
+        plan = client.user.subscription.get()
+
+        for name in ("tier", "status", "character_count", "character_limit", "voice_slots_used", "voice_limit", "voice_add_edit_counter",
+                     "max_voice_add_edits", "professional_voice_slots_used", "professional_voice_limit", "next_character_count_reset_unix", "billing_period"):
+            value = getattr(plan, name, None)
+
+            if value is not None:
+                print("{}: {}".format(name, value))
+
+        reset = getattr(plan, "next_character_count_reset_unix", None)
+
+        if reset:
+            import datetime
+
+            print("resets: {}".format(datetime.datetime.fromtimestamp(reset).strftime("%Y-%m-%d %H:%M")))
+
+        print("saved now: {}".format(", ".join(sorted(name for name in saved_names(client)))))
+        return
 
     def saved():
         return {voice.voice_id: voice.name for voice in client.voices.get_all().voices}
