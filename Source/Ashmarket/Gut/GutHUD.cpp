@@ -1128,6 +1128,25 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 
 	int32 LastKind = -1;
 
+	/**
+	 *  The lines are set as a table and not each on its own middle. A line is its parts with a dot between them ("GRISTLE
+	 *  · Dog · Stop-sign shield · pays 44 L"); every line was centred by itself, so no part of one stood under the same
+	 *  part of the next and a page of them read as a heap ("your general formatting of text is really bad", "formatting
+	 *  issues again", 25 November). Now the lines under one heading are a block: each part in a column as wide as the
+	 *  widest of its kind, the block in the middle of the page, and a line with one part only begins at the block's edge.
+	 */
+	struct FRow
+	{
+		FString Line;
+		float Y = 0.0f;
+		int32 Block = 0;
+		bool bSelected = false;
+		bool bAvailable = true;
+	};
+
+	TArray<FRow> Rows;
+	int32 Block = 0;
+
 	for (const FGutCardItem& Item : Items)
 	{
 		FString Line;
@@ -1143,6 +1162,7 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 
 			Y += HeadingHeight;
 			LastKind = Kind;
+			++Block;
 		}
 
 		if (Item.Type == EGutCardItemType::Door)
@@ -1272,12 +1292,118 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 			}
 		}
 
-		const bool bSelected = Item == GameMode->GetCardSelection();
-
-		DrawLabel((bSelected ? TEXT(">  ") : TEXT("")) + Line, CenterX, Y, 18,
-			bSelected ? GutHUDColors::Warning : (bAvailable ? GutHUDColors::Text : GutHUDColors::DimText), true);
+		Rows.Add({ Line, Y, Block, Item == GameMode->GetCardSelection(), bAvailable });
 
 		Y += ItemHeight;
+	}
+
+	static const FString Dot = TEXT("  \u00B7  ");
+	const float Gap = 28.0f;
+
+	for (int32 First = 0; First < Rows.Num();)
+	{
+		int32 Next = First;
+
+		while (Next < Rows.Num() && Rows[Next].Block == Rows[First].Block)
+		{
+			++Next;
+		}
+
+		// How wide each column is: the widest of that part among the lines that have parts. Set a size smaller, and a size
+		// smaller again, if the block is wider than the page at the size the lines are usually set in.
+		TArray<TArray<FString>> Parts;
+
+		for (int32 i = First; i < Next; ++i)
+		{
+			Rows[i].Line.ParseIntoArray(Parts.AddDefaulted_GetRef(), *Dot, true);
+		}
+
+		const float Room = 1130.0f;
+
+		TArray<float> Wide;
+		float Alone = 0.0f;
+		float Whole = 0.0f;
+		int32 Size = 18;
+
+		for (; Size >= 15; --Size)
+		{
+			Wide.Reset();
+			Alone = 0.0f;
+			Whole = 0.0f;
+
+			for (int32 i = First; i < Next; ++i)
+			{
+				const TArray<FString>& Cells = Parts[i - First];
+
+				if (Cells.Num() <= 1)
+				{
+					Alone = FMath::Max(Alone, MeasureLabel(Rows[i].Line, Size));
+					continue;
+				}
+
+				for (int32 Cell = 0; Cell < Cells.Num(); ++Cell)
+				{
+					if (!Wide.IsValidIndex(Cell))
+					{
+						Wide.Add(0.0f);
+					}
+
+					Wide[Cell] = FMath::Max(Wide[Cell], MeasureLabel(Cells[Cell], Size));
+				}
+			}
+
+			for (int32 Cell = 0; Cell < Wide.Num(); ++Cell)
+			{
+				Whole += Wide[Cell] + (Cell > 0 ? Gap : 0.0f);
+			}
+
+			if (FMath::Max(Whole, Alone) <= Room)
+			{
+				break;
+			}
+		}
+
+		Size = FMath::Max(Size, 15);
+
+		// (still wider than the page: it cannot be set in columns, and the block goes back to its middles)
+		const bool bTable = !Wide.IsEmpty() && Whole <= Room;
+		const float Left = CenterX - (FMath::Min(FMath::Max(Whole, Alone), Room) * 0.5f);
+
+		for (int32 i = First; i < Next; ++i)
+		{
+			const FRow& Row = Rows[i];
+			const TArray<FString>& Cells = Parts[i - First];
+			const FLinearColor Ink = Row.bSelected ? GutHUDColors::Warning : (Row.bAvailable ? GutHUDColors::Text : GutHUDColors::DimText);
+
+			if (!bTable)
+			{
+				DrawLabel((Row.bSelected ? TEXT(">  ") : TEXT("")) + Row.Line, CenterX, Row.Y, 18, Ink, true);
+				continue;
+			}
+
+			if (Row.bSelected)
+			{
+				DrawLabel(TEXT(">"), Left - 26.0f, Row.Y, Size, Ink);
+			}
+
+			if (Cells.Num() <= 1)
+			{
+				DrawLabel(Row.Line, Left, Row.Y, Size, Ink);
+				continue;
+			}
+
+			float X = Left;
+
+			for (int32 Cell = 0; Cell < Cells.Num(); ++Cell)
+			{
+				// the name in the line's own ink, and what is said of it a little quieter unless the line is the chosen one
+				DrawLabel(Cells[Cell], X, Row.Y, Size, (Cell == 0 || Row.bSelected || !Row.bAvailable) ? Ink : FLinearColor(Ink.R * 0.82f, Ink.G * 0.82f, Ink.B * 0.82f, Ink.A));
+
+				X += Wide[Cell] + Gap;
+			}
+		}
+
+		First = Next;
 	}
 
 	Y += 8.0f;
