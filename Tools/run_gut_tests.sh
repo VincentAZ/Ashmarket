@@ -41,7 +41,7 @@ LOG="${GUT_LOG:-$PROJECT_DIR/Saved/Logs/gut_tests.log}"
 OUT="${LOG%.log}.out"
 
 "$UE_ROOT/Engine/Binaries/Linux/UnrealEditor-Cmd" "$PROJECT_DIR/Ashmarket.uproject" /Game/Gut/Lvl_Gut -game $RENDER_ARGS \
-	-unattended -nosplash $SOUND_ARGS -nopause -forcelogflush -GutNoSave -GutNoBidding ${GUT_ARGS:-} \
+	-unattended -nosplash $SOUND_ARGS -nopause -forcelogflush -GutNoSave -GutNoBidding -GutNoNeeds ${GUT_ARGS:-} \
 	-ExecCmds="DisableAllScreenMessages,Automation RunTests ${GUT_TESTS:-Ashmarket.Gut+Ashmarket.Town}; Quit" -testexit="Automation Test Queue Empty" \
 	-abslog="$LOG" >"$OUT" 2>&1
 

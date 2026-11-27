@@ -1318,6 +1318,10 @@ void AGutHUD::DrawStableCard(const AGutGameMode* GameMode, float CenterX)
 				Line = FString::Printf(TEXT("The grill carts  \u00B7  pays %.0f L"), GameMode->GetBodyPrice(EGutBodyGoesTo::Grill));
 				break;
 
+			case BodyToJerky:
+				Line = FString::Printf(TEXT("Salted down and kept  \u00B7  %d pieces of jerky in your bag, and the yard knows who ate whom"), GameMode->GetJerkyFromBody());
+				break;
+
 			case WalkOut:
 				Line = FString::Printf(TEXT("Out of the yard gate to the street, with %s walking behind you"), Who.Him());
 				break;

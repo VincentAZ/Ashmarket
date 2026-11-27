@@ -93,6 +93,29 @@ void ATownHUD::DrawHUD()
 	{
 		float Y = 1010.0f - ((Purses.Num() - 1) * 28.0f);
 
+		// and over it the body that holds it: how dry, how empty, how hurt, each in a word, and in the colour of how bad
+		// ("we need a health status - food, water, injuries", 26 November)
+		if (const TArray<ATownGameMode::FTownNeed> Needs = Town->GetNeeds(); Needs.Num() == 3)
+		{
+			static const TCHAR* Of[] = { TEXT("Water"), TEXT("Food"), TEXT("Body") };
+
+			float X = 50.0f;
+
+			for (int32 i = 0; i < 3; ++i)
+			{
+				const FString Label = FString::Printf(TEXT("%s: "), Of[i]);
+				const FLinearColor Ink = Needs[i].Level >= 3 ? GutHUDColors::Health : (Needs[i].Level == 2 ? GutHUDColors::Warning : (Needs[i].Level == 1 ? GutHUDColors::Text : GutHUDColors::DimText));
+
+				DrawLabel(Label, X, Y - 30.0f, 17, GutHUDColors::DimText);
+
+				X += MeasureLabel(Label, 17);
+
+				DrawLabel(Needs[i].Words, X, Y - 30.0f, 17, Ink);
+
+				X += MeasureLabel(Needs[i].Words, 17) + 26.0f;
+			}
+		}
+
 		for (const FString& Purse : Purses)
 		{
 			DrawLabel(Purse, 50.0f, Y, 20, GutHUDColors::Text);

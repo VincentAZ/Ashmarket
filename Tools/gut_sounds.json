@@ -2216,6 +2216,33 @@
      "seconds": 19.0
     }
    ]
+  },
+  "drink": {
+   "about": "Something drunk out of the bag: a swallow (freesound 570877 and 320139, CC0). Nobody has listened.",
+   "volume": 0.55,
+   "everywhere": true,
+   "from": [
+    {
+     "file": "ui/drink_single_gulp_water_preview.mp3",
+     "longest": 2.0
+    },
+    {
+     "file": "ui/drink_sip_and_swallow_preview.mp3",
+     "longest": 2.4
+    }
+   ]
+  },
+  "eat": {
+   "about": "Something eaten out of the bag: a bite and a chew (freesound 867611, CC0). Nobody has listened.",
+   "volume": 0.5,
+   "everywhere": true,
+   "from": [
+    {
+     "file": "ui/eat_biting_food_preview.mp3",
+     "longest": 2.2,
+     "fade": 0.4
+    }
+   ]
   }
  }
 }

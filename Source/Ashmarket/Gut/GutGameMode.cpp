@@ -805,6 +805,21 @@ void AGutGameMode::ConfirmCard()
 	PlayerFighter->SetStaminaRegenScale(State.bFed ? FedStaminaRegenScale : 1.0f);
 	PlayerFighter->SetStaminaRegenDelayScale(State.bSteadied ? SteadiedRegenDelayScale : 1.0f);
 
+	// and the body it is brought in: dry or empty, the wind comes back slower; hurt, there is less to lose. Only the
+	// player's own: a fight watched from the window or the yard is somebody else's body.
+	if (const UGutGameInstance* Run = GetGutGameInstance(); Run && Run->bNeedsOn && !Run->bWindow && !Run->bStable)
+	{
+		PlayerFighter->SetStaminaRegenScale((State.bFed ? FedStaminaRegenScale : 1.0f) * Run->Needs.GetWind());
+
+		if (Run->Needs.GetHealth() < 0.999f)
+		{
+			PlayerFighter->SetMaxHealth(PlayerFighter->GetMaxHealth() * Run->Needs.GetHealth());
+		}
+
+		UE_LOG(LogGut, Log, TEXT("Needs: into the fight %s, %s and %s: wind at %.2f, health at %.2f"), FGutNeeds::ThirstWord(Run->Needs.Thirst), FGutNeeds::HungerWord(Run->Needs.Hunger),
+			FGutNeeds::HurtWord(Run->Needs.Hurt), Run->Needs.GetWind(), Run->Needs.GetHealth());
+	}
+
 	// the player comes to the fight in the state the last one left it. Empty its hands first:
 	// an arm that arrives crippled has nothing to drop.
 
@@ -1570,6 +1585,12 @@ void AGutGameMode::SettleLadderFight(bool bPlayerWon, bool bSpared, bool bThrown
 	State.bFed = false;
 	State.bSteadied = false;
 
+	// and the fight is in the body that fought it
+	if (UGutGameInstance* Run = GetGutGameInstance(); Run && Run->bNeedsOn && PlayerFighter && !Run->bWindow && !Run->bStable)
+	{
+		Run->Needs.AfterFight(1.0f - (PlayerFighter->GetHealth() / FMath::Max(PlayerFighter->GetMaxHealth(), 1.0f)));
+	}
+
 	// a player that walks out, or is left alive, carries its limbs to whatever comes next
 	if (bPlayerWon || bSpared || bThrown)
 	{
@@ -2029,6 +2050,19 @@ void AGutGameMode::BeginTaking()
 	PlayerFighter->EquipWeapon(nullptr);
 	PlayerFighter->SetCollared(false);
 
+	// the body the player brings to it: see FGutNeeds
+	if (GetGutGameInstance()->bNeedsOn)
+	{
+		const FGutNeeds& Needs = GetGutGameInstance()->Needs;
+
+		PlayerFighter->SetStaminaRegenScale(Needs.GetWind());
+
+		if (Needs.GetHealth() < 0.999f)
+		{
+			PlayerFighter->SetMaxHealth(PlayerFighter->GetMaxHealth() * Needs.GetHealth());
+		}
+	}
+
 	UE_LOG(LogGut, Log, TEXT("Taking: %s, with %.0f in them, gives up at %.0f"), *Taking.Who.FighterName.ToString(), EnemyFighter->GetMaxHealth(), EnemyFighter->GetMaxHealth() * TakenAtHealth);
 
 	SetPhase(EGutFightPhase::Intro);
@@ -2059,6 +2093,11 @@ void AGutGameMode::EndTaking(int32 Outcome)
 	}
 
 	GameInstance->Taking.Outcome = Outcome;
+
+	if (GameInstance->bNeedsOn)
+	{
+		GameInstance->Needs.AfterFight(1.0f - (PlayerFighter->GetHealth() / FMath::Max(PlayerFighter->GetMaxHealth(), 1.0f)));
+	}
 
 	PlayerFighter->SetCombatEnabled(false);
 	EnemyFighter->SetCombatEnabled(false);

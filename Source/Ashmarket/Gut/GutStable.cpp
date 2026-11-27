@@ -697,6 +697,12 @@ float AGutGameMode::GetBodyPrice(EGutBodyGoesTo Where) const
 		return FMath::RoundToFloat(BodyPartsPrice * (GetStableState().bBodyBroken ? 0.5f : 1.0f));
 	}
 
+	// (nobody pays for one that is kept, and it costs nothing but what the yard thinks)
+	if (Where == EGutBodyGoesTo::Jerky)
+	{
+		return 0.0f;
+	}
+
 	return Where == EGutBodyGoesTo::Grill ? BodyGrillPrice : -BurialCost;
 }
 
@@ -723,6 +729,15 @@ bool AGutGameMode::SendBodyTo(EGutBodyGoesTo Where)
 
 		++State.Buried;
 	}
+	else if (Where == EGutBodyGoesTo::Jerky)
+	{
+		// salted down, and in the owner's own bag: food, of a kind
+		GetGutGameInstance()->AddToBag(FName("jerky"), JerkyFromBody);
+
+		Grudge = ResentmentForBodyToJerky;
+
+		++State.BodiesSold;
+	}
 	else
 	{
 		State.Water += GetBodyPrice(Where);
@@ -747,7 +762,7 @@ bool AGutGameMode::SendBodyTo(EGutBodyGoesTo Where)
 	}
 
 	UE_LOG(LogGut, Log, TEXT("Stable: %s goes to %s, %.0f L in hand"), *State.BodyOf.ToString(),
-		Where == EGutBodyGoesTo::Parts ? TEXT("Doc Stitch") : (Where == EGutBodyGoesTo::Grill ? TEXT("the grill carts") : TEXT("the ground")), State.Water);
+		Where == EGutBodyGoesTo::Parts ? TEXT("Doc Stitch") : (Where == EGutBodyGoesTo::Grill ? TEXT("the grill carts") : (Where == EGutBodyGoesTo::Jerky ? TEXT("the salt, and the owner's bag") : TEXT("the ground"))), State.Water);
 
 	State.bBodyWaiting = false;
 	State.bBodyBroken = false;
@@ -1494,6 +1509,7 @@ void AGutGameMode::GetStableCardItems(TArray<FGutCardItem>& Items) const
 		Line(BodyToGround);
 		Line(BodyToParts);
 		Line(BodyToGrill);
+		Line(BodyToJerky);
 		break;
 
 	default:
@@ -1686,8 +1702,9 @@ void AGutGameMode::ActivateStableLine(int32 Code)
 	case BodyToParts:
 	case BodyToGrill:
 	case BodyToGround:
+	case BodyToJerky:
 
-		if (SendBodyTo(Code == BodyToParts ? EGutBodyGoesTo::Parts : (Code == BodyToGrill ? EGutBodyGoesTo::Grill : EGutBodyGoesTo::Ground)))
+		if (SendBodyTo(Code == BodyToParts ? EGutBodyGoesTo::Parts : (Code == BodyToGrill ? EGutBodyGoesTo::Grill : (Code == BodyToJerky ? EGutBodyGoesTo::Jerky : EGutBodyGoesTo::Ground))))
 		{
 			GoTo(bBillAfterBody ? EGutStablePage::Bill : EGutStablePage::Yard);
 

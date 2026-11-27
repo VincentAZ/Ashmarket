@@ -415,7 +415,7 @@ bool FGutStableTest::RunTest(const FString& Parameters)
 
 		TestTrue(TEXT("The dead fighter wore a collar, so its body is the owner's"), State.bBodyWaiting && !State.BodyOf.IsEmpty());
 		TestEqual(TEXT("And nothing else is on the card until it is seen to"), GameMode->GetStablePage(), EGutStablePage::Body);
-		TestEqual(TEXT("Three places it can go"), GameMode->GetCardItems().Num(), 3);
+		TestEqual(TEXT("Four places it can go: the ground, Doc Stitch, the grill carts, and the owner's own bag"), GameMode->GetCardItems().Num(), 4);
 		TestTrue(TEXT("Doc Stitch and the grill carts pay, and the ground costs"), GameMode->GetBodyPrice(EGutBodyGoesTo::Parts) > 0.0f
 			&& GameMode->GetBodyPrice(EGutBodyGoesTo::Grill) > 0.0f && GameMode->GetBodyPrice(EGutBodyGoesTo::Ground) < 0.0f);
 
@@ -441,6 +441,31 @@ bool FGutStableTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("Who pay for it"), State.Water, Before.Water + GameMode->GetBodyPrice(EGutBodyGoesTo::Grill), 0.01f);
 		TestTrue(TEXT("And the yard does not forgive it"), State.Fighters[Owned].Resentment > Before.Fighters[Owned].Resentment);
 		TestFalse(TEXT("It cannot be sold twice"), GameMode->SendBodyTo(EGutBodyGoesTo::Parts));
+
+		// and one that is kept is jerky in the owner's bag, for nothing, with the yard thinking the worse of it
+		{
+			UGutGameInstance* Run = Cast<UGutGameInstance>(GameMode->GetGameInstance());
+			FGutStableState& Yard = Run->Stable;
+
+			const bool bWaitingWas = Yard.bBodyWaiting;
+			const FText OfWas = Yard.BodyOf;
+			const int32 SoldWas = Yard.BodiesSold;
+			const int32 Kept = Run->GetBagCount(FName("jerky"));
+			const float Held = Yard.Water;
+
+			Yard.bBodyWaiting = true;
+
+			TestEqual(TEXT("Nobody pays for a body that is kept"), GameMode->GetBodyPrice(EGutBodyGoesTo::Jerky), 0.0f);
+			TestTrue(TEXT("A body can be salted down and kept"), GameMode->SendBodyTo(EGutBodyGoesTo::Jerky));
+			TestEqual(TEXT("It is jerky in the owner's bag"), Run->GetBagCount(FName("jerky")), Kept + GameMode->GetJerkyFromBody());
+			TestEqual(TEXT("And no water changes hands"), Yard.Water, Held, 0.01f);
+
+			Run->AddToBag(FName("jerky"), -GameMode->GetJerkyFromBody());
+
+			Yard.bBodyWaiting = bWaitingWas;
+			Yard.BodyOf = OfWas;
+			Yard.BodiesSold = SoldWas;
+		}
 
 		State = Before;
 

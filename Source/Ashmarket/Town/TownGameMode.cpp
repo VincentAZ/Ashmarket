@@ -179,13 +179,20 @@ namespace TownConstants
 
 		/** The water in it, which whoever holds it can pour into their own. Nought: none. */
 		float Pours = 0.0f;
+
+		/** What it takes off the thirst, the hunger and the hurt of whoever has it themselves (FGutNeeds): less than nought adds to it */
+		float Quenches = 0.0f;
+		float Fills = 0.0f;
+		float Mends = 0.0f;
 	};
 
 	const FGood Goods[] =
 	{
-		{ TEXT("bread"), TEXT("Flat bread"), TEXT("wind, in your next fight"), TEXT("Hot, and heavy as a hand. Eaten before a fight, your wind comes back a quarter faster all through it. One fight's worth."), 2.0f },
-		{ TEXT("tea"), TEXT("A cup of tea"), TEXT("steadies you, in your next fight"), TEXT("Leaves, and hot. Drunk before a fight, your wind starts coming back sooner after every effort in it. One fight's worth."), 0.1f },
-		{ TEXT("splint"), TEXT("Splint and binding"), TEXT("mends a hurt limb"), TEXT("Two slats and a strip of inner tube. Bound on, it gives your worst-hurt limb back half of what it has lost. It does nothing for a limb that is broken through: that is the cutter's work."), 6.0f },
+		{ TEXT("bread"), TEXT("Flat bread"), TEXT("wind, in your next fight"), TEXT("Hot, and heavy as a hand. Eaten before a fight, your wind comes back a quarter faster all through it. One fight's worth. And it is food: it takes most of a hunger off."), 2.0f, 0.0f, 0.0f, 0.0f, 45.0f, 0.0f },
+		{ TEXT("tea"), TEXT("A cup of tea"), TEXT("steadies you, in your next fight"), TEXT("Leaves, and hot. Drunk before a fight, your wind starts coming back sooner after every effort in it. One fight's worth. And it is wet: it takes some of a thirst off."), 0.1f, 0.0f, 0.0f, 25.0f, 0.0f, 0.0f },
+		{ TEXT("splint"), TEXT("Splint and binding"), TEXT("mends a hurt limb"), TEXT("Two slats and a strip of inner tube. Bound on, it gives your worst-hurt limb back half of what it has lost. It does nothing for a limb that is broken through: that is the cutter's work. On your own body it also takes a third off a hurt."), 6.0f, 0.0f, 0.0f, 0.0f, 0.0f, 35.0f },
+		{ TEXT("beer"), TEXT("Rotgut beer"), TEXT("wet, and dulls a hurt"), TEXT("Brewed in a drum behind the Row. It is wet, it is not water, and for a while nothing aches. It takes some of a thirst off, and a little of a hurt."), 1.0f, 0.0f, 0.0f, 20.0f, 0.0f, 8.0f },
+		{ TEXT("jerky"), TEXT("Jerky"), TEXT("food, and salt"), TEXT("Dark, salted and cut thin. Nobody on the Row asks what it was. It takes a good part of a hunger off, and leaves you a little drier."), 1.5f, 0.0f, 0.0f, -8.0f, 35.0f, 0.0f },
 
 		// what is found lying about, not sold: a price of nought, and what it is good for
 		{ TEXT("flask"), TEXT("A dented flask"), TEXT("half a litre in it"), TEXT("Army steel, older than anybody alive. Somebody put it down and did not come back for it. There is half a litre in it: poured into your own, it is yours."), 0.0f, 0.0f, 0.5f },
@@ -311,6 +318,7 @@ void ATownGameMode::InitGame(const FString& MapName, const FString& Options, FSt
 	LadderData = FirstLadder.LoadSynchronous();
 
 	bBids = !FParse::Param(FCommandLine::Get(), TEXT("GutNoBidding"));
+	bNeedsClock = !FParse::Param(FCommandLine::Get(), TEXT("GutNoNeeds"));
 
 	// the town's story, where it has been written down (Tools/build_town_level.sh writes it with every place)
 	if (FPackageName::DoesPackageExist(Story.GetLongPackageName()))
@@ -325,6 +333,12 @@ void ATownGameMode::InitGame(const FString& MapName, const FString& Options, FSt
 	if (UGutGameInstance* GameInstance = GetGutGameInstance(); GameInstance && GameInstance->Stable.bStarted)
 	{
 		bDayNew = GameInstance->DaySeen > 0 && GameInstance->Stable.Day > GameInstance->DaySeen;
+
+		// a day gone by is a day's thirst and a day's hunger, and a day's mending
+		if (bDayNew && bNeedsClock)
+		{
+			GameInstance->Needs.Add(25.0f, 35.0f, -25.0f);
+		}
 
 		GameInstance->DaySeen = GameInstance->Stable.Day;
 	}
@@ -407,6 +421,7 @@ void ATownGameMode::Tick(float DeltaTime)
 	SettledFor += DeltaTime;
 
 	UpdateCalls(DeltaTime);
+	UpdateNeeds(DeltaTime);
 	UpdateMugging(DeltaTime);
 	UpdateSale(DeltaTime);
 	UpdateAuction(DeltaTime);
@@ -3599,6 +3614,128 @@ bool ATownGameMode::GoFor(int32 Index, int32 Kind)
 	return true;
 }
 
+TArray<ATownGameMode::FTownNeed> ATownGameMode::GetNeeds() const
+{
+	TArray<FTownNeed> Told;
+
+	if (const UGutGameInstance* GameInstance = GetGutGameInstance())
+	{
+		const FGutNeeds& Needs = GameInstance->Needs;
+
+		Told.Add({ FGutNeeds::ThirstWord(Needs.Thirst), FGutNeeds::GetLevel(Needs.Thirst) });
+		Told.Add({ FGutNeeds::HungerWord(Needs.Hunger), FGutNeeds::GetLevel(Needs.Hunger) });
+		Told.Add({ FGutNeeds::HurtWord(Needs.Hurt), Needs.Hurt < 10.0f ? 0 : (Needs.Hurt < 40.0f ? 1 : (Needs.Hurt < 70.0f ? 2 : 3)) });
+	}
+
+	return Told;
+}
+
+bool ATownGameMode::DrinkOwnWater()
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!GameInstance)
+	{
+		return false;
+	}
+
+	if (GetMark(FName("water")) < 1)
+	{
+		ShopSaid = TEXT("You do not hold a litre to drink.");
+
+		return false;
+	}
+
+	if (GameInstance->Needs.Thirst <= 8.0f)
+	{
+		ShopSaid = TEXT("You are not thirsty, and water is what everything here is paid in. It keeps.");
+
+		return false;
+	}
+
+	Apply(TEXT("water-1"));
+
+	GameInstance->Needs.Add(-45.0f, 0.0f, 0.0f);
+	GameInstance->SaveRun();
+
+	ShopSaid = FString::Printf(TEXT("A litre of your own, drunk. You are %s, and hold %d L."), FGutNeeds::ThirstWord(GameInstance->Needs.Thirst), GetMark(FName("water")));
+
+	if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this))
+	{
+		Sounds->Play(FName("drink"), GetWalker() ? GetWalker()->GetActorLocation() : FVector::ZeroVector);
+	}
+
+	return true;
+}
+
+void ATownGameMode::UpdateNeeds(float DeltaTime)
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	if (!bSettled || !bNeedsClock || !GameInstance || bStoppedMenu)
+	{
+		return;
+	}
+
+	FGutNeeds& Needs = GameInstance->Needs;
+
+	// Dry in twelve minutes of walking the town and empty in twenty-five, from nothing; a hurt is gone in forty.
+	Needs.Add(DeltaTime * (100.0f / 720.0f), DeltaTime * (100.0f / 1500.0f), -DeltaTime * (100.0f / 2400.0f));
+
+	// said once as each turns for the worse, with what there is to do about it
+	if (const int32 Level = FGutNeeds::GetLevel(Needs.Thirst); Level != ThirstTold)
+	{
+		if (Level > ThirstTold && Level >= 2 && !IsTalking() && !bShopping)
+		{
+			ShowNotice(Level == 2 ? TEXT("You are thirsty. Drink: a litre of your own from the bag, tea on Main Street, or a cup on Rotgut Row.")
+				: TEXT("You are parched. Drink now, or you will go down in the street: a litre of your own from the bag will do it."));
+		}
+
+		ThirstTold = Level;
+	}
+
+	if (const int32 Level = FGutNeeds::GetLevel(Needs.Hunger); Level != HungerTold)
+	{
+		if (Level > HungerTold && Level >= 2 && !IsTalking() && !bShopping)
+		{
+			ShowNotice(Level == 2 ? TEXT("You are hungry. Eat: bread on Main Street, or jerky on Rotgut Row and at the Last Call.")
+				: TEXT("You are starving. Eat now, or you will go down in the street."));
+		}
+
+		HungerTold = Level;
+	}
+
+	// At the worst the player goes down where they stand, and comes round lighter. (Not in the middle of a talk or a
+	// stall: it waits for them to be on their feet in the street.)
+	if ((Needs.Thirst >= 100.0f || Needs.Hunger >= 100.0f) && !IsTalking() && !bShopping)
+	{
+		const bool bDry = Needs.Thirst >= 100.0f;
+		const int32 Gone = FMath::Min(GetMark(FName("water")), 5);
+
+		const FString Came = Apply(FString::Printf(TEXT("water-%d fear-1"), Gone));
+
+		if (bDry)
+		{
+			Needs.Thirst = 60.0f;
+		}
+		else
+		{
+			Needs.Hunger = 60.0f;
+		}
+
+		WriteLog(bDry ? TEXT("I went down in the street for want of water.") : TEXT("I went down in the street for want of food."));
+
+		Notice = FString::Printf(TEXT("You went down in the street, %s. When you came round somebody had given you enough to stand up on, and somebody had been through what you carry.   %s"),
+			bDry ? TEXT("dry as the road") : TEXT("empty"), *Came);
+		NoticeUntil = GetWorld()->GetTimeSeconds() + 14.0f;
+		NoticeLeave = 0.0f;
+
+		GameInstance->SaveRun();
+
+		UE_LOG(LogTown, Log, TEXT("Street: %s"), *Notice);
+	}
+}
+
 bool ATownGameMode::StartMugging(int32 Index)
 {
 	const AGutFighter* Walker = GetWalker();
@@ -6280,6 +6417,11 @@ TArray<FTownBagLine> ATownGameMode::GetBagLines() const
 
 		Line.About.Add(TEXT("What everything in Ashmarket is paid in, and the only thing that is. One purse: it buys at the stalls, the armorers and the Block's book, and it is what you bet."));
 
+		// and it is water: a litre of it drunk takes most of a thirst off
+		Line.Verb = TEXT("drink a litre");
+		Line.bCanUse = GameInstance->Needs.Thirst > 8.0f && GetMark(FName("water")) >= 1;
+		Line.About.Add(FString::Printf(TEXT("And it is water. You are %s: a litre drunk takes most of a thirst off, and is a litre gone."), FGutNeeds::ThirstWord(GameInstance->Needs.Thirst)));
+
 		if (GameInstance->GetPurse() < -0.5f)
 		{
 			Line.About.Add(FString::Printf(TEXT("You hold none, and are %.0f L down on the pit boss's slate."), -GameInstance->GetPurse()));
@@ -6754,20 +6896,40 @@ TArray<FTownBagTaker> ATownGameMode::GetBagTakers(const FName& Good) const
 		}
 	};
 
-	// the player's own fighter, if it has one: there is no fight ahead of anybody else
-	if (GameInstance->bLadderStarted)
+	// The player's own body, which eats, drinks and is bound whenever it wants for what the thing gives (FGutNeeds);
+	// and the player's own fighter, if it has one, for what the thing does in a fight: there is no fight ahead of
+	// anybody else.
+	const TownConstants::FGood* Kind = TownConstants::FindGood(Good);
+	const FGutNeeds& Needs = GameInstance->Needs;
+	const bool bWanted = (Kind->Quenches > 0.0f && Needs.Thirst > 8.0f) || (Kind->Fills > 0.0f && Needs.Hunger > 8.0f) || (Kind->Mends > 0.0f && Needs.Hurt > 5.0f);
+	const bool bForFights = Good == FName("bread") || Good == FName("tea") || Good == FName("splint");
+
+	if ((GameInstance->bLadderStarted && bForFights) || bWanted || !bForFights)
 	{
 		FTownBagTaker Taker;
 
 		Taker.Name = TEXT("Yourself");
 
-		Could(Taker, GameInstance->Ladder.bFed, GameInstance->Ladder.bSteadied, GameInstance->Ladder.LimbHealth, GameInstance->Ladder.bInjuriesCarried);
+		if (GameInstance->bLadderStarted && bForFights)
+		{
+			Could(Taker, GameInstance->Ladder.bFed, GameInstance->Ladder.bSteadied, GameInstance->Ladder.LimbHealth, GameInstance->Ladder.bInjuriesCarried);
+		}
+
+		if (bWanted)
+		{
+			Taker.bCan = true;
+			Taker.Why.Reset();
+		}
+		else if (!Taker.bCan && Taker.Why.IsEmpty())
+		{
+			Taker.Why = Kind->Fills > 0.0f ? TEXT("not hungry") : (Kind->Quenches > 0.0f ? TEXT("not thirsty") : TEXT("nothing to bind"));
+		}
 
 		Takers.Add(MoveTemp(Taker));
 	}
 
 	// and whoever is walking with the player: nothing can be handed to somebody who is in the yard
-	for (int32 i = 0; i < GameInstance->Stable.Fighters.Num(); ++i)
+	for (int32 i = 0; bForFights && i < GameInstance->Stable.Fighters.Num(); ++i)
 	{
 		const FGutStableFighter& Fighter = GameInstance->Stable.Fighters[i];
 
@@ -6809,6 +6971,11 @@ bool ATownGameMode::UseFromBag(int32 Line)
 		return true;
 	}
 
+	if (Thing.Kind == ETownBagKind::Water)
+	{
+		return DrinkOwnWater();
+	}
+
 	if (Thing.Kind != ETownBagKind::Good)
 	{
 		return false;
@@ -6829,7 +6996,7 @@ bool ATownGameMode::UseFromBag(int32 Line)
 
 		ShopSaid = (Good && Good->Price <= 0.0f)
 			? (Thing.Good == FName("smokes") ? FString(TEXT("Nobody is walking with you to give them to. The tea seller on Main Street will take them off you.")) : FString(TEXT("It is no use to you. The scrap seller on Main Street pays for it.")))
-			: FString(TEXT("It would be wasted: you have no fight ahead of you, and nobody walking with you to give it to. It keeps."));
+			: FString(TEXT("It would be wasted: you do not want for it, you have no fight ahead of you, and nobody is walking with you to give it to. It keeps."));
 
 		return false;
 	}
@@ -6982,26 +7149,59 @@ bool ATownGameMode::GiveFromBag(const FName& Good, int32 Fighter)
 	{
 		FGutLadderState& Mine = GameInstance->Ladder;
 
+		const TownConstants::FGood* Kind = TownConstants::FindGood(Good);
+		FGutNeeds& Needs = GameInstance->Needs;
+
+		// what it does for the body that has it
+		const bool bHurt = Needs.Hurt > 5.0f;
+
+		if (Kind)
+		{
+			Needs.Add(-Kind->Quenches, -Kind->Fills, -Kind->Mends);
+		}
+
+		const bool bFights = GameInstance->bLadderStarted;
+
 		if (Good == FName("bread"))
 		{
-			Mine.bFed = true;
-			ShopSaid = TEXT("Eaten. Your wind will come back faster in your next fight.");
+			const bool bNew = bFights && !Mine.bFed;
+
+			Mine.bFed |= bFights;
+			ShopSaid = bNew ? TEXT("Eaten. Your wind will come back faster in your next fight.") : TEXT("Eaten.");
 		}
 		else if (Good == FName("tea"))
 		{
-			Mine.bSteadied = true;
-			ShopSaid = TEXT("Drunk. Your wind will start coming back sooner in your next fight.");
-		}
-		else
-		{
-			const int32 Bound = Bind(Mine.LimbHealth);
+			const bool bNew = bFights && !Mine.bSteadied;
 
-			if (Bound == INDEX_NONE)
+			Mine.bSteadied |= bFights;
+			ShopSaid = bNew ? TEXT("Drunk. Your wind will start coming back sooner in your next fight.") : TEXT("Drunk.");
+		}
+		else if (Good == FName("splint"))
+		{
+			const int32 Bound = (bFights && Mine.bInjuriesCarried) ? Bind(Mine.LimbHealth) : INDEX_NONE;
+
+			if (Bound == INDEX_NONE && !bHurt)
 			{
 				return false;
 			}
 
-			ShopSaid = FString::Printf(TEXT("Bound on. Your %s is better than it was."), LimbNames[FMath::Clamp(Bound, 0, 3)]);
+			ShopSaid = Bound != INDEX_NONE ? FString::Printf(TEXT("Bound on. Your %s is better than it was."), LimbNames[FMath::Clamp(Bound, 0, 3)]) : FString(TEXT("Bound on, where it was worst."));
+		}
+		else if (Good == FName("beer"))
+		{
+			ShopSaid = TEXT("Drunk. It is wet, and for a while nothing aches.");
+		}
+		else
+		{
+			ShopSaid = TEXT("Eaten. It was salt, mostly.");
+		}
+
+		// and how the body stands for it
+		ShopSaid += FString::Printf(TEXT(" You are %s, %s and %s."), FGutNeeds::ThirstWord(Needs.Thirst), FGutNeeds::HungerWord(Needs.Hunger), FGutNeeds::HurtWord(Needs.Hurt));
+
+		if (UGutSoundSubsystem* Sounds = UGutSoundSubsystem::Get(this); Sounds && Kind && Good != FName("splint"))
+		{
+			Sounds->Play(Kind->Fills > 0.0f ? FName("eat") : FName("drink"), Walker ? Walker->GetActorLocation() : FVector::ZeroVector);
 		}
 
 		// what is written down is the fighter as it stood before its next fight: this is part of that

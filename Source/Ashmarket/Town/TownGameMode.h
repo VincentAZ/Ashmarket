@@ -1145,6 +1145,31 @@ public:
 	bool bLiveSale = true;
 
 	bool IsSaleLive() const;
+
+	/**
+	 *  If true the player's thirst and hunger come on as the town is walked (FGutNeeds): UpdateNeeds. The tests are run
+	 *  with it off (-GutNoNeeds), so that nothing they count on moves under them, and the test of it turns it on.
+	 */
+	bool bNeedsClock = true;
+
+	/** How dry, how empty and how hurt the player is, in a word each, and how bad each is (nought to three): for the screen */
+	struct FTownNeed
+	{
+		FString Words;
+		int32 Level = 0;
+	};
+
+	TArray<FTownNeed> GetNeeds() const;
+
+	/** Moves the player's thirst and hunger on, says so when one of them turns for the worse, and has them go down in the street at the worst */
+	void UpdateNeeds(float DeltaTime);
+
+	/** Drinks a litre of what the player holds. False, with why, if there is not a litre or no thirst to speak of. */
+	bool DrinkOwnWater();
+
+	/** How bad thirst and hunger were when it was last said, so that it is said once as each turns */
+	int32 ThirstTold = 0;
+	int32 HungerTold = 0;
 	bool IsSaleOver() const { return bSaleOver; }
 
 	float GetSaleNextIn() const { return SaleNextIn; }

@@ -200,6 +200,51 @@ struct FGutTaking
 	float Risked = 0.0f;
 };
 
+/**
+ *  The player's own body between fights: how dry, how empty, how hurt, each from nought (not at all) to a hundred. ("We
+ *  need a health status - food, water, injuries ... and ways to satisfy: buy tea, use own water, beer?, buy food, eat
+ *  dead slaves (jerky) - let's keep him on his toes", 26 November.) Thirst and hunger come on as the town is walked, with
+ *  each day and with each fight; a hurt comes from a fight and goes with time, a day's rest and a binding. Dry or
+ *  empty, there is less wind in a fight; hurt, less to lose. Kept with the game (UGutGameInstance::Needs).
+ */
+USTRUCT(BlueprintType)
+struct FGutNeeds
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category="Needs")
+	float Thirst = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category="Needs")
+	float Hunger = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category="Needs")
+	float Hurt = 0.0f;
+
+	/** How fast wind comes back in a fight, against a body that wants for nothing: all of it under forty, three fifths of it at the worst */
+	float GetWind() const { return 1.0f - (0.4f * FMath::Clamp((FMath::Max(Thirst, Hunger * 0.8f) - 40.0f) / 60.0f, 0.0f, 1.0f)); }
+
+	/** How much there is to lose in a fight, against a body that is whole: three fifths of it at the worst */
+	float GetHealth() const { return 1.0f - (0.4f * FMath::Clamp(Hurt / 100.0f, 0.0f, 1.0f)); }
+
+	/** Nought to three: nothing to speak of, coming on, bad, as bad as it gets before something gives */
+	static int32 GetLevel(float Need) { return Need < 35.0f ? 0 : (Need < 65.0f ? 1 : (Need < 85.0f ? 2 : 3)); }
+
+	static const TCHAR* ThirstWord(float Need) { static const TCHAR* Words[] = { TEXT("watered"), TEXT("dry"), TEXT("thirsty"), TEXT("parched") }; return Words[GetLevel(Need)]; }
+	static const TCHAR* HungerWord(float Need) { static const TCHAR* Words[] = { TEXT("fed"), TEXT("peckish"), TEXT("hungry"), TEXT("starving") }; return Words[GetLevel(Need)]; }
+	static const TCHAR* HurtWord(float Need) { return Need < 10.0f ? TEXT("sound") : (Need < 40.0f ? TEXT("bruised") : (Need < 70.0f ? TEXT("hurt") : TEXT("badly hurt"))); }
+
+	void Add(float MoreThirst, float MoreHunger, float MoreHurt)
+	{
+		Thirst = FMath::Clamp(Thirst + MoreThirst, 0.0f, 100.0f);
+		Hunger = FMath::Clamp(Hunger + MoreHunger, 0.0f, 100.0f);
+		Hurt = FMath::Clamp(Hurt + MoreHurt, 0.0f, 100.0f);
+	}
+
+	/** What a fight takes out of whoever fought it: Lost is the share of their health that was gone at the end of it */
+	void AfterFight(float Lost) { Add(22.0f, 8.0f, FMath::Clamp(Lost, 0.0f, 1.0f) * 45.0f); }
+};
+
 /** Where somebody who runs a stable of fighters stands */
 USTRUCT(BlueprintType)
 struct FGutStableState
@@ -357,7 +402,10 @@ enum class EGutBodyGoesTo : uint8
 	Grill,
 
 	/** The ground, at the owner's cost, with the yard standing by */
-	Ground
+	Ground,
+
+	/** Salted down and kept: jerky, in the owner's own bag ("eat dead slaves (jerky)", 26 November). Nobody pays, and the yard knows who ate whom. */
+	Jerky
 };
 
 /** What a line on the owner's card does, kept in the line's index. A line about one of several things adds which one. */
@@ -398,6 +446,9 @@ namespace GutStableLines
 		BodyToParts = 20,
 		BodyToGrill = 21,
 		BodyToGround = 22,
+
+		/** Salted down for the owner's own bag: see EGutBodyGoesTo::Jerky. (Not beside the other three, whose numbers are taken.) */
+		BodyToJerky = 27,
 
 		/** Plus the fighter's place in the stable */
 		OpenFighter = 100,

@@ -19,6 +19,8 @@ void UGutGameInstance::Init()
 {
 	Super::Init();
 
+	bNeedsOn = !FParse::Param(FCommandLine::Get(), TEXT("GutNoNeeds"));
+
 	// automated runs must never read or write the player's own run
 	if (FParse::Param(FCommandLine::Get(), TEXT("GutNoSave")))
 	{
@@ -338,6 +340,7 @@ bool UGutGameInstance::SaveRun()
 	Save->bOnePurse = bOnePurse;
 	Save->Found = Found;
 	Save->Story = Story;
+	Save->Needs = Needs;
 	Save->BlockSold = BlockSold;
 	Save->BlockSoldTo = BlockSoldTo;
 	Save->BlockSoldDay = BlockSoldDay;
@@ -378,6 +381,7 @@ bool UGutGameInstance::LoadRun()
 	bOnePurse = Save->bOnePurse;
 	Found = Save->Found;
 	Story = Save->Story;
+	Needs = Save->Needs;
 	BlockSold = Save->BlockSold;
 	BlockSoldTo = Save->BlockSoldTo;
 	BlockSoldDay = Save->BlockSoldDay;
@@ -425,6 +429,7 @@ void UGutGameInstance::ClearRun()
 	bPurseSeen = Fresh->bPurseSeen;
 	Found = Fresh->Found;
 	Story = Fresh->Story;
+	Needs = FGutNeeds();
 	BlockSold = Fresh->BlockSold;
 	BlockSoldTo = Fresh->BlockSoldTo;
 	BlockSoldDay = Fresh->BlockSoldDay;

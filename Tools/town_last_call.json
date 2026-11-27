@@ -121,10 +121,12 @@
   {
    "name": "Captain Dolores", "prompt": "Talk to Captain Dolores", "body": "Dolores", "cloth": [0.09, 0.1, 0.14],
    "x": -39.5, "y": 258.6, "facing": 90, "stand": "stand_f",
+   "sells": ["beer", "jerky"],
    "lines": [
     {"id": "aboard", "words": "Welcome aboard the Last Call. Exits are here, here, and through anybody who starts something. We don't expect turbulence, but then we didn't last time.",
      "answers": [
       {"words": "Why are you serving outside?", "next": "outside"},
+      {"words": "What are you pouring?", "deed": "trade"},
       {"words": "Another night."}]},
     {"id": "outside", "words": "The cabin floor is up for the week, sweetheart. Somebody slept in the hold and came up through it. So tonight the bar is the Apron, the board is by my elbow, and you may sit anywhere that is not on fire."}
    ]

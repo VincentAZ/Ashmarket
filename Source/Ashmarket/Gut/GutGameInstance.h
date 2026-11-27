@@ -219,6 +219,10 @@ public:
 	UPROPERTY()
 	FTownStoryState Story;
 
+	/** The player's own body: see FGutNeeds */
+	UPROPERTY()
+	FGutNeeds Needs;
+
 	/** Who at the Block went to somebody else today: see UGutGameInstance::BlockSold */
 	UPROPERTY()
 	TArray<int32> BlockSold;
@@ -310,6 +314,10 @@ public:
 	 */
 	UPROPERTY(BlueprintReadOnly, Category="Gut")
 	FTownStoryState Story;
+
+	/** The player's own body: see FGutNeeds */
+	UPROPERTY()
+	FGutNeeds Needs;
 
 	/**
 	 *  Who at the Block was bid for and went to somebody else: the lines of the day's book, who each went to, and the day
@@ -435,6 +443,12 @@ public:
 	int32 Game = 0;
 
 	/** Where a game is kept */
+	/**
+	 *  If false the player's body brings nothing to a fight and takes nothing from one (FGutNeeds): -GutNoNeeds, which
+	 *  the tests are run with, so that a fight is the same fight whatever was fought before it.
+	 */
+	bool bNeedsOn = true;
+
 	FString GetGameSlot(int32 Which) const { return Which <= 0 ? GameSlotStem : FString::Printf(TEXT("%s%d"), *GameSlotStem, Which + 1); }
 
 	/** What the kept games are called on disk. A test gives them another name, so that nobody's own games are touched. */

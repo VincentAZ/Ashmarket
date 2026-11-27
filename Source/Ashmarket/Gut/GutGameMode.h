@@ -351,6 +351,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stable|Resentment")
 	float ResentmentForBodyToGrill = 14.0f;
 
+	/** What everybody in a collar thinks of an owner who has one of them salted down and eats them, and how many pieces a body makes */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stable", meta = (ClampMin = 0, ClampMax = 100))
+	float ResentmentForBodyToJerky = 22.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stable", meta = (ClampMin = 1, ClampMax = 20))
+	int32 JerkyFromBody = 6;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stable|Resentment")
 	float ResentmentEasedByBurial = 10.0f;
 
@@ -916,6 +923,9 @@ public:
 
 	/** Sees to the stable's dead fighter: sold for parts, sold to the grill carts, or buried */
 	bool SendBodyTo(EGutBodyGoesTo Where);
+
+	/** How many pieces of jerky a body makes, salted down: see EGutBodyGoesTo::Jerky */
+	int32 GetJerkyFromBody() const { return JerkyFromBody; }
 
 	float GetBodyPrice(EGutBodyGoesTo Where) const;
 

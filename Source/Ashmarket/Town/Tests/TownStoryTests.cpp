@@ -3076,6 +3076,188 @@ bool FTownRobbingTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+/**
+ *  The player's own body ("we need a health status - food, water, injuries ... and ways to satisfy: buy tea, use own
+ *  water, beer?, buy food, eat dead slaves (jerky) - let's keep him on his toes", 26 November). Thirst and hunger come
+ *  on as the town is walked and are said on the screen; a litre of the player's own water, jerky, beer and a binding
+ *  each take off what they take off; at the worst the player goes down in the street and comes round lighter; and a
+ *  body that is dry or hurt brings less to a fight.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownNeedsTest, "Ashmarket.Town.Needs", GutTests::Flags)
+
+bool FTownNeedsTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_PoolStreet"), true))
+	{
+		AddError(TEXT("Could not open Pool Street's level"));
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 0.8f, [this]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		const FGutNeeds NeedsWas = Run->Needs;
+		const FTownStoryState StoryWas = Run->Story;
+		const FGutLadderState LadderWas = Run->Ladder;
+		const FGutWindowState WindowWas = Run->Window;
+		const FGutStableState StableWas = Run->Stable;
+		const TArray<FGutBagItem> BagWas = Run->Bag;
+		const bool bLadderWas = Run->bLadderStarted;
+		const bool bOneWas = Run->IsOnePurse();
+		const bool bClockWas = Town->bNeedsClock;
+
+		// somebody with no fight ahead of them, one purse, and ten litres in it
+		const bool bSharesWas = Run->bSharesWaterInTests;
+
+		Run->bLadderStarted = false;
+		Run->Stable = FGutStableState();
+		Run->Bag.Reset();
+		Run->bSharesWaterInTests = true;
+		Run->ShareWater();
+
+		Town->Apply(FString::Printf(TEXT("water-%d"), Town->GetMark(FName("water"))));
+		Town->Apply(TEXT("water+10"));
+
+		Town->bNeedsClock = true;
+		Run->Needs = FGutNeeds();
+
+		TArray<ATownGameMode::FTownNeed> Told = Town->GetNeeds();
+
+		TestTrue(TEXT("Somebody who wants for nothing is watered, fed and sound"), Told.Num() == 3 && Told[0].Words == TEXT("watered") && Told[1].Words == TEXT("fed") && Told[2].Words == TEXT("sound") && Told[0].Level == 0);
+
+		// six minutes of the town
+		Town->UpdateNeeds(360.0f);
+
+		TestTrue(*FString::Printf(TEXT("Six minutes of walking the town and they are dry (%.0f), and not yet hungry (%.0f)"), Run->Needs.Thirst, Run->Needs.Hunger),
+			FMath::IsNearlyEqual(Run->Needs.Thirst, 50.0f, 0.5f) && Run->Needs.Hunger < 35.0f && Town->GetNeeds()[0].Words == TEXT("dry"));
+
+		Town->UpdateNeeds(180.0f);
+
+		TestTrue(*FString::Printf(TEXT("Nine, and they are thirsty, and told so with what to do about it (%s)"), *Town->GetNotice()),
+			Town->GetNeeds()[0].Words == TEXT("thirsty") && Town->GetNeeds()[0].Level == 2 && Town->GetNotice().Contains(TEXT("You are thirsty")) && Town->GetNotice().Contains(TEXT("bag")));
+
+		// a body that is dry brings less wind to a fight, and one that is hurt less to lose
+		FGutNeeds Worst;
+		Worst.Thirst = 100.0f;
+		Worst.Hurt = 100.0f;
+
+		TestTrue(*FString::Printf(TEXT("Thirsty, wind comes back slower in a fight (%.2f of it)"), Run->Needs.GetWind()), Run->Needs.GetWind() < 0.8f && Run->Needs.GetWind() > 0.6f);
+		TestTrue(TEXT("At the worst, three fifths of the wind and three fifths of the health; wanting for nothing, all of both"),
+			FMath::IsNearlyEqual(Worst.GetWind(), 0.6f, 0.01f) && FMath::IsNearlyEqual(Worst.GetHealth(), 0.6f, 0.01f) && FGutNeeds().GetWind() == 1.0f && FGutNeeds().GetHealth() == 1.0f);
+
+		// the bag: the water in it can be drunk
+		Town->ToggleBag();
+
+		const auto Find = [Town](ETownBagKind Kind, const TCHAR* Name)
+		{
+			const TArray<FTownBagLine> Things = Town->GetBagLines();
+
+			return Things.IndexOfByPredicate([Kind, Name](const FTownBagLine& Thing) { return Thing.Kind == Kind && Thing.Name.Contains(Name); });
+		};
+
+		const int32 Water = Find(ETownBagKind::Water, TEXT("Water"));
+
+		if (TestTrue(TEXT("The bag has the player's water in it, to be drunk"), Town->IsBagOpen() && Water != INDEX_NONE && Town->GetBagLines()[Water].bCanUse && Town->GetBagLines()[Water].Verb.Contains(TEXT("drink"))))
+		{
+			TestTrue(TEXT("A litre of it is drunk"), Town->UseFromBag(Water));
+			TestTrue(*FString::Printf(TEXT("It takes most of a thirst off (%.0f) and is a litre gone (%d L): %s"), Run->Needs.Thirst, Town->GetMark(FName("water")), *Town->GetShopSaid()),
+				FMath::IsNearlyEqual(Run->Needs.Thirst, 30.0f, 0.5f) && Town->GetMark(FName("water")) == 9 && Town->GetShopSaid().Contains(TEXT("drunk")));
+
+			TestTrue(TEXT("And another"), Town->UseFromBag(Water) && Run->Needs.Thirst == 0.0f && Town->GetMark(FName("water")) == 8);
+			TestFalse(TEXT("Somebody who is not thirsty does not drink what everything is paid in"), Town->UseFromBag(Water));
+			TestTrue(*FString::Printf(TEXT("And is told why (%s)"), *Town->GetShopSaid()), Town->GetShopSaid().Contains(TEXT("not thirsty")) && Town->GetMark(FName("water")) == 8);
+		}
+
+		// jerky fills, and is salt
+		Run->Needs.Hunger = 70.0f;
+		Run->AddToBag(FName("jerky"), 1);
+
+		const int32 Jerky = Find(ETownBagKind::Good, TEXT("Jerky"));
+
+		if (TestTrue(TEXT("Jerky can be eaten by somebody who is hungry"), Jerky != INDEX_NONE && Town->GetBagLines()[Jerky].bCanUse))
+		{
+			TestTrue(TEXT("Eaten"), Town->UseFromBag(Jerky));
+			TestTrue(*FString::Printf(TEXT("It takes half a hunger off (%.0f), leaves them a little drier (%.0f), and is out of the bag"), Run->Needs.Hunger, Run->Needs.Thirst),
+				FMath::IsNearlyEqual(Run->Needs.Hunger, 35.0f, 0.5f) && FMath::IsNearlyEqual(Run->Needs.Thirst, 8.0f, 0.5f) && Run->GetBagCount(FName("jerky")) == 0);
+		}
+
+		// beer is wet, and dulls a hurt; a binding takes a third off one
+		Run->Needs.Thirst = 40.0f;
+		Run->Needs.Hurt = 50.0f;
+		Run->AddToBag(FName("beer"), 1);
+		Run->AddToBag(FName("splint"), 1);
+
+		const int32 Beer = Find(ETownBagKind::Good, TEXT("beer"));
+
+		if (TestTrue(TEXT("Beer can be drunk"), Beer != INDEX_NONE && Town->GetBagLines()[Beer].bCanUse))
+		{
+			TestTrue(TEXT("Drunk"), Town->UseFromBag(Beer));
+			TestTrue(*FString::Printf(TEXT("It takes some thirst off (%.0f) and a little of a hurt (%.0f)"), Run->Needs.Thirst, Run->Needs.Hurt), FMath::IsNearlyEqual(Run->Needs.Thirst, 20.0f, 0.5f) && FMath::IsNearlyEqual(Run->Needs.Hurt, 42.0f, 0.5f));
+		}
+
+		const int32 Splint = Find(ETownBagKind::Good, TEXT("Splint"));
+
+		if (TestTrue(TEXT("A binding can be put on a body that is hurt, with no fight ahead of it"), Splint != INDEX_NONE && Town->GetBagLines()[Splint].bCanUse))
+		{
+			TestTrue(TEXT("Bound on"), Town->UseFromBag(Splint));
+			TestTrue(*FString::Printf(TEXT("It takes a third off a hurt (%.0f)"), Run->Needs.Hurt), FMath::IsNearlyEqual(Run->Needs.Hurt, 7.0f, 0.5f) && Town->GetNeeds()[2].Words == TEXT("sound"));
+		}
+
+		// bread is no use to somebody who is not hungry and has no fight ahead of them
+		Run->Needs.Hunger = 0.0f;
+		Run->AddToBag(FName("bread"), 1);
+
+		const int32 Bread = Find(ETownBagKind::Good, TEXT("bread"));
+
+		TestTrue(TEXT("Bread keeps, for somebody who is not hungry and has no fight ahead"), Bread != INDEX_NONE && !Town->GetBagLines()[Bread].bCanUse);
+
+		Town->CloseShop();
+
+		// at the worst they go down in the street, and come round lighter
+		const int32 Held = Town->GetMark(FName("water"));
+		const int32 Fear = Town->GetMark(FName("fear"));
+
+		Run->Needs.Thirst = 99.9f;
+
+		Town->UpdateNeeds(2.0f);
+
+		TestTrue(*FString::Printf(TEXT("Parched past bearing, they go down in the street (%s)"), *Town->GetNotice()), Town->GetNotice().Contains(TEXT("went down in the street")));
+		TestTrue(*FString::Printf(TEXT("And come round with five litres gone (%d of %d), feared a point less, and thirsty still (%.0f)"), Town->GetMark(FName("water")), Held, Run->Needs.Thirst),
+			Town->GetMark(FName("water")) == FMath::Max(Held - 5, 0) && Town->GetMark(FName("fear")) == FMath::Max(Fear - 1, 0) && FMath::IsNearlyEqual(Run->Needs.Thirst, 60.0f, 0.5f));
+
+		GutTests::Screenshot(TEXT("80_went_down_in_the_street"));
+
+		Town->bNeedsClock = bClockWas;
+
+		Run->Needs = NeedsWas;
+		Run->Story = StoryWas;
+		Run->Bag = BagWas;
+		Run->bLadderStarted = bLadderWas;
+
+		if (!bOneWas)
+		{
+			Run->ForgetPurse();
+		}
+
+		Run->bSharesWaterInTests = bSharesWas;
+
+		Run->Ladder = LadderWas;
+		Run->Window = WindowWas;
+		Run->Stable = StableWas;
+	}, []() { return IsStreetReady(); } });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
 #endif
 
 /**
