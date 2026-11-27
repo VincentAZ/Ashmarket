@@ -3143,6 +3143,15 @@ bool FTownNeedsTest::RunTest(const FString& Parameters)
 		TestTrue(*FString::Printf(TEXT("Nine, and they are thirsty, and told so with what to do about it (%s)"), *Town->GetNotice()),
 			Town->GetNeeds()[0].Words == TEXT("thirsty") && Town->GetNeeds()[0].Level == 2 && Town->GetNotice().Contains(TEXT("You are thirsty")) && Town->GetNotice().Contains(TEXT("bag")));
 
+		// and nobody thirsty runs
+		Town->GetWalker()->SetJogging(true);
+		Town->GetWalker()->SetRunning(true);
+		Town->UpdateNeeds(0.01f);
+
+		TestTrue(TEXT("Thirsty, they jog and do not run"), Town->GetWalker()->IsJogging() && !Town->GetWalker()->IsRunning());
+
+		Town->GetWalker()->SetJogging(false);
+
 		// a body that is dry brings less wind to a fight, and one that is hurt less to lose
 		FGutNeeds Worst;
 		Worst.Thirst = 100.0f;

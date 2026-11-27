@@ -3687,8 +3687,8 @@ void ATownGameMode::UpdateNeeds(float DeltaTime)
 	{
 		if (Level > ThirstTold && Level >= 2 && !IsTalking() && !bShopping)
 		{
-			ShowNotice(Level == 2 ? TEXT("You are thirsty. Drink: a litre of your own from the bag, tea on Main Street, or a cup on Rotgut Row.")
-				: TEXT("You are parched. Drink now, or you will go down in the street: a litre of your own from the bag will do it."));
+			ShowNotice(Level == 2 ? TEXT("You are thirsty, and will not run until you drink: a litre of your own from the bag, tea on Main Street, or a cup on Rotgut Row.")
+				: TEXT("You are parched, and can hardly walk. Drink now, or you will go down in the street: a litre of your own from the bag will do it."));
 		}
 
 		ThirstTold = Level;
@@ -3698,11 +3698,29 @@ void ATownGameMode::UpdateNeeds(float DeltaTime)
 	{
 		if (Level > HungerTold && Level >= 2 && !IsTalking() && !bShopping)
 		{
-			ShowNotice(Level == 2 ? TEXT("You are hungry. Eat: bread on Main Street, or jerky on Rotgut Row and at the Last Call.")
-				: TEXT("You are starving. Eat now, or you will go down in the street."));
+			ShowNotice(Level == 2 ? TEXT("You are hungry, and will not run until you eat: bread on Main Street, or jerky on Rotgut Row and at the Last Call.")
+				: TEXT("You are starving, and can hardly walk. Eat now, or you will go down in the street."));
 		}
 
 		HungerTold = Level;
+	}
+
+	// Thirsty or hungry, nobody runs; parched or starving, nobody jogs either, and the walk is a slow one.
+	if (AGutFighter* Walker = GetWalker())
+	{
+		const int32 Worst = FMath::Max(FGutNeeds::GetLevel(Needs.Thirst), FGutNeeds::GetLevel(Needs.Hunger));
+
+		if (Worst >= 2 && Walker->IsRunning())
+		{
+			Walker->SetRunning(false);
+		}
+
+		if (Worst >= 3 && Walker->IsJogging())
+		{
+			Walker->SetJogging(false);
+		}
+
+		Walker->SetMoveSpeedScale(Worst >= 3 ? 0.82f : 1.0f);
 	}
 
 	// At the worst the player goes down where they stand, and comes round lighter. (Not in the middle of a talk or a
@@ -3741,7 +3759,7 @@ bool ATownGameMode::StartMugging(int32 Index)
 	const AGutFighter* Walker = GetWalker();
 
 	if (!PlaceData || !Walker || MugStage != 0 || !PlaceData->People.IsValidIndex(Index) || !People.IsValidIndex(Index) || !People[Index]
-		|| PlaceData->People[Index].Taken.IsNone() || !PlaceData->People[Index].Beat.IsEmpty() || Led.ContainsByPredicate([Index](const FTownLed& One) { return One.Person == Index; })
+		|| PlaceData->People[Index].Taken.IsNone() || Led.ContainsByPredicate([Index](const FTownLed& One) { return One.Person == Index; })
 		|| !PlaceData->People[Index].Lines.ContainsByPredicate([](const FTownLine& Line) { return Line.Id == TEXT("mug"); }))
 	{
 		return false;
@@ -3806,7 +3824,8 @@ void ATownGameMode::UpdateMugging(float DeltaTime)
 
 	const auto SendBack = [this](int32 Index)
 	{
-		if (PlaceData->People.IsValidIndex(Index) && People.IsValidIndex(Index) && People[Index])
+		// (somebody who walks a round is not sent anywhere: their round takes them up again from where they stand)
+		if (PlaceData->People.IsValidIndex(Index) && People.IsValidIndex(Index) && People[Index] && PlaceData->People[Index].Beat.IsEmpty())
 		{
 			FTownLed Back;
 
@@ -3954,8 +3973,7 @@ void ATownGameMode::UpdateMugging(float DeltaTime)
 
 	for (int32 i = 0; i < PlaceData->People.Num() && i < People.Num(); ++i)
 	{
-		// (not somebody who walks a beat: their round has them, and would walk them off again)
-		if (People[i] && !PlaceData->People[i].Taken.IsNone() && PlaceData->People[i].Beat.IsEmpty() && !IsWalking(i))
+		if (People[i] && !PlaceData->People[i].Taken.IsNone() && !IsWalking(i))
 		{
 			if (const float Distance = FVector::Dist2D(People[i]->GetActorLocation(), Walker->GetActorLocation()); Distance < Apart)
 			{
@@ -4561,6 +4579,12 @@ void ATownGameMode::UpdateBeats(float DeltaTime)
 		AGutFighter* Body = People.IsValidIndex(One.Person) ? People[One.Person].Get() : nullptr;
 
 		if (!Body || !PlaceData->People.IsValidIndex(One.Person) || !PlaceData->People[One.Person].Beat.IsValidIndex(One.Stop))
+		{
+			continue;
+		}
+
+		// broken off from their round to come for the player's water: the round waits, and goes on from wherever that leaves them
+		if (One.Person == Mugger && MugStage != 0)
 		{
 			continue;
 		}
