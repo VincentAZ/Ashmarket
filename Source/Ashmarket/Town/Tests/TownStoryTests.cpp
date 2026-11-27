@@ -3267,6 +3267,196 @@ bool FTownNeedsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+/**
+ *  Ashmarket.Look.Tied   somebody taken, with their wrists tied, walked along behind the player and stopped: pictured
+ *                        from the side as they walk, and at moments after they stop. ("Serious issues with rendering
+ *                        her arms - maybe her hands tied behind her back", his video of 26 November, in which an elbow
+ *                        jumps out as she stops.) Pictures only: it is looked at, not judged by the test.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownLookTiedTest, "Ashmarket.Look.Tied", GutTests::Flags)
+
+bool FTownLookTiedTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	if (!FApp::CanEverRender())
+	{
+		AddInfo(TEXT("Nothing is drawn in this run: run with --render"));
+		return true;
+	}
+
+	struct FNotes
+	{
+		FTownStoryState Story;
+		FGutStableState Stable;
+		TWeakObjectPtr<ACameraActor> Camera;
+		FVector Ahead = FVector::ForwardVector;
+		float Walked = 0.0f;
+		bool bFailed = false;
+
+		/** Where the camera is, round the captive from their own back: a quarter turn is their side */
+		float Round = 80.0f;
+	};
+
+	TSharedRef<FNotes> Notes = MakeShared<FNotes>();
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_MainStreet"), true))
+	{
+		AddError(TEXT("Could not open Main Street's level"));
+		return false;
+	}
+
+	// the camera three metres off the captive, round them from their own back by so much, at the height of their chest
+	const auto Look = [Notes]()
+	{
+		const ATownGameMode* Town = GetTown();
+		const AGutFighter* Tied = Town->GetTowBody(0);
+
+		if (ACameraActor* Seen = Notes->Camera.Get(); Seen && Tied)
+		{
+			const FVector At = Tied->GetActorLocation() + FVector(0.0f, 0.0f, 10.0f);
+			const FVector From = At + (FRotator(0.0f, Tied->GetActorRotation().Yaw + 180.0f + Notes->Round, 0.0f).Vector() * 300.0f);
+
+			Seen->SetActorLocationAndRotation(From, (At - From).Rotation());
+			Seen->GetCameraComponent()->SetFieldOfView(42.0f);
+			Seen->GetCameraComponent()->SetConstraintAspectRatio(false);
+		}
+	};
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 0.8f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+		const UTownPlaceData* Place = Town->GetPlace();
+
+		Notes->Story = Run->Story;
+		Notes->Stable = Run->Stable;
+
+		Run->Stable = FGutStableState();
+		Run->Taking = FGutTaking();
+
+		const int32 Who = Place->People.IndexOfByPredicate([Town](const FTownPerson& Person) { return !Person.Taken.IsNone() && Town->GetMark(Person.Taken) == 0; });
+
+		Town->bWaysHeld = true;
+
+		if (!TestTrue(TEXT("Somebody with no tag is gone for"), Who != INDEX_NONE && Town->GoFor(Who, 0)))
+		{
+			Notes->bFailed = true;
+			return;
+		}
+
+		Run->Taking.Outcome = 1;
+		Run->bSandbox = false;
+	}, []() { return IsStreetReady(); } });
+
+	Steps.Add({ 0.2f, [this]() { AutomationOpenMap(TEXT("/Game/Town/Lvl_MainStreet"), true); } });
+
+	Steps.Add({ 3.5f, [this, Notes, Look]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (Notes->bFailed || !TestTrue(TEXT("They are behind the player with their wrists tied"), Town->GetTowBody(0) && Town->GetTowBody(0)->IsBound()))
+		{
+			Notes->bFailed = true;
+			return;
+		}
+
+		Notes->Camera = Town->GetWorld()->SpawnActor<ACameraActor>();
+
+		if (APlayerController* Eyes = UGameplayStatics::GetPlayerController(Town, 0))
+		{
+			Eyes->SetViewTarget(Notes->Camera.Get());
+		}
+
+		// up the street, which runs north
+		Notes->Ahead = FVector(0.0f, 1.0f, 0.0f);
+		Notes->Walked = 0.0f;
+
+		Look();
+	}, []() { return IsStreetReady(); } });
+
+	// walked for three and a half seconds, pictured twice on the way
+	for (int32 Shot = 0; Shot < 2; ++Shot)
+	{
+		Steps.Add({ 0.0f, [this, Notes, Look, Shot]()
+		{
+			if (!Notes->bFailed)
+			{
+				Look();
+				GutTests::Screenshot(*FString::Printf(TEXT("tied_%02d_walking"), Shot + 1));
+			}
+		}, [Notes, Look, Shot]()
+		{
+			if (Notes->bFailed)
+			{
+				return true;
+			}
+
+			GetTown()->GetWalker()->AddMovementInput(Notes->Ahead, 1.0f);
+			Look();
+
+			return (Notes->Walked += GetTown()->GetWorld()->GetDeltaSeconds()) > (Shot == 0 ? 2.2f : 3.5f);
+		} });
+	}
+
+	// and stopped: pictured as they come to a stand, and after
+	const float After[] = { 0.1f, 0.15f, 0.2f, 0.25f, 0.5f, 1.3f };
+
+	for (int32 Shot = 0; Shot < UE_ARRAY_COUNT(After); ++Shot)
+	{
+		Steps.Add({ After[Shot], [this, Notes, Look, Shot]()
+		{
+			if (!Notes->bFailed)
+			{
+				Look();
+				GutTests::Screenshot(*FString::Printf(TEXT("tied_%02d_stopped"), Shot + 3));
+			}
+		} });
+	}
+
+	// and standing, from behind and from the other side
+	const TPair<const TCHAR*, float> Sides[] = { { TEXT("tied_09_from_behind"), 0.0f }, { TEXT("tied_10_from_behind_left"), -35.0f }, { TEXT("tied_11_from_the_other_side"), -90.0f } };
+
+	for (const TPair<const TCHAR*, float>& Side : Sides)
+	{
+		Steps.Add({ 0.3f, [Notes, Look, Side]()
+		{
+			if (!Notes->bFailed)
+			{
+				Notes->Round = Side.Value;
+				Look();
+			}
+		} });
+
+		Steps.Add({ 0.3f, [Notes, Side]()
+		{
+			if (!Notes->bFailed)
+			{
+				GutTests::Screenshot(Side.Key);
+			}
+		} });
+	}
+
+	Steps.Add({ 0.5f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		Town->bWaysHeld = false;
+
+		Run->Story = Notes->Story;
+		Run->Stable = Notes->Stable;
+		Run->Taking = FGutTaking();
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
 #endif
 
 /**

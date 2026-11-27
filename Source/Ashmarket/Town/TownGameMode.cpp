@@ -1489,12 +1489,17 @@ void ATownGameMode::UpdateTow(float DeltaTime)
 			}
 		}
 
-		// standing, they turn to whoever owns them; going, to where they are going
+		// Standing, they turn to whoever owns them; going, to where they are going. Somebody whose wrists are tied does not
+		// turn to anybody: they stand as they were walked, looking where they were being taken. (Stopped beside the
+		// player, a captive swung a quarter turn round to face them, and what was seen from behind the player was an
+		// elbow coming out sideways from somebody who had been walking straight: "serious issues with rendering her arms
+		// - maybe her hands tied behind her back", his video of 26 November. Filmed from her own back, her arms are as
+		// they should be the whole time: Ashmarket.Look.Tied.)
 		FVector2D Toward = Going;
 
 		if (!bMoved)
 		{
-			Toward = FVector2D(WalkerFeet.X, WalkerFeet.Y) - Flat;
+			Toward = Body->IsBound() ? FVector2D::ZeroVector : FVector2D(WalkerFeet.X, WalkerFeet.Y) - Flat;
 		}
 
 		FRotator Turned = Facing;
