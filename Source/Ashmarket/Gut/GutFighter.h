@@ -1646,6 +1646,35 @@ public:
 	 */
 	static bool IsClipReady(const UAnimSequenceBase* Clip);
 
+	/**
+	 *  What somebody wears follows the body and is not simulated as cloth. Simulated, a jacket that was thrown (by a frame
+	 *  that took seconds while a place was being made ready, or by the body being stood somewhere else in one go) lay as it
+	 *  fell for as long as its wearer stood still: sleeves across the chest with the hands hanging at the sides, a sleeve
+	 *  off an arm that the body under it is not drawn for. Reported as a body gone wrong on 24, 25 and 26 November ("still
+	 *  an issue", "as soon as he moves, it's fixed", "serious issues with rendering her arms"), and taken by me for three
+	 *  other things first. -GutCloth simulates it as before. Called every frame; does its work once for each body.
+	 */
+	void StillCloth();
+
+	/** The body whose clothes StillCloth has seen to */
+	TWeakObjectPtr<AActor> ClothStilled;
+
+public:
+	/**
+	 *  Keeps somebody's body no coarser than what they wear can follow. A dressed body is four levels of detail and
+	 *  what it wears is one; all of somebody's parts are kept at one level by a component of the body's own, and from a
+	 *  few metres off that is the body's third, which no longer works out the bones of the forearm that a sleeve is hung
+	 *  on. The sleeve then stays where those bones were left, folded at the elbow, and the forearm under it, which is
+	 *  drawn again at that level, hangs bare. Seen as "the gatekeeper's arms are misaligned" (24 November), "still an
+	 *  issue" three times, a woman's elbow with a band of nothing round it, a tied woman's arms, and dark shapes at the
+	 *  crowd's hands; never in a test, whose cameras stand close. The body is held to its two finest levels, which have
+	 *  those bones. For anybody seen: fighters, people of the town, and the crowd. -GutCoarseBodies is as before.
+	 */
+	static void KeepWornInStep(AActor* Seen);
+
+	/** How many of a body's levels of detail are used when it wears something: see KeepWornInStep */
+	static constexpr int32 FinestLevelsKept = 2;
+
 	float GetBoundPast() const { return BoundPast; }
 
 	/**

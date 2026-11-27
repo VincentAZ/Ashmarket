@@ -21,6 +21,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GutFighter.h"
 #include "EngineUtils.h"
+#include "UnrealClient.h"
 #include "GutArmorData.h"
 #include "GutCrowd.h"
 #include "GutGameInstance.h"
@@ -400,6 +401,116 @@ void ATownGameMode::Tick(float DeltaTime)
 	UpdateSoundsDue();
 	UpdateLed(DeltaTime);
 	UpdateBumps(DeltaTime);
+
+	// For seeing the game as it is played, from a start as it is started, with nobody at the keys: -GutFace=Yard_hand
+	// stands the player -GutFaceFrom=500 cm in front of that person, looking at them, once the place is shown;
+	// -GutShotAt=0.2,1,3,8 saves a picture at each of those seconds after that (Saved/Shots/<place>_<n>.png), and
+	// -GutShotQuit leaves when the last is taken. Nothing a player can reach.
+	if (bSettled && IsShown())
+	{
+		static bool bRead = false;
+		static TArray<float> ShotsAt;
+		static FString Face;
+		static float FaceFrom = 500.0f;
+		static double Began = -1.0;
+		static int32 Taken = 0;
+
+		if (!bRead)
+		{
+			bRead = true;
+
+			FString Listed;
+
+			if (FParse::Value(FCommandLine::Get(), TEXT("GutShotAt="), Listed, false))
+			{
+				TArray<FString> Each;
+				Listed.ParseIntoArray(Each, TEXT(","), true);
+
+				for (const FString& One : Each)
+				{
+					ShotsAt.Add(FCString::Atof(*One));
+				}
+			}
+
+			FParse::Value(FCommandLine::Get(), TEXT("GutFace="), Face);
+			FParse::Value(FCommandLine::Get(), TEXT("GutFaceFrom="), FaceFrom);
+
+			Face.ReplaceInline(TEXT("_"), TEXT(" "));
+		}
+
+		if (Began < 0.0 && (!ShotsAt.IsEmpty() || !Face.IsEmpty()))
+		{
+			Began = GetWorld()->GetTimeSeconds();
+
+			const int32 Who = PlaceData ? PlaceData->People.IndexOfByPredicate([this](const FTownPerson& Person) { return Person.Name == Face; }) : INDEX_NONE;
+
+			if (AGutFighter* Walker = GetWalker(); Walker && Who != INDEX_NONE)
+			{
+				const FTownPerson& Person = PlaceData->People[Who];
+				const FVector Front = FRotator(0.0f, Person.Facing, 0.0f).Vector();
+				// (to one side of the line to them, so that the player's own back is not what is looked at)
+				const FVector Aside = FVector::CrossProduct(FVector::UpVector, Front) * 170.0f;
+				const FVector Stood(Person.Place.X + (Front.X * FaceFrom) + Aside.X, Person.Place.Y + (Front.Y * FaceFrom) + Aside.Y, Walker->GetActorLocation().Z);
+
+				Walker->SetActorLocationAndRotation(Stood, (-Front).Rotation(), false, nullptr, ETeleportType::TeleportPhysics);
+
+				if (AController* Eyes = Walker->GetController())
+				{
+					Eyes->SetControlRotation(FRotator(-4.0f, (FVector(Person.Place.X, Person.Place.Y, 0.0f) - FVector(Stood.X - (Front.X * 300.0f), Stood.Y - (Front.Y * 300.0f), 0.0f)).Rotation().Yaw, 0.0f));
+				}
+
+				// -GutShotFov=40 looks through a camera of its own, stood where the player would have been on the line to them
+				// and at a head's height, and the player is stood well out of the way behind it
+				if (float Fov = 0.0f; FParse::Value(FCommandLine::Get(), TEXT("GutShotFov="), Fov))
+				{
+					const FVector Eye(Person.Place.X + (Front.X * FaceFrom), Person.Place.Y + (Front.Y * FaceFrom), Person.Place.Z + 150.0f);
+					const FVector At = Person.Place + FVector(0.0f, 0.0f, 105.0f);
+
+					// (-GutShotStay leaves the player where they were stood, near them: what the nearness of the player does)
+					if (!FParse::Param(FCommandLine::Get(), TEXT("GutShotStay")))
+					{
+						Walker->SetActorLocation(Stood + (Front * 400.0f) + (Aside * 2.0f), false, nullptr, ETeleportType::TeleportPhysics);
+					}
+
+					if (ACameraActor* Camera = GetWorld()->SpawnActor<ACameraActor>(Eye, (At - Eye).Rotation()))
+					{
+						Camera->GetCameraComponent()->SetFieldOfView(Fov);
+						Camera->GetCameraComponent()->SetConstraintAspectRatio(false);
+
+						if (APlayerController* Hands = UGameplayStatics::GetPlayerController(this, 0))
+						{
+							Hands->SetViewTarget(Camera);
+						}
+					}
+				}
+			}
+		}
+
+		if (ShotsAt.IsValidIndex(Taken) && GetWorld()->GetTimeSeconds() - Began >= ShotsAt[Taken])
+		{
+			FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Shots") / FString::Printf(TEXT("%s_%02d.png"), PlaceData ? *PlaceData->Name.Replace(TEXT(" "), TEXT("_")) : TEXT("place"), Taken), false, false);
+
+			UE_LOG(LogTown, Log, TEXT("Street: picture %d taken %.1f s after the place was shown"), Taken, GetWorld()->GetTimeSeconds() - Began);
+
+			// and at what level of detail whoever is being looked at is drawn, part by part
+			if (const int32 Who = PlaceData ? PlaceData->People.IndexOfByPredicate([](const FTownPerson& Person) { return Person.Name == Face; }) : INDEX_NONE; People.IsValidIndex(Who) && People[Who] && People[Who]->GetBodyActor())
+			{
+				for (UActorComponent* Component : People[Who]->GetBodyActor()->GetComponents())
+				{
+					if (const USkinnedMeshComponent* Part = Cast<USkinnedMeshComponent>(Component))
+					{
+						UE_LOG(LogTown, Log, TEXT("Street: %s's %s is drawn at level %d of %d (forced %d)"), *Face, *Part->GetName(), Part->GetPredictedLODLevel(), Part->GetNumLODs(), Part->GetForcedLOD());
+					}
+				}
+			}
+
+			++Taken;
+		}
+		else if (!ShotsAt.IsEmpty() && Taken >= ShotsAt.Num() && GetWorld()->GetTimeSeconds() - Began >= ShotsAt.Last() + 1.0f && FParse::Param(FCommandLine::Get(), TEXT("GutShotQuit")))
+		{
+			FPlatformMisc::RequestExit(false);
+		}
+	}
 
 	// something read at a door comes down when the player has walked off from it
 	if (NoticeLeave > 0.0f)

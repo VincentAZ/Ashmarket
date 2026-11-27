@@ -1785,6 +1785,169 @@ bool FGutFitOutfitTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+/**
+ *  Ashmarket.Fit.Gestures  everything somebody in the town may be given to do with their hands, on a body of the town's:
+ *                          each nod, each talking hand, the listener's, what is done with a thing handed over, and the
+ *                          standing they are done from, photographed whole from in front and to one side at two moments
+ *                          of each (gesture_<who>_<clip>_a, _b). For finding which of them is the body gone wrong that
+ *                          is seen in play (the yard hand: 24, 25 and 26 November). -GutFitBodies=Jorge names who,
+ *                          -GutFitFamily=shift_l how they stand, -GutFitBound ties their wrists.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGutFitGesturesTest, "Ashmarket.Fit.Gestures", GutTests::Flags)
+
+bool FGutFitGesturesTest::RunTest(const FString& Parameters)
+{
+	using namespace GutTests;
+	using namespace GutLookTests;
+	using FStep = FScriptCommand::FStep;
+
+	FString Named;
+
+	if (!FApp::CanEverRender() || !FParse::Value(FCommandLine::Get(), TEXT("GutFitBodies="), Named))
+	{
+		return true;
+	}
+
+	if (!OpenCage(this))
+	{
+		return false;
+	}
+
+	TArray<FString> Bodies;
+	Named.ParseIntoArray(Bodies, TEXT("+"), true);
+
+	static const TCHAR* Clips[] =
+	{
+		TEXT("mc_am_stand_idle_greet_02_nod"), TEXT("mc_am_stand_idle_greet_04_nod"),
+		TEXT("mc_am_stand_conv_talk_01"), TEXT("mc_am_stand_conv_talk_05_generic"), TEXT("mc_am_stand_conv_talk_06_generic"), TEXT("mc_am_stand_conv_talk_08_generic"),
+		TEXT("mc_am_stand_conv_talk_02_happy"), TEXT("mc_am_stand_conv_talk_07_happy"), TEXT("mc_am_stand_conv_talk_03_angry"), TEXT("mc_am_stand_conv_talk_04_angry"),
+		TEXT("mc_am_stand_conv_listen_01_generic"), TEXT("mc_am_stand_idle_smoke_lightup"), TEXT("mc_am_stand_idle_smoke_inhale_02"),
+	};
+
+	static const FView Whole = { TEXT("whole"), FVector(430.0f, 250.0f, 0.0f), FVector(0.0f, 0.0f, -8.0f), 40.0f, FName("pelvis") };
+
+	TArray<FStep> Steps;
+
+	Steps.Add({ 0.3f, [this](const FFight& Fight)
+	{
+		DisableEnemyBrain(this, Fight);
+
+		Fight.GameMode->SetHazardsEnabled(false);
+		Fight.GameMode->StartFight();
+
+		PlaceAt(Fight.Player, 0.0f, 0.0f, 0.0f);
+		PlaceAt(Fight.Enemy, 600.0f, 420.0f, 180.0f);
+	} });
+
+	for (const FString& Who : Bodies)
+	{
+		Steps.Add({ 0.3f, [this, Who](const FFight& Fight)
+		{
+			const TSoftClassPtr<AActor> Body(FSoftObjectPath(FString::Printf(TEXT("/Game/Gut/Art/MetaHumans/%s/BP_%s.BP_%s_C"), *Who, *Who, *Who)));
+
+			if (TestNotNull(*FString::Printf(TEXT("There is a body called %s"), *Who), Body.LoadSynchronous()))
+			{
+				Fight.Player->SetBody(Body, Fight.Player->GetBodyRetargeter());
+			}
+
+			Fight.Player->ClearArmor();
+			Fight.Player->EquipWeapon(nullptr);
+			Fight.Player->SetAtEase(true);
+			Fight.Player->SetCollared(false);
+			Fight.Player->SetBound(FParse::Param(FCommandLine::Get(), TEXT("GutFitBound")));
+
+			FString Family = TEXT("stand");
+			FParse::Value(FCommandLine::Get(), TEXT("GutFitFamily="), Family);
+
+			Fight.Player->SetAtEaseFamily(FName(*Family));
+		} });
+
+		Steps.Add({ 2.5f, [](const FFight& Fight) { LookFrom(Fight, Whole); } });
+
+		// as they stand, at four moments: the family goes from one clip of its own to another
+		for (int32 i = 0; i < 4; ++i)
+		{
+			Steps.Add({ 2.2f, [Who, i](const FFight& Fight) { Screenshot(FString::Printf(TEXT("gesture_%s_00_standing_%d"), *Who, i)); } });
+		}
+
+		// -GutFitLodSwap=2: arms crossed with everything drawn at its finest; then the body itself (and not what it wears,
+		// which has one level only) drawn at that coarser level, as it is from a few metres off, and the arms let down.
+		// A coarser body no longer works out the bones that only the sleeves are hung on, and they stay where they were.
+		if (int32 Coarse = 0; FParse::Value(FCommandLine::Get(), TEXT("GutFitLodSwap="), Coarse))
+		{
+			const auto Draw = [](const FFight& Fight, int32 Level)
+			{
+				for (UActorComponent* Component : Fight.Player->GetBodyActor() ? Fight.Player->GetBodyActor()->GetComponents() : TSet<UActorComponent*>())
+				{
+					if (USkinnedMeshComponent* Part = Cast<USkinnedMeshComponent>(Component); Part && !Part->LeaderPoseComponent.IsValid())
+					{
+						Part->SetForcedLOD(Level + 1);
+					}
+				}
+			};
+
+			Steps.Add({ 0.2f, [Draw](const FFight& Fight) { Draw(Fight, 0); Fight.Player->SetAtEaseFamily(FName("crossed")); } });
+			Steps.Add({ 3.0f, [Who](const FFight& Fight) { Screenshot(FString::Printf(TEXT("gesture_%s_00_swap_0_crossed_fine"), *Who)); } });
+			Steps.Add({ 0.3f, [Draw, Coarse](const FFight& Fight) { Draw(Fight, Coarse); } });
+			Steps.Add({ 0.5f, [Who](const FFight& Fight) { Screenshot(FString::Printf(TEXT("gesture_%s_00_swap_1_crossed_coarse"), *Who)); } });
+			Steps.Add({ 0.3f, [](const FFight& Fight) { Fight.Player->SetAtEaseFamily(FName("shift_l")); } });
+			Steps.Add({ 1.0f, [Who](const FFight& Fight) { Screenshot(FString::Printf(TEXT("gesture_%s_00_swap_2_arms_down_coarse_1s"), *Who)); } });
+			Steps.Add({ 3.0f, [Who](const FFight& Fight) { Screenshot(FString::Printf(TEXT("gesture_%s_00_swap_3_arms_down_coarse_4s"), *Who)); } });
+			Steps.Add({ 0.3f, [Draw](const FFight& Fight) { Draw(Fight, 0); } });
+			Steps.Add({ 0.6f, [Who](const FFight& Fight) { Screenshot(FString::Printf(TEXT("gesture_%s_00_swap_4_arms_down_fine_again"), *Who)); } });
+
+			continue;
+		}
+
+		// -GutFitThrow: stood somewhere else in one go and turned about, as a body is that a place moves without warning,
+		// and looked at straight after and for a while after: what is worn may be thrown by it, and lie as it fell
+		if (FParse::Param(FCommandLine::Get(), TEXT("GutFitThrow")))
+		{
+			for (int32 Thrown = 0; Thrown < 3; ++Thrown)
+			{
+				Steps.Add({ 0.6f, [Thrown](const FFight& Fight)
+				{
+					Fight.Player->SetActorLocationAndRotation(Fight.Player->GetActorLocation() + FVector(Thrown % 2 ? -380.0f : 380.0f, Thrown % 2 ? -260.0f : 260.0f, 0.0f),
+						Fight.Player->GetActorRotation() + FRotator(0.0f, 165.0f, 0.0f), false, nullptr, ETeleportType::None);
+				} });
+
+				Steps.Add({ 0.1f, [](const FFight& Fight) { LookFrom(Fight, Whole); } });
+				Steps.Add({ 0.25f, [Who, Thrown](const FFight& Fight) { Screenshot(FString::Printf(TEXT("gesture_%s_00_thrown_%d_a"), *Who, Thrown)); } });
+				Steps.Add({ 2.5f, [Who, Thrown](const FFight& Fight) { Screenshot(FString::Printf(TEXT("gesture_%s_00_thrown_%d_b"), *Who, Thrown)); } });
+			}
+
+			continue;
+		}
+
+		for (int32 i = 0; i < UE_ARRAY_COUNT(Clips); ++i)
+		{
+			const FString Clip = Clips[i];
+
+			Steps.Add({ 1.2f, [this, Clip](const FFight& Fight)
+			{
+				UAnimSequenceBase* Done = LoadObject<UAnimSequenceBase>(nullptr, *FString::Printf(TEXT("/Game/Gut/Art/Motion/%s.%s"), *Clip, *Clip));
+
+				if (TestNotNull(*FString::Printf(TEXT("There is a clip called %s"), *Clip), Done))
+				{
+					Fight.Player->StopGesture();
+					Fight.Player->Gesture(Done, false);
+				}
+			} });
+
+			Steps.Add({ 0.5f, [Who, Clip, i](const FFight& Fight) { Screenshot(FString::Printf(TEXT("gesture_%s_%02d_%s_a"), *Who, i + 1, *Clip)); } });
+			Steps.Add({ 1.1f, [Who, Clip, i](const FFight& Fight) { Screenshot(FString::Printf(TEXT("gesture_%s_%02d_%s_b"), *Who, i + 1, *Clip)); } });
+			Steps.Add({ 0.2f, [](const FFight& Fight) { Fight.Player->StopGesture(); } });
+
+			// and the moment after it is let go, which is when a body is seen going back to how it stood
+			Steps.Add({ 0.15f, [Who, Clip, i](const FFight& Fight) { Screenshot(FString::Printf(TEXT("gesture_%s_%02d_%s_c_let_go"), *Who, i + 1, *Clip)); } });
+		}
+	}
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScriptCommand(this, MoveTemp(Steps)));
+
+	return true;
+}
+
 namespace GutLookTests
 {
 	/** One part of a dressed body as it is posed at this moment: its points in the world, and for skin which way each faces */

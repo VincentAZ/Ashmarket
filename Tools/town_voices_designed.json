@@ -5,14 +5,16 @@
   "note": "the take Vincent chose from the audition (D1), 2026-11-19"
  },
  "Block Square/Harrow": {
+  "body": 0.11,
   "description": "A debt collector in his fifties who has never needed to shout, chief collector for a slave house in a desert shanty town. A low, dry, level, unhurried man's voice, exact about figures, faintly bored, with a threat he does not bother to raise. Plain American speech. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo.",
   "first_said": "You look like you can count, and like you can hit. I am Harrow. I collect what is owed to the book. I have three slips overdue and a sale in three evenings. Odalys Finch, who cooks at a grill on Main Street, owes fourteen litres. Benno Krait, who was a Warden and now plays cards at the Last Call, owes twenty-two. Lamp Ansah, in the Scrappers' yard, owes nine. Bring me the water, or bring me the debtor. Thirty litres to you when all three are closed. They go up on the Block, and whoever buys the body buys the debt with it. That is what the Block is for. Fourteen litres has put better people than Finch on it. Pay it yourself and the debt is yours. Put a collar on and walk them here. Or find where they keep it. A slip is paper. It does not care how it closes. It cares that it closes. I count closed slips. I do not count stories. On the rope with the others. That one is closed. Dead pays nobody. I write it off, and I write down who was holding it when it died.",
-  "generated_voice_id": "zTNEEuH7DxlkARwNpplD"
+  "generated_voice_id": "DpXd994nDhNslhH47V3n"
  },
  "Block Square/Margin": {
+  "body": 0.11,
   "description": "A woman in her fifties, the clerk who keeps the book at an open-air auction in a desert shanty town. She is talking quietly to one person who is standing at her table: low, dry, flat, quick and a little tired, with no warmth and no malice, only business. Plain American speech. A close, natural, conversational voice, as if recorded a hand's width from her mouth in a quiet room. She is not announcing, not reading aloud to a room, not presenting, and not heard through a loudspeaker, a megaphone or a radio: no echo, no projection.",
   "first_said": "Lot list is on the board, and the book is here. If you are buying, I write your name against theirs, and they sleep in your yard tonight. The Chainmen's fifth is in the price already. Are you buying? Eighteen litres, and six more for each thing they know how to do, before anybody bids. A fighter with a name costs what the Gut says they cost. With you. They follow whoever holds their paper, as far as your yard beside the Gut. The yard gate is on Pool Street, past the fighters' door: the yard hand lets owners in. You train them there, and you send them down into the pool from there. Hey. Mind yourself. Steady. Lot one, forty-five litres, to H. Rask. Nine to the book. Lot two, forty-eight litres, to the Tin. Nine and a half to the book. Lot three, twenty-two litres, to the guild. Four and a half to the book. Lot four, forty-two litres. Name, please. Eight and a half to the book. Lot five, fifty litres, to H. Rask. Ten to the book. Lot six, thirty-eight litres, to the Pump.",
-  "generated_voice_id": "NYtDyg1aIqeMrJF86HJi"
+  "generated_voice_id": "nIAFXj59qvCYxAuCCtzs"
  },
  "Block Square/Mother Ledger": {
   "description": "A very old woman, late seventies, small and frail, a moneylender who has never needed to raise her voice. A high, thin, reedy voice with an old woman's quaver in it, light as paper, very calm and slow, faintly amused, patient in a way that frightens people. She speaks softly and close, as if across a small table at night. Not a narrator and not an actress: plain, exact, old.",
@@ -129,8 +131,10 @@
   "generated_voice_id": "zt6t5RIPaiCCAySLQmGe"
  },
  "Pool Street/Chalk": {
+  "body": 0.074,
   "description": "A woman in her forties who keeps the betting slate at a pit-fighting cage in a desert shanty town. Quick, dry, flat, a little hoarse, has heard every excuse and is bored of all of them. Plain working American speech, clipped, said through a window to a queue. Not an announcer and not a narrator: offhand, imperfect, real.",
-  "generated_voice_id": "7mDZJz8OmE8eeHWcgMB3"
+  "first_said": "Slate's up. Four fights tonight. The house keeps a tenth of the pot, you bet in fives, fifty at most a fight. I write the odds. I don't sell results. That's three litres, and what it buys you is fuck all: what the crowd thinks, which is not the same as what happens. Come back when you are holding some. Walk into me again and I'll break your fucking nose. Christ. Go round. Hey! Fuck off.",
+  "generated_voice_id": "u5QC7yXCEL6qiJgefBz6"
  },
  "Pool Street/Hasp": {
   "description": "A man in his fifties who hands out weapons at a pit-fighting cage in a desert shanty town. Gravelly, worn, a smoker's rasp, low and unhurried, bored, with dry humour underneath. Plain working American speech with no polish. He talks close and quiet, like somebody who has said this a thousand times. Not an announcer and not a narrator: a little mumbled, imperfect, real.",
@@ -176,19 +180,22 @@
   "generated_voice_id": "mJXlfwLX7S4I0wEy0VJp"
  },
  "The Last Call/A winch hand": {
+  "body": 0.081,
   "description": "A working woman in her forties who runs a cable winch in a salvage yard, drinking alone because there has been no work for four days. A low, flat, worn voice, ashamed and stubborn at once, with nothing left to perform. Plain working American speech. Not an actress and not a narrator: close, quiet, tired, real.",
   "first_said": "Nine. I know it is nine. The Skip has been down four days, and nine is what I have in the world. Take it. That was the week's bread. Paid. The cable moves tomorrow, they say.",
-  "generated_voice_id": "c1q11fyJW8ZrWwMhc46n"
+  "generated_voice_id": "VGV5v7V9CJwlEYpYwrsm"
  },
  "The Last Call/Benno Krait": {
+  "body": 0.049,
   "description": "A man of about fifty who was a militia sergeant and is now a card player in debt: a hoarse, sour, proud voice, a little drunk, quick to take offence, talking out of the side of his mouth without looking up from his cards. American. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo.",
   "first_said": "If you are not sitting in, do not stand behind me. It is bad luck and bad manners. Twenty-two? Tell Harrow I am one hand off it. I was a Warden for nine years. We do not get walked to the Block over a card debt. Go and bother a cook. Twenty-two, on your word and not hers. Fine. I pay my own kind. You will have it when the cards turn, and they turn. Through the gate. Right. I owe you a drink I will never be here to buy. I know what I owe you. Stand somewhere else while I win it. Hands off. I was a Warden. Walk round. Do that again.",
-  "generated_voice_id": "SJwWwt8zOMUHzJzg41pp"
+  "generated_voice_id": "xWnDWEILxbLMFZwXZUV7"
  },
  "The Last Call/Captain Dolores": {
+  "body": 0.036,
   "description": "A wiry woman of sixty-four who keeps a bar in a wrecked airliner in a desert shanty town, and was cabin crew on it long ago. She is talking quietly to one person across a small table at night: low, close and unhurried, a little husky from smoke, friendly on top and hard underneath. American. She calls everybody sweetheart. A natural, conversational voice, as if recorded a hand's width from her mouth in a quiet room. She is not announcing, not presenting, not putting on a voice, and not heard through a loudspeaker, a cabin address system or a radio: no echo, no projection.",
   "first_said": "Welcome aboard the Last Call. Exits are here, here, and through anybody who starts something. We don't expect turbulence, but then we didn't last time. The cabin floor is up for the week, sweetheart. Somebody slept in the hold and came up through it. So tonight the bar is the Apron, the board is by my elbow, and you may sit anywhere that is not on fire. I have a job for you, sweetheart. Three of my regulars have not paid for what they drank. The Warden corporal owes me twelve litres. The winch hand owes nine. The Chainmen's collector owes thirteen. All three are out here on the Apron tonight. Get it out of them, thirty-four litres in all, and bring it to my table. Eight of it is yours, and you get the better jobs off my board. The corporal is down at the south tables. The collector is by the fire. The winch hand is at the north end, by the tail. Ask them, lean on them, pay it yourself: how is your business. One rule. I keep no book, and none of this goes to Mother Ledger.",
-  "generated_voice_id": "mNliTjXMtxLiwrVP91XW"
+  "generated_voice_id": "1iJ4SJ4tAjSu4FqiWhky"
  },
  "The Scrappers' Yard/Guildmaster Okafor-Reyes": {
   "description": "A thick-set man of fifty-eight, the elected head of a salvage guild in a desert shanty town, once a merchant who went broke. A deep, slow, careful voice, a little hoarse; fair-minded and tired of having to be; a trace of Nigerian English in plain speech. He weighs every word as he weighs scrap. Not an announcer and not a narrator: close, grave, real.",
@@ -201,14 +208,16 @@
   "generated_voice_id": "Ct27k5wqJ1w58Go602mZ"
  },
  "The Scrappers' Yard/Lamp Ansah": {
+  "body": 0.145,
   "description": "A woman in her thirties who makes lamps out of tin and glass in a salvage yard: a light, dry, quick voice, practical and a little amused, busy with her hands while she talks, stubborn about small sums. West African English, faint. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo.",
   "first_said": "Lamps. Tin, glass and a wick. Two litres, and you will want one before you want anything else in this town. Nine litres. For glass. Nobody pays for a lamp until it is dark, and when it is dark they want it for nothing. I will have nine when the Skip runs again. Harrow can wait for nine. Nine, to you. Good. I would rather owe a stranger than that book. Take a lamp. No, take it. Then I am gone. Tell the Guildmaster the glass is under the bench. Nine. I have not forgotten. Do you want it in lamps? Mind the glass! Careful. That is a week's work. Watch it.",
-  "generated_voice_id": "pCM24kU0J88In5EB5U58"
+  "generated_voice_id": "B6IBglJMYI0n7xco1baO"
  },
  "The Scrappers' Yard/Pike": {
+  "body": 0.058,
   "description": "A salvage crew boss in his thirties, short of sleep and short of patience, standing guard over his sleeping crew at night. A hard, flat, clipped voice, low so as not to wake anybody, with a threat left unsaid in it. Plain working American speech. Not a narrator: close, curt, real.",
-  "first_said": "Pike's crew. We pull plate out of the Bones and we sleep where we pull it to. If you are not weighing something, you are standing where I look. Nobody here by that name. Look all you like. My people are asleep, and they wake up badly. So the Guildmaster said. Then take him, and get out from where I look.",
-  "generated_voice_id": "m607Lf4oEr3u7IQDg5As"
+  "first_said": "Pike's crew. We pull plate out of the Bones and we sleep where we pull it to. If you are not weighing something, you are standing where I look. So fuck off. Nobody here by that name. Look all you fucking like. My people are asleep, and they wake up badly. So the Guildmaster said. Then take him, and get the fuck out from where I look. Are you blind, or just stupid? Piss off out of it. Walk into me again and I'll break your fucking nose.",
+  "generated_voice_id": "sIMHICEsUgA294soEJ6t"
  },
  "The Velvet Tin/Captain Voss": {
   "description": "A woman of forty-seven who commands the gate guards of a desert shanty town and has a price for every part of the job. A flat, tired, low voice, dry as paper, with a rasp from old smoke; she says every price out loud and never raises it. A former raider: no warmth, no anger, only arithmetic. Plain American speech. Not a villain in a film and not a narrator: close, quiet, transactional, real.",

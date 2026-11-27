@@ -339,6 +339,9 @@ void AGutFighter::Tick(float DeltaTime)
 		UpdateBeast(DeltaTime);
 	}
 
+	// -GutCloth: what somebody wears is simulated as cloth, as it was until 26 November (see StillCloth)
+	StillCloth();
+
 	// Somebody stood at ease as they were made has their clothes begin as they hang on somebody standing, and not as they
 	// were thrown by the body being posed for the first time: twice, a few frames apart, once the body has been posed
 	if (bAtEase && BodyActor && ClothSettles < 2 && ++ClothFrames >= (ClothSettles == 0 ? 3 : 14))
@@ -5376,6 +5379,126 @@ void AGutFighter::TakeInHand(UAnimSequenceBase* Taking)
 	FidgetIn = FMath::Max(FidgetIn, TakingLeft + 4.0f);
 }
 
+void AGutFighter::KeepWornInStep(AActor* Seen)
+{
+	static const bool bOff = FParse::Param(FCommandLine::Get(), TEXT("GutCoarseBodies"));
+
+	ULODSyncComponent* Sync = (Seen && !bOff) ? Seen->FindComponentByClass<ULODSyncComponent>() : nullptr;
+
+	if (!Sync)
+	{
+		return;
+	}
+
+	// only where something worn has fewer levels than the body that leads it: that is what cannot follow it down
+	bool bWornIsFiner = false;
+
+	for (UActorComponent* Component : Seen->GetComponents())
+	{
+		if (const USkinnedMeshComponent* Part = Cast<USkinnedMeshComponent>(Component); Part && Part->LeaderPoseComponent.IsValid() && Part->GetNumLODs() < Part->LeaderPoseComponent->GetNumLODs())
+		{
+			bWornIsFiner = true;
+		}
+	}
+
+	if (bWornIsFiner && (Sync->NumLODs < 0 || Sync->NumLODs > FinestLevelsKept))
+	{
+		Sync->NumLODs = FinestLevelsKept;
+		Sync->RefreshSyncComponents();
+	}
+}
+
+void AGutFighter::StillCloth()
+{
+	static const bool bSimulated = FParse::Param(FCommandLine::Get(), TEXT("GutCloth"));
+
+	if (bSimulated || !BodyActor || ClothStilled == BodyActor)
+	{
+		return;
+	}
+
+	ClothStilled = BodyActor;
+
+	int32 Parts = 0;
+
+	for (UActorComponent* Component : BodyActor->GetComponents())
+	{
+		if (USkeletalMeshComponent* Part = Cast<USkeletalMeshComponent>(Component); Part && Part->GetSkeletalMeshAsset() && !Part->GetSkeletalMeshAsset()->GetMeshClothingAssets().IsEmpty())
+		{
+			Part->bDisableClothSimulation = true;
+			Part->RecreateClothingActors();
+
+			++Parts;
+		}
+	}
+
+	UE_CLOG(Parts > 0, LogGut, Verbose, TEXT("Cloth: %d parts of what %s wears follow the body and are not simulated"), Parts, *GetDisplayName().ToString());
+
+	// -GutBodyLod=3 draws the body itself (and not what it wears) at that level of detail, and -GutWornLod=0 what it wears:
+	// for seeing what the two do when they are not at the same one
+	int32 BodyLod = -1;
+	int32 WornLod = -1;
+
+	FParse::Value(FCommandLine::Get(), TEXT("GutBodyLod="), BodyLod);
+	FParse::Value(FCommandLine::Get(), TEXT("GutWornLod="), WornLod);
+
+	// and -GutMeshLod=0 the one nobody sees, which does the moving that the body is posed from
+	if (int32 MeshLod = -1; FParse::Value(FCommandLine::Get(), TEXT("GutMeshLod="), MeshLod) && MeshLod >= 0)
+	{
+		GetMesh()->SetForcedLOD(MeshLod + 1);
+	}
+
+	static const bool bListedMesh = FParse::Param(FCommandLine::Get(), TEXT("GutClothLog"));
+
+	UE_CLOG(bListedMesh, LogGut, Log, TEXT("Cloth: %s is moved by %s, which has %d levels of detail, least %d, tick %d"), *GetDisplayName().ToString(),
+		GetMesh()->GetSkeletalMeshAsset() ? *GetMesh()->GetSkeletalMeshAsset()->GetName() : TEXT("nothing"), GetMesh()->GetNumLODs(), GetMesh()->ComputeMinLOD(), static_cast<int32>(GetMesh()->VisibilityBasedAnimTickOption));
+
+	for (UActorComponent* Component : BodyActor->GetComponents())
+	{
+		if (USkinnedMeshComponent* Part = Cast<USkinnedMeshComponent>(Component))
+		{
+			const bool bWorn = Part->LeaderPoseComponent.IsValid();
+
+			if ((bWorn ? WornLod : BodyLod) >= 0)
+			{
+				Part->SetForcedLOD((bWorn ? WornLod : BodyLod) + 1);
+			}
+		}
+	}
+
+	KeepWornInStep(BodyActor);
+
+	// -GutSyncLod=1 has whatever keeps the body's parts at one level of detail keep them at that one, for looking
+	if (ULODSyncComponent* Sync = BodyActor->FindComponentByClass<ULODSyncComponent>())
+	{
+		static const bool bSaid = FParse::Param(FCommandLine::Get(), TEXT("GutClothLog"));
+
+		UE_CLOG(bSaid, LogGut, Log, TEXT("Cloth: %s has its parts kept at one level of detail: %d levels, forced %d, least %d"), *GetDisplayName().ToString(), Sync->NumLODs, Sync->ForcedLOD, Sync->MinLOD);
+
+		if (int32 Kept = -1; FParse::Value(FCommandLine::Get(), TEXT("GutSyncLod="), Kept) && Kept >= 0)
+		{
+			Sync->ForcedLOD = Kept;
+		}
+	}
+
+	// -GutClothLog: every part of the body, what it is, what leads it, and whether anything of it is cloth
+	static const bool bListed = FParse::Param(FCommandLine::Get(), TEXT("GutClothLog"));
+
+	for (UActorComponent* Component : bListed ? BodyActor->GetComponents() : TSet<UActorComponent*>())
+	{
+		if (const USkinnedMeshComponent* Part = Cast<USkinnedMeshComponent>(Component))
+		{
+			const USkeletalMeshComponent* Whole = Cast<USkeletalMeshComponent>(Part);
+
+			UE_LOG(LogGut, Log, TEXT("Cloth: %s part %s (%s) of %s: mesh %s, led by %s, anim %s, post %s, cloth assets %d, tick %d, shown %d, levels %d, sync %d, ignore leader's %d, least %d"), *GetDisplayName().ToString(), *Part->GetName(), *Part->GetClass()->GetName(),
+				*BodyActor->GetName(), Part->GetSkinnedAsset() ? *Part->GetSkinnedAsset()->GetName() : TEXT("none"), Part->LeaderPoseComponent.IsValid() ? *Part->LeaderPoseComponent->GetName() : TEXT("nothing"),
+				(Whole && Whole->GetAnimInstance()) ? *Whole->GetAnimInstance()->GetClass()->GetName() : TEXT("none"), (Whole && Whole->GetPostProcessInstance()) ? *Whole->GetPostProcessInstance()->GetClass()->GetName() : TEXT("none"),
+				(Whole && Whole->GetSkeletalMeshAsset()) ? Whole->GetSkeletalMeshAsset()->GetMeshClothingAssets().Num() : 0, static_cast<int32>(Part->VisibilityBasedAnimTickOption), Part->IsVisible() ? 1 : 0,
+				Part->GetNumLODs(), Part->bSyncAttachParentLOD ? 1 : 0, Part->bIgnoreLeaderPoseComponentLOD ? 1 : 0, Part->ComputeMinLOD());
+		}
+	}
+}
+
 bool AGutFighter::IsClipReady(const UAnimSequenceBase* Clip)
 {
 #if WITH_EDITOR
@@ -5392,11 +5515,18 @@ void AGutFighter::Gesture(UAnimSequenceBase* Clip, bool bWithHead)
 {
 	const bool bStanding = GetVelocity().SizeSquared2D() < FMath::Square(25.0f) && LedVelocity.IsNearlyZero();
 
+	// -GutGestureLog: every gesture asked for is said, with what refused it if anything did
+	static const bool bSaid = FParse::Param(FCommandLine::Get(), TEXT("GutGestureLog"));
+
 	// only with hands that are its own and free
 	if (!Clip || !IsAlive() || Beast || !bAtEase || !bStanding || BoundClip || bCelebrating || TakingLeft > 0.0f || State != EGutFighterState::Idle || (Weapon && Weapon->Mesh))
 	{
+		UE_CLOG(bSaid, LogGut, Log, TEXT("Gesture: %s is refused %s: clip %d, alive %d, at ease %d, standing %d, bound %d, taking %.1f, idle %d, weapon %d"), *GetDisplayName().ToString(), Clip ? *Clip->GetName() : TEXT("nothing"),
+			Clip ? 1 : 0, IsAlive() ? 1 : 0, bAtEase ? 1 : 0, bStanding ? 1 : 0, BoundClip ? 1 : 0, TakingLeft, State == EGutFighterState::Idle ? 1 : 0, (Weapon && Weapon->Mesh) ? 1 : 0);
 		return;
 	}
+
+	UE_CLOG(bSaid, LogGut, Log, TEXT("Gesture: %s begins %s, ready %d"), *GetDisplayName().ToString(), *Clip->GetName(), IsClipReady(Clip) ? 1 : 0);
 
 	// not one that is not ready to be played: it is let go this once
 	if (!IsClipReady(Clip))

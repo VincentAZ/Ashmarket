@@ -562,6 +562,9 @@ bool AGutCrowd::GivePerson(FSpectator& Spectator)
 			Person->SetActorEnableCollision(false);
 			Person->AttachToComponent(Body, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
+			// what they wear follows their body, however far off they stand
+			AGutFighter::KeepWornInStep(Person);
+
 			for (UActorComponent* Component : Person->GetComponents())
 			{
 				USkeletalMeshComponent* Part = Cast<USkeletalMeshComponent>(Component);
