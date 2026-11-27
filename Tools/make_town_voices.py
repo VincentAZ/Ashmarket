@@ -286,13 +286,17 @@ def main():
 
         os.makedirs(os.path.join(OUT, "designed"), exist_ok=True)
 
-        # Every voice offered is listened to with a meter, and the fullest is kept: asked for again, up to four times, until
+        # Every voice offered is listened to with a meter, and the fullest is kept: asked for again, up to six times, until
         # one of them has the body of somebody in the room (FULL). Whatever the description says, about one voice in three
         # comes back thin.
         best = None
 
-        for asked in range(4):
-            made = client.text_to_voice.design(voice_description=entry["design"], model_id=cast["design_model"], text=text)
+        for asked in range(6):
+            # (asked the same way twice, the same three voices come back: each asking after the first has a seed of its own)
+            if asked == 0:
+                made = client.text_to_voice.design(voice_description=entry["design"], model_id=cast["design_model"], text=text)
+            else:
+                made = client.text_to_voice.design(voice_description=entry["design"], model_id=cast["design_model"], text=text, seed=(asked * 1009) + 11)
 
             for number, preview in enumerate(made.previews):
                 heard = os.path.join(OUT, "designed", "{}_try{}_{}.mp3".format(slug(speaker), asked, number))
@@ -318,7 +322,7 @@ def main():
             os.remove(left)
 
         if body < FULL:
-            print("  {}: none of twelve voices was full (the best has {:.0%} below 300 Hz): kept, and to be looked at".format(speaker, body))
+            print("  {}: none of the voices offered was full (the best has {:.0%} below 300 Hz): kept, and to be looked at".format(speaker, body))
 
         designed[speaker] = {"description": entry["design"], "generated_voice_id": preview.generated_voice_id, "first_said": text, "body": round(body, 3)}
 

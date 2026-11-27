@@ -78,6 +78,17 @@ namespace TownConstants
 	};
 	const TCHAR* ListenGesture = TEXT("mc_am_stand_conv_listen_01_generic");
 
+	/**
+	 *  What somebody in a crowd says when the player walks into them. Recorded by two men and two women
+	 *  (Tools/town_crowd.json, which has the same words in the same order: keep the two in step).
+	 */
+	const TCHAR* CrowdBarkWords[] =
+	{
+		TEXT("Hey!"), TEXT("Watch it."), TEXT("Fuck off."), TEXT("Easy. Easy."), TEXT("Go round, asshole."), TEXT("Mind yourself."), TEXT("Do that again. Go on."), TEXT("Christ. Watch where you walk."),
+	};
+
+	inline constexpr int32 CrowdBarkCount = UE_ARRAY_COUNT(CrowdBarkWords);
+
 	const TCHAR* GivenSmokes = TEXT("/Game/Gut/Art/Motion/mc_am_stand_idle_smoke_lightup.mc_am_stand_idle_smoke_lightup");
 	const TCHAR* GivenToMouth = TEXT("/Game/Gut/Art/Motion/mc_am_stand_idle_smoke_inhale_02.mc_am_stand_idle_smoke_inhale_02");
 
@@ -1635,7 +1646,7 @@ FVector2D ATownGameMode::GetKeptClear(const FVector2D& Flat, float Radius) const
 	// round whatever stands there: clear of each thing by the nearest way, and again for a corner where two of them meet
 	for (int32 Pass = 0; Pass < 2; ++Pass)
 	{
-		for (const FTownBlock& Block : PlaceData->Blocks)
+		for (const FTownBlock& Block : GetBlocks())
 		{
 			Kept = Block.KeepClear(Kept, Radius);
 		}
@@ -2368,9 +2379,11 @@ void ATownGameMode::HandleMenuInput(EGutMenuInput Input)
 {
 	if (bStoppedMenu)
 	{
+		const int32 Lines = FMath::Max(GetStoppedLines().Num(), 1);
+
 		if (Input == EGutMenuInput::Up || Input == EGutMenuInput::Down)
 		{
-			StoppedChoice = (StoppedChoice + (Input == EGutMenuInput::Up ? TownStoppedLines::Count - 1 : 1)) % TownStoppedLines::Count;
+			StoppedChoice = (StoppedChoice + (Input == EGutMenuInput::Up ? Lines - 1 : 1)) % Lines;
 			return;
 		}
 
@@ -2380,6 +2393,53 @@ void ATownGameMode::HandleMenuInput(EGutMenuInput Input)
 		}
 
 		UGutGameInstance* GameInstance = GetGutGameInstance();
+
+		// the page of games, and the page of what to do with one of them
+		if (StoppedPage == 1 && GameInstance)
+		{
+			if (StoppedChoice >= UGutGameInstance::GameCount)
+			{
+				StoppedPage = 0;
+				StoppedChoice = TownStoppedLines::Games;
+			}
+			else if (StoppedChoice != GameInstance->Game)
+			{
+				StoppedGame = StoppedChoice;
+				StoppedPage = 2;
+				StoppedChoice = 0;
+			}
+
+			return;
+		}
+
+		if (StoppedPage == 2 && GameInstance)
+		{
+			const bool bKept = !GameInstance->DescribeGame(StoppedGame).IsEmpty();
+
+			if (StoppedChoice == 0)
+			{
+				// this game is written down and put away, that one is taken up, and the town opens from its beginning
+				GameInstance->PlayGame(StoppedGame);
+
+				UGameplayStatics::SetGamePaused(this, false);
+				UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/Town/Lvl_PoolStreet")), true);
+			}
+			else if (bKept && StoppedChoice == 1)
+			{
+				// asked twice: the second line says it cannot be undone, and this is the second asking
+				GameInstance->ForgetGame(StoppedGame);
+
+				StoppedPage = 1;
+				StoppedChoice = StoppedGame;
+			}
+			else
+			{
+				StoppedPage = 1;
+				StoppedChoice = StoppedGame;
+			}
+
+			return;
+		}
 
 		switch (StoppedChoice)
 		{
@@ -2418,6 +2478,11 @@ void ATownGameMode::HandleMenuInput(EGutMenuInput Input)
 				GameInstance->Speech = (GameInstance->Speech + 1) % 3;
 				GameInstance->KeepLoudness();
 			}
+			break;
+
+		case TownStoppedLines::Games:
+			StoppedPage = 1;
+			StoppedChoice = GameInstance ? GameInstance->Game : 0;
 			break;
 
 		default:
@@ -2832,6 +2897,25 @@ void ATownGameMode::FetchGestures()
 		for (const FTownCall& Call : PlaceData->Calls)
 		{
 			Face(Call.Voice);
+		}
+	}
+
+	// and what somebody in a crowd says when walked into: whatever was recorded for a man and for a woman
+	static const TCHAR* Speakers[2][2] = { { TEXT("a_man"), TEXT("another_man") }, { TEXT("a_woman"), TEXT("another_woman") } };
+
+	for (int32 Woman = 0; Woman < 2; ++Woman)
+	{
+		TArray<TObjectPtr<USoundBase>>& Theirs = Woman ? CrowdBarksOfWomen : CrowdBarksOfMen;
+
+		Theirs.Reset();
+
+		for (int32 Bark = 0; Bark < TownConstants::CrowdBarkCount; ++Bark)
+		{
+			for (const TCHAR* Speaker : Speakers[Woman])
+			{
+				// (kept in step with the words: a recording that is missing leaves its place empty, and the words are shown alone)
+				Theirs.Add(LoadObject<USoundBase>(nullptr, *FString::Printf(TEXT("/Game/Town/Voices/crowd/%s_%02d.%s_%02d"), Speaker, Bark + 1, Speaker, Bark + 1), nullptr, LOAD_NoWarn | LOAD_Quiet));
+			}
 		}
 	}
 
@@ -3530,9 +3614,9 @@ bool ATownGameMode::IsOpenGround(const FVector2D& At, float Clear) const
 		}
 	}
 
-	for (int32 i = 0; bOn && i < PlaceData->Blocks.Num(); ++i)
+	for (int32 i = 0; bOn && i < GetBlocks().Num(); ++i)
 	{
-		bOn = PlaceData->Blocks[i].GetDistance(At) >= Clear;
+		bOn = GetBlocks()[i].GetDistance(At) >= Clear;
 	}
 
 	return bOn;
@@ -3667,6 +3751,132 @@ bool ATownGameMode::Bump(int32 Index)
 	return true;
 }
 
+void ATownGameMode::BumpBystander(AGutCrowd* Crowd, int32 Who, const FVector& Home)
+{
+	const AGutFighter* Walker = GetWalker();
+
+	if (!Crowd || !Walker || !PlaceData)
+	{
+		return;
+	}
+
+	if (LiveBlocks.IsEmpty())
+	{
+		LiveBlocks = PlaceData->Blocks;
+	}
+
+	const float Now = GetWorld()->GetTimeSeconds();
+	const FVector2D Flat(Home.X, Home.Y);
+	const FVector2D From(Walker->GetActorLocation().X, Walker->GetActorLocation().Y);
+
+	// whoever it is may be standing aside already: then it is from where they are that they give way again
+	FTownShoved* Known = Shoved.FindByPredicate([Crowd, Who](const FTownShoved& One) { return One.Crowd == Crowd && One.Who == Who; });
+
+	// their own block in the place's list: the small one that stands where they stand
+	const int32 Block = Known ? Known->Block : LiveBlocks.IndexOfByPredicate([&Flat](const FTownBlock& One) { return One.HalfSize.X <= 30.0f && One.HalfSize.Y <= 30.0f && FVector2D::DistSquared(One.Middle, Flat) < FMath::Square(12.0f); });
+	const FVector2D Stands = (Known && LiveBlocks.IsValidIndex(Block)) ? LiveBlocks[Block].Middle : Flat;
+
+	FVector2D Heading(Walker->GetActorForwardVector().X, Walker->GetActorForwardVector().Y);
+
+	if (const UCharacterMovementComponent* Legs = Walker->GetCharacterMovement(); Legs && !Legs->GetCurrentAcceleration().IsNearlyZero())
+	{
+		Heading = FVector2D(Legs->GetCurrentAcceleration().X, Legs->GetCurrentAcceleration().Y);
+	}
+
+	Heading = Heading.GetSafeNormal();
+
+	const FVector2D Away = (Stands - From).GetSafeNormal();
+	const FVector2D Side(-Heading.Y, Heading.X);
+	const float Off = FVector2D::DotProduct(Stands - From, Side);
+	const float Sign = FMath::Abs(Off) > 3.0f ? FMath::Sign(Off) : ((Who % 2) ? 1.0f : -1.0f);
+
+	bool bMoved = false;
+
+	for (const FVector2D& Way : { ((Side * Sign) + (Away * 0.5f)).GetSafeNormal(), Side * Sign, Away, Side * -Sign })
+	{
+		const FVector2D To = Stands + (Way * 85.0f);
+
+		// open ground, with their own block out of the reckoning: it goes with them
+		bool bFree = true;
+
+		{
+			bool bOn = false;
+
+			for (const FBox2D& Patch : PlaceData->Ground)
+			{
+				bOn |= Patch.IsInside(To);
+			}
+
+			bFree = bOn;
+
+			for (int32 i = 0; bFree && i < LiveBlocks.Num(); ++i)
+			{
+				bFree = i == Block || LiveBlocks[i].GetDistance(To) >= 34.0f;
+			}
+
+			for (int32 Other = 0; bFree && Other < People.Num(); ++Other)
+			{
+				bFree = !People[Other] || FVector::DistSquared2D(People[Other]->GetActorLocation(), FVector(To.X, To.Y, 0.0f)) > FMath::Square(75.0f);
+			}
+		}
+
+		if (!bFree)
+		{
+			continue;
+		}
+
+		Crowd->Shove(Who, FVector(To.X, To.Y, Home.Z), Walker->GetActorLocation());
+
+		if (LiveBlocks.IsValidIndex(Block))
+		{
+			LiveBlocks[Block].Middle = To;
+		}
+
+		if (Known)
+		{
+			Known->At = Now;
+		}
+		else
+		{
+			Shoved.Add({ Crowd, Who, Block, Flat, Now });
+		}
+
+		bMoved = true;
+		break;
+	}
+
+	// and they say so
+	if (Now >= BarkUntil)
+	{
+		const int32 Woman = Crowd->IsWoman(Who) ? 1 : 0;
+		const int32 Which = Barks++ % TownConstants::CrowdBarkCount;
+
+		BarkCall = FTownCall();
+		BarkCall.Speaker = Woman ? TEXT("A woman in the crowd") : TEXT("A man in the crowd");
+		BarkCall.Words = TownConstants::CrowdBarkWords[Which];
+		BarkCall.Seconds = 2.0f;
+
+		// one of the two voices there are for each, whichever this one of the crowd has
+		const TArray<TObjectPtr<USoundBase>>& Theirs = Woman ? CrowdBarksOfWomen : CrowdBarksOfMen;
+
+		USoundBase* Said = Theirs.IsValidIndex((Which * 2) + (Who % 2)) ? Theirs[(Which * 2) + (Who % 2)].Get() : nullptr;
+
+		if (const UGutGameInstance* GameInstance = GetGutGameInstance(); GameInstance && GameInstance->HearsSpeech() && Said)
+		{
+			if (BarkVoice)
+			{
+				BarkVoice->Stop();
+			}
+
+			BarkVoice = UGameplayStatics::SpawnSound2D(this, Said, TownConstants::CallVoiceVolume);
+		}
+
+		BarkUntil = Now + BarkCall.Seconds;
+	}
+
+	UE_LOG(LogTown, Log, TEXT("Street: walked into somebody of the crowd, who %s"), bMoved ? TEXT("steps aside") : TEXT("has nowhere to go"));
+}
+
 void ATownGameMode::UpdateBumps(float DeltaTime)
 {
 	const AGutFighter* Walker = GetWalker();
@@ -3674,7 +3884,79 @@ void ATownGameMode::UpdateBumps(float DeltaTime)
 	if (!bSettled || !PlaceData || !Walker || IsTalking() || bShopping)
 	{
 		BumpPressed.Reset();
+		CrowdPressed = 0.0f;
 		return;
+	}
+
+	// Somebody of a crowd: nearer than a body's width and a hand, with the player walking at them. (The place keeps the
+	// player off the square they stand on, so that is as near as anybody gets.) A sixth of a second of it is enough.
+	{
+		const UCharacterMovementComponent* Legs = Walker->GetCharacterMovement();
+		const FVector Wanted = Legs ? Legs->GetCurrentAcceleration() : FVector::ZeroVector;
+		const FVector2D Push = FVector2D(Wanted.X, Wanted.Y).GetSafeNormal();
+		const FVector Here = Walker->GetActorLocation();
+		const float Now = GetWorld()->GetTimeSeconds();
+
+		AGutCrowd* Nearest = nullptr;
+		int32 Who = INDEX_NONE;
+		FVector Home = FVector::ZeroVector;
+		float Apart = 86.0f;
+
+		for (TActorIterator<AGutCrowd> It(GetWorld()); It && !Push.IsNearlyZero(); ++It)
+		{
+			FVector Theirs;
+
+			if (const int32 Found = It->FindNearest(Here, Apart, &Theirs); Found != INDEX_NONE)
+			{
+				Nearest = *It;
+				Who = Found;
+				Home = Theirs;
+				Apart = FVector::Dist2D(Theirs, Here);
+			}
+		}
+
+		// (where they are now, which is not where they stand at home if they have been shoved already)
+		const FTownShoved* Known = Nearest ? Shoved.FindByPredicate([Nearest, Who](const FTownShoved& One) { return One.Crowd == Nearest && One.Who == Who; }) : nullptr;
+		const FVector2D Stands = (Known && LiveBlocks.IsValidIndex(Known->Block)) ? LiveBlocks[Known->Block].Middle : FVector2D(Home.X, Home.Y);
+
+		if (Nearest && FVector2D::Distance(Stands, FVector2D(Here.X, Here.Y)) < 86.0f && FVector2D::DotProduct(Push, (Stands - FVector2D(Here.X, Here.Y)).GetSafeNormal()) > 0.2f)
+		{
+			CrowdPressed = (CrowdPressing == Nearest && CrowdPressingWho == Who) ? CrowdPressed + DeltaTime : DeltaTime;
+			CrowdPressing = Nearest;
+			CrowdPressingWho = Who;
+
+			if (CrowdPressed >= 0.16f && (!Known || Now - Known->At > 1.2f))
+			{
+				CrowdPressed = 0.0f;
+
+				BumpBystander(Nearest, Who, Home);
+			}
+		}
+		else
+		{
+			CrowdPressed = 0.0f;
+		}
+
+		// and back to where they stood, when whoever shoved them is well gone
+		for (int32 i = Shoved.Num() - 1; i >= 0; --i)
+		{
+			const FTownShoved& One = Shoved[i];
+
+			if (!One.Crowd.IsValid() || (Now - One.At > 3.0f && FVector2D::Distance(FVector2D(Here.X, Here.Y), One.Home) > 280.0f))
+			{
+				if (One.Crowd.IsValid())
+				{
+					One.Crowd->Unshove(One.Who);
+				}
+
+				if (LiveBlocks.IsValidIndex(One.Block))
+				{
+					LiveBlocks[One.Block].Middle = One.Home;
+				}
+
+				Shoved.RemoveAt(i);
+			}
+		}
 	}
 
 	const UCharacterMovementComponent* Legs = Walker->GetCharacterMovement();
@@ -3697,15 +3979,17 @@ void ATownGameMode::UpdateBumps(float DeltaTime)
 
 		// Pushed against: as near as two bodies get, and the player still walking at them. Coming up to somebody to speak to
 		// them stops short of this, and brushing past them is over before it counts.
-		const float Touching = Walker->GetCapsuleComponent()->GetScaledCapsuleRadius() + Body->GetCapsuleComponent()->GetScaledCapsuleRadius() + 9.0f;
+		// (A hand's width more than the two bodies' own, since what is worn may stop the player short of that; and walking
+		// at them at all, not only square on: somebody walked into at an angle is slid past, and was never counted.)
+		const float Touching = Walker->GetCapsuleComponent()->GetScaledCapsuleRadius() + Body->GetCapsuleComponent()->GetScaledCapsuleRadius() + 22.0f;
 
-		if (!Push.IsNearlyZero() && Apart < Touching && FVector2D::DotProduct(Push, (At - From).GetSafeNormal()) > 0.55f)
+		if (!Push.IsNearlyZero() && Apart < Touching && FVector2D::DotProduct(Push, (At - From).GetSafeNormal()) > 0.2f)
 		{
 			float& Pressed = BumpPressed.FindOrAdd(i);
 
 			Pressed += DeltaTime;
 
-			if (Pressed >= 0.3f && Now - BumpedAt.FindRef(i) > 2.0f)
+			if (Pressed >= 0.16f && Now - BumpedAt.FindRef(i) > 1.5f)
 			{
 				Pressed = 0.0f;
 
@@ -7845,20 +8129,63 @@ void ATownGameMode::SetStopped(bool bStopped)
 		return;
 	}
 
+	// (leaving a page of it goes back a page, and only then out of it)
+	if (!bStopped && StoppedPage > 0)
+	{
+		StoppedChoice = StoppedPage == 2 ? StoppedGame : TownStoppedLines::Games;
+		--StoppedPage;
+		return;
+	}
+
 	bStoppedMenu = bStopped;
 	StoppedChoice = 0;
+	StoppedPage = 0;
 
 	UGameplayStatics::SetGamePaused(this, bStoppedMenu);
+}
+
+FString ATownGameMode::GetStoppedTitle() const
+{
+	return StoppedPage == 1 ? FString(TEXT("YOUR GAMES")) : (StoppedPage == 2 ? FString::Printf(TEXT("GAME %d"), StoppedGame + 1) : FString(TEXT("STOPPED")));
 }
 
 TArray<FString> ATownGameMode::GetStoppedLines() const
 {
 	const UGutGameInstance* GameInstance = GetGutGameInstance();
 
+	if (StoppedPage == 1 && GameInstance)
+	{
+		TArray<FString> Lines;
+
+		for (int32 i = 0; i < UGutGameInstance::GameCount; ++i)
+		{
+			const FString Kept = GameInstance->DescribeGame(i);
+
+			Lines.Add(FString::Printf(TEXT("Game %d  \u00B7  %s%s"), i + 1, Kept.IsEmpty() ? TEXT("nothing kept here: begin a new game") : *Kept, i == GameInstance->Game ? TEXT("  \u00B7  the one you are playing") : TEXT("")));
+		}
+
+		Lines.Add(TEXT("Back"));
+
+		return Lines;
+	}
+
+	if (StoppedPage == 2 && GameInstance)
+	{
+		const FString Kept = GameInstance->DescribeGame(StoppedGame);
+
+		if (Kept.IsEmpty())
+		{
+			return { TEXT("Begin a new game here. The one you are playing is kept as it stands."), TEXT("Back") };
+		}
+
+		return { FString::Printf(TEXT("Play it: %s. The one you are playing is kept as it stands."), *Kept), TEXT("Forget it for good. This cannot be undone."), TEXT("Back") };
+	}
+
 	static const TCHAR* Loud[] = { TEXT("off"), TEXT("a third"), TEXT("two thirds"), TEXT("full") };
 
 	static const TCHAR* Said[] = { TEXT("heard and written"), TEXT("written only"), TEXT("heard, with only your answers written") };
 
 	return { TEXT("Go on"), TEXT("Your bag"), TEXT("The map"), FString::Printf(TEXT("Sound: %s"), Loud[FMath::Clamp(GameInstance ? GameInstance->Loudness : 3, 0, 3)]),
-		FString::Printf(TEXT("What people say: %s"), Said[FMath::Clamp(GameInstance ? GameInstance->Speech : 0, 0, 2)]), TEXT("Leave the game") };
+		FString::Printf(TEXT("What people say: %s"), Said[FMath::Clamp(GameInstance ? GameInstance->Speech : 0, 0, 2)]),
+		FString::Printf(TEXT("Your games: this is game %d of %d"), (GameInstance ? GameInstance->Game : 0) + 1, UGutGameInstance::GameCount), TEXT("Leave the game") };
 }

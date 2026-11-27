@@ -124,6 +124,10 @@ public:
 
 	UPROPERTY()
 	int32 Speech = 0;
+
+	/** Which of the saved games was being played when the game was last shut: see UGutGameInstance::Game */
+	UPROPERTY()
+	int32 Game = 0;
 };
 
 /**
@@ -419,6 +423,37 @@ public:
 	/** Name of the save the run is kept in */
 	UPROPERTY(BlueprintReadWrite, Category="Gut")
 	FString SaveSlotName = TEXT("GutRun");
+
+	/**
+	 *  Several games, each kept apart ("add a way to save - multiple games", 26 November). There are GameCount places
+	 *  for one; Game is the one being played, and the game comes back to it the next time it is started. The first is
+	 *  the game there was before there were several. A game is written down as it is played, as it always was: there
+	 *  is nothing to do to save one, and playing another does not touch it.
+	 */
+	static constexpr int32 GameCount = 4;
+
+	int32 Game = 0;
+
+	/** Where a game is kept */
+	FString GetGameSlot(int32 Which) const { return Which <= 0 ? GameSlotStem : FString::Printf(TEXT("%s%d"), *GameSlotStem, Which + 1); }
+
+	/** What the kept games are called on disk. A test gives them another name, so that nobody's own games are touched. */
+	FString GameSlotStem = TEXT("GutRun");
+
+	/** A game in a line, for choosing between them: the day, the water, who is in the yard, what is owed. Empty if nothing is kept there. */
+	FString DescribeGame(int32 Which) const;
+
+	/**
+	 *  Writes the game being played down, puts it away, and takes up another: as it was left, or new if nothing is
+	 *  kept there. The town is then opened from its beginning by whoever asked (see ATownGameMode).
+	 */
+	void PlayGame(int32 Which);
+
+	/** Throws a kept game away for good. If it is the one being played, that game begins again from nothing. */
+	void ForgetGame(int32 Which);
+
+	/** Everything that makes a game, as it is before anything has happened */
+	void ClearRun();
 
 	/** Name of the save the player's own settings are kept in */
 	UPROPERTY(BlueprintReadWrite, Category="Gut")

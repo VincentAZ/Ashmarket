@@ -1,5 +1,7 @@
 // Ashmarket: the town outside the cage.
 
+#include "EngineUtils.h"
+#include "GutCrowd.h"
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 
@@ -2454,6 +2456,353 @@ bool FTownLookScrappersYardTest::RunTest(const FString& Parameters)
 	return StoryTests::Look(this, TEXT("/Game/Town/Lvl_ScrappersYard"), Views);
 }
 
+/**
+ *  Somebody standing in a crowd, walked into, says something and steps aside, and the player can walk through where
+ *  they stood; with the player gone they go back. ("Nothing happens when I bump into someone - unmoveable and
+ *  non-reactionary", 26 November: the people of a crowd were a square of ground that could not be stood on.)
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownBumpCrowdTest, "Ashmarket.Town.BumpCrowd", GutTests::Flags)
+
+bool FTownBumpCrowdTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	struct FNotes
+	{
+		TWeakObjectPtr<AGutCrowd> Crowd;
+		int32 Who = INDEX_NONE;
+		FVector Home = FVector::ZeroVector;
+		FVector2D From = FVector2D::ZeroVector;
+		FVector2D Toward = FVector2D::ZeroVector;
+		float Walked = 0.0f;
+	};
+
+	TSharedRef<FNotes> Notes = MakeShared<FNotes>();
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_ScrappersYard"), true))
+	{
+		AddError(TEXT("Could not open the Scrappers' Yard's level"));
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 0.8f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		// somebody of a crowd who can be walked up to, with open ground behind them to walk on through to
+		for (TActorIterator<AGutCrowd> It(Town->GetWorld()); It && Notes->Who == INDEX_NONE; ++It)
+		{
+			for (int32 i = 0; i < 64 && Notes->Who == INDEX_NONE; ++i)
+			{
+				const FVector Stood = It->GetStood(i);
+
+				if (Stood.IsZero())
+				{
+					break;
+				}
+
+				const FVector2D At(Stood.X, Stood.Y);
+
+				for (const FVector2D& Side : { FVector2D(1.0f, 0.0f), FVector2D(-1.0f, 0.0f), FVector2D(0.0f, 1.0f), FVector2D(0.0f, -1.0f) })
+				{
+					if (Town->IsOpenGround(At + (Side * 150.0f)) && Town->IsOpenGround(At + (Side * 110.0f)) && Town->IsOpenGround(At - (Side * 120.0f)))
+					{
+						Notes->Crowd = *It;
+						Notes->Who = i;
+						Notes->Home = Stood;
+						Notes->From = At + (Side * 150.0f);
+						Notes->Toward = Side * -1.0f;
+						break;
+					}
+				}
+			}
+		}
+
+		if (!TestTrue(TEXT("There is somebody of a crowd in the Scrappers' Yard who can be walked up to"), Notes->Who != INDEX_NONE))
+		{
+			return;
+		}
+
+		TestFalse(TEXT("The ground they stand on cannot be stood on"), Town->IsOpenGround(FVector2D(Notes->Home.X, Notes->Home.Y)));
+
+		StandOn(Notes->From, FVector(Notes->Toward.X, Notes->Toward.Y, 0.0f).Rotation().Yaw);
+	}, []() { return IsStreetReady(); } });
+
+	Steps.Add({ 0.1f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (Notes->Who == INDEX_NONE)
+		{
+			return;
+		}
+
+		const FTownCall* Bark = Town->GetBark();
+
+		if (TestNotNull(TEXT("Walked into, they say something"), Bark))
+		{
+			TestTrue(*FString::Printf(TEXT("As one of the crowd (%s: %s)"), *Bark->Speaker, *Bark->Words), Bark->Speaker.Contains(TEXT("in the crowd")) && !Bark->Words.IsEmpty());
+			TestEqual(TEXT("A woman is called a woman and a man a man"), Bark->Speaker.Contains(TEXT("woman")), Notes->Crowd->IsWoman(Notes->Who));
+		}
+
+		TestTrue(*FString::Printf(TEXT("And they are stepping aside (after %.2f s of walking at them)"), Notes->Walked), Notes->Crowd->IsShoved(Notes->Who) && Town->GetShovedCount() == 1);
+		TestTrue(TEXT("The ground they stood on can now be stood on"), Town->IsOpenGround(FVector2D(Notes->Home.X, Notes->Home.Y)));
+
+		GutTests::Screenshot(TEXT("75_crowd_walked_into"));
+	}, [Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (Notes->Who == INDEX_NONE)
+		{
+			return true;
+		}
+
+		Town->GetWalker()->AddMovementInput(FVector(Notes->Toward.X, Notes->Toward.Y, 0.0f), 1.0f);
+
+		Notes->Walked += Town->GetWorld()->GetDeltaSeconds();
+
+		return Town->GetBark() != nullptr || Notes->Walked >= 3.0f;
+	} });
+
+	// walks on through where they stood
+	Steps.Add({ 0.1f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (Notes->Who == INDEX_NONE)
+		{
+			return;
+		}
+
+		const FVector Now = Notes->Crowd->GetStood(Notes->Who);
+		const float Off = FVector::Dist2D(Now, Notes->Home);
+
+		TestTrue(*FString::Printf(TEXT("They have stepped aside from where they stood (%.0f cm)"), Off), Off > 55.0f && Off < 110.0f);
+
+		const FVector2D Here(Town->GetWalker()->GetActorLocation());
+		const float Past = FVector2D::DotProduct(Here - FVector2D(Notes->Home.X, Notes->Home.Y), Notes->Toward);
+
+		TestTrue(*FString::Printf(TEXT("And the player has walked through where they stood (%.0f cm past it)"), Past), Past > 20.0f);
+
+		GutTests::Screenshot(TEXT("76_crowd_stepped_aside"));
+
+		// and the player goes off
+		StandOn(Notes->From + FVector2D(0.0f, 0.0f), 0.0f);
+		StandOn(FVector2D(Notes->Home.X, Notes->Home.Y) - (Notes->Toward * 150.0f), 0.0f);
+	}, [Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (Notes->Who == INDEX_NONE)
+		{
+			return true;
+		}
+
+		Town->GetWalker()->AddMovementInput(FVector(Notes->Toward.X, Notes->Toward.Y, 0.0f), 1.0f);
+
+		Notes->Walked += Town->GetWorld()->GetDeltaSeconds();
+
+		const FVector2D Here(Town->GetWalker()->GetActorLocation());
+
+		return FVector2D::DotProduct(Here - FVector2D(Notes->Home.X, Notes->Home.Y), Notes->Toward) > 60.0f || Notes->Walked >= 8.0f;
+	} });
+
+	Steps.Add({ 0.1f, [this, Notes]()
+	{
+		if (Notes->Who != INDEX_NONE)
+		{
+			GetTown()->GetWalker()->SetActorLocation(GetTown()->GetWalker()->GetActorLocation() + FVector(Notes->Toward.X, Notes->Toward.Y, 0.0f) * -900.0f);
+		}
+	} });
+
+	Steps.Add({ 1.5f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (Notes->Who != INDEX_NONE)
+		{
+			const float Off = FVector::Dist2D(Notes->Crowd->GetStood(Notes->Who), Notes->Home);
+
+			TestTrue(*FString::Printf(TEXT("When the player has gone they are back where they stood (%.0f cm off it)"), Off), Off < 8.0f && Town->GetShovedCount() == 0);
+			TestFalse(TEXT("And that ground cannot be stood on again"), Town->IsOpenGround(FVector2D(Notes->Home.X, Notes->Home.Y)));
+		}
+	}, [Notes]()
+	{
+		return Notes->Who == INDEX_NONE || GetTown()->GetShovedCount() == 0 || (Notes->Walked += GetTown()->GetWorld()->GetDeltaSeconds()) > 24.0f;
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Several games kept apart: one put away as it stands, another begun, the first taken up again as it was left, and one
+ *  thrown away. ("Add a way to save - multiple games", 26 November.) Written to disk under names of the test's own,
+ *  so that nobody's games are touched.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownGamesTest, "Ashmarket.Town.Games", GutTests::Flags)
+
+bool FTownGamesTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	struct FNotes
+	{
+		FTownStoryState Story;
+		FString Stem, Slot, Settings;
+		bool bSaved = false;
+		int32 Game = 0;
+	};
+
+	TSharedRef<FNotes> Notes = MakeShared<FNotes>();
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_PoolStreet"), true))
+	{
+		AddError(TEXT("Could not open Pool Street's level"));
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 3.5f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		Notes->Story = Run->Story;
+		Notes->Stem = Run->GameSlotStem;
+		Notes->Slot = Run->SaveSlotName;
+		Notes->Settings = Run->SettingsSlotName;
+		Notes->bSaved = Run->bSaveEnabled;
+		Notes->Game = Run->Game;
+
+		Run->GameSlotStem = TEXT("TestGutRun");
+		Run->SettingsSlotName = TEXT("TestGutSettings");
+		Run->Game = 0;
+		Run->SaveSlotName = Run->GetGameSlot(0);
+		Run->bSaveEnabled = true;
+
+		for (int32 i = 0; i < UGutGameInstance::GameCount; ++i)
+		{
+			UGameplayStatics::DeleteGameInSlot(Run->GetGameSlot(i), 0);
+		}
+
+		// something done in the first game
+		Run->Story.Marks.Add(FName("test.games"), 7);
+
+		TestTrue(TEXT("A game in which something has been done in the town is written down"), Run->SaveRun());
+		TestFalse(TEXT("The game being played is described"), Run->DescribeGame(0).IsEmpty());
+		TestTrue(TEXT("Nothing is kept in the second place"), Run->DescribeGame(1).IsEmpty());
+
+		// the stopped menu has a line for them, which opens a page of them
+		Town->SetStopped(true);
+
+		TestEqual(TEXT("The stopped menu has its lines"), Town->GetStoppedLines().Num(), TownStoppedLines::Count);
+		TestTrue(*FString::Printf(TEXT("One of them says which game this is (%s)"), *Town->GetStoppedLines()[TownStoppedLines::Games]), Town->GetStoppedLines()[TownStoppedLines::Games].Contains(TEXT("game 1 of 4")));
+
+		for (int32 i = 0; i < TownStoppedLines::Games; ++i)
+		{
+			Town->HandleMenuInput(EGutMenuInput::Down);
+		}
+
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestEqual(TEXT("It opens the page of games"), Town->GetStoppedPage(), 1);
+		TestEqual(TEXT("With a line for each and a way back"), Town->GetStoppedLines().Num(), UGutGameInstance::GameCount + 1);
+		TestTrue(*FString::Printf(TEXT("The one being played is marked (%s)"), *Town->GetStoppedLines()[0]), Town->GetStoppedLines()[0].Contains(TEXT("the one you are playing")));
+		TestTrue(*FString::Printf(TEXT("An empty one says so (%s)"), *Town->GetStoppedLines()[1]), Town->GetStoppedLines()[1].Contains(TEXT("begin a new game")));
+
+		GutTests::Screenshot(TEXT("77_your_games"));
+	}, []() { return IsStreetReady(); } });
+
+	Steps.Add({ 0.3f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		// the second game, which is empty: what can be done with it
+		Town->HandleMenuInput(EGutMenuInput::Down);
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestEqual(TEXT("Choosing another game asks what to do with it"), Town->GetStoppedPage(), 2);
+		TestEqual(TEXT("An empty one can be begun, or left"), Town->GetStoppedLines().Num(), 2);
+
+		GutTests::Screenshot(TEXT("78_a_new_game"));
+
+		// (the menu's own line opens the town from its beginning as well: here the game is taken up and the test stays where it is)
+		Town->SetStopped(false);
+		Town->SetStopped(false);
+		Town->SetStopped(false);
+
+		TestFalse(TEXT("Three times back is out of the menu"), Town->IsStopped());
+
+		Run->PlayGame(1);
+
+		TestEqual(TEXT("The second game is the one being played"), Run->Game, 1);
+		TestTrue(TEXT("It is new: nothing done in the first is done in it"), Run->Story.Marks.IsEmpty() && !Run->Stable.bStarted && !Run->bLadderStarted);
+		TestFalse(TEXT("And the first is kept, described as it was left"), Run->DescribeGame(0).IsEmpty());
+
+		Run->Story.Marks.Add(FName("test.two"), 1);
+
+		// back to the first
+		Run->PlayGame(0);
+
+		TestEqual(TEXT("The first game taken up again"), Run->Game, 0);
+		TestEqual(TEXT("Is as it was left"), Run->Story.Marks.FindRef(FName("test.games")), 7);
+		TestFalse(TEXT("With nothing of the second in it"), Run->Story.Marks.Contains(FName("test.two")));
+		TestFalse(TEXT("The second is kept too"), Run->DescribeGame(1).IsEmpty());
+
+		// the page of games, with the second now kept: it can be played or forgotten
+		Town->SetStopped(true);
+
+		for (int32 i = 0; i < TownStoppedLines::Games; ++i)
+		{
+			Town->HandleMenuInput(EGutMenuInput::Down);
+		}
+
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+		Town->HandleMenuInput(EGutMenuInput::Down);
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestEqual(TEXT("A kept one can be played, forgotten, or left"), Town->GetStoppedLines().Num(), 3);
+
+		Town->HandleMenuInput(EGutMenuInput::Down);
+		Town->HandleMenuInput(EGutMenuInput::Confirm);
+
+		TestTrue(TEXT("Forgotten, it is gone"), Run->DescribeGame(1).IsEmpty());
+		TestEqual(TEXT("And the page of games is up again"), Town->GetStoppedPage(), 1);
+		TestEqual(TEXT("The game being played is untouched"), Run->Story.Marks.FindRef(FName("test.games")), 7);
+
+		Town->SetStopped(false);
+		Town->SetStopped(false);
+
+		// and nothing of the test is left
+		for (int32 i = 0; i < UGutGameInstance::GameCount; ++i)
+		{
+			UGameplayStatics::DeleteGameInSlot(Run->GetGameSlot(i), 0);
+		}
+
+		UGameplayStatics::DeleteGameInSlot(Run->SettingsSlotName, 0);
+
+		Run->GameSlotStem = Notes->Stem;
+		Run->SettingsSlotName = Notes->Settings;
+		Run->SaveSlotName = Notes->Slot;
+		Run->bSaveEnabled = Notes->bSaved;
+		Run->Game = Notes->Game;
+		Run->Story = Notes->Story;
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
 #endif
 
 /**
@@ -2732,6 +3081,29 @@ bool FTownLookKeptTest::RunTest(const FString& Parameters)
 			const FVector Hips = Walker->GetActorLocation() + FVector(0.0f, 0.0f, 5.0f);
 
 			LookFrom(Hips + Walker->GetActorTransform().TransformVector(Side.Value), Hips, FCString::Strstr(Side.Key, TEXT("close")) ? 50.0f : 44.0f);
+		} });
+
+		Steps.Add({ 0.5f, [Side]() { GutTests::Screenshot(Side.Key); } });
+	}
+
+	// And the strap, at the height of the chest and from all four sides: it was looked at from in front and from behind
+	// only, and from the side it stood a hand's width off the chest and the back ("strap needs adjustment", 26 November).
+	const TPair<const TCHAR*, FVector> Round[] =
+	{
+		{ TEXT("kept_06_strap_from_the_left"), FVector(0.0f, -250.0f, 0.0f) },
+		{ TEXT("kept_07_strap_from_the_right"), FVector(0.0f, 250.0f, 0.0f) },
+		{ TEXT("kept_08_strap_from_the_front"), FVector(250.0f, 0.0f, 0.0f) },
+		{ TEXT("kept_09_strap_from_behind"), FVector(-250.0f, 0.0f, 0.0f) },
+	};
+
+	for (const TPair<const TCHAR*, FVector>& Side : Round)
+	{
+		Steps.Add({ 0.5f, [Side, LookFrom]()
+		{
+			const AGutFighter* Walker = GetTown()->GetWalker();
+			const FVector Chest = Walker->GetActorLocation() + FVector(0.0f, 0.0f, 30.0f);
+
+			LookFrom(Chest + Walker->GetActorTransform().TransformVector(Side.Value), Chest, 40.0f);
 		} });
 
 		Steps.Add({ 0.5f, [Side]() { GutTests::Screenshot(Side.Key); } });
@@ -3062,7 +3434,24 @@ bool FTownTakingThroughTest::RunTest(const FString& Parameters)
 		return !Notes->bAsked || (Fight.IsValid() && Fight.GameMode->GetPhase() == EGutFightPhase::Fighting);
 	} });
 
-	// back in the town, by itself, when the last picture of it has had its time
+	// its last picture stays up until the player sends it away
+	Steps.Add({ 0.3f, [this, Notes]()
+	{
+		const GutTests::FFight Fight = GutTests::GetFight();
+
+		if (Notes->bAsked && TestTrue(TEXT("Its last picture is still up, however long it is looked at"), Fight.IsValid() && Fight.GameMode->GetTakingOutcome() == 1 && Fight.GameMode->CanRestart()))
+		{
+			Fight.GameMode->RequestRestart();
+		}
+	}, [Notes]()
+	{
+		const GutTests::FFight Fight = GutTests::GetFight();
+
+		// (well past the four seconds it used to stay for)
+		return !Notes->bAsked || (Fight.IsValid() && Fight.GameMode->GetTakingOutcome() != 0 && Fight.GameMode->GetPhaseTime() >= 5.0f);
+	} });
+
+	// back in the town, when it has been sent away
 	Steps.Add({ 1.2f, [this, Notes]()
 	{
 		ATownGameMode* Town = GetTown();

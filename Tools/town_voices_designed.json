@@ -26,6 +26,30 @@
   "first_said": "Main Street is open as far as the Gate Yard. The armorers and the gunsmith are down it, if you have business with either. Keep your hands where the Chainmen can see them.",
   "generated_voice_id": "VzsLobvU2GmlJwxzIh8E"
  },
+ "Crowd/A man": {
+  "body": 0.123,
+  "description": "A man of about forty standing in a crowd at a night market in a desert shanty town, who has just been walked into: gruff, low, short-tempered, a working man's American voice, snapping a few words over his shoulder. Full, natural and close, with a proper low end, as if recorded a hand's width from the mouth in a quiet room: not thin, not announcing, not through a loudspeaker or a radio, no echo.",
+  "first_said": "Hey! Watch it. Easy. Easy. Mind yourself. Do that again. Go on. Christ. Watch where you walk. I am standing here, in case you had not noticed.",
+  "generated_voice_id": "cuneATZ560GLobmyJjOr"
+ },
+ "Crowd/A woman": {
+  "body": 0.186,
+  "description": "A woman of about forty-five in a crowd at a night market in a desert shanty town, who has just been walked into: a low, rough, tired American voice with weight in it, sharp and unimpressed. Full, natural and close, with a proper low end, as if recorded a hand's width from the mouth in a quiet room: not thin, not announcing, not through a loudspeaker or a radio, no echo.",
+  "first_said": "Hey! Watch it. Easy. Easy. Mind yourself. Do that again. Go on. Christ. Watch where you walk. I am standing here, in case you had not noticed.",
+  "generated_voice_id": "7CaRqn2Q2cr4AhM5sgr5"
+ },
+ "Crowd/Another man": {
+  "body": 0.081,
+  "description": "A man in his late twenties in a crowd at a night market, lean and quick to anger, who has just been shoved: a hard, flat, young American voice, medium-low, sneering, said through his teeth. Full, natural and close, with a proper low end, as if recorded a hand's width from the mouth in a quiet room: not thin, not announcing, not through a loudspeaker or a radio, no echo.",
+  "first_said": "Hey! Watch it. Easy. Easy. Mind yourself. Do that again. Go on. Christ. Watch where you walk. I am standing here, in case you had not noticed.",
+  "generated_voice_id": "1k7jmiUGXykayt14331C"
+ },
+ "Crowd/Another woman": {
+  "body": 0.083,
+  "description": "A woman in her twenties in a crowd at a night market, who has just been shoved: a quick, hard, clear American voice, medium pitch with body in it, angry and not afraid. Full, natural and close, with a proper low end, as if recorded a hand's width from the mouth in a quiet room: not thin, not announcing, not through a loudspeaker or a radio, no echo.",
+  "first_said": "Hey! Watch it. Easy. Easy. Mind yourself. Do that again. Go on. Christ. Watch where you walk. I am standing here, in case you had not noticed.",
+  "generated_voice_id": "w2sKJqAu6cZ7LQj8yyXa"
+ },
  "Main Street/A cart hand": {
   "description": "A water-cart hand in his late fifties, at the end of a long day. Dry, low, quick, conspiratorial: he talks out of the side of his mouth as if somebody might be listening, and enjoys knowing something you do not. A worn, slightly cracked voice. Plain working American speech. Not a narrator: close, sly, real.",
   "first_said": "Pump cart, east branch. Tag, litre. I am the last: there is nobody behind me but the dark. You did not hear it from a cart hand. The east tank is down a hand's width since Tuesday, and nobody has drawn from it. Work that out. Ring your bell, reader. That is the day.",
@@ -105,10 +129,10 @@
   "generated_voice_id": "J8DqcheqgGQ5oHaJ4rMt"
  },
  "Main Street/Stallholder": {
-  "body": 0.026,
-  "description": "A woman in her sixties who sells bread from a market stall at night in a desert shanty town. Warm but loud, a market voice cracked from calling over a crowd, brisk and motherly and not to be argued with. Plain working American speech. Not an announcer and not a narrator: busy, rough, real.",
+  "body": 0.081,
+  "description": "A woman in her sixties who sells bread from a market stall at night in a desert shanty town. Warm but loud, a market voice cracked from calling over a crowd, brisk and motherly and not to be argued with. Plain working American speech. Not an announcer and not a narrator: busy, rough, real. A LOW, full, chesty voice with weight in it and a rich low end, as if recorded a hand's width from the mouth in a quiet room with a large-diaphragm microphone. Not thin, not bright, not nasal, and not heard through a loudspeaker, a telephone or a radio.",
   "first_said": "Bread's hot. Water first, then bread. That is the order everything goes in here. Next. You, are you buying or are you looking?",
-  "generated_voice_id": "cpLswS2D1Dt46PN4JcVo"
+  "generated_voice_id": "pGHsC3klY8phJWSodoST"
  },
  "Main Street/Tea seller": {
   "description": "A woman in her sixties who sells tea from a kiosk at a night market in a desert shanty town. A faint Eastern European accent. Deadpan and weary, low and a little cracked: she has told the same joke for twenty years and stopped finding it funny after the first. Slow. Not a narrator and not an actress: flat, close, real.",
@@ -186,16 +210,16 @@
   "generated_voice_id": "VGV5v7V9CJwlEYpYwrsm"
  },
  "The Last Call/Benno Krait": {
-  "body": 0.049,
+  "body": 0.091,
   "description": "A man of about fifty who was a militia sergeant and is now a card player in debt: a hoarse, sour, proud voice, a little drunk, quick to take offence, talking out of the side of his mouth without looking up from his cards. American. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo.",
   "first_said": "If you are not sitting in, do not stand behind me. It is bad luck and bad manners. Twenty-two? Tell Harrow I am one hand off it. I was a Warden for nine years. We do not get walked to the Block over a card debt. Go and bother a cook. Twenty-two, on your word and not hers. Fine. I pay my own kind. You will have it when the cards turn, and they turn. Through the gate. Right. I owe you a drink I will never be here to buy. I know what I owe you. Stand somewhere else while I win it. Hands off. I was a Warden. Walk round. Do that again.",
-  "generated_voice_id": "xWnDWEILxbLMFZwXZUV7"
+  "generated_voice_id": "2HN5hqQoBapMb9JahaFF"
  },
  "The Last Call/Captain Dolores": {
-  "body": 0.036,
-  "description": "A wiry woman of sixty-four who keeps a bar in a wrecked airliner in a desert shanty town, and was cabin crew on it long ago. She is talking quietly to one person across a small table at night: low, close and unhurried, a little husky from smoke, friendly on top and hard underneath. American. She calls everybody sweetheart. A natural, conversational voice, as if recorded a hand's width from her mouth in a quiet room. She is not announcing, not presenting, not putting on a voice, and not heard through a loudspeaker, a cabin address system or a radio: no echo, no projection.",
+  "body": 0.083,
+  "description": "A wiry woman of sixty-four who keeps a bar in a wrecked airliner in a desert shanty town, and was cabin crew on it long ago. A LOW, full, chesty woman's voice, a deep alto with weight and warmth in it, a little husky from smoke, friendly on top and hard underneath. She is talking quietly and unhurriedly to one person across a small table at night. American. She calls everybody sweetheart. A natural, conversational voice with a rich low end, as if recorded a hand's width from her mouth in a quiet room with a large-diaphragm microphone. Not thin, not bright, not nasal; not announcing; not heard through a loudspeaker, a telephone, a cabin address system or a radio: no echo.",
   "first_said": "Welcome aboard the Last Call. Exits are here, here, and through anybody who starts something. We don't expect turbulence, but then we didn't last time. The cabin floor is up for the week, sweetheart. Somebody slept in the hold and came up through it. So tonight the bar is the Apron, the board is by my elbow, and you may sit anywhere that is not on fire. I have a job for you, sweetheart. Three of my regulars have not paid for what they drank. The Warden corporal owes me twelve litres. The winch hand owes nine. The Chainmen's collector owes thirteen. All three are out here on the Apron tonight. Get it out of them, thirty-four litres in all, and bring it to my table. Eight of it is yours, and you get the better jobs off my board. The corporal is down at the south tables. The collector is by the fire. The winch hand is at the north end, by the tail. Ask them, lean on them, pay it yourself: how is your business. One rule. I keep no book, and none of this goes to Mother Ledger.",
-  "generated_voice_id": "1iJ4SJ4tAjSu4FqiWhky"
+  "generated_voice_id": "SZy4mwTL55jURPBkFWLu"
  },
  "The Scrappers' Yard/Guildmaster Okafor-Reyes": {
   "description": "A thick-set man of fifty-eight, the elected head of a salvage guild in a desert shanty town, once a merchant who went broke. A deep, slow, careful voice, a little hoarse; fair-minded and tired of having to be; a trace of Nigerian English in plain speech. He weighs every word as he weighs scrap. Not an announcer and not a narrator: close, grave, real.",

@@ -241,6 +241,12 @@ void AGutHUD::DrawHUD()
 			: (Outcome == 2 ? FString(TEXT("You hit too hard. Nobody pays for that.")) : FString::Printf(TEXT("%s left you on the ground, and went through what you carry."), Who.HeCap())),
 			CenterX, 255.0f, 24, GutHUDColors::Text, true);
 
+		// and it is the player who sends it away, when it has been read
+		if (GameMode->CanRestart())
+		{
+			DrawLabel(TEXT("Enter, or Start on a pad: back to the street"), CenterX, 312.0f, 18, GutHUDColors::Warning, true);
+		}
+
 		return true;
 	};
 

@@ -1,0 +1,158 @@
+{
+ "about": "Not a place: what somebody standing in a crowd says when the player walks into them, as two men and two women say it (ATownGameMode::BumpBystander). The words are in the same order as TownConstants::CrowdBarkWords: keep the two in step. Tools/make_town_voices.py records these as ArtSource/voices/crowd/<speaker>_NN, and the import brings them in as /Game/Town/Voices/crowd. No level is built from this list.",
+ "name": "Crowd",
+ "people": [
+  {
+   "name": "A man",
+   "bumped": [],
+   "lines": [
+    {
+     "id": "01",
+     "words": "Hey!"
+    },
+    {
+     "id": "02",
+     "words": "Watch it."
+    },
+    {
+     "id": "03",
+     "words": "Fuck off."
+    },
+    {
+     "id": "04",
+     "words": "Easy. Easy."
+    },
+    {
+     "id": "05",
+     "words": "Go round, asshole."
+    },
+    {
+     "id": "06",
+     "words": "Mind yourself."
+    },
+    {
+     "id": "07",
+     "words": "Do that again. Go on."
+    },
+    {
+     "id": "08",
+     "words": "Christ. Watch where you walk."
+    }
+   ]
+  },
+  {
+   "name": "Another man",
+   "bumped": [],
+   "lines": [
+    {
+     "id": "01",
+     "words": "Hey!"
+    },
+    {
+     "id": "02",
+     "words": "Watch it."
+    },
+    {
+     "id": "03",
+     "words": "Fuck off."
+    },
+    {
+     "id": "04",
+     "words": "Easy. Easy."
+    },
+    {
+     "id": "05",
+     "words": "Go round, asshole."
+    },
+    {
+     "id": "06",
+     "words": "Mind yourself."
+    },
+    {
+     "id": "07",
+     "words": "Do that again. Go on."
+    },
+    {
+     "id": "08",
+     "words": "Christ. Watch where you walk."
+    }
+   ]
+  },
+  {
+   "name": "A woman",
+   "bumped": [],
+   "lines": [
+    {
+     "id": "01",
+     "words": "Hey!"
+    },
+    {
+     "id": "02",
+     "words": "Watch it."
+    },
+    {
+     "id": "03",
+     "words": "Fuck off."
+    },
+    {
+     "id": "04",
+     "words": "Easy. Easy."
+    },
+    {
+     "id": "05",
+     "words": "Go round, asshole."
+    },
+    {
+     "id": "06",
+     "words": "Mind yourself."
+    },
+    {
+     "id": "07",
+     "words": "Do that again. Go on."
+    },
+    {
+     "id": "08",
+     "words": "Christ. Watch where you walk."
+    }
+   ]
+  },
+  {
+   "name": "Another woman",
+   "bumped": [],
+   "lines": [
+    {
+     "id": "01",
+     "words": "Hey!"
+    },
+    {
+     "id": "02",
+     "words": "Watch it."
+    },
+    {
+     "id": "03",
+     "words": "Fuck off."
+    },
+    {
+     "id": "04",
+     "words": "Easy. Easy."
+    },
+    {
+     "id": "05",
+     "words": "Go round, asshole."
+    },
+    {
+     "id": "06",
+     "words": "Mind yourself."
+    },
+    {
+     "id": "07",
+     "words": "Do that again. Go on."
+    },
+    {
+     "id": "08",
+     "words": "Christ. Watch where you walk."
+    }
+   ]
+  }
+ ]
+}

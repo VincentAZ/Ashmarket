@@ -15,7 +15,7 @@
   {"name": "from_row", "x": -37.0, "y": 274.4, "facing": 180}
  ],
 
- "beds": ["market"],
+ "beds": [],
 
  "errand": [
   "THE LAST CALL",

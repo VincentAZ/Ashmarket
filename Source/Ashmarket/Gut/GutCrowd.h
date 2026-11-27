@@ -152,6 +152,14 @@ protected:
 
 		/** Time until a cheer it has been asked for starts, so the deck does not jump as one */
 		float CheerDelay = -1.0f;
+
+		/** Where it stands when nobody has shoved it, where it has been shoved to, and whether it is there or on its way back */
+		FVector Home = FVector::ZeroVector;
+		FVector Stood = FVector::ZeroVector;
+		float HomeYaw = 0.0f;
+		float StoodYaw = 0.0f;
+		bool bHomeKnown = false;
+		bool bShoved = false;
 	};
 
 	TArray<FSpectator> Spectators;
@@ -169,6 +177,9 @@ protected:
 	int32 Murmur = INDEX_NONE;
 
 	int32 HeardSpectators = 0;
+
+	/** A group of this many or fewer is heard as a few people talking, and not as a crowd */
+	static constexpr int32 FewSpectators = 14;
 
 	/** A crowd yelling at a fight, laid under the fight while it lasts: one of them, and a second for a deck that is full */
 	TArray<int32> FightNoise;
@@ -199,6 +210,25 @@ public:
 
 	/** How many of this crowd stand within a distance of a place, and how far off the nearest of them is (a great way if there are none) */
 	int32 CountNear(const FVector& Where, float Radius, float* OutNearest = nullptr) const;
+
+	/**
+	 *  Somebody standing in a crowd who is walked into gives way like anybody else ("nothing happens when I bump into
+	 *  someone - unmoveable and non-reactionary", 26 November: most of the people in a square are its crowd, and they
+	 *  stood like posts). FindNearest is whoever of them is nearest a place within a distance, or INDEX_NONE, and where
+	 *  they stand when nobody has moved them. Shove has one of them step to another place and turn to face something;
+	 *  Unshove sends them back to where they stood. They are moved over a moment, not put there.
+	 */
+	int32 FindNearest(const FVector& Where, float Radius, FVector* OutHome = nullptr) const;
+	void Shove(int32 Index, const FVector& To, const FVector& Facing);
+	void Unshove(int32 Index);
+
+	/** True if that one of the crowd is seen as a woman */
+	bool IsWoman(int32 Index) const;
+
+	/** Where somebody of the crowd is standing now, which is not their own place while they are shoved aside */
+	FVector GetStood(int32 Index) const;
+
+	bool IsShoved(int32 Index) const { return Spectators.IsValidIndex(Index) && Spectators[Index].bShoved; }
 
 
 	/** Constructor */

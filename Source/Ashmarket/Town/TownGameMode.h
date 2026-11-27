@@ -36,8 +36,10 @@ namespace TownStoppedLines
 	inline constexpr int32 Map = 2;
 	inline constexpr int32 Sound = 3;
 	inline constexpr int32 Speech = 4;
-	inline constexpr int32 Leave = 5;
-	inline constexpr int32 Count = 6;
+	/** The several games there are kept: which is being played, and playing or forgetting another */
+	inline constexpr int32 Games = 5;
+	inline constexpr int32 Leave = 6;
+	inline constexpr int32 Count = 7;
 }
 
 /** Somebody being walked from where they stand to somewhere else: a lot down off the Block when it is sold, or up onto it */
@@ -439,6 +441,10 @@ protected:
 	bool bStoppedMenu = false;
 	int32 StoppedChoice = 0;
 
+	/** Which page of the stopped menu is up: nought its own, 1 the games there are, 2 what to do with one of them (StoppedGame) */
+	int32 StoppedPage = 0;
+	int32 StoppedGame = 0;
+
 	/** How long the place has been settled: nobody is walked back out by the way they have that moment come in by */
 	float SettledFor = 0.0f;
 
@@ -675,6 +681,41 @@ protected:
 	/** Who has stepped aside and not yet gone back, and who has already cost standing on this visit */
 	TSet<int32> SteppedAside;
 	TSet<int32> BumpCosted;
+
+	/**
+	 *  What stands in the place's way as it stands now: the place's own blocks, with the block of anybody in the crowd
+	 *  who has been shoved moved to where they were shoved to.
+	 */
+	TArray<FTownBlock> LiveBlocks;
+
+	const TArray<FTownBlock>& GetBlocks() const { return LiveBlocks.IsEmpty() && PlaceData ? PlaceData->Blocks : LiveBlocks; }
+
+	/** Somebody of a crowd who has been walked into and has stepped aside */
+	struct FTownShoved
+	{
+		TWeakObjectPtr<class AGutCrowd> Crowd;
+		int32 Who = INDEX_NONE;
+		int32 Block = INDEX_NONE;
+		FVector2D Home = FVector2D::ZeroVector;
+		float At = 0.0f;
+	};
+
+	TArray<FTownShoved> Shoved;
+
+	/** How long the player has pressed against somebody of a crowd, and whom */
+	float CrowdPressed = 0.0f;
+	TWeakObjectPtr<class AGutCrowd> CrowdPressing;
+	int32 CrowdPressingWho = INDEX_NONE;
+
+	/** What the crowd's people say when they are walked into, as it was recorded: men's and women's, fetched with the place */
+	UPROPERTY()
+	TArray<TObjectPtr<USoundBase>> CrowdBarksOfMen;
+
+	UPROPERTY()
+	TArray<TObjectPtr<USoundBase>> CrowdBarksOfWomen;
+
+	/** Walks into somebody of a crowd: they say something and step aside, and their block goes with them. See UpdateBumps. */
+	void BumpBystander(class AGutCrowd* Crowd, int32 Who, const FVector& Home);
 
 	/** What was last said by somebody walked into, shown as a call is until BarkUntil */
 	FTownCall BarkCall;
@@ -1311,6 +1352,14 @@ public:
 	bool IsStopped() const { return bStoppedMenu; }
 
 	int32 GetStoppedChoice() const { return StoppedChoice; }
+
+	/** What is written over the stopped menu's lines: "STOPPED", or the page of it that is up */
+	FString GetStoppedTitle() const;
+
+	int32 GetStoppedPage() const { return StoppedPage; }
+
+	/** How many of the crowd stand aside because they were walked into */
+	int32 GetShovedCount() const { return Shoved.Num(); }
 
 	TArray<FString> GetStoppedLines() const;
 

@@ -15,7 +15,7 @@
   {"name": "from_pool_street", "x": 114.4, "y": 176.2, "facing": 90}
  ],
 
- "beds": ["market"],
+ "beds": [],
 
  "errand": [
   "THE SCRAPPERS' YARD",

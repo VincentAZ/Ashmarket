@@ -1270,9 +1270,17 @@ void ATownHUD::DrawTownStopped(const ATownGameMode* Town, float CenterX)
 	// the rest of the screen stands back
 	DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.55f), 0.0f, 0.0f, Canvas->SizeX, Canvas->SizeY);
 
-	DrawPanel(CenterX, Top, 620.0f, 150.0f + (Lines.Num() * LineHeight));
+	// (the page of games has long lines: its panel is as wide as the longest of them wants)
+	float Widest = 560.0f;
 
-	DrawLabel(TEXT("STOPPED"), CenterX, Top + 22.0f, 44, GutHUDColors::Text, true);
+	for (const FString& Line : Lines)
+	{
+		Widest = FMath::Max(Widest, MeasureLabel(Line, 24) + 90.0f);
+	}
+
+	DrawPanel(CenterX, Top, FMath::Min(Widest + 60.0f, 1500.0f), 150.0f + (Lines.Num() * LineHeight));
+
+	DrawLabel(Town->GetStoppedTitle(), CenterX, Top + 22.0f, 44, GutHUDColors::Text, true);
 
 	float Y = Top + 104.0f;
 
@@ -1285,5 +1293,5 @@ void ATownHUD::DrawTownStopped(const ATownGameMode* Town, float CenterX)
 		Y += LineHeight;
 	}
 
-	DrawLabel(TEXT("W / S: choose        Enter: do it        Esc: go on"), CenterX, Y + 8.0f, 17, GutHUDColors::Text, true);
+	DrawLabel(Town->GetStoppedPage() > 0 ? TEXT("W / S: choose        Enter: do it        Esc: back") : TEXT("W / S: choose        Enter: do it        Esc: go on"), CenterX, Y + 8.0f, 17, GutHUDColors::Text, true);
 }

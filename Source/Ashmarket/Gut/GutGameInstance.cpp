@@ -25,6 +25,16 @@ void UGutGameInstance::Init()
 		bSaveEnabled = false;
 	}
 
+	// which of the kept games was being played when the game was last shut: that one is taken up again
+	if (bSaveEnabled)
+	{
+		if (const UGutSettingsSave* Kept = Cast<UGutSettingsSave>(UGameplayStatics::LoadGameFromSlot(SettingsSlotName, 0)))
+		{
+			Game = FMath::Clamp(Kept->Game, 0, GameCount - 1);
+			SaveSlotName = GetGameSlot(Game);
+		}
+	}
+
 	LoadRun();
 
 	// -GutRank=2 -GutWater=60 begins as a fighter who has already climbed that many ranks and holds that much: for trying
@@ -67,6 +77,7 @@ void UGutGameInstance::KeepLoudness() const
 
 	Kept->Loudness = Loudness;
 	Kept->Speech = Speech;
+	Kept->Game = Game;
 
 	UGameplayStatics::SaveGameToSlot(Kept, SettingsSlotName, 0);
 }
@@ -119,15 +130,8 @@ void UGutGameInstance::ResetLadder(float StartingWater)
 
 	if (bSaveEnabled)
 	{
-		if (Window.bStarted || Stable.bStarted)
-		{
-			// the new ladder is what is on disk now, beside whatever the gambler and the owner have going
-			SaveRun();
-		}
-		else
-		{
-			UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
-		}
+		// the new ladder is what is on disk now, beside whatever the gambler, the owner and the town have going
+		SaveRun();
 	}
 }
 
@@ -298,7 +302,9 @@ void UGutGameInstance::ShareWater()
 
 bool UGutGameInstance::SaveRun()
 {
-	if (!bSaveEnabled || !(bLadderStarted || Window.bStarted || Stable.bStarted))
+	// (Something done in the town is a game begun, as a fight, a bet or a yard is: with several games kept, one in which
+	// the player had only walked and talked was written nowhere, and was gone when another was taken up.)
+	if (!bSaveEnabled || !(bLadderStarted || Window.bStarted || Stable.bStarted || Story.Marks.Num() > 0 || bOnePurse))
 	{
 		return false;
 	}
@@ -392,6 +398,121 @@ bool UGutGameInstance::LoadRun()
 	}
 
 	return true;
+}
+
+void UGutGameInstance::ClearRun()
+{
+	// as the game instance is before anything has been read into it or done
+	const UGutGameInstance* Fresh = GetDefault<UGutGameInstance>(GetClass());
+
+	Ladder = Fresh->Ladder;
+	LadderAtRungStart = Fresh->LadderAtRungStart;
+	bLadderStarted = Fresh->bLadderStarted;
+	Window = Fresh->Window;
+	Stable = Fresh->Stable;
+	Bag = Fresh->Bag;
+	Rack = Fresh->Rack;
+	Roster = Fresh->Roster;
+	Purse = Fresh->Purse;
+	bOnePurse = Fresh->bOnePurse;
+	bPurseSeen = Fresh->bPurseSeen;
+	Found = Fresh->Found;
+	Story = Fresh->Story;
+	BlockSold = Fresh->BlockSold;
+	BlockSoldTo = Fresh->BlockSoldTo;
+	BlockSoldDay = Fresh->BlockSoldDay;
+	BlockSoldSeed = Fresh->BlockSoldSeed;
+	DebtBook = Fresh->DebtBook;
+	PendingStory = Fresh->PendingStory;
+	Taking = FGutTaking();
+	DaySeen = 0;
+
+	// and nowhere in the town yet
+	TownStood = Fresh->TownStood;
+	TownArrive = Fresh->TownArrive;
+	TownLevel = Fresh->TownLevel;
+	bAtDoor = Fresh->bAtDoor;
+	bCameByDoor = Fresh->bCameByDoor;
+	bSandbox = Fresh->bSandbox;
+	bWindow = Fresh->bWindow;
+	bStable = Fresh->bStable;
+}
+
+FString UGutGameInstance::DescribeGame(int32 Which) const
+{
+	// the one being played, as it stands now; another, as it was written down
+	const UGutSaveGame* Kept = Which == Game ? nullptr : Cast<UGutSaveGame>(UGameplayStatics::DoesSaveGameExist(GetGameSlot(Which), 0) ? UGameplayStatics::LoadGameFromSlot(GetGameSlot(Which), 0) : nullptr);
+
+	if (Which != Game && !Kept)
+	{
+		return FString();
+	}
+
+	const FGutStableState& Yard = Kept ? Kept->Stable : Stable;
+	const FGutWindowState& Bets = Kept ? Kept->Window : Window;
+	const FGutLadderState& Climb = Kept ? Kept->Ladder : Ladder;
+	const bool bClimbing = Kept ? Kept->bLadderStarted : bLadderStarted;
+	const bool bOne = Kept ? Kept->bOnePurse : bOnePurse;
+
+	const int32 Done = Kept ? Kept->Story.Marks.Num() : Story.Marks.Num();
+
+	if (!bClimbing && !Bets.bStarted && !Yard.bStarted && Done == 0 && !bOne)
+	{
+		return Which == Game ? FString(TEXT("just begun")) : FString();
+	}
+
+	const float Held = bOne ? (Kept ? Kept->Purse : GetPurse()) : (Climb.Water + Bets.Water + Yard.Water);
+	const float Owed = (bClimbing ? Climb.Debt : 0.0f) + (Bets.bStarted ? Bets.Debt : 0.0f) + (Yard.bStarted ? Yard.Debt : 0.0f);
+
+	FString Line = FString::Printf(TEXT("%.0f L"), FMath::Max(Held, 0.0f));
+
+	if (Yard.bStarted)
+	{
+		Line = FString::Printf(TEXT("day %d  \u00B7  %s  \u00B7  %d in the yard"), Yard.Day, *Line, Yard.Fighters.Num());
+	}
+
+	if (Owed > 0.5f)
+	{
+		Line += FString::Printf(TEXT("  \u00B7  owing %.0f L"), Owed);
+	}
+
+	return Line;
+}
+
+void UGutGameInstance::PlayGame(int32 Which)
+{
+	Which = FMath::Clamp(Which, 0, GameCount - 1);
+
+	// what is being played is written down as it stands, and put away
+	SaveRun();
+
+	Game = Which;
+	SaveSlotName = GetGameSlot(Which);
+
+	ClearRun();
+	LoadRun();
+
+	// and it is this one that comes back the next time the game is started
+	KeepLoudness();
+
+	UE_LOG(LogTemp, Log, TEXT("[gut] game %d taken up: %s"), Which + 1, HasSavedRun() ? *DescribeGame(Which) : TEXT("new"));
+}
+
+void UGutGameInstance::ForgetGame(int32 Which)
+{
+	Which = FMath::Clamp(Which, 0, GameCount - 1);
+
+	if (bSaveEnabled && UGameplayStatics::DoesSaveGameExist(GetGameSlot(Which), 0))
+	{
+		UGameplayStatics::DeleteGameInSlot(GetGameSlot(Which), 0);
+	}
+
+	if (Which == Game)
+	{
+		ClearRun();
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[gut] game %d forgotten"), Which + 1);
 }
 
 bool UGutGameInstance::HasSavedRun() const

@@ -122,9 +122,106 @@ int32 AGutCrowd::CountNear(const FVector& Where, float Radius, float* OutNearest
 	return Count;
 }
 
+FVector AGutCrowd::GetStood(int32 Index) const
+{
+	const USkeletalMeshComponent* Body = Spectators.IsValidIndex(Index) ? Spectators[Index].Body.Get() : nullptr;
+
+	return Body ? Body->GetComponentLocation() : FVector::ZeroVector;
+}
+
+int32 AGutCrowd::FindNearest(const FVector& Where, float Radius, FVector* OutHome) const
+{
+	int32 Found = INDEX_NONE;
+	float Nearest = Radius;
+
+	for (int32 i = 0; i < Spectators.Num(); ++i)
+	{
+		if (const USkeletalMeshComponent* Body = Spectators[i].Body.Get())
+		{
+			if (const float Distance = FVector::Dist2D(Body->GetComponentLocation(), Where); Distance < Nearest)
+			{
+				Nearest = Distance;
+				Found = i;
+			}
+		}
+	}
+
+	if (Found != INDEX_NONE && OutHome)
+	{
+		*OutHome = Spectators[Found].bHomeKnown ? Spectators[Found].Home : Spectators[Found].Body->GetComponentLocation();
+	}
+
+	return Found;
+}
+
+void AGutCrowd::Shove(int32 Index, const FVector& To, const FVector& Facing)
+{
+	if (!Spectators.IsValidIndex(Index) || !Spectators[Index].Body.IsValid())
+	{
+		return;
+	}
+
+	FSpectator& One = Spectators[Index];
+
+	if (!One.bHomeKnown)
+	{
+		One.Home = One.Body->GetComponentLocation();
+		One.HomeYaw = One.Body->GetComponentRotation().Yaw;
+		One.bHomeKnown = true;
+	}
+
+	One.Stood = FVector(To.X, To.Y, One.Home.Z);
+	// (they keep the way they stood: their heads turn to whoever is near them by themselves)
+	One.StoodYaw = One.HomeYaw;
+	One.bShoved = true;
+}
+
+void AGutCrowd::Unshove(int32 Index)
+{
+	if (Spectators.IsValidIndex(Index) && Spectators[Index].bHomeKnown)
+	{
+		Spectators[Index].Stood = Spectators[Index].Home;
+		Spectators[Index].StoodYaw = Spectators[Index].HomeYaw;
+		Spectators[Index].bShoved = false;
+	}
+}
+
+bool AGutCrowd::IsWoman(int32 Index) const
+{
+	const AActor* Person = Spectators.IsValidIndex(Index) ? Spectators[Index].Person.Get() : nullptr;
+
+	return Person && UGutSoundSubsystem::WhoIs(this, TSoftClassPtr<AActor>(Person->GetClass())).bWoman;
+}
+
 void AGutCrowd::Tick(float DeltaTime)
 {
 	TurnHeads();
+
+	// whoever has been shoved, or is going back: a step over a moment, quick at first
+	for (FSpectator& One : Spectators)
+	{
+		USkeletalMeshComponent* Body = One.bHomeKnown ? One.Body.Get() : nullptr;
+
+		if (!Body)
+		{
+			continue;
+		}
+
+		const FVector Now = Body->GetComponentLocation();
+
+		if (!Now.Equals(One.Stood, 0.5f) || FMath::Abs(FRotator::NormalizeAxis(Body->GetComponentRotation().Yaw - One.StoodYaw)) > 0.5f)
+		{
+			FRotator Turned = Body->GetComponentRotation();
+
+			Turned.Yaw = FMath::FixedTurn(Turned.Yaw, One.StoodYaw, 220.0f * DeltaTime);
+
+			Body->SetWorldLocationAndRotation(FMath::VInterpTo(Now, One.Stood, DeltaTime, One.bShoved ? 9.0f : 3.0f), Turned);
+		}
+		else if (!One.bShoved)
+		{
+			One.bHomeKnown = false;
+		}
+	}
 
 	// People standing about a street are heard by how near they are: among them their talk is all round, and from the far
 	// end of the street it is a little of the night. Heard the same everywhere, somebody spoken to in the middle of them
@@ -159,7 +256,17 @@ void AGutCrowd::Tick(float DeltaTime)
 			Sounds->StopBed(Murmur, 1.0f);
 
 			// a few people standing about a street are heard as a few people, when they are near: not as the least of a deck
-			Murmur = HeardSpectators > 0 ? Sounds->StartBed(FName("crowd_bed"), FMath::Clamp(HeardSpectators / 40.0f, bMurmurByNearness ? 0.45f : 0.3f, 1.2f), 1.5f) : INDEX_NONE;
+			// A handful of people sound like a handful: their own bed, of a few voices, and no louder than they are. A crowd's
+			// murmur was laid under every group however small, at not less than half of full: three groups of four made a
+			// yard of ten people sound like thirty ("the bg chatter matches the number of people in the scene and where",
+			// 26 November).
+			const bool bFew = bMurmurByNearness && HeardSpectators <= FewSpectators && Sounds->Has(FName("crowd_few"));
+
+			Murmur = HeardSpectators <= 0 ? INDEX_NONE
+				: (bFew ? Sounds->StartBed(FName("crowd_few"), FMath::Clamp(HeardSpectators / 8.0f, 0.3f, 1.0f), 1.5f)
+					: Sounds->StartBed(FName("crowd_bed"), FMath::Clamp(HeardSpectators / 40.0f, 0.3f, 1.2f), 1.5f));
+
+			UE_LOG(LogTemp, Log, TEXT("[gut] %s: %d standing, heard as %s"), *GetActorNameOrLabel(), HeardSpectators, HeardSpectators <= 0 ? TEXT("nothing") : (bFew ? TEXT("a few people talking") : TEXT("a crowd")));
 		}
 	}
 

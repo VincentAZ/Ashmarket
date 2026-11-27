@@ -2037,11 +2037,9 @@ void AGutGameMode::UpdateTaking()
 		return;
 	}
 
-	// and when its last picture has been up long enough, the town
-	if (GameInstance->Taking.Outcome != 0 && (Phase == EGutFightPhase::PlayerWon || Phase == EGutFightPhase::PlayerLost) && PhaseTime >= TakenLinger && !GameInstance->bGoingToStreet)
-	{
-		GameInstance->GoToStreet(this);
-	}
+	// Its last picture stays up until the player sends it away (RequestRestart): it went by itself after four seconds,
+	// which is not long enough to read what happened to somebody who has just been knocked down ("the end status card
+	// should be dismissed by me so I can read it", 26 November).
 }
 
 void AGutGameMode::EndTaking(int32 Outcome)

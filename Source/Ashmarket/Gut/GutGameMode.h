@@ -1067,9 +1067,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Taking", meta = (ClampMin = 0.2, ClampMax = 1))
 	float TakenHealthShare = 0.8f;
 
-	/** How long the last picture of it stays up before the town */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Gut|Taking", meta = (ClampMin = 0.5, ClampMax = 20, Units = "s"))
-	float TakenLinger = 4.0f;
 
 	/** A name out of the cage's own, for somebody who has none the player knows: the same for the same number */
 	static FText GetCageName(int32 Number);

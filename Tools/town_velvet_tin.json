@@ -15,7 +15,7 @@
   {"name": "from_block_square", "x": -86.0, "y": 190.4, "facing": 0}
  ],
 
- "beds": ["market"],
+ "beds": [],
 
  "errand": [
   "THE VELVET TIN",

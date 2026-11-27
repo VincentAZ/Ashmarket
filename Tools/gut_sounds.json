@@ -2167,13 +2167,13 @@
    ]
   },
   "bag_close": {
-   "about": "The bag shut: its buckle done up (freesound 331719, CC0).",
-   "volume": 0.4,
+   "about": "The bag shut: the strap's buckle done up (freesound 744123, CC0). It was a belt buckle, 331719, which he heard as a faint zipper (26 November).",
+   "volume": 0.6,
    "everywhere": true,
    "from": [
     {
-     "file": "bag/belt_buckle_preview.mp3",
-     "longest": 0.8
+     "file": "ui/bag_strap_buckle_preview.mp3",
+     "longest": 1.2
     }
    ]
   },
@@ -2190,6 +2190,30 @@
      "file": "gate/brake_drum_hammer_preview.mp3",
      "longest": 1.6,
      "fade": 0.5
+    }
+   ]
+  },
+  "crowd_few": {
+   "about": "A handful of people talking, for a group of bystanders that is a handful: a crowd's murmur under six people at a fire made a yard of ten sound like thirty (26 November). A bed, as crowd_bed is. Freesound 653920, 480781, 480717, 260124, all CC0; nobody has listened.",
+   "volume": 0.4,
+   "everywhere": true,
+   "loop": true,
+   "from": [
+    {
+     "file": "crowd/few_small_crowd_walla_preview.mp3",
+     "seconds": 28.0
+    },
+    {
+     "file": "crowd/few_men_talking_outside_preview.mp3",
+     "seconds": 29.0
+    },
+    {
+     "file": "crowd/few_indistinct_murmur_preview.mp3",
+     "seconds": 54.0
+    },
+    {
+     "file": "crowd/few_indoor_murmur_couple_preview.mp3",
+     "seconds": 19.0
     }
    ]
   }

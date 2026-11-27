@@ -16,7 +16,7 @@
   {"name": "from_last_call", "x": -46.6, "y": 294.6, "facing": 0}
  ],
 
- "beds": ["market"],
+ "beds": [],
 
  "errand": [
   "ROTGUT ROW",

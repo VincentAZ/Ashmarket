@@ -2576,7 +2576,7 @@ void AGutFighter::WearBag(UStaticMesh* Bag, UStaticMesh* Strap)
 
 	static float Out = 1.0f;
 	static float Down = 22.0f;
-	static float Round = 32.0f;
+	static float Round = 18.0f;
 	static float Tip = 4.0f;
 	static float Thin = 0.62f;
 	static bool bRead = false;
@@ -2641,8 +2641,8 @@ void AGutFighter::WearBag(UStaticMesh* Bag, UStaticMesh* Strap)
 		BagStrap->RegisterComponent();
 	}
 
-	static float StrapDeep = 5.0f;
-	static float StrapLong = 6.0f;
+	static float StrapDeep = 2.5f;
+	static float StrapLong = 4.0f;
 	static float StrapUp = 3.0f;
 	static bool bStrapRead = false;
 
@@ -2663,35 +2663,49 @@ void AGutFighter::WearBag(UStaticMesh* Bag, UStaticMesh* Strap)
 	const FVector Top = FMath::Lerp(NeckAt, ArmAt, 0.5f) + FVector(0.0f, 0.0f, StrapUp);
 	const FVector Foot = At + FVector(0.0f, 0.0f, Bag->GetBoundingBox().GetSize().Z * 0.88f) - (Outward * Deep);
 
-	// how deep the trunk is, front to back, with what is worn on it: the deepest of its slices
-	float HalfDeep = 13.0f;
+	// How deep the chest is, front to back, with what is worn on it, and how far in front of the spine its middle is:
+	// the deepest of its slices from the waist to the shoulders. (Not the hips': measured with those, the loop stood a
+	// hand's width off the chest and off the back, "strap needs adjustment", 26 November.)
+	float HalfDeep = 11.5f;
 	float Forward = 3.0f;
 
 	if (FGutClearShape Shape; MeasureShapeOf(BodyActor ? BodyActor.Get() : this, Shown, Shape))
 	{
+		float Deepest = 0.0f;
+
 		for (const FGutClearShape::FSection& Slice : Shape.Trunk)
 		{
-			if (Slice.Half.Y > HalfDeep)
+			if ((Slice.Bone == FName("spine_02") || Slice.Bone == FName("spine_03") || Slice.Bone == FName("spine_04")) && Slice.Half.Y > Deepest)
 			{
-				HalfDeep = Slice.Half.Y;
+				Deepest = Slice.Half.Y;
 				Forward = Slice.Middle.Y;
 			}
 		}
+
+		if (Deepest > 0.0f)
+		{
+			HalfDeep = FMath::Clamp(Deepest, 9.0f, 17.0f);
+		}
 	}
 
-	// The loop's plane holds the line from shoulder to bag and the way the body faces; its long way lies along that line
-	// and its short way goes through the body front to back, about the middle of the trunk and not the line's own middle,
-	// which is behind it (the bag hangs behind the hip).
-	const FVector Along = (Top - Foot).GetSafeNormal();
+	// The loop's top is the shoulder. Its foot is the bag's top, but as far forward of the bag's middle as puts the
+	// middle of the loop on the middle of the chest: the bag hangs behind the hip, and a loop from the shoulder to the
+	// bag's own middle lay on the back and went through the chest. (A strap is sewn to a bag's two top corners, and it is
+	// the front one that the strap across the chest comes down to.)
+	const FVector ChestAt = Ribs.GetLocation() + (Ahead * FMath::Clamp(Forward, -4.0f, 8.0f));
+	const float Behind = FVector::DotProduct(ChestAt - ((Top + Foot) * 0.5f), Ahead);
+	const FVector Low = Foot + (Ahead * FMath::Clamp(Behind * 2.0f, -6.0f, 22.0f));
+
+	// Its plane holds the line from shoulder to that foot and the way the body faces; its long way lies along the line
+	// and its short way goes through the body front to back, as deep as the chest and no deeper.
+	const FVector Along = (Top - Low).GetSafeNormal();
 	const FVector Flat = FVector::CrossProduct(Along, Ahead).GetSafeNormal();
 	const FVector Through = FVector::CrossProduct(Flat, Along).GetSafeNormal();
 
-	FVector Middle = (Top + Foot) * 0.5f;
-
-	Middle += Through * (FVector::DotProduct(Ribs.GetLocation() + (Ahead * Forward) - Middle, Through));
+	const FVector Middle = (Top + Low) * 0.5f;
 
 	const FVector Model = Strap->GetBoundingBox().GetSize();
-	const FVector Stretch(((Top - Foot).Size() + StrapLong) / FMath::Max(Model.X, 1.0f), ((HalfDeep * 2.0f) + StrapDeep) / FMath::Max(Model.Y, 1.0f), 1.0f);
+	const FVector Stretch(((Top - Low).Size() + StrapLong) / FMath::Max(Model.X, 1.0f), ((HalfDeep * 2.0f) + StrapDeep) / FMath::Max(Model.Y, 1.0f), 1.0f);
 
 	BagStrap->SetStaticMesh(Strap);
 	BagStrap->AttachToComponent(Shown, FAttachmentTransformRules::SnapToTargetNotIncludingScale, Chest);

@@ -58,7 +58,7 @@
    "design": "An ordinary American man in his fifties who minds a gate at night. A natural low speaking voice, gravelly and tired, slow and final but quiet, a man who has said no all his life and no longer argues about it. Conversational, plain, understated, without acting it. Perfect audio quality, recorded close on a studio microphone in a quiet room: clean, full and dry, with no radio, telephone or loudspeaker sound, no echo and no distortion."
   },
   "Main Street/Stallholder": {
-   "design": "A woman in her sixties who sells bread from a market stall at night in a desert shanty town. Warm but loud, a market voice cracked from calling over a crowd, brisk and motherly and not to be argued with. Plain working American speech. Not an announcer and not a narrator: busy, rough, real.",
+   "design": "A woman in her sixties who sells bread from a market stall at night in a desert shanty town. Warm but loud, a market voice cracked from calling over a crowd, brisk and motherly and not to be argued with. Plain working American speech. Not an announcer and not a narrator: busy, rough, real. A LOW, full, chesty voice with weight in it and a rich low end, as if recorded a hand's width from the mouth in a quiet room with a large-diaphragm microphone. Not thin, not bright, not nasal, and not heard through a loudspeaker, a telephone or a radio.",
    "design_text": "Bread's hot. Water first, then bread. That is the order everything goes in here. Next. You, are you buying or are you looking?"
   },
   "Main Street/Scrap seller": {
@@ -125,7 +125,7 @@
    "same_as": "Main Street/Lane Warden"
   },
   "The Last Call/Captain Dolores": {
-   "design": "A wiry woman of sixty-four who keeps a bar in a wrecked airliner in a desert shanty town, and was cabin crew on it long ago. She is talking quietly to one person across a small table at night: low, close and unhurried, a little husky from smoke, friendly on top and hard underneath. American. She calls everybody sweetheart. A natural, conversational voice, as if recorded a hand's width from her mouth in a quiet room. She is not announcing, not presenting, not putting on a voice, and not heard through a loudspeaker, a cabin address system or a radio: no echo, no projection."
+   "design": "A wiry woman of sixty-four who keeps a bar in a wrecked airliner in a desert shanty town, and was cabin crew on it long ago. A LOW, full, chesty woman's voice, a deep alto with weight and warmth in it, a little husky from smoke, friendly on top and hard underneath. She is talking quietly and unhurriedly to one person across a small table at night. American. She calls everybody sweetheart. A natural, conversational voice with a rich low end, as if recorded a hand's width from her mouth in a quiet room with a large-diaphragm microphone. Not thin, not bright, not nasal; not announcing; not heard through a loudspeaker, a telephone, a cabin address system or a radio: no echo."
   },
   "The Last Call/A Warden corporal": {
    "design": "A gate guard in his thirties, off shift and half drunk at a bar table at night. A thick, slow, surly voice, a little slurred, used to being let off. Plain working American speech. Not an actor and not a narrator: close, loose, sour, real."
@@ -173,6 +173,22 @@
   },
   "The Scrappers' Yard/Lamp Ansah": {
    "design": "A woman in her thirties who makes lamps out of tin and glass in a salvage yard: a light, dry, quick voice, practical and a little amused, busy with her hands while she talks, stubborn about small sums. West African English, faint. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo."
+  },
+  "Crowd/A man": {
+   "design": "A man of about forty standing in a crowd at a night market in a desert shanty town, who has just been walked into: gruff, low, short-tempered, a working man's American voice, snapping a few words over his shoulder. Full, natural and close, with a proper low end, as if recorded a hand's width from the mouth in a quiet room: not thin, not announcing, not through a loudspeaker or a radio, no echo.",
+   "design_text": "Hey! Watch it. Easy. Easy. Mind yourself. Do that again. Go on. Christ. Watch where you walk. I am standing here, in case you had not noticed."
+  },
+  "Crowd/Another man": {
+   "design": "A man in his late twenties in a crowd at a night market, lean and quick to anger, who has just been shoved: a hard, flat, young American voice, medium-low, sneering, said through his teeth. Full, natural and close, with a proper low end, as if recorded a hand's width from the mouth in a quiet room: not thin, not announcing, not through a loudspeaker or a radio, no echo.",
+   "design_text": "Hey! Watch it. Easy. Easy. Mind yourself. Do that again. Go on. Christ. Watch where you walk. I am standing here, in case you had not noticed."
+  },
+  "Crowd/A woman": {
+   "design": "A woman of about forty-five in a crowd at a night market in a desert shanty town, who has just been walked into: a low, rough, tired American voice with weight in it, sharp and unimpressed. Full, natural and close, with a proper low end, as if recorded a hand's width from the mouth in a quiet room: not thin, not announcing, not through a loudspeaker or a radio, no echo.",
+   "design_text": "Hey! Watch it. Easy. Easy. Mind yourself. Do that again. Go on. Christ. Watch where you walk. I am standing here, in case you had not noticed."
+  },
+  "Crowd/Another woman": {
+   "design": "A woman in her twenties in a crowd at a night market, who has just been shoved: a quick, hard, clear American voice, medium pitch with body in it, angry and not afraid. Full, natural and close, with a proper low end, as if recorded a hand's width from the mouth in a quiet room: not thin, not announcing, not through a loudspeaker or a radio, no echo.",
+   "design_text": "Hey! Watch it. Easy. Easy. Mind yourself. Do that again. Go on. Christ. Watch where you walk. I am standing here, in case you had not noticed."
   }
  },
  "format_about": "Uncompressed, 44.1 kHz, since the account went to Pro on 2026-11-25 (\"money is not a barrier - we want a AAA game\"): every line was made again in it. 'mp3_44100_128' is what any plan allows.",
