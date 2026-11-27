@@ -39,7 +39,8 @@
    "design": "An ordinary American man in his thirties working security at a crowded outdoor night market. A natural mid-pitched speaking voice with a slight Southwestern drawl, short of patience. He speaks casually and quickly while his attention is on the crowd, without acting it or performing it. Conversational, plain, understated. Perfect audio quality, recorded close on a studio microphone in a quiet room, dry, no effects."
   },
   "Block Square/Caller Strand": {
-   "design": "An auctioneer calling bids from the back of a trailer at an open-air night market. An androgynous voice in its thirties, hoarse from shouting every night, nasal and hard, fast and rhythmic like a livestock auctioneer's chant, thrown over the heads of a crowd, tired underneath. Rough and loud, not smooth, not a radio voice."
+   "design": "An auctioneer calling bids from the back of a trailer at an open-air night market. An androgynous voice in its thirties, hoarse from shouting every night, nasal and hard, fast and rhythmic like a livestock auctioneer's chant, thrown over the heads of a crowd, tired underneath. Rough and loud, not smooth, not a radio voice.",
+   "thin_is_right": true
   },
   "Block Square/Margin, at the table": {
    "same_as": "Block Square/Margin"
@@ -160,7 +161,20 @@
   },
   "Main Street/A cart hand": {
    "design": "A water-cart hand in his late fifties, at the end of a long day. Dry, low, quick, conspiratorial: he talks out of the side of his mouth as if somebody might be listening, and enjoys knowing something you do not. A worn, slightly cracked voice. Plain working American speech. Not a narrator: close, sly, real."
+  },
+  "Block Square/Harrow": {
+   "design": "A debt collector in his fifties who has never needed to shout, chief collector for a slave house in a desert shanty town. A low, dry, level, unhurried man's voice, exact about figures, faintly bored, with a threat he does not bother to raise. Plain American speech. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo."
+  },
+  "Main Street/Odalys Finch": {
+   "design": "A street cook in her forties who works a grill cart in a desert shanty town, tired, sharp-tongued and frightened under it, with a smoker's rasp. She talks fast and low, as somebody does who is being asked for money she has not got. American. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo."
+  },
+  "The Last Call/Benno Krait": {
+   "design": "A man of about fifty who was a militia sergeant and is now a card player in debt: a hoarse, sour, proud voice, a little drunk, quick to take offence, talking out of the side of his mouth without looking up from his cards. American. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo."
+  },
+  "The Scrappers' Yard/Lamp Ansah": {
+   "design": "A woman in her thirties who makes lamps out of tin and glass in a salvage yard: a light, dry, quick voice, practical and a little amused, busy with her hands while she talks, stubborn about small sums. West African English, faint. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo."
   }
  },
- "format_about": "Uncompressed, 44.1 kHz, since the account went to Pro on 2026-11-25 (\"money is not a barrier - we want a AAA game\"): every line was made again in it. 'mp3_44100_128' is what any plan allows."
+ "format_about": "Uncompressed, 44.1 kHz, since the account went to Pro on 2026-11-25 (\"money is not a barrier - we want a AAA game\"): every line was made again in it. 'mp3_44100_128' is what any plan allows.",
+ "thin_about": "A voice with no low end sounds like a loudspeaker or an old radio. Tools/make_town_voices.sh --thin measures every speaker (the share of the sound below 300 Hz) and names the thin ones; --thin --redesign gives each of those a new voice, measured before it is kept, and says their lines again. 'thin_is_right' on a speaker is somebody who is meant to sound so: the caller, who shouts over a crowd."
 }

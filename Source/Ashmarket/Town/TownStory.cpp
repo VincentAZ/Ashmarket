@@ -24,6 +24,12 @@ namespace TownStoryWords
 
 	/** In what is done: makes a sound of a kind, so many times ("sound:gate_bell*3"), this long apart */
 	const TCHAR* const Sound = TEXT("sound:");
+
+	/** "hand:took.finch": whoever was taken under that mark is taken off the player's hands */
+	const TCHAR* const Hand = TEXT("hand:");
+
+	/** "held.took.finch", asked of the marks: 1 while the player holds whoever was taken under that mark */
+	const TCHAR* const Held = TEXT("held.");
 	const float SoundApart = 1.9f;
 
 	/** The ways somebody comes into a place and goes out of it when the marks say they are there, or are not */
@@ -64,6 +70,11 @@ int32 ATownGameMode::GetMark(const FName& Key) const
 		const float* Held = GetMarketWater();
 
 		return Held ? FMath::FloorToInt(FMath::Max(*Held, 0.0f) + 0.01f) : 0;
+	}
+
+	if (Named.StartsWith(TownStoryWords::Held))
+	{
+		return FindHeld(FName(*Named.Mid(FCString::Strlen(TownStoryWords::Held)))) != INDEX_NONE ? 1 : 0;
 	}
 
 	// how many of those behind the player are theirs to sell
@@ -235,6 +246,16 @@ FString ATownGameMode::Apply(const FString& Does)
 			if (!WalkPerson(TalkingTo, FName(*Term.Mid(FCString::Strlen(TownStoryWords::Walk))), false))
 			{
 				UE_LOG(LogTownStory, Warning, TEXT("Story: \"%s\": nobody is being talked to who has that way"), *Term);
+			}
+
+			continue;
+		}
+
+		if (Term.StartsWith(TownStoryWords::Hand))
+		{
+			if (!HandOver(FName(*Term.Mid(FCString::Strlen(TownStoryWords::Hand)))))
+			{
+				UE_LOG(LogTownStory, Log, TEXT("Story: \"%s\": the player holds nobody taken under that mark"), *Term);
 			}
 
 			continue;

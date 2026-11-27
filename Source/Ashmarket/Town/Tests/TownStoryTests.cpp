@@ -3217,3 +3217,233 @@ bool FTownSellAtBlockTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+/**
+ *  Ashmarket.Town.SmallPrint  the Chainmen's first piece of work: taken from Harrow at the Block; Finch's slip covered out
+ *                             of the player's own water on Main Street; Ansah's paid by the Guildmaster in the Scrappers'
+ *                             yard; Krait gone for at the Last Call, taken, and handed to Harrow, who then pays for the
+ *                             three. What is asked of a taken person ("held.", "hand:", ".out") is tested here.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownSmallPrintTest, "Ashmarket.Town.SmallPrint", GutTests::Flags)
+
+bool FTownSmallPrintTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	struct FWas
+	{
+		FKept Kept;
+		FGutStableState Stable;
+	};
+
+	TSharedRef<FWas> Was = MakeShared<FWas>();
+
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_BlockSquare"), true))
+	{
+		AddError(TEXT("Could not open Block Square's level"));
+		return false;
+	}
+
+	const auto StandWith = [](const TCHAR* Name, const FVector2D& Off)
+	{
+		const ATownGameMode* Town = GetTown();
+		const int32 Who = Find(Name);
+
+		if (Who != INDEX_NONE)
+		{
+			const FVector Theirs = Town->GetPlace()->People[Who].Place;
+
+			StandOn(FVector2D(Theirs.X + Off.X, Theirs.Y + Off.Y), FVector(-Off.X, -Off.Y, 0.0f).Rotation().Yaw);
+		}
+	};
+
+	const auto Ask = [this](const TCHAR* Of, const TCHAR* Hears, const TCHAR* Says)
+	{
+		ATownGameMode* Town = GetTown();
+
+		Town->Tick(0.0f);
+
+		TestEqual(*FString::Printf(TEXT("%s is in reach"), Of), Town->GetPersonInReach(), Find(Of));
+
+		Town->Interact();
+
+		TestTrue(*FString::Printf(TEXT("%s says the thing (%s)"), Of, *Town->GetWords()), Town->GetWords().Contains(Hears));
+		TestTrue(*FString::Printf(TEXT("%s can be told \"%s\""), Of, Says), Say(Says));
+
+		for (int32 i = 0; i < 4 && Town->IsTalking(); ++i)
+		{
+			Town->Interact();
+		}
+
+		if (Town->IsTalking())
+		{
+			Town->HandleBack();
+		}
+	};
+
+	const auto In = [](const TCHAR* Place) { return [Place]() { return IsStreetReady() && GetTown()->GetPlace() && GetTown()->GetPlace()->Name == Place; }; };
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 0.8f, [this, Was, StandWith]()
+	{
+		UGutGameInstance* Run = GetRun();
+
+		Was->Kept.bLadder = Run->bLadderStarted;
+		Was->Kept.Ladder = Run->Ladder;
+		Was->Kept.RungStart = Run->LadderAtRungStart;
+		Was->Kept.Story = Run->Story;
+		Was->Kept.Bag = Run->Bag;
+		Was->Stable = Run->Stable;
+
+		Run->bStreetForced = true;
+		Run->Story = FTownStoryState();
+		Run->Stable = FGutStableState();
+		Run->Taking = FGutTaking();
+		Run->bLadderStarted = true;
+		Run->Ladder.Water = 30.0f;
+
+		TestTrue(TEXT("Harrow is at the Block"), Find(TEXT("Harrow")) != INDEX_NONE && GetTown()->GetPeople()[Find(TEXT("Harrow"))] != nullptr);
+
+		StandWith(TEXT("Harrow"), FVector2D(0.0f, -110.0f));
+	}, In(TEXT("Block Square")) });
+
+	Steps.Add({ 0.6f, [this, Ask]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Ask(TEXT("Harrow"), TEXT("three slips overdue"), TEXT("I will close them"));
+
+		TestEqual(TEXT("The work is taken"), Town->GetMark(FName("c1")), 2);
+
+		TArray<const FTownMission*> Work;
+		Town->GetWorkInHand(Work);
+
+		if (TestTrue(TEXT("And is the work in hand"), Work.Num() == 1 && Work[0]->Key == FName("c1")))
+		{
+			TArray<FString> Things;
+			TArray<bool> Done;
+
+			Town->GetMissionTally(*Work[0], Things, Done);
+
+			TestTrue(TEXT("With four things to it, none done"), Things.Num() == 4 && !Done.Contains(true));
+		}
+
+		AutomationOpenMap(TEXT("/Game/Town/Lvl_MainStreet"), true);
+	} });
+
+	Steps.Add({ 0.8f, [this, StandWith]()
+	{
+		TestTrue(TEXT("Odalys Finch is at her grill on Main Street"), Find(TEXT("Odalys Finch")) != INDEX_NONE && GetTown()->GetPeople()[Find(TEXT("Odalys Finch"))] != nullptr);
+		TestTrue(TEXT("And there is something to dig for under her cart"), GetTown()->GetPlace()->Doors.ContainsByPredicate([](const FTownDoor& Door) { return Door.Prompt.Contains(TEXT("Dig under")); }));
+
+		StandWith(TEXT("Odalys Finch"), FVector2D(0.0f, -110.0f));
+	}, In(TEXT("Main Street")) });
+
+	Steps.Add({ 0.6f, [this, Ask]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		const int32 Trusted = Town->GetMark(FName("trust"));
+
+		Ask(TEXT("Odalys Finch"), TEXT("Fourteen"), TEXT("I will cover it"));
+
+		TestTrue(TEXT("Covered, her slip is closed out of the player's water, who is the more trusted"), Town->GetMark(FName("slip.f")) == 2 && Town->GetMark(FName("water")) == 16 && Town->GetMark(FName("trust")) == Trusted + 1);
+
+		AutomationOpenMap(TEXT("/Game/Town/Lvl_ScrappersYard"), true);
+	} });
+
+	Steps.Add({ 0.8f, [this, StandWith]()
+	{
+		TestTrue(TEXT("Lamp Ansah is in the Scrappers' yard"), Find(TEXT("Lamp Ansah")) != INDEX_NONE && GetTown()->GetPeople()[Find(TEXT("Lamp Ansah"))] != nullptr);
+
+		StandWith(TEXT("Guildmaster Okafor-Reyes"), FVector2D(-115.0f, 0.0f));
+	}, In(TEXT("The Scrappers' Yard")) });
+
+	Steps.Add({ 0.6f, [this, Ask]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		Ask(TEXT("Guildmaster Okafor-Reyes"), TEXT("Harrow's nine"), TEXT("Nine litres"));
+
+		TestTrue(TEXT("The Guildmaster pays Ansah's nine, and the player holds what they held"), Town->GetMark(FName("slip.a")) == 1 && Town->GetMark(FName("water")) == 16);
+
+		AutomationOpenMap(TEXT("/Game/Town/Lvl_LastCall"), true);
+	} });
+
+	Steps.Add({ 0.8f, [this, StandWith]()
+	{
+		TestTrue(TEXT("Benno Krait is at the Last Call"), Find(TEXT("Benno Krait")) != INDEX_NONE && GetTown()->GetPeople()[Find(TEXT("Benno Krait"))] != nullptr);
+
+		GetTown()->bWaysHeld = true;
+
+		StandWith(TEXT("Benno Krait"), FVector2D(-80.0f, -80.0f));
+	}, In(TEXT("The Last Call")) });
+
+	Steps.Add({ 0.6f, [this, Ask]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		Ask(TEXT("Benno Krait"), TEXT("Twenty-two"), TEXT("coming with me"));
+
+		TestTrue(*FString::Printf(TEXT("Krait is gone for, under his own name (%s) and his own mark (%s)"), *Run->Taking.Who.FighterName.ToString(), *Run->Taking.Who.TakenAs.ToString()),
+			Run->Taking.bOn && Run->Taking.Who.FighterName.ToString() == TEXT("Benno Krait") && Run->Taking.Who.TakenAs == FName("took.krait"));
+
+		// beaten down and taken (the fight is Ashmarket.Gut.Taking's): settled as the Block opens
+		Run->Taking.Outcome = 1;
+		Run->bSandbox = false;
+
+		AutomationOpenMap(TEXT("/Game/Town/Lvl_BlockSquare"), true);
+	} });
+
+	Steps.Add({ 0.8f, [this, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		TestTrue(TEXT("Krait is behind the player, and known to be held under his mark"), Town->GetTowCount() == 1 && Town->GetMark(FName("held.took.krait")) == 1 && Town->GetMark(FName("took.krait.out")) == 1);
+
+		StandWith(TEXT("Harrow"), FVector2D(0.0f, -110.0f));
+	}, In(TEXT("Block Square")) });
+
+	Steps.Add({ 0.6f, [this, Ask, StandWith]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		Ask(TEXT("Harrow"), TEXT("closed slips"), TEXT("I have brought Krait in"));
+
+		TestEqual(TEXT("Handed over, his slip is closed as brought in"), Town->GetMark(FName("slip.k")), 3);
+		TestTrue(TEXT("And he is nobody's of the player's any more"), Run->Stable.Fighters.IsEmpty() && Town->GetTowCount() == 0 && Town->GetMark(FName("held.took.krait")) == 0);
+
+		GutTests::Screenshot(TEXT("86_harrow_three_closed"));
+
+		StandWith(TEXT("Harrow"), FVector2D(0.0f, -110.0f));
+	} });
+
+	Steps.Add({ 0.6f, [this, Ask, Was]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		Ask(TEXT("Harrow"), TEXT("three closed"), TEXT("Thirty litres"));
+
+		TestEqual(TEXT("All three closed, the work is done"), Town->GetMark(FName("c1")), 100);
+		TestEqual(TEXT("And paid: thirty on the sixteen"), Town->GetMark(FName("water")), 46);
+		TestTrue(*FString::Printf(TEXT("The Chainmen think the better of it (%d)"), Town->GetMark(FName("st.chainmen"))), Town->GetMark(FName("st.chainmen")) >= 10);
+
+		Run->bLadderStarted = Was->Kept.bLadder;
+		Run->Ladder = Was->Kept.Ladder;
+		Run->LadderAtRungStart = Was->Kept.RungStart;
+		Run->Story = Was->Kept.Story;
+		Run->Bag = Was->Kept.Bag;
+		Run->Stable = Was->Stable;
+		Run->Taking = FGutTaking();
+		Run->bStreetForced = false;
+	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}

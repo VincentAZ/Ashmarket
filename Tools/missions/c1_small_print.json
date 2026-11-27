@@ -1,0 +1,506 @@
+{
+ "about": "C1, Small print (for-review/design/faction-quests.md, 2.1). Harrow, the Chainmen's chief collector, at the Block, has three slips overdue: Odalys Finch 14 L, Benno Krait 22 L, 'Lamp' Ansah 9 L. Each slip can be closed by covering it out of the player's own water (the debtor then owes the player: nothing reads that yet), by putting a collar on the debtor and walking them to Harrow (the taking: FGutTaking, and the debtor is then one of the player's people until handed over, so can be sold at the table instead, which Harrow counts the same), or by writing it off as 'gone through the gate' and letting the debtor run (Harrow finds out one time in three). Finch has 14 L buried under her cart, which can be dug up with nothing said. The Guildmaster will stand Ansah's nine if asked. Marks: c1 (2 in hand, 100 done), slip.f, slip.k, slip.a (1 closed in water, 2 covered by the player, 3 brought in, 4 written off, 5 lost: dead or got away), c1.wrote (how many were written off), c1.roll, c1.caught (1 Harrow found a written-off debtor, 2 and has said so). CALLS THAT ARE MINE: 'beat it out of them' is not a separate way, since a fight in the dead end ends with the debtor taken; the water a debtor pays goes to the slip and not through the player's hands, so nothing has to be counted out at the end; the reward is a flat 30 L; 'collars at cost' and what the town remembers (Finch's free meal, a worse cook, Krait on the Gut's bill) are not built.",
+ "key": "c1",
+ "name": "Small print",
+ "faction": "chainmen",
+ "giver": "Harrow, the Chainmen's collector, by Mother Ledger's table on Block Square",
+ "steps": [
+  [
+   2,
+   "Harrow has three slips overdue. Odalys Finch, at her grill on the east side of Main Street: 14 L. Benno Krait, at the card tables of the Last Call: 22 L. Lamp Ansah, in the Scrappers' yard off Pool Street: 9 L. Close each one: pay it yourself, bring the debtor to Harrow in a collar, or write it off and let them run. Then go back to Harrow at the Block."
+  ],
+  [
+   100,
+   "Harrow's three slips are closed, one way or another."
+  ]
+ ],
+ "tally": [
+  {
+   "words": "Odalys Finch, Main Street: 14 L",
+   "when": "slip.f"
+  },
+  {
+   "words": "Benno Krait, the Last Call: 22 L",
+   "when": "slip.k"
+  },
+  {
+   "words": "Lamp Ansah, the Scrappers' yard: 9 L",
+   "when": "slip.a"
+  },
+  {
+   "words": "Back to Harrow at the Block",
+   "when": "c1>=100"
+  }
+ ],
+ "places": {
+  "Block Square": {
+   "people": [
+    {
+     "name": "Harrow",
+     "prompt": "Talk to Harrow, the Chainmen's collector",
+     "body": "Harrow",
+     "cloth": [
+      0.06,
+      0.05,
+      0.03
+     ],
+     "x": 24.2,
+     "y": 153.4,
+     "facing": 270,
+     "stand": "stand",
+     "of": "chainmen",
+     "bumped": [
+      "Careful.",
+      "I collect from people who walk into me.",
+      "Not twice."
+     ],
+     "lines": [
+      {
+       "id": "c1_offer",
+       "opens": true,
+       "when": "!c1",
+       "words": "You look like you can count, and like you can hit. I am Harrow. I collect what is owed to the book. I have three slips overdue and a sale in three evenings. Odalys Finch, who cooks at a grill on Main Street, owes fourteen litres. Benno Krait, who was a Warden and now plays cards at the Last Call, owes twenty-two. Lamp Ansah, in the Scrappers' yard, owes nine. Bring me the water, or bring me the debtor. Thirty litres to you when all three are closed.",
+       "answers": [
+        {
+         "words": "I will close them.",
+         "next": "c1_how",
+         "does": "c1=2",
+         "log": "Took Harrow's three overdue slips: Finch, Krait and Ansah."
+        },
+        {
+         "words": "What happens to somebody I bring in?",
+         "next": "c1_block"
+        },
+        {
+         "words": "No."
+        }
+       ]
+      },
+      {
+       "id": "c1_block",
+       "words": "They go up on the Block, and whoever buys the body buys the debt with it. That is what the Block is for. Fourteen litres has put better people than Finch on it.",
+       "answers": [
+        {
+         "words": "I will close them.",
+         "next": "c1_how",
+         "does": "c1=2",
+         "log": "Took Harrow's three overdue slips: Finch, Krait and Ansah."
+        },
+        {
+         "words": "No."
+        }
+       ]
+      },
+      {
+       "id": "c1_how",
+       "words": "Pay it yourself and the debt is yours. Put a collar on and walk them here. Or find where they keep it. A slip is paper. It does not care how it closes. It cares that it closes."
+      },
+      {
+       "id": "c1_waiting",
+       "opens": true,
+       "when": "c1=2 !slip.f|!slip.k|!slip.a",
+       "words": "I count closed slips. I do not count stories.",
+       "answers": [
+        {
+         "words": "I have brought Finch in.",
+         "when": "held.took.finch !slip.f",
+         "next": "c1_in",
+         "does": "hand:took.finch slip.f=3",
+         "log": "Handed Odalys Finch to Harrow in a collar."
+        },
+        {
+         "words": "I have brought Krait in.",
+         "when": "held.took.krait !slip.k",
+         "next": "c1_in",
+         "does": "hand:took.krait slip.k=3",
+         "log": "Handed Benno Krait to Harrow in a collar."
+        },
+        {
+         "words": "I have brought Ansah in.",
+         "when": "held.took.ansah !slip.a",
+         "next": "c1_in",
+         "does": "hand:took.ansah slip.a=3 st.scrappers-5",
+         "log": "Handed Lamp Ansah to Harrow in a collar."
+        },
+        {
+         "words": "I sold Finch at Margin's table.",
+         "when": "took.finch.out=1 !held.took.finch !slip.f",
+         "next": "c1_in",
+         "does": "slip.f=3"
+        },
+        {
+         "words": "I sold Krait at Margin's table.",
+         "when": "took.krait.out=1 !held.took.krait !slip.k",
+         "next": "c1_in",
+         "does": "slip.k=3"
+        },
+        {
+         "words": "I sold Ansah at Margin's table.",
+         "when": "took.ansah.out=1 !held.took.ansah !slip.a",
+         "next": "c1_in",
+         "does": "slip.a=3 st.scrappers-5"
+        },
+        {
+         "words": "Finch is dead.",
+         "when": "took.finch.out=2 !slip.f",
+         "next": "c1_dead",
+         "does": "slip.f=5 st.chainmen-3"
+        },
+        {
+         "words": "Krait is dead.",
+         "when": "took.krait.out=2 !slip.k",
+         "next": "c1_dead",
+         "does": "slip.k=5 st.chainmen-3"
+        },
+        {
+         "words": "Ansah is dead.",
+         "when": "took.ansah.out=2 !slip.a",
+         "next": "c1_dead",
+         "does": "slip.a=5 st.chainmen-3"
+        },
+        {
+         "words": "Finch got away from me.",
+         "when": "took.finch.out=3 !slip.f",
+         "next": "c1_lost",
+         "does": "slip.f=5 st.chainmen-2"
+        },
+        {
+         "words": "Krait got away from me.",
+         "when": "took.krait.out=3 !slip.k",
+         "next": "c1_lost",
+         "does": "slip.k=5 st.chainmen-2"
+        },
+        {
+         "words": "Ansah got away from me.",
+         "when": "took.ansah.out=3 !slip.a",
+         "next": "c1_lost",
+         "does": "slip.a=5 st.chainmen-2"
+        },
+        {
+         "words": "Not yet."
+        }
+       ]
+      },
+      {
+       "id": "c1_in",
+       "words": "On the rope with the others. That one is closed."
+      },
+      {
+       "id": "c1_dead",
+       "words": "Dead pays nobody. I write it off, and I write down who was holding it when it died."
+      },
+      {
+       "id": "c1_lost",
+       "words": "Then somebody slower than a cook is carrying my slips. Closed, as lost. Do not lose the next."
+      },
+      {
+       "id": "c1_count",
+       "opens": true,
+       "when": "c1=2 slip.f slip.k slip.a",
+       "words": "Three slips, three closed. That is the job.",
+       "answers": [
+        {
+         "words": "Thirty litres.",
+         "next": "c1_done",
+         "does": "(c1.wrote)c1.roll=?3 (c1.roll=1)c1.caught=1 (c1.roll=1)st.chainmen-20 water+30 st.chainmen+10 c1=100",
+         "log": "Closed Harrow's three slips, and was paid."
+        }
+       ]
+      },
+      {
+       "id": "c1_done",
+       "words": "Thirty. Mother Ledger knows your face now. That is worth more than the thirty, and it costs more."
+      },
+      {
+       "id": "c1_caught",
+       "opens": true,
+       "when": "c1>=100 c1.caught=1",
+       "words": "One of your slips says gone through the gate. I went to the gate. Nobody of that name went through it. I do not like being read a story off my own paper.",
+       "answers": [
+        {
+         "words": "It was a mistake.",
+         "does": "c1.caught=2"
+        },
+        {
+         "words": "Prove it.",
+         "does": "c1.caught=2 st.chainmen-5"
+        }
+       ]
+      },
+      {
+       "id": "c1_after",
+       "opens": true,
+       "when": "c1>=100 c1.caught!=1",
+       "words": "Nothing for you today. Slips come due at the month's end. So do people."
+      }
+     ]
+    }
+   ]
+  },
+  "Main Street": {
+   "people": [
+    {
+     "name": "Odalys Finch",
+     "prompt": "Talk to the cook at the grill",
+     "body": "Finch",
+     "cloth": [
+      0.075,
+      0.06,
+      0.05
+     ],
+     "x": 6.3,
+     "y": 77.5,
+     "facing": 270,
+     "stand": "stand_f",
+     "taken": "took.finch",
+     "when": "!took.finch slip.f<4",
+     "bumped": [
+      "Mind the fucking grill.",
+      "Watch it.",
+      "Do you want that hand cooked?"
+     ],
+     "lines": [
+      {
+       "id": "hello",
+       "opens": true,
+       "when": "!c1|slip.f",
+       "words": "Grill is cold till dark. Come back hungry, with a litre."
+      },
+      {
+       "id": "c1_slip",
+       "opens": true,
+       "when": "c1=2 !slip.f",
+       "words": "Fourteen. I know what it is. The meat turned in the heat and I ate the loss, and Harrow does not eat losses. I have not got fourteen litres. Look at this cart. Does it look like fourteen litres?",
+       "answers": [
+        {
+         "words": "I will cover it. Then you owe me, and not the book. (14 L)",
+         "next": "c1_covered",
+         "needs": "water>=14",
+         "does": "water-14 slip.f=2 trust+1",
+         "log": "Covered Odalys Finch's slip of 14 L out of your own water."
+        },
+        {
+         "words": "Then you are coming with me, to Harrow.",
+         "deed": "take"
+        },
+        {
+         "words": "You have it somewhere.",
+         "next": "c1_deny"
+        },
+        {
+         "words": "Run. I will write that you went through the gate.",
+         "next": "c1_ran",
+         "does": "slip.f=4 c1.wrote+1 st.freetags+2",
+         "log": "Let Odalys Finch run, and wrote the slip off as gone through the gate."
+        },
+        {
+         "words": "Not now."
+        }
+       ]
+      },
+      {
+       "id": "c1_covered",
+       "words": "You would do that. All right. Fourteen, to you and not to the book. I can live with owing somebody who has a face. Eat here when you like."
+      },
+      {
+       "id": "c1_ran",
+       "words": "You never saw me. God. Thank you. You never saw me."
+      },
+      {
+       "id": "c1_deny",
+       "words": "I have a grill, a cart and a bad back. Dig, if you think there is more."
+      },
+      {
+       "id": "c1_owes",
+       "opens": true,
+       "when": "slip.f=2",
+       "words": "Fourteen. I know. Sit down, it is nearly hot."
+      }
+     ]
+    }
+   ],
+   "doors": [
+    {
+     "prompt": "Dig under the back wheel of the grill cart",
+     "x": 7.0,
+     "y": 78.6,
+     "when": "c1=2 !slip.f",
+     "does": "slip.f=1 fear+1",
+     "said": "A tin, wired to the axle, with fourteen litres in it. You pay it into Harrow's slip. She will know by morning that it is gone, and not who.",
+     "log": "Dug up Odalys Finch's fourteen litres from under her cart and closed her slip with it."
+    }
+   ]
+  },
+  "The Last Call": {
+   "people": [
+    {
+     "name": "Benno Krait",
+     "prompt": "Talk to the man at the cards",
+     "body": "Krait",
+     "cloth": [
+      0.05,
+      0.055,
+      0.045
+     ],
+     "x": -28.9,
+     "y": 253.0,
+     "facing": 225,
+     "stand": "hips",
+     "taken": "took.krait",
+     "when": "!took.krait slip.k<4",
+     "bumped": [
+      "Hands off.",
+      "I was a Warden. Walk round.",
+      "Do that again."
+     ],
+     "lines": [
+      {
+       "id": "hello",
+       "opens": true,
+       "when": "!c1|slip.k",
+       "words": "If you are not sitting in, do not stand behind me. It is bad luck and bad manners."
+      },
+      {
+       "id": "c1_slip",
+       "opens": true,
+       "when": "c1=2 !slip.k",
+       "words": "Twenty-two? Tell Harrow I am one hand off it. I was a Warden for nine years. We do not get walked to the Block over a card debt. Go and bother a cook.",
+       "answers": [
+        {
+         "words": "I will cover it. Then you owe me, and not the book. (22 L)",
+         "next": "c1_covered",
+         "needs": "water>=22",
+         "does": "water-22 slip.k=2 trust+1",
+         "log": "Covered Benno Krait's slip of 22 L out of your own water."
+        },
+        {
+         "words": "Then you are coming with me, to Harrow.",
+         "deed": "take"
+        },
+        {
+         "words": "Run. I will write that you went through the gate.",
+         "next": "c1_ran",
+         "does": "slip.k=4 c1.wrote+1 st.freetags+2",
+         "log": "Let Benno Krait run, and wrote the slip off as gone through the gate."
+        },
+        {
+         "words": "Not now."
+        }
+       ]
+      },
+      {
+       "id": "c1_covered",
+       "words": "Twenty-two, on your word and not hers. Fine. I pay my own kind. You will have it when the cards turn, and they turn."
+      },
+      {
+       "id": "c1_ran",
+       "words": "Through the gate. Right. I owe you a drink I will never be here to buy."
+      },
+      {
+       "id": "c1_owes",
+       "opens": true,
+       "when": "slip.k=2",
+       "words": "I know what I owe you. Stand somewhere else while I win it."
+      }
+     ]
+    }
+   ]
+  },
+  "The Scrappers' Yard": {
+   "people": [
+    {
+     "name": "Lamp Ansah",
+     "prompt": "Talk to the lamp maker",
+     "body": "Ansah",
+     "cloth": [
+      0.03,
+      0.04,
+      0.03
+     ],
+     "x": 119.3,
+     "y": 192.5,
+     "facing": 90,
+     "stand": "stand_f",
+     "of": "scrappers",
+     "taken": "took.ansah",
+     "when": "!took.ansah slip.a<4",
+     "bumped": [
+      "Mind the glass!",
+      "Careful. That is a week's work.",
+      "Watch it."
+     ],
+     "lines": [
+      {
+       "id": "hello",
+       "opens": true,
+       "when": "!c1|slip.a",
+       "words": "Lamps. Tin, glass and a wick. Two litres, and you will want one before you want anything else in this town."
+      },
+      {
+       "id": "c1_slip",
+       "opens": true,
+       "when": "c1=2 !slip.a",
+       "words": "Nine litres. For glass. Nobody pays for a lamp until it is dark, and when it is dark they want it for nothing. I will have nine when the Skip runs again. Harrow can wait for nine.",
+       "answers": [
+        {
+         "words": "I will cover it. Then you owe me, and not the book. (9 L)",
+         "next": "c1_covered",
+         "needs": "water>=9",
+         "does": "water-9 slip.a=2 trust+1",
+         "log": "Covered Lamp Ansah's slip of 9 L out of your own water."
+        },
+        {
+         "words": "Then you are coming with me, to Harrow.",
+         "deed": "take"
+        },
+        {
+         "words": "Run. I will write that you went through the gate.",
+         "next": "c1_ran",
+         "does": "slip.a=4 c1.wrote+1 st.freetags+2",
+         "log": "Let Lamp Ansah run, and wrote the slip off as gone through the gate."
+        },
+        {
+         "words": "Not now."
+        }
+       ]
+      },
+      {
+       "id": "c1_covered",
+       "words": "Nine, to you. Good. I would rather owe a stranger than that book. Take a lamp. No, take it."
+      },
+      {
+       "id": "c1_ran",
+       "words": "Then I am gone. Tell the Guildmaster the glass is under the bench."
+      },
+      {
+       "id": "c1_owes",
+       "opens": true,
+       "when": "slip.a=2",
+       "words": "Nine. I have not forgotten. Do you want it in lamps?"
+      }
+     ]
+    }
+   ],
+   "lines": {
+    "Guildmaster Okafor-Reyes": [
+     {
+      "id": "c1_ansah",
+      "opens": true,
+      "when": "c1=2 !slip.a !took.ansah",
+      "words": "You are here about Lamp, and Harrow's nine litres. The Guild pays for its own before the Chainmen do it for us. Nine. And tell Harrow the Guild noticed who came asking.",
+      "answers": [
+       {
+        "words": "Nine litres, for Ansah's slip.",
+        "does": "slip.a=1 st.scrappers+2",
+        "log": "The Guildmaster paid Lamp Ansah's nine litres."
+       },
+       {
+        "words": "Keep it. I will deal with her myself."
+       }
+      ]
+     }
+    ]
+   }
+  }
+ }
+}

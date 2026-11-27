@@ -4,6 +4,11 @@
   "generated_voice_id": "KVQ7glCZSAjHAhqikyVx",
   "note": "the take Vincent chose from the audition (D1), 2026-11-19"
  },
+ "Block Square/Harrow": {
+  "description": "A debt collector in his fifties who has never needed to shout, chief collector for a slave house in a desert shanty town. A low, dry, level, unhurried man's voice, exact about figures, faintly bored, with a threat he does not bother to raise. Plain American speech. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo.",
+  "first_said": "You look like you can count, and like you can hit. I am Harrow. I collect what is owed to the book. I have three slips overdue and a sale in three evenings. Odalys Finch, who cooks at a grill on Main Street, owes fourteen litres. Benno Krait, who was a Warden and now plays cards at the Last Call, owes twenty-two. Lamp Ansah, in the Scrappers' yard, owes nine. Bring me the water, or bring me the debtor. Thirty litres to you when all three are closed. They go up on the Block, and whoever buys the body buys the debt with it. That is what the Block is for. Fourteen litres has put better people than Finch on it. Pay it yourself and the debt is yours. Put a collar on and walk them here. Or find where they keep it. A slip is paper. It does not care how it closes. It cares that it closes. I count closed slips. I do not count stories. On the rope with the others. That one is closed. Dead pays nobody. I write it off, and I write down who was holding it when it died.",
+  "generated_voice_id": "zTNEEuH7DxlkARwNpplD"
+ },
  "Block Square/Margin": {
   "description": "A woman in her fifties, the clerk who keeps the book at an open-air auction in a desert shanty town. She is talking quietly to one person who is standing at her table: low, dry, flat, quick and a little tired, with no warmth and no malice, only business. Plain American speech. A close, natural, conversational voice, as if recorded a hand's width from her mouth in a quiet room. She is not announcing, not reading aloud to a room, not presenting, and not heard through a loudspeaker, a megaphone or a radio: no echo, no projection.",
   "first_said": "Lot list is on the board, and the book is here. If you are buying, I write your name against theirs, and they sleep in your yard tonight. The Chainmen's fifth is in the price already. Are you buying? Eighteen litres, and six more for each thing they know how to do, before anybody bids. A fighter with a name costs what the Gut says they cost. With you. They follow whoever holds their paper, as far as your yard beside the Gut. The yard gate is on Pool Street, past the fighters' door: the yard hand lets owners in. You train them there, and you send them down into the pool from there. Hey. Mind yourself. Steady. Lot one, forty-five litres, to H. Rask. Nine to the book. Lot two, forty-eight litres, to the Tin. Nine and a half to the book. Lot three, twenty-two litres, to the guild. Four and a half to the book. Lot four, forty-two litres. Name, please. Eight and a half to the book. Lot five, fifty litres, to H. Rask. Ten to the book. Lot six, thirty-eight litres, to the Pump.",
@@ -35,9 +40,10 @@
   "generated_voice_id": "KAgrFHrFxz1AUyMJbkff"
  },
  "Main Street/A woman with no litre": {
+  "body": 0.174,
   "description": "A woman in her late twenties at a checkpoint at night with no money for the toll. Quick, anxious, a little high, trying to sound reasonable and not quite managing it, talking too fast. Plain American speech. Not an actress: close, breathy, frightened underneath, real.",
-  "first_said": "Tag is good. It is good, look at it. I have not got the litre. I had it this morning. I can bring it down tomorrow, first thing, I swear on the pipe. Out there? At night? You know what is out there at night. You... all right. I will not forget who did that. Tomorrow. First thing. Thank you.",
-  "generated_voice_id": "p7Lzx35NkvMEESXUHlYe"
+  "first_said": "Tag is good. It is good, look at it. I have not got the litre. I had it this morning. I can bring it down tomorrow, first thing, I swear on the pipe. Out there? At night? You know what the fuck is out there at night. You... all right. I will not forget who did that. Tomorrow. First thing. Thank you. Please. I'm moving. I'm moving. I wasn't in your way.",
+  "generated_voice_id": "Yiyp1Q1t5el0jyD3jg9s"
  },
  "Main Street/Brass": {
   "description": "A big older woman in her sixties with an unusually deep contralto voice, deeper than most men's: husky, rumbling, slow and heavy, rough from forty years of cigarettes. A gunsmith who trades from the back of a truck in a desert shanty town. Very few words and none wasted. Plain working American speech. Not an announcer and not a narrator: curt, close, real.",
@@ -55,9 +61,10 @@
   "generated_voice_id": "LbpqhdUaHci3ydhXZf3A"
  },
  "Main Street/Dealer": {
+  "body": 0.138,
   "description": "A man in his forties who runs a dice game on a crate at a night market in a desert shanty town. Lazy, smooth, low, smiling as he talks: a gambler's easy drawl with smoke in it, friendly in a way you should not trust. Unhurried. Plain American speech with a little Southern in it. Not an announcer and not a narrator: close, offhand, real.",
-  "first_said": "Three dice, one cup. You fight at the Gut? Then you have had your luck for the week, and I would be robbing you. Come back when you are bored of living.",
-  "generated_voice_id": "sP9LxBSZzACSEnUp0dMt"
+  "first_said": "Three dice, one cup. You fight at the Gut? Then you have had your luck for the week, and I would be robbing you blind. Piss off, and come back when you are bored of living. Walk into me again and I'll break your fucking nose. Christ. Go round. Hey! Fuck off.",
+  "generated_voice_id": "FABx8afyJzyFtn18maKF"
  },
  "Main Street/Gate Warden": {
   "description": "An ordinary American man in his fifties who minds a gate at night. A natural low speaking voice, gravelly and tired, slow and final but quiet, a man who has said no all his life and no longer argues about it. Conversational, plain, understated, without acting it. Perfect audio quality, recorded close on a studio microphone in a quiet room: clean, full and dry, with no radio, telephone or loudspeaker sound, no echo and no distortion.",
@@ -79,6 +86,12 @@
   "first_said": "Arms up. Turn. You stand like somebody who gets hit on the left. We cut ring armor for the Gut: tire rubber for what is swung at you, road sign for what is edged. Water in hand. Nothing here goes on a slate. Rubber takes the weight out of a club or a chain. Sign plate turns an edge. Nothing does both. Find out who you are fighting, and then find out what they carry.",
   "generated_voice_id": "unfg1WsUZIpoQmsKiUHm"
  },
+ "Main Street/Odalys Finch": {
+  "body": 0.174,
+  "description": "A street cook in her forties who works a grill cart in a desert shanty town, tired, sharp-tongued and frightened under it, with a smoker's rasp. She talks fast and low, as somebody does who is being asked for money she has not got. American. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo.",
+  "first_said": "Grill is cold till dark. Come back hungry, with a litre. Fourteen. I know what it is. The meat turned in the heat and I ate the loss, and Harrow does not eat losses. I have not got fourteen litres. Look at this cart. Does it look like fourteen litres? You would do that. All right. Fourteen, to you and not to the book. I can live with owing somebody who has a face. Eat here when you like. You never saw me. God. Thank you. You never saw me. I have a grill, a cart and a bad back. Dig, if you think there is more. Fourteen. I know. Sit down, it is nearly hot. Mind the fucking grill. Watch it. Do you want that hand cooked?",
+  "generated_voice_id": "fS3TFpvXolCGFZqtFD0T"
+ },
  "Main Street/Scrap seller": {
   "description": "A woman in her fifties who sells scrap from a table at a night market in a desert shanty town. A faint Korean accent. Sly, dry, quick, quietly amused at her own jokes and never smiling when she says them. A thin, slightly hoarse voice. Not a narrator and not an actress: offhand, close, real.",
   "first_said": "If it is on the table it is for sale. If it is under the table it is sold. If it is yours, you should have kept hold of it.",
@@ -90,9 +103,10 @@
   "generated_voice_id": "J8DqcheqgGQ5oHaJ4rMt"
  },
  "Main Street/Stallholder": {
+  "body": 0.026,
   "description": "A woman in her sixties who sells bread from a market stall at night in a desert shanty town. Warm but loud, a market voice cracked from calling over a crowd, brisk and motherly and not to be argued with. Plain working American speech. Not an announcer and not a narrator: busy, rough, real.",
   "first_said": "Bread's hot. Water first, then bread. That is the order everything goes in here. Next. You, are you buying or are you looking?",
-  "generated_voice_id": "u9x6huXFf9P9u3EA9eFV"
+  "generated_voice_id": "cpLswS2D1Dt46PN4JcVo"
  },
  "Main Street/Tea seller": {
   "description": "A woman in her sixties who sells tea from a kiosk at a night market in a desert shanty town. A faint Eastern European accent. Deadpan and weary, low and a little cracked: she has told the same joke for twenty years and stopped finding it funny after the first. Slow. Not a narrator and not an actress: flat, close, real.",
@@ -129,9 +143,10 @@
   "generated_voice_id": "kqleOFtjdK5nXRKIbbm5"
  },
  "Pool Street/Yard hand": {
+  "body": 0.174,
   "description": "A man in his thirties who works the yard gate behind a pit-fighting cage in a desert shanty town. A light Mexican Spanish accent, easy and low, a little tired, friendly enough but watching you. Short sentences, no hurry, talks out of the side of his mouth. Not an announcer and not a narrator: offhand, a little mumbled, real.",
   "first_said": "Alley's shut past the fence. Owners go round to the yard gate, and I walk them. You an owner? Then you wait here like everybody else.",
-  "generated_voice_id": "3lwppkZo7aWctrr0mn4Y"
+  "generated_voice_id": "K5J1HITXsqD6veNdvneQ"
  },
  "Rotgut Row/A new keeper": {
   "description": "A hard woman in her forties who has just taken over a market stall she did not build, in a desert shanty town. Clipped, smug, a little bored; a thin sharp voice with nothing friendly in it. Plain American speech. Not a narrator: close, curt, real.",
@@ -139,9 +154,10 @@
   "generated_voice_id": "PpTP5zyzx1gqELSgaw1q"
  },
  "Rotgut Row/Big Lottie": {
+  "body": 0.112,
   "description": "A big woman of fifty who keeps a drum-top bar and a chalk fighting ring in a desert shanty town. A deep, warm, loud voice gone rough from years of shouting over drinkers: slow, amused, entirely sure of herself, with a West African lilt under plain English. She is the biggest person in any room and has never had to prove it. Not an announcer and not a narrator: close, easy, real.",
-  "first_said": "The Sump. A cup is a cup and a fight in my ring is two cups to watch. You look like you have been in a ring with a floor. Mine is chalk, and people get up out of it. The post's cut, and a new face to carry it. Twelve. Count it where I can see you count it. Tell your sergeant The Sump has never once been short. And when you get up the Row, look at who is.",
-  "generated_voice_id": "A514cn84orkzquhxQ6ZO"
+  "first_said": "The Sump. A cup is a cup and a fight in my ring is two cups to watch. You look like you have been in a ring with a floor. Mine is chalk, and people get up out of it. The post's cut, and a new face to carry it. Twelve. Count it where I can see you count it. Tell your sergeant The Sump has never once been short. And when you get up the Row, look at who the hell is. Piss off out of it. Walk into me again and I'll break your fucking nose. Christ. Go round.",
+  "generated_voice_id": "I2vZsshV6Xv7VDqe8qm8"
  },
  "Rotgut Row/Fen": {
   "description": "A man in his early thirties who buys stolen things at a tarp stall at night in a desert shanty town. Quiet, quick and dry; he talks low and fast, out of the side of his mouth, and never says more than the trade needs. A light, slightly nasal voice, tired and wary. Plain American speech. Not a narrator: close, guarded, real.",
@@ -154,14 +170,20 @@
   "generated_voice_id": "ndqYaFovuLx8dg086ugx"
  },
  "The Last Call/A Warden corporal": {
+  "body": 0.058,
   "description": "A gate guard in his thirties, off shift and half drunk at a bar table at night. A thick, slow, surly voice, a little slurred, used to being let off. Plain working American speech. Not an actor and not a narrator: close, loose, sour, real.",
-  "first_said": "Off shift. The Captain pours, and I do not ask what it is. Twelve? The Captain can whistle for it. I am Wardens. We drink where we like and the bar is glad of it. All right. All right! Here. Twelve. You have a face I will know again. She would, too. Twelve. Tell her it was a slow week on the wall. It is paid. Go and lean on somebody else. I have a page. Twelve litres, and now I have a page in her book. Do you know what the Captain does to a Warden with a page? Neither do I. Yet.",
-  "generated_voice_id": "HnndiazmNVE39pfdus9u"
+  "first_said": "Off shift. The Captain pours, and I do not ask what it is. Twelve? The Captain can whistle for it. I am Wardens. We drink where we like and the bar is glad of it. All right. All right! Here. Twelve. You have a face I will know again. She would, too. Twelve. Tell her it was a slow week on the wall. It is paid. Go and lean on somebody else. I have a page. Twelve litres, and now I have a page in her book. Do you know what the Captain does to a Warden with a page? Neither do I. Yet. Step back. Now. Touch me again and you sleep in the cage. Hands to yourself.",
+  "generated_voice_id": "mJXlfwLX7S4I0wEy0VJp"
  },
  "The Last Call/A winch hand": {
   "description": "A working woman in her forties who runs a cable winch in a salvage yard, drinking alone because there has been no work for four days. A low, flat, worn voice, ashamed and stubborn at once, with nothing left to perform. Plain working American speech. Not an actress and not a narrator: close, quiet, tired, real.",
   "first_said": "Nine. I know it is nine. The Skip has been down four days, and nine is what I have in the world. Take it. That was the week's bread. Paid. The cable moves tomorrow, they say.",
   "generated_voice_id": "c1q11fyJW8ZrWwMhc46n"
+ },
+ "The Last Call/Benno Krait": {
+  "description": "A man of about fifty who was a militia sergeant and is now a card player in debt: a hoarse, sour, proud voice, a little drunk, quick to take offence, talking out of the side of his mouth without looking up from his cards. American. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo.",
+  "first_said": "If you are not sitting in, do not stand behind me. It is bad luck and bad manners. Twenty-two? Tell Harrow I am one hand off it. I was a Warden for nine years. We do not get walked to the Block over a card debt. Go and bother a cook. Twenty-two, on your word and not hers. Fine. I pay my own kind. You will have it when the cards turn, and they turn. Through the gate. Right. I owe you a drink I will never be here to buy. I know what I owe you. Stand somewhere else while I win it. Hands off. I was a Warden. Walk round. Do that again.",
+  "generated_voice_id": "SJwWwt8zOMUHzJzg41pp"
  },
  "The Last Call/Captain Dolores": {
   "description": "A wiry woman of sixty-four who keeps a bar in a wrecked airliner in a desert shanty town, and was cabin crew on it long ago. She is talking quietly to one person across a small table at night: low, close and unhurried, a little husky from smoke, friendly on top and hard underneath. American. She calls everybody sweetheart. A natural, conversational voice, as if recorded a hand's width from her mouth in a quiet room. She is not announcing, not presenting, not putting on a voice, and not heard through a loudspeaker, a cabin address system or a radio: no echo, no projection.",
@@ -177,6 +199,11 @@
   "description": "A pipe fitter of about thirty who has been hiding for three days from a hanging. A quiet, worn-out, steady voice: he has thought it through and is past pleading, and says what he did plainly. A faint Eastern European accent. Decent, frightened, very tired. Not an actor and not a narrator: close, low, real.",
   "first_said": "Fitter, it says on the card. Six for the skill. The Pump's man looked me over and went away to ask what a rope is worth against a pair of hands. I do not know which answer I am hoping for. You are from the gate. Then listen first. Maren was burning up, three days. The Pump wanted eleven litres for two of clean, and I fit their pipes: I know what runs in the east branch. So I took two litres out of forty thousand. That is the hanging. Tell Maren it was quick. It will not be, but tell her. Why? No. I am not asking. There is a drain under the wall that nobody is paid to watch. If you ever need it opened, once, find me. A collar. For two litres of water. It is longer than the rope, I will say that for it.",
   "generated_voice_id": "Ct27k5wqJ1w58Go602mZ"
+ },
+ "The Scrappers' Yard/Lamp Ansah": {
+  "description": "A woman in her thirties who makes lamps out of tin and glass in a salvage yard: a light, dry, quick voice, practical and a little amused, busy with her hands while she talks, stubborn about small sums. West African English, faint. A close, natural, conversational voice, as if recorded a hand's width from the mouth in a quiet room: not announcing, not a narrator, no echo.",
+  "first_said": "Lamps. Tin, glass and a wick. Two litres, and you will want one before you want anything else in this town. Nine litres. For glass. Nobody pays for a lamp until it is dark, and when it is dark they want it for nothing. I will have nine when the Skip runs again. Harrow can wait for nine. Nine, to you. Good. I would rather owe a stranger than that book. Take a lamp. No, take it. Then I am gone. Tell the Guildmaster the glass is under the bench. Nine. I have not forgotten. Do you want it in lamps? Mind the glass! Careful. That is a week's work. Watch it.",
+  "generated_voice_id": "pCM24kU0J88In5EB5U58"
  },
  "The Scrappers' Yard/Pike": {
   "description": "A salvage crew boss in his thirties, short of sleep and short of patience, standing guard over his sleeping crew at night. A hard, flat, clipped voice, low so as not to wake anybody, with a threat left unsaid in it. Plain working American speech. Not a narrator: close, curt, real.",

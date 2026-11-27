@@ -698,6 +698,16 @@ public:
 	/** How many of those behind the player are theirs to sell: "tow" in a line's or an answer's "when" */
 	int32 GetTowToSell() const;
 
+	/** Which of the player's people was taken under this mark, in the yard or behind the player; INDEX_NONE if none is held */
+	int32 FindHeld(const FName& TakenAs) const;
+
+	/**
+	 *  Takes somebody who was taken under a mark off the player's hands, wherever they are: out of the stable, and from
+	 *  behind the player if they are there. "hand:took.finch" in what a line or an answer does: a debtor given to the
+	 *  collector who wanted them. False if the player does not hold them.
+	 */
+	bool HandOver(const FName& TakenAs);
+
 	/**
 	 *  Goes for somebody with no tag (FTownPerson::Taken): it is fought out in the dead end, and settled by SettleTaking
 	 *  when the player is back. False, with why in the notice, if the player has nowhere to keep anybody.

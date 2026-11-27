@@ -3038,6 +3038,73 @@ void ATownGameMode::UpdateLed(float DeltaTime)
 	}
 }
 
+int32 ATownGameMode::FindHeld(const FName& TakenAs) const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	return (GameInstance && !TakenAs.IsNone()) ? GameInstance->Stable.Fighters.IndexOfByPredicate([&TakenAs](const FGutStableFighter& One) { return One.TakenAs == TakenAs; }) : INDEX_NONE;
+}
+
+bool ATownGameMode::HandOver(const FName& TakenAs)
+{
+	UGutGameInstance* GameInstance = GetGutGameInstance();
+	const int32 Gone = FindHeld(TakenAs);
+
+	if (!GameInstance || Gone == INDEX_NONE)
+	{
+		return false;
+	}
+
+	const FString Name = GameInstance->Stable.Fighters[Gone].FighterName.ToString();
+
+	// from behind the player, if that is where they are
+	if (const int32 Behind = Tow.IndexOfByPredicate([Gone](const FTownTow& One) { return One.Fighter == Gone; }); Behind != INDEX_NONE)
+	{
+		if (TowBodies.IsValidIndex(Behind))
+		{
+			if (TowBodies[Behind])
+			{
+				TowBodies[Behind]->Destroy();
+			}
+
+			TowBodies.RemoveAt(Behind);
+		}
+
+		Tow.RemoveAt(Behind);
+	}
+
+	// or out of the yard, if the player is standing in it
+	if (const int32 Stood = YardFighters.IndexOfByKey(Gone); Stood != INDEX_NONE)
+	{
+		if (YardBodies.IsValidIndex(Stood) && YardBodies[Stood])
+		{
+			YardBodies[Stood]->Destroy();
+		}
+
+		YardBodies.RemoveAt(Stood);
+		YardFighters.RemoveAt(Stood);
+	}
+
+	GameInstance->Stable.Fighters.RemoveAt(Gone);
+
+	// everybody after them in the stable moves up one
+	for (FTownTow& One : Tow)
+	{
+		One.Fighter -= One.Fighter > Gone ? 1 : 0;
+	}
+
+	for (int32& Other : YardFighters)
+	{
+		Other -= Other > Gone ? 1 : 0;
+	}
+
+	GameInstance->SaveRun();
+
+	UE_LOG(LogTown, Log, TEXT("Street: %s is handed over (%s)"), *Name, *TakenAs.ToString());
+
+	return true;
+}
+
 int32 ATownGameMode::GetTowToSell() const
 {
 	const UGutGameInstance* GameInstance = GetGutGameInstance();
@@ -3217,7 +3284,11 @@ bool ATownGameMode::TakeSomebody(int32 Index)
 	FGutTaking Taking;
 	Taking.bOn = true;
 	Taking.Mark = Person.Taken;
-	Taking.Who.FighterName = AGutGameMode::GetCageName(static_cast<int32>(Drawn % 100000));
+	// (somebody whose name the player knows keeps it: a debtor walked in is not renamed on the way)
+	const bool bNameless = Person.Name.StartsWith(TEXT("Somebody")) || Person.Name.StartsWith(TEXT("A "));
+
+	Taking.Who.FighterName = bNameless ? AGutGameMode::GetCageName(static_cast<int32>(Drawn % 100000)) : FText::FromString(Person.Name);
+	Taking.Who.TakenAs = Person.Taken;
 	Taking.Who.Body = Person.Body;
 	Taking.Who.Strength = Draw.RandRange(0, 2);
 	Taking.Who.Speed = Draw.RandRange(0, 2);
@@ -3278,8 +3349,10 @@ void ATownGameMode::SettleTaking()
 	const FGutWho Who = UGutSoundSubsystem::WhoIs(this, Taking.Who.Body);
 	const FString Name = Taking.Who.FighterName.ToString();
 
-	// gone from where they stood, whichever way it went
+	// gone from where they stood, whichever way it went: and how it went is kept, for a piece of work that asked for them
+	// ("took.finch.out": 1 taken, 2 dead, 3 got away)
 	SetMark(Taking.Mark, 1);
+	SetMark(FName(*(Taking.Mark.ToString() + TEXT(".out"))), Taking.Outcome);
 
 	FString Told;
 

@@ -72,6 +72,13 @@ struct FGutStableFighter
 	UPROPERTY(BlueprintReadOnly, Category="Stable")
 	int32 Cunning = 0;
 
+	/**
+	 *  The town's mark they were taken under, if they were taken and not bought: "took.finch". A piece of work asks by it
+	 *  whether the player still has them ("held.took.finch") and takes them off the player's hands ("hand:took.finch").
+	 */
+	UPROPERTY(BlueprintReadOnly, Category="Stable")
+	FName TakenAs;
+
 	/** Everything taught, as the Block prices it and the book reckons it: four things counted as the three there were */
 	float GetTaught() const { return (Strength + Speed + Nerve + Cunning) * 0.75f; }
 

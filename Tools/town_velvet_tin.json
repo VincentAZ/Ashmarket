@@ -97,7 +97,7 @@
    "name": "Madam Corazon", "prompt": "Talk to Madam Corazon", "body": "Corazon", "cloth": [0.16, 0.025, 0.035],
    "x": -95.2, "y": 206.5, "facing": 180, "stand": "stand_f",
    "lines": [
-    {"id": "house", "words": "Corazon. Everybody is corazon here, so you may as well start. The house is full tonight, and nobody inside it is here because of a collar. That is the whole of what I sell.",
+    {"id": "house", "words": "Corazon. Everybody is corazon here, so you may as well start. The house is full tonight. Come back another night.",
      "answers": [
       {"words": "Who is at the back table?", "next": "voss"},
       {"words": "Another night."}]},

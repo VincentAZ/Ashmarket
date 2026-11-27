@@ -40,6 +40,35 @@ OUT = os.path.join(PROJECT, "ArtSource", "voices")
 MANIFEST = os.path.join(OUT, "manifest.json")
 
 
+# A voice that has lost its low end sounds as if it came out of a loudspeaker or an old radio ("speaker voice", 25 and 26
+# November: Margin, Dolores, Pike). Measured, those three have under 3% of their sound below 300 Hz, where a voice that
+# sounds like somebody in the room has 8 to 40%. So every voice that is designed is measured, and one under FULL is not kept.
+FULL = 0.07
+
+# and a speaker whose recordings have less than this is given a new voice by --thin --redesign. Lower than FULL: between the
+# two are voices he has heard many times and said nothing against (Mother Ledger, Hasp), which are left as they are.
+THIN = 0.036
+
+
+def fullness(path):
+    """The share of a recording's sound that lies between 80 and 300 Hz: its body. None if it cannot be measured."""
+    import subprocess
+
+    def mean(filters):
+        out = subprocess.run(["ffmpeg", "-nostdin", "-i", path, "-af", filters + "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
+        found = re.search(r"mean_volume: (-?[0-9.]+) dB", out)
+
+        return float(found.group(1)) if found else None
+
+    whole = mean("highpass=f=80,lowpass=f=8000,")
+    low = mean("highpass=f=80,highpass=f=80,lowpass=f=300,lowpass=f=300,")
+
+    if whole is None or low is None:
+        return None
+
+    return min(1.0, 10.0 ** ((low - whole) / 10.0))
+
+
 def slug(text):
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
 
@@ -94,10 +123,11 @@ def main():
     parser.add_argument("--redesign", action="store_true")
     parser.add_argument("--only", default="")
     parser.add_argument("--usage", action="store_true", help="what the account has used and is allowed, and nothing else")
+    parser.add_argument("--thin", action="store_true", help="measure every recording and name the speakers whose voices are thin; with --redesign, give those new voices")
     options = parser.parse_args()
 
-    if options.redesign and not options.only:
-        sys.exit("--redesign gives a speaker a new voice: name the speaker with --only")
+    if options.redesign and not options.only and not options.thin:
+        sys.exit("--redesign gives a speaker a new voice: name the speaker with --only, or give every thin voice a new one with --thin")
 
     cast = json.load(open(CAST))
     speakers = cast["speakers"]
@@ -117,6 +147,10 @@ def main():
     wanted = []
     silent = []
     said = {}
+    every = []
+
+    # whoever is to have a new voice: the speaker named, or (--thin --redesign) everybody whose voice measures thin
+    again = set()
 
     for path in LISTS:
         # with whatever each piece of work has its people say there (Tools/town_lists.py)
@@ -147,8 +181,44 @@ def main():
             voice = entry.get("design") or entry["voice"]
             mark = hashlib.sha1(json.dumps([words, voice, cast["model"], settings] + ([cast["format"]] if pcm else []), sort_keys=True).encode()).hexdigest()
 
-            if options.force or options.redesign or manifest.get(file, {}).get("mark") != mark or not os.path.exists(os.path.join(OUT, file)):
-                wanted.append((file, speaker, whose, entry, settings, words, mark))
+            every.append((file, speaker, whose, entry, settings, words, mark))
+
+    if options.thin:
+        # each speaker's recordings measured: the middle one of them is the speaker's
+        heard = {}
+
+        for file, speaker, whose, entry, _, _, _ in every:
+            if os.path.exists(os.path.join(OUT, file)) and entry.get("design") and len(heard.setdefault(whose, [])) < 7:
+                body = fullness(os.path.join(OUT, file))
+
+                if body is not None:
+                    heard[whose].append(body)
+
+        print("{:46s} below 300 Hz".format("speaker"))
+
+        for whose, bodies in sorted(heard.items(), key=lambda item: sorted(item[1])[len(item[1]) // 2] if item[1] else 1.0):
+            if not bodies:
+                continue
+
+            middle = sorted(bodies)[len(bodies) // 2]
+            meant = speakers[whose].get("thin_is_right")
+            thin = middle < THIN and not meant
+
+            print("{:46s} {:5.1%}  {}".format(whose, middle, "meant to be" if meant and middle < THIN else ("THIN" if thin else "")))
+
+            if thin:
+                again.add(whose)
+
+        print("{} speakers are thin".format(len(again)))
+
+        if not options.redesign:
+            return
+    elif options.redesign:
+        again = {voice_of(options.only)[0]}
+
+    for file, speaker, whose, entry, settings, words, mark in every:
+        if options.force or whose in again or manifest.get(file, {}).get("mark") != mark or not os.path.exists(os.path.join(OUT, file)):
+            wanted.append((file, speaker, whose, entry, settings, words, mark))
 
     for speaker in sorted(set(silent)):
         print("no voice is given for {}: their lines stay words (Tools/town_voices.json)".format(speaker))
@@ -214,15 +284,43 @@ def main():
         while len(text) > 1000:
             text = text[:text.rstrip(".?! ").rfind(". ") + 1]
 
-        made = client.text_to_voice.design(voice_description=entry["design"], model_id=cast["design_model"], text=text)
-        preview = made.previews[0]
-
         os.makedirs(os.path.join(OUT, "designed"), exist_ok=True)
 
-        with open(os.path.join(OUT, "designed", slug(speaker) + ".mp3"), "wb") as out:
-            out.write(base64.b64decode(preview.audio_base_64))
+        # Every voice offered is listened to with a meter, and the fullest is kept: asked for again, up to four times, until
+        # one of them has the body of somebody in the room (FULL). Whatever the description says, about one voice in three
+        # comes back thin.
+        best = None
 
-        designed[speaker] = {"description": entry["design"], "generated_voice_id": preview.generated_voice_id, "first_said": text}
+        for asked in range(4):
+            made = client.text_to_voice.design(voice_description=entry["design"], model_id=cast["design_model"], text=text)
+
+            for number, preview in enumerate(made.previews):
+                heard = os.path.join(OUT, "designed", "{}_try{}_{}.mp3".format(slug(speaker), asked, number))
+
+                with open(heard, "wb") as out:
+                    out.write(base64.b64decode(preview.audio_base_64))
+
+                body = fullness(heard)
+
+                print("  {} voice {}.{}: {} of its sound is below 300 Hz".format(speaker, asked + 1, number + 1, "?" if body is None else "{:.0%}".format(body)))
+
+                if best is None or (body or 0.0) > best[0]:
+                    best = (body or 0.0, preview, heard)
+
+            if best[0] >= FULL:
+                break
+
+        body, preview, heard = best
+
+        os.replace(heard, os.path.join(OUT, "designed", slug(speaker) + ".mp3"))
+
+        for left in glob.glob(os.path.join(OUT, "designed", slug(speaker) + "_try*.mp3")):
+            os.remove(left)
+
+        if body < FULL:
+            print("  {}: none of twelve voices was full (the best has {:.0%} below 300 Hz): kept, and to be looked at".format(speaker, body))
+
+        designed[speaker] = {"description": entry["design"], "generated_voice_id": preview.generated_voice_id, "first_said": text, "body": round(body, 3)}
 
         with open(DESIGNED, "w") as out:
             json.dump(designed, out, indent=1, sort_keys=True)
@@ -268,8 +366,9 @@ def main():
 
             return named[entry["voice"]]
 
-        if options.redesign or designed.get(speaker, {}).get("description") != entry["design"]:
+        if speaker in again or designed.get(speaker, {}).get("description") != entry["design"]:
             design(speaker, entry)
+            again.discard(speaker)
 
         if designed[speaker]["generated_voice_id"] in saved():
             return designed[speaker]["generated_voice_id"]
