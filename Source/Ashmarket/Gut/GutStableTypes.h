@@ -182,6 +182,22 @@ struct FGutTaking
 	/** Nought while it is undecided. 1 beaten down and taken, 2 killed, 3 got away with the player down */
 	UPROPERTY(BlueprintReadOnly, Category="Taking")
 	int32 Outcome = 0;
+
+	/**
+	 *  What it is fought over. Nought: the person, who is taken for the yard if beaten. 1: the water they carry, which the
+	 *  player went for. 2: the player's own water, which they came for. ("You should be able to steal water from people -
+	 *  like capture - you win you get X L and if opponent wins they get Y L - inversely someone can come up to me and try
+	 *  to steal my water", 26 November.)
+	 */
+	UPROPERTY(BlueprintReadOnly, Category="Taking")
+	int32 Kind = 0;
+
+	/** The water they carry, which is the player's if they are beaten; and what they take off the player if the player is */
+	UPROPERTY(BlueprintReadOnly, Category="Taking")
+	float Carried = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category="Taking")
+	float Risked = 0.0f;
 };
 
 /** Where somebody who runs a stable of fighters stands */

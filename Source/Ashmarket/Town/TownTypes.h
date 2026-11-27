@@ -62,7 +62,13 @@ enum class ETownDeed : uint8
 	Take,
 
 	/** To the Block's clerk with somebody in tow who is the player's to sell: see ATownGameMode::OpenSale */
-	Sell
+	Sell,
+
+	/** Goes for the water whoever is being talked to carries: fought as a taking is, and it is water that changes hands */
+	Rob,
+
+	/** Stands and fights whoever has come for the player's water */
+	Stand,
 };
 
 /** One thing the player can say back */
@@ -453,6 +459,14 @@ struct FTownCall
 	/** If true every lot that has been walked off comes back up as it is called: the next of them */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Call")
 	bool bBringsUp = false;
+
+	/**
+	 *  If true it is something said between lots that is true of any sale: where the Block's sale goes on by itself, lot by
+	 *  lot, with whoever is really there bidding (ATownGameMode::UpdateSale), these are the only calls made, and the rest,
+	 *  which are a sale written out beforehand, are not.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Call")
+	bool bLive = false;
 };
 
 /** Something that stands on the ground of a place and has to be walked round: where it stands, seen from above */

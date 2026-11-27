@@ -39,6 +39,14 @@ namespace TownAuctionRules
 	const float GoingWait = 2.6f;
 	const float OpenWait = 2.8f;
 
+	/** In a sale that goes on by itself: how long after the player comes into the square the first lot is put up, and how long after a hammer the next */
+	const float FirstLotAfter = 15.0f;
+	const float NextLotAfter = 12.0f;
+
+	/** How often the caller comes down from where he opened before he gives a lot up, and to what share of it each time */
+	const int32 MostDrops = 3;
+	const float DropsTo = 0.75f;
+
 	/** The figures that were recorded in the caller's voice: a bid outside them is written and not said */
 	const int32 LeastSpoken = 4;
 	const int32 MostSpoken = 160;
@@ -132,6 +140,150 @@ bool ATownGameMode::IsSoldAway(int32 Line, FString* OutTo) const
 	return true;
 }
 
+bool ATownGameMode::IsSaleLive() const
+{
+	return bBids && bLiveSale && PlaceData && PlaceData->People.ContainsByPredicate([](const FTownPerson& Person) { return Person.Lot > 0; });
+}
+
+int32 ATownGameMode::FindNextLot() const
+{
+	TArray<FGutStableFighter> Offers;
+	TArray<int32> Lots;
+	GetBookOffers(Offers, Lots);
+
+	const FGutStableState State = GetOwnerState();
+
+	for (int32 i = 0; i < Offers.Num(); ++i)
+	{
+		if (Offers[i].bOwned && Lots.IsValidIndex(i) && Lots[i] > 0 && !IsSoldAway(i) && !State.BoughtToday.Contains(i) && !IsLotGone(Lots[i]))
+		{
+			return i;
+		}
+	}
+
+	return INDEX_NONE;
+}
+
+void ATownGameMode::GetBookShown(TArray<int32>& OutOffers) const
+{
+	OutOffers.Reset();
+
+	TArray<FGutStableFighter> Offers;
+	TArray<int32> Lots;
+	GetBookOffers(Offers, Lots);
+
+	if (const int32 Next = FindNextLot(); Next != INDEX_NONE)
+	{
+		OutOffers.Add(Next);
+	}
+
+	for (int32 i = 0; i < Offers.Num(); ++i)
+	{
+		if (!Offers[i].bOwned)
+		{
+			OutOffers.Add(i);
+		}
+	}
+}
+
+int32 ATownGameMode::GetBookOfferAt(int32 Line) const
+{
+	if (Auction.bOn)
+	{
+		return Auction.Line;
+	}
+
+	if (!IsSaleLive())
+	{
+		return Line;
+	}
+
+	TArray<int32> Shown;
+	GetBookShown(Shown);
+
+	return Shown.IsValidIndex(Line) ? Shown[Line] : INDEX_NONE;
+}
+
+void ATownGameMode::UpdateSale(float DeltaTime)
+{
+	AuctionCallLeft = FMath::Max(0.0f, AuctionCallLeft - DeltaTime);
+
+	if (!bSettled || !IsSaleLive() || Auction.bOn || bSaleOver)
+	{
+		return;
+	}
+
+	SaleNextIn -= DeltaTime;
+
+	// (he finishes what he is saying first: the last lot's hammer, or something said between lots)
+	if (SaleNextIn > 0.0f || IsAuctionSpeaking() || bLiveCallOn)
+	{
+		return;
+	}
+
+	const int32 Next = FindNextLot();
+
+	if (Next == INDEX_NONE)
+	{
+		bSaleOver = true;
+
+		SayAuction({ TEXT("sale_over") });
+
+		AuctionCall.Speaker = TEXT("Caller Strand");
+		AuctionCall.Words = TEXT("That is the day's sale. The Block is swept. Come back tomorrow.");
+		AuctionCallLeft = 6.0f;
+
+		if (bShopping && bAtBook)
+		{
+			ShopSaid = TEXT("That is the day's lots, all of them sold. There are more tomorrow.");
+			ShopChoice = 0;
+		}
+
+		UE_LOG(LogTownAuction, Log, TEXT("Sale: there is nobody left to put up today"));
+
+		return;
+	}
+
+	PutUp(Next);
+}
+
+void ATownGameMode::SayLedger()
+{
+	const int32 Which = LedgerSaid++ % 3;
+
+	static const TCHAR* Words[] = { TEXT("He ain't got the water."), TEXT("He ain't got the water. Ask me how I know."), TEXT("Not that much he hasn't. He ain't got the water.") };
+
+	BarkCall = FTownCall();
+	BarkCall.Speaker = TEXT("Mother Ledger");
+	BarkCall.Words = Words[Which];
+	BarkCall.Seconds = 3.0f;
+	BarkUntil = GetWorld()->GetTimeSeconds() + BarkCall.Seconds;
+
+	USoundBase* Said = LedgerAsides.IsValidIndex(Which) ? LedgerAsides[Which].Get() : nullptr;
+
+	if (const UGutGameInstance* GameInstance = GetGutGameInstance(); GameInstance && GameInstance->HearsSpeech() && Said)
+	{
+		if (BarkVoice)
+		{
+			BarkVoice->Stop();
+		}
+
+		BarkVoice = UGameplayStatics::SpawnSound2D(this, Said, 1.0f);
+
+		// and she is seen to say it, by anybody looking her way
+		for (int32 Person = 0; PlaceData && Person < PlaceData->People.Num() && Person < People.Num(); ++Person)
+		{
+			if (People[Person] && PlaceData->People[Person].Name == TEXT("Mother Ledger"))
+			{
+				People[Person]->Speak(GetFaceFor(Said));
+				break;
+			}
+		}
+	}
+
+	UE_LOG(LogTownAuction, Log, TEXT("Auction: Mother Ledger: %s (%s)"), *BarkCall.Words, Said ? TEXT("heard") : TEXT("written only"));
+}
+
 TArray<FTownShopLine> ATownGameMode::GetAuctionLines() const
 {
 	TArray<FTownShopLine> Lines;
@@ -142,6 +294,23 @@ TArray<FTownShopLine> ATownGameMode::GetAuctionLines() const
 	}
 
 	const float Held = FMath::FloorToFloat(GetOwnerState().Water);
+
+	// whether the player could take anybody at all, at any price: a yard that is full bids for nobody
+	FString Barred;
+
+	if (const AGutGameMode* Rules = GetCageRules())
+	{
+		FGutStableState Tried = GetOwnerState();
+		FGutStableFighter Free = Auction.Offer;
+		FString Why;
+
+		Free.Price = 0.0f;
+
+		if (!Rules->TakeBlockOffer(Tried, Free, Auction.Line, &Why))
+		{
+			Barred = Why == TEXT("taken") ? FString(TEXT("yours already")) : FString::Printf(TEXT("your yard holds %d and is full"), Rules->GetStableMostFighters());
+		}
+	}
 
 	// with the bid the player's own there is nothing to do but hear it out
 	if (Auction.Leader == 0)
@@ -176,8 +345,8 @@ TArray<FTownShopLine> ATownGameMode::GetAuctionLines() const
 		Line.Name = Bid == Held && Bid > Jump ? FString::Printf(TEXT("Bid all you hold: %.0f L"), Bid) : FString::Printf(TEXT("Bid %.0f L"), Bid);
 		Line.Price = Bid;
 		Line.PriceText = TEXT(" ");
-		Line.bCanBuy = Bid <= Held;
-		Line.Why = Line.bCanBuy ? FString() : FString::Printf(TEXT("you hold %.0f L"), Held);
+		Line.bCanBuy = Bid <= Held && Barred.IsEmpty();
+		Line.Why = !Barred.IsEmpty() ? Barred : (Line.bCanBuy ? FString() : FString::Printf(TEXT("you hold %.0f L"), Held));
 
 		Lines.Add(MoveTemp(Line));
 	}
@@ -243,9 +412,17 @@ void ATownGameMode::FetchAuctionSounds()
 	}
 
 	for (const TCHAR* Part : { TEXT("who_opens"), TEXT("at_the_table"), TEXT("any_more"), TEXT("against_you"), TEXT("nobody_at"), TEXT("once"), TEXT("twice"), TEXT("going_once"),
-		TEXT("going_twice"), TEXT("sold"), TEXT("to_the_table"), TEXT("no_bid") })
+		TEXT("going_twice"), TEXT("sold"), TEXT("to_the_table"), TEXT("no_bid"), TEXT("no_takers"), TEXT("sale_over") })
 	{
 		GetAuctionSound(Part);
+	}
+
+	// and what Mother Ledger throws in when somebody bids water he has not got
+	LedgerAsides.Reset();
+
+	for (int32 i = 1; i <= 3; ++i)
+	{
+		LedgerAsides.Add(LoadObject<USoundBase>(nullptr, *FString::Printf(TEXT("/Game/Town/Voices/block_square/mother_ledger_aside_no_water_%d.mother_ledger_aside_no_water_%d"), i, i), nullptr, LOAD_NoWarn | LOAD_Quiet));
 	}
 
 	int32 There = 0;
@@ -337,16 +514,31 @@ void ATownGameMode::CallAuction(const FString& Words, float Wait, const TArray<F
 	AuctionCall.Speaker = TEXT("Caller Strand");
 	AuctionCall.Words = Words;
 
-	// and how it stands for whoever is bidding, under it at the table
+	// and how it stands for whoever is at the table, under it
+	if (bShopping && bAtBook)
+	{
+		TellAuction();
+	}
+
+	UE_LOG(LogTownAuction, Log, TEXT("Auction: \"%s\" (lot %d, %s, bid %.0f L, %s)"), *Words, Auction.Lot, *Auction.Offer.FighterName.ToString(), Auction.Bid,
+		Auction.Leader == INDEX_NONE ? TEXT("nobody's") : (Auction.Leader == 0 ? TEXT("the player's") : *Auction.Rivals[Auction.Leader - 1].Name));
+}
+
+void ATownGameMode::TellAuction()
+{
+	if (!Auction.bOn)
+	{
+		return;
+	}
+
 	const float Held = FMath::FloorToFloat(GetOwnerState().Water);
 
+	// (somebody who has not bid has nothing "against" them: the bid is with whoever it is with)
 	const FString Stands = Auction.Leader == INDEX_NONE ? FString::Printf(TEXT("Nobody has bid. It opens at %.0f L."), Auction.Open)
 		: (Auction.Leader == 0 ? FString::Printf(TEXT("The bid is yours, at %.0f L."), Auction.Bid)
-			: FString::Printf(TEXT("The bid is against you: %.0f L, with %s."), Auction.Bid, *Auction.Rivals[Auction.Leader - 1].Name));
+			: FString::Printf(TEXT("The bid is %.0f L, with %s."), Auction.Bid, *Auction.Rivals[Auction.Leader - 1].Name));
 
-	ShopSaid = FString::Printf(TEXT("\"%s\"   %s You hold %.0f L. The book has %s at %.0f L."), *Words, *Stands, Held, UGutSoundSubsystem::WhoIs(this, Auction.Offer.Body).Him(), Auction.Offer.Price);
-
-	UE_LOG(LogTownAuction, Log, TEXT("Auction: %s"), *ShopSaid);
+	ShopSaid = FString::Printf(TEXT("\"%s\"   %s You hold %.0f L. The book has %s at %.0f L."), *Auction.Called, *Stands, Held, UGutSoundSubsystem::WhoIs(this, Auction.Offer.Body).Him(), Auction.Offer.Price);
 }
 
 bool ATownGameMode::BeginAuction(int32 Line)
@@ -390,6 +582,26 @@ bool ATownGameMode::BeginAuction(int32 Line)
 		return false;
 	}
 
+	return PutUp(Line);
+}
+
+bool ATownGameMode::PutUp(int32 Line)
+{
+	TArray<FGutStableFighter> Offers;
+	TArray<int32> Lots;
+	GetBookOffers(Offers, Lots);
+
+	if (!Offers.IsValidIndex(Line) || Auction.bOn)
+	{
+		return false;
+	}
+
+	const FGutStableFighter& Offer = Offers[Line];
+	const FString Who = Offer.FighterName.ToString();
+
+	// whatever he was saying between lots is done with
+	bLiveCallOn = false;
+
 	Auction = FTownAuction();
 	Auction.bOn = true;
 	Auction.Line = Line;
@@ -399,7 +611,11 @@ bool ATownGameMode::BeginAuction(int32 Line)
 
 	GetBidders(Line, Offer, Auction.Rivals);
 
-	ShopChoice = 0;
+	// (somebody at the table has the lot's own bids before them now; somebody at their bag or a stall is left alone)
+	if (bShopping && bAtBook)
+	{
+		ShopChoice = 0;
+	}
 
 	// the caller stops whatever he was calling, and calls this
 	if (CallVoice)
@@ -422,6 +638,14 @@ bool ATownGameMode::BeginAuction(int32 Line)
 	CallAuction(Auction.Lot > 0 ? FString::Printf(TEXT("Lot %d. %s. Who opens at %.0f litres?"), Auction.Lot, *Who, Auction.Open) : FString::Printf(TEXT("%s. Who opens at %.0f litres?"), *Who, Auction.Open),
 		TownAuctionRules::OpenWait, Parts);
 
+	// and the table's picture turns to whoever it is
+	if (bShopping && bAtBook)
+	{
+		BookShown = INDEX_NONE;
+
+		ShowBookLine();
+	}
+
 	return true;
 }
 
@@ -442,7 +666,18 @@ bool ATownGameMode::PlaceBid(int32 Option)
 
 	if (!Lines[Option].bCanBuy)
 	{
-		ShopSaid = FString::Printf(TEXT("\"%s\"   %.0f L is more than you hold: %s. The Block gives no credit."), *Auction.Called, Lines[Option].Price, *Lines[Option].Why);
+		if (Lines[Option].Price > FMath::FloorToFloat(GetOwnerState().Water))
+		{
+			ShopSaid = FString::Printf(TEXT("\"%s\"   %.0f L is more than you hold: %s. The Block gives no credit."), *Auction.Called, Lines[Option].Price, *Lines[Option].Why);
+
+			// and the room hears of it, from the woman who knows to the litre what he holds
+			SayLedger();
+		}
+		else
+		{
+			ShopSaid = FString::Printf(TEXT("\"%s\"   Not for you: %s."), *Auction.Called, *Lines[Option].Why);
+		}
+
 		ShopRefusedAt = GetWorld()->GetTimeSeconds();
 
 		return false;
@@ -473,6 +708,14 @@ bool ATownGameMode::LetGo()
 		ShopRefusedAt = GetWorld()->GetTimeSeconds();
 
 		return false;
+	}
+
+	// where the sale goes on by itself there is nothing to let go: the player leaves the table, and the room goes on bidding
+	if (IsSaleLive())
+	{
+		CloseShop();
+
+		return true;
 	}
 
 	// let go: the room finishes it without the player, at once
@@ -539,6 +782,17 @@ void ATownGameMode::UpdateAuction(float DeltaTime)
 		CallAuction(Auction.Leader == INDEX_NONE ? FString(TEXT("Twice.")) : FString::Printf(TEXT("Going twice, at %.0f."), Auction.Bid), TownAuctionRules::GoingWait,
 			Auction.Leader == INDEX_NONE ? TArray<FString>({ TEXT("twice") }) : TArray<FString>({ TEXT("going_twice"), GetFigurePart(Auction.Bid) }));
 	}
+	else if (Auction.Leader == INDEX_NONE && IsSaleLive() && Auction.Drops < TownAuctionRules::MostDrops && Auction.Open > 4.0f)
+	{
+		// Nobody will open there: he comes down, and asks again. (A sale that goes on by itself does not leave a lot
+		// standing unsold on the Block to be asked for again.)
+		++Auction.Drops;
+
+		Auction.Open = FMath::Max(4.0f, FMath::RoundToFloat(Auction.Open * TownAuctionRules::DropsTo * 0.5f) * 2.0f);
+		Auction.Count = 0;
+
+		CallAuction(FString::Printf(TEXT("No? Then lower. Who opens at %.0f litres?"), Auction.Open), TownAuctionRules::OpenWait, { TEXT("no_takers"), TEXT("who_opens"), GetFigurePart(Auction.Open) });
+	}
 	else
 	{
 		EndAuction();
@@ -554,17 +808,72 @@ void ATownGameMode::EndAuction()
 	const FString Who = Done.Offer.FighterName.ToString();
 	const FGutWho Sex = UGutSoundSubsystem::WhoIs(this, Done.Offer.Body);
 
-	// the list again, on whoever it was
-	ShopChoice = Done.Line;
+	const bool bLive = IsSaleLive();
+	const bool bAtTable = bShopping && bAtBook;
+
+	// the list again: on whoever it was, or, where the sale goes on by itself, on whoever is next
+	if (bAtTable)
+	{
+		ShopChoice = bLive ? 0 : Done.Line;
+	}
 
 	// and the caller goes back to his own sale, with the next thing he has to call
 	CallTime = 1000.0f;
+
+	SaleNextIn = TownAuctionRules::NextLotAfter;
+
+	// what he called last stays up while he says it
+	AuctionCall.Speaker = TEXT("Caller Strand");
+	AuctionCallLeft = 4.5f;
+
+	const auto WriteSold = [this, &Done](const FString& To)
+	{
+		if (UGutGameInstance* GameInstance = GetGutGameInstance())
+		{
+			const FGutStableState State = GetOwnerState();
+
+			if (GameInstance->BlockSoldDay != State.Day || GameInstance->BlockSoldSeed != State.Seed)
+			{
+				GameInstance->BlockSold.Reset();
+				GameInstance->BlockSoldTo.Reset();
+				GameInstance->BlockSoldDay = State.Day;
+				GameInstance->BlockSoldSeed = State.Seed;
+			}
+
+			GameInstance->BlockSold.Add(Done.Line);
+			GameInstance->BlockSoldTo.Add(To);
+			GameInstance->SaveRun();
+		}
+	};
 
 	if (Done.Leader == INDEX_NONE)
 	{
 		SayAuction({ TEXT("no_bid") });
 
-		ShopSaid = FString::Printf(TEXT("No bid. %s stays on the book, and can be put up again."), *Who);
+		AuctionCall.Words = TEXT("No bid.");
+
+		if (bLive)
+		{
+			// nobody would have them at any figure: back to the Holding Yard, and not put up again today
+			WriteSold(TEXT("nobody: back to the Holding Yard"));
+			WalkLotAway(Done.Lot);
+
+			if (bAtTable)
+			{
+				ShopSaid = FString::Printf(TEXT("No bid. %s goes back to the Holding Yard unsold."), *Who);
+			}
+		}
+		else
+		{
+			ShopSaid = FString::Printf(TEXT("No bid. %s stays on the book, and can be put up again."), *Who);
+		}
+
+		if (bAtTable && bLive)
+		{
+			BookShown = INDEX_NONE;
+
+			ShowBookLine();
+		}
 
 		return;
 	}
@@ -577,6 +886,8 @@ void ATownGameMode::EndAuction()
 	// the hammer, and who to
 	SayAuction({ TEXT("sold"), GetFigurePart(Done.Bid), Done.Leader == 0 ? FString(TEXT("to_the_table")) : TownAuctionRules::GetHousePart(Done.Rivals[Done.Leader - 1].Name) });
 
+	AuctionCall.Words = FString::Printf(TEXT("Sold. %.0f litres, to %s."), Done.Bid, Done.Leader == 0 ? TEXT("the table") : *Done.Rivals[Done.Leader - 1].Name);
+
 	if (Done.Leader == 0)
 	{
 		// the player's: taken as anybody bought at the book is, for what was bid
@@ -585,34 +896,39 @@ void ATownGameMode::EndAuction()
 			ShopSaid += FString::Printf(TEXT(" The book had %s at %.0f L."), Sex.Him(), Done.Offer.Price);
 		}
 
+		if (bAtTable && bLive)
+		{
+			ShopChoice = 0;
+			BookShown = INDEX_NONE;
+
+			ShowBookLine();
+		}
+
 		return;
 	}
 
 	// somebody else's: written against their name, and walked off the Block for good
 	const FString To = Done.Rivals[Done.Leader - 1].Name;
 
-	if (UGutGameInstance* GameInstance = GetGutGameInstance())
-	{
-		const FGutStableState State = GetOwnerState();
-
-		if (GameInstance->BlockSoldDay != State.Day || GameInstance->BlockSoldSeed != State.Seed)
-		{
-			GameInstance->BlockSold.Reset();
-			GameInstance->BlockSoldTo.Reset();
-			GameInstance->BlockSoldDay = State.Day;
-			GameInstance->BlockSoldSeed = State.Seed;
-		}
-
-		GameInstance->BlockSold.Add(Done.Line);
-		GameInstance->BlockSoldTo.Add(To);
-		GameInstance->SaveRun();
-	}
+	WriteSold(To);
 
 	WalkLotAway(Done.Lot);
 
-	ShopSaid = FString::Printf(TEXT("Sold: %s, to %s, for %.0f L. %s is walked off to the Holding Yard, and is theirs."), *Who, *To, Done.Bid, Sex.HeCap());
+	const FString Told = FString::Printf(TEXT("Sold: %s, to %s, for %.0f L. %s is walked off to the Holding Yard, and is theirs."), *Who, *To, Done.Bid, Sex.HeCap());
 
-	UE_LOG(LogTownAuction, Log, TEXT("Auction: %s"), *ShopSaid);
+	if (bAtTable || !bLive)
+	{
+		ShopSaid = Told;
+	}
+
+	if (bAtTable && bLive)
+	{
+		BookShown = INDEX_NONE;
+
+		ShowBookLine();
+	}
+
+	UE_LOG(LogTownAuction, Log, TEXT("Auction: %s"), *Told);
 }
 
 void ATownGameMode::WalkLotAway(int32 Lot)

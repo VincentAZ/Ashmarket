@@ -38,7 +38,11 @@ BUMPS = os.path.join(TOOLS, "town_bumps.json")
 
 def untagged(listed):
     """Somebody with "no_tag" can be taken (FGutTaking): they are given the mark that says they have been gone for, they
-    stand in the place only while it is nought, and they have something to say and the two answers to it."""
+    stand in the place only while it is nought, and they have something to say and the answers to it: take hold of them,
+    go for the water they carry (once: "robbed.<who>"), or walk on. And they have what they say when it is they who come
+    for the player's water (the line "mug", which the game opens: ATownGameMode::UpdateMugging)."""
+    wanted = ["That water. Put it down and walk.", "You are carrying more than you need. Leave it with me.", "Water. All of it. I will not ask again.",
+              "I have been watching you count it. Hand it over.", "Give me what you carry and nobody bleeds."]
     said = ["What are you looking at?", "I have nothing you want.", "Keep walking.", "I am waiting for somebody.", "Not tonight. Please."]
     seen = {}
 
@@ -55,7 +59,12 @@ def untagged(listed):
         if not person.get("lines"):
             first = int(hashlib.sha1(key.encode()).hexdigest(), 16) % len(said)
             person["lines"] = [{"id": "sized", "opens": True, "words": said[first],
-                                "answers": [{"words": "Take hold. (No tag on that neck. It will be a fight.)", "deed": "take"}, {"words": "Walk on."}]}]
+                                "answers": [{"words": "Take hold. (No tag on that neck. It will be a fight.)", "deed": "take"},
+                                            {"words": "Go for the water on them. (It will be a fight.)", "deed": "rob", "when": "!" + key.replace("took.", "robbed.", 1)},
+                                            {"words": "Walk on."}]},
+                               {"id": "mug", "words": wanted[(first + 2) % len(wanted)],
+                                "answers": [{"words": "Stand and fight for it.", "deed": "stand"},
+                                            {"words": "Give ground and walk away. (It will be remembered.)"}]}]
 
 
 def bumped(listed):

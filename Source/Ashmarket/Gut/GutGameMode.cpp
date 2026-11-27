@@ -2006,6 +2006,13 @@ FGutWho AGutGameMode::GetTakenWho() const
 	return GameInstance ? UGutSoundSubsystem::WhoIs(this, GameInstance->Taking.Who.Body) : FGutWho(false);
 }
 
+FGutTaking AGutGameMode::GetTaking() const
+{
+	const UGutGameInstance* GameInstance = GetGutGameInstance();
+
+	return GameInstance ? GameInstance->Taking : FGutTaking();
+}
+
 void AGutGameMode::BeginTaking()
 {
 	const FGutTaking& Taking = GetGutGameInstance()->Taking;

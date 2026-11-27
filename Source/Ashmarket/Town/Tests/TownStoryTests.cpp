@@ -2480,6 +2480,13 @@ bool FTownBumpCrowdTest::RunTest(const FString& Parameters)
 
 	TSharedRef<FNotes> Notes = MakeShared<FNotes>();
 
+	// (a crowd's people are stood only where something is drawn: a run that draws nothing has nobody to walk into)
+	if (!FApp::CanEverRender())
+	{
+		AddInfo(TEXT("Nothing is drawn in this run, so no crowd is stood: run with --render"));
+		return true;
+	}
+
 	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_ScrappersYard"), true))
 	{
 		AddError(TEXT("Could not open the Scrappers' Yard's level"));
@@ -2529,7 +2536,20 @@ bool FTownBumpCrowdTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("The ground they stand on cannot be stood on"), Town->IsOpenGround(FVector2D(Notes->Home.X, Notes->Home.Y)));
 
 		StandOn(Notes->From, FVector(Notes->Toward.X, Notes->Toward.Y, 0.0f).Rotation().Yaw);
-	}, []() { return IsStreetReady(); } });
+	}, []()
+	{
+		// (a crowd is stood a moment after the place opens: not before every one of them has somebody in it)
+		bool bStood = IsStreetReady();
+		int32 Crowds = 0;
+
+		for (TActorIterator<AGutCrowd> It(GetTown()->GetWorld()); It && bStood; ++It)
+		{
+			bStood = !It->GetStood(0).IsZero();
+			++Crowds;
+		}
+
+		return bStood && Crowds > 0;
+	} });
 
 	Steps.Add({ 0.1f, [this, Notes]()
 	{
@@ -2797,6 +2817,259 @@ bool FTownGamesTest::RunTest(const FString& Parameters)
 		Run->Game = Notes->Game;
 		Run->Story = Notes->Story;
 	} });
+
+	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
+
+	return true;
+}
+
+/**
+ *  Water taken by force, both ways ("you should be able to steal water from people - like capture - you win you get X L
+ *  and if opponent wins they get Y L - inversely someone can come up to me and try to steal my water - I can fight like
+ *  when capturing for slave or I can walk away and lose 1 fear point", 26 November). Somebody with no tag is gone for
+ *  for what they carry, and beaten: it is the player's, they stand where they stood, and cannot be gone for again. Then
+ *  somebody comes for the player's: walked away from, it costs a point of fear and no water; stood up to and lost, it
+ *  costs the water.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTownRobbingTest, "Ashmarket.Town.Robbing", GutTests::Flags)
+
+bool FTownRobbingTest::RunTest(const FString& Parameters)
+{
+	using namespace TownTests;
+	using namespace StoryTests;
+
+	struct FNotes
+	{
+		FTownStoryState Story;
+		FGutStableState Stable;
+		FGutLadderState Ladder;
+		FGutWindowState Window;
+		int32 Who = INDEX_NONE;
+		int32 Other = INDEX_NONE;
+		float Waited = 0.0f;
+		bool bFailed = false;
+	};
+
+	TSharedRef<FNotes> Notes = MakeShared<FNotes>();
+
+	// (Rotgut Row: its drifter stands where he is. The two on Main Street with no tag walk a round.)
+	if (!AutomationOpenMap(TEXT("/Game/Town/Lvl_RotgutRow"), true))
+	{
+		AddError(TEXT("Could not open Rotgut Row's level"));
+		return false;
+	}
+
+	TArray<FScript::FStep> Steps;
+
+	Steps.Add({ 0.8f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+		const UTownPlaceData* Place = Town->GetPlace();
+
+		Notes->Story = Run->Story;
+		Notes->Stable = Run->Stable;
+
+		Notes->Ladder = Run->Ladder;
+		Notes->Window = Run->Window;
+
+		// somebody with forty litres on them, and nobody in a yard
+		Run->Stable = FGutStableState();
+		Run->Taking = FGutTaking();
+
+		Town->Apply(FString::Printf(TEXT("water-%d"), Town->GetMark(FName("water"))));
+		Town->Apply(TEXT("water+40"));
+
+		// (somebody who stands: one who walks a round is not walked up to by the test, and does not come for anybody's water)
+		for (int32 i = 0; i < Place->People.Num(); ++i)
+		{
+			if (!Place->People[i].Taken.IsNone() && Place->People[i].Beat.IsEmpty() && Town->GetMark(Place->People[i].Taken) == 0 && Town->GetPeople().IsValidIndex(i) && Town->GetPeople()[i])
+			{
+				(Notes->Who == INDEX_NONE ? Notes->Who : Notes->Other) = i;
+
+				if (Notes->Other != INDEX_NONE)
+				{
+					break;
+				}
+			}
+		}
+
+		// with only one such, it is the one who was robbed who comes back for it
+		if (Notes->Other == INDEX_NONE)
+		{
+			Notes->Other = Notes->Who;
+		}
+
+		if (!TestTrue(TEXT("Somebody on Rotgut Row has no tag and stands where they are"), Notes->Who != INDEX_NONE && Notes->Other != INDEX_NONE))
+		{
+			Notes->bFailed = true;
+			return;
+		}
+
+		const int32 Held = Town->GetMark(FName("water"));
+		const int32 Fear = Town->GetMark(FName("fear"));
+
+		TestTrue(*FString::Printf(TEXT("The player has water on them (%d L)"), Held), Held >= 20);
+
+		const FVector At = Town->GetPeople()[Notes->Who]->GetActorLocation();
+
+		FVector2D Beside(At.X - 105.0f, At.Y);
+
+		for (const FVector2D& Side : { FVector2D(-1.0f, 0.0f), FVector2D(1.0f, 0.0f), FVector2D(0.0f, 1.0f), FVector2D(0.0f, -1.0f) })
+		{
+			if (Town->IsOpenGround(FVector2D(At.X, At.Y) + (Side * 105.0f)))
+			{
+				Beside = FVector2D(At.X, At.Y) + (Side * 105.0f);
+				break;
+			}
+		}
+
+		StandOn(Beside, 0.0f);
+
+		Town->bWaysHeld = true;
+		Town->Tick(0.0f);
+		Town->Interact();
+
+		TestTrue(*FString::Printf(TEXT("Whoever it is can be gone for themselves, or for their water, or left (%d answers)"), Town->GetAnswers().Num()),
+			Town->IsTalking() && Town->GetAnswers().Num() == 3 && Town->GetAnswers()[1].Contains(TEXT("Go for the water")));
+		TestTrue(TEXT("Going for the water"), Say(TEXT("Go for the water")));
+
+		const FGutTaking Asked = Run->Taking;
+
+		TestTrue(TEXT("It is fought as a taking is, over water"), Asked.bOn && Asked.Kind == 1 && Run->bSandbox);
+		TestTrue(*FString::Printf(TEXT("They carry a few litres (%.0f), and the player stands to lose about a third of what is held (%.0f of %d)"), Asked.Carried, Asked.Risked, Held),
+			Asked.Carried >= 4.0f && Asked.Carried <= 14.0f && Asked.Risked >= 6.0f && Asked.Risked <= Held * 0.5f);
+
+		// beaten down: settled as it is when the place opens again
+		Run->Taking.Outcome = 1;
+		Run->bSandbox = false;
+
+		Town->SettleTaking();
+
+		TestEqual(TEXT("What they carried is the player's"), Town->GetMark(FName("water")), Held + FMath::RoundToInt32(Asked.Carried));
+		TestEqual(TEXT("And the player is feared a little more for it"), Town->GetMark(FName("fear")), FMath::Min(Fear + 2, 100));
+		TestTrue(*FString::Printf(TEXT("The player is told (%s)"), *Town->GetNotice()), Town->GetNotice().Contains(TEXT("is yours")));
+		TestTrue(TEXT("They stand where they stood: nobody was taken"), Town->GetPeople()[Notes->Who] != nullptr && Town->GetMark(Place->People[Notes->Who].Taken) == 0 && !Run->Stable.Fighters.Num());
+
+		// and have nothing left to be gone for
+		Town->Tick(0.0f);
+		Town->Interact();
+
+		TestTrue(*FString::Printf(TEXT("Robbed once, they cannot be robbed again (%d answers)"), Town->GetAnswers().Num()), Town->IsTalking() && Town->GetAnswers().Num() == 2 && !Town->GetAnswers().ContainsByPredicate([](const FString& Answer) { return Answer.Contains(TEXT("Go for the water")); }));
+
+		Say(TEXT("Walk on"));
+
+		TestFalse(TEXT("Left"), Town->IsTalking());
+
+		// The other one comes for the player's water. From a few steps off, if there is clear ground to walk it over.
+		const FVector Theirs = Town->GetPeople()[Notes->Other]->GetActorLocation();
+
+		FVector2D From(Theirs.X - 130.0f, Theirs.Y);
+
+		for (const FVector2D& Side : { FVector2D(1.0f, 0.0f), FVector2D(-1.0f, 0.0f), FVector2D(0.0f, 1.0f), FVector2D(0.0f, -1.0f) })
+		{
+			bool bClear = true;
+
+			for (float Along = 60.0f; Along <= 400.0f && bClear; Along += 40.0f)
+			{
+				bClear = Town->IsOpenGround(FVector2D(Theirs.X, Theirs.Y) + (Side * Along));
+			}
+
+			if (bClear)
+			{
+				From = FVector2D(Theirs.X, Theirs.Y) + (Side * 400.0f);
+				break;
+			}
+		}
+
+		StandOn(From, 0.0f);
+
+		TestTrue(TEXT("Somebody with no tag comes for the player's water"), Town->StartMugging(Notes->Other) && Town->GetMugger() == Notes->Other);
+	}, []() { return IsStreetReady(); } });
+
+	// walked away from
+	Steps.Add({ 0.2f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (Notes->bFailed)
+		{
+			return;
+		}
+
+		const int32 Held = Town->GetMark(FName("water"));
+		const int32 Fear = Town->GetMark(FName("fear"));
+
+		TestTrue(*FString::Printf(TEXT("They walk up and say so (%s)"), *Town->GetWords()), Town->IsTalking() && Town->GetMugStage() == 2 && !Town->GetWords().IsEmpty());
+		TestTrue(TEXT("It can be stood up to or walked away from"), Town->GetAnswers().Num() == 2 && Town->GetAnswers()[0].Contains(TEXT("Stand and fight")));
+
+		GutTests::Screenshot(TEXT("79_somebody_wants_the_water"));
+
+		TestTrue(TEXT("Walking away from it"), Say(TEXT("Give ground")));
+
+		Town->Tick(0.0f);
+
+		TestFalse(TEXT("Ends it"), Town->IsTalking());
+		TestTrue(*FString::Printf(TEXT("The player is told what it cost (%s)"), *Town->GetNotice()), Town->GetNotice().Contains(TEXT("gave ground")));
+		TestEqual(TEXT("It costs no water"), Town->GetMark(FName("water")), Held);
+		TestEqual(TEXT("And a point of fear"), Town->GetMark(FName("fear")), FMath::Max(Fear - 1, 0));
+
+		Notes->Waited = 0.0f;
+	}, [Notes]() { return Notes->bFailed || GetTown()->IsTalking() || (Notes->Waited += GetTown()->GetWorld()->GetDeltaSeconds()) > 15.0f; } });
+
+	// they go back to where they stood; and come again, and are stood up to
+	Steps.Add({ 0.2f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+
+		if (Notes->bFailed)
+		{
+			return;
+		}
+
+		const float Off = FVector::Dist2D(Town->GetPeople()[Notes->Other]->GetActorLocation(), Town->GetPlace()->People[Notes->Other].Place);
+
+		TestTrue(*FString::Printf(TEXT("Walked away from, they go back to where they stood (%.0f cm off it)"), Off), Town->GetMugStage() == 0 && Off < 10.0f);
+		TestTrue(TEXT("They come again"), Town->StartMugging(Notes->Other));
+
+		Notes->Waited = 0.0f;
+	}, [Notes]() { return Notes->bFailed || GetTown()->GetMugStage() == 0 || (Notes->Waited += GetTown()->GetWorld()->GetDeltaSeconds()) > 20.0f; } });
+
+	Steps.Add({ 0.2f, [this, Notes]()
+	{
+		ATownGameMode* Town = GetTown();
+		UGutGameInstance* Run = GetRun();
+
+		if (!Notes->bFailed && TestTrue(TEXT("And say so again"), Town->IsTalking() && Town->GetMugStage() == 2))
+		{
+			const int32 Held = Town->GetMark(FName("water"));
+			const int32 Fear = Town->GetMark(FName("fear"));
+
+			TestTrue(TEXT("Standing up to it"), Say(TEXT("Stand and fight")));
+
+			const FGutTaking Asked = Run->Taking;
+
+			TestTrue(*FString::Printf(TEXT("It is fought over the player's water (%.0f L of %d at stake)"), Asked.Risked, Held), Asked.bOn && Asked.Kind == 2 && Asked.Risked >= 6.0f);
+
+			// and lost
+			Run->Taking.Outcome = 3;
+			Run->bSandbox = false;
+
+			Town->SettleTaking();
+
+			TestEqual(TEXT("Lost, it costs the water"), Town->GetMark(FName("water")), Held - FMath::RoundToInt32(Asked.Risked));
+			TestEqual(TEXT("And a point of fear"), Town->GetMark(FName("fear")), FMath::Max(Fear - 1, 0));
+			TestTrue(*FString::Printf(TEXT("The player is told (%s)"), *Town->GetNotice()), Town->GetNotice().Contains(TEXT("put you down")));
+		}
+
+		Town->bWaysHeld = false;
+
+		Run->Story = Notes->Story;
+		Run->Stable = Notes->Stable;
+		Run->Ladder = Notes->Ladder;
+		Run->Window = Notes->Window;
+		Run->Taking = FGutTaking();
+	}, [Notes]() { return Notes->bFailed || GetTown()->IsTalking() || (Notes->Waited += GetTown()->GetWorld()->GetDeltaSeconds()) > 25.0f; } });
 
 	ADD_LATENT_AUTOMATION_COMMAND(FScript(this, MoveTemp(Steps)));
 
@@ -3185,7 +3458,7 @@ bool FTownTakingTest::RunTest(const FString& Parameters)
 		Town->Interact();
 
 		TestTrue(*FString::Printf(TEXT("They have something to say (%s)"), *Town->GetWords()), Town->IsTalking() && !Town->GetWords().IsEmpty());
-		TestTrue(TEXT("And can be gone for, or left"), Town->GetAnswers().Num() == 2 && Town->GetAnswers()[0].Contains(TEXT("Take hold")));
+		TestTrue(TEXT("And can be gone for, robbed, or left"), Town->GetAnswers().Num() == 3 && Town->GetAnswers()[0].Contains(TEXT("Take hold")));
 		TestTrue(TEXT("Going for them"), Say(TEXT("Take hold")));
 
 		TestTrue(TEXT("The run knows somebody is being taken"), Run->Taking.bOn && Run->Taking.Outcome == 0);

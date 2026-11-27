@@ -93,7 +93,8 @@ DEEDS = {"": unreal.TownDeed.NONE, "fight": unreal.TownDeed.FIGHT, "fight_afresh
          "spar": unreal.TownDeed.SPAR, "bet": unreal.TownDeed.BET, "own": unreal.TownDeed.OWN, "go": unreal.TownDeed.GO,
          "buy": unreal.TownDeed.BUY, "borrow": unreal.TownDeed.BORROW, "repay": unreal.TownDeed.REPAY,
          "armor": unreal.TownDeed.ARMOR, "trade": unreal.TownDeed.TRADE, "pit": unreal.TownDeed.PIT, "rest": unreal.TownDeed.REST,
-         "rack": unreal.TownDeed.RACK, "take": unreal.TownDeed.TAKE, "sell": unreal.TownDeed.SELL}
+         "rack": unreal.TownDeed.RACK, "take": unreal.TownDeed.TAKE, "sell": unreal.TownDeed.SELL,
+         "rob": unreal.TownDeed.ROB, "stand": unreal.TownDeed.STAND}
 
 # the clip somebody with their wrists tied has their arms taken from (AGutFighter::BoundArms), which nobody else in a town stands in
 BOUND_STANCE = "crowd_watch_hands_behind"
@@ -1426,6 +1427,7 @@ def main():
         call.set_editor_property("sells", int(entry.get("sells", 0)))
         call.set_editor_property("about", int(entry.get("lot", 0)))
         call.set_editor_property("brings_up", bool(entry.get("brings_up")))
+        call.set_editor_property("live", bool(entry.get("live")))
         calls.append(call)
 
     # people standing about: so many of them in a stretch of ground, no two nearer than a walker needs to get between them,

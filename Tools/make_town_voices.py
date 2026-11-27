@@ -113,6 +113,12 @@ def lines_of(listed):
     for key, words in (bidding.get("clips") or {}).items():
         found.append(("{}/{}".format(place, bidding["speaker"]), "bid_" + key, words))
 
+    # and what somebody throws in from where they stand, said by the game when it happens: each a recording of its own,
+    # <speaker>_aside_<key>
+    for aside in listed.get("asides") or []:
+        for key, words in (aside.get("clips") or {}).items():
+            found.append(("{}/{}".format(place, aside["speaker"]), "{}_aside_{}".format(slug(aside["speaker"]), key), words))
+
     return place, found
 
 

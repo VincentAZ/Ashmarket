@@ -130,8 +130,15 @@ void UGutGameInstance::ResetLadder(float StartingWater)
 
 	if (bSaveEnabled)
 	{
-		// the new ladder is what is on disk now, beside whatever the gambler, the owner and the town have going
-		SaveRun();
+		if (Window.bStarted || Stable.bStarted || Story.Marks.Num() > 0 || bOnePurse)
+		{
+			// the new ladder is what is on disk now, beside whatever the gambler, the owner and the town have going
+			SaveRun();
+		}
+		else
+		{
+			UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
+		}
 	}
 }
 

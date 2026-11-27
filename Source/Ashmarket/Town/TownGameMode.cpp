@@ -407,6 +407,8 @@ void ATownGameMode::Tick(float DeltaTime)
 	SettledFor += DeltaTime;
 
 	UpdateCalls(DeltaTime);
+	UpdateMugging(DeltaTime);
+	UpdateSale(DeltaTime);
 	UpdateAuction(DeltaTime);
 	UpdateAuctionVoice(DeltaTime);
 	UpdateSoundsDue();
@@ -1842,7 +1844,7 @@ void ATownGameMode::Interact()
 	}
 }
 
-void ATownGameMode::BeginTalk(int32 Person)
+void ATownGameMode::BeginTalk(int32 Person, const FString& AtLine)
 {
 	if (!PlaceData || !PlaceData->People.IsValidIndex(Person) || PlaceData->People[Person].Lines.IsEmpty())
 	{
@@ -1851,6 +1853,13 @@ void ATownGameMode::BeginTalk(int32 Person)
 
 	TalkingTo = Person;
 	TalkLine = GetOpeningLine(Person);
+
+	// (begun at a line of theirs that is not how they are usually begun with: something they came to say)
+	if (const int32 Asked = AtLine.IsEmpty() ? INDEX_NONE : PlaceData->People[Person].Lines.IndexOfByPredicate([&AtLine](const FTownLine& Line) { return Line.Id == AtLine; }); Asked != INDEX_NONE)
+	{
+		TalkLine = Asked;
+	}
+
 	TalkChoice = 0;
 	TalkHub = (GetShownAnswers(PlaceData->People[Person].Lines[TalkLine]).IsEmpty() || IsSwitch(PlaceData->People[Person].Lines[TalkLine])) ? INDEX_NONE : TalkLine;
 	TalkAsked.Reset();
@@ -2173,13 +2182,14 @@ void ATownGameMode::AdvanceTalk()
 			OpenSale(Keeper);
 			return;
 		}
-		else if (Answer.Deed == ETownDeed::Take)
+		else if (Answer.Deed == ETownDeed::Take || Answer.Deed == ETownDeed::Rob || Answer.Deed == ETownDeed::Stand)
 		{
-			// whoever was being talked to is who is gone for
+			// whoever was being talked to is who is gone for: for themselves, for their water, or for the player's own
 			const int32 Whom = TalkingTo;
+			const int32 Kind = Answer.Deed == ETownDeed::Take ? 0 : (Answer.Deed == ETownDeed::Rob ? 1 : 2);
 
 			EndTalk();
-			TakeSomebody(Whom);
+			GoFor(Whom, Kind);
 			return;
 		}
 		else if (Answer.Deed != ETownDeed::None)
@@ -2273,7 +2283,7 @@ void ATownGameMode::HandleBack()
 		// back from who a thing is for, to the bag
 		bBagAsking = false;
 	}
-	else if (bShopping && Auction.bOn)
+	else if (bShopping && bAtBook && Auction.bOn)
 	{
 		// backing out of a lot that is up lets it go, where it can be let go
 		LetGo();
@@ -2523,7 +2533,7 @@ void ATownGameMode::HandleMenuInput(EGutMenuInput Input)
 			if (ShopChoice >= Pieces)
 			{
 				// with a lot up, the last line lets it go: the book stays open
-				if (Auction.bOn)
+				if (bAtBook && Auction.bOn)
 				{
 					LetGo();
 				}
@@ -2800,6 +2810,56 @@ void ATownGameMode::UpdateCalls(float DeltaTime)
 	// while a lot is up for the player the caller is calling that, and nothing else: and he finishes saying it sold
 	if (!PlaceData || PlaceData->Calls.IsEmpty() || Auction.bOn || IsAuctionSpeaking())
 	{
+		return;
+	}
+
+	// Where the sale goes on by itself he says only what is true of any sale, between its lots, and only if there is time
+	// for it before the next is put up. The rest of his calls are a sale written out beforehand.
+	if (IsSaleLive())
+	{
+		CallTime += DeltaTime;
+
+		if (bLiveCallOn)
+		{
+			if (PlaceData->Calls.IsValidIndex(CallIndex) && CallTime < FMath::Max(PlaceData->Calls[CallIndex].Seconds, CallSpoken))
+			{
+				return;
+			}
+
+			bLiveCallOn = false;
+			LiveCallRest = 2.0f;
+		}
+
+		LiveCallRest -= DeltaTime;
+
+		if (bSaleOver || LiveCallRest > 0.0f || AuctionCallLeft > 0.0f)
+		{
+			return;
+		}
+
+		for (int32 Tried = 1; Tried <= PlaceData->Calls.Num(); ++Tried)
+		{
+			const int32 Index = (CallIndex + Tried) % PlaceData->Calls.Num();
+			const FTownCall& Call = PlaceData->Calls[Index];
+
+			if (!Call.bLive)
+			{
+				continue;
+			}
+
+			// (as long as it is written to take, or as it takes to say, whichever is known)
+			if (SaleNextIn >= Call.Seconds + 1.0f)
+			{
+				CallIndex = Index;
+				CallTime = 0.0f;
+				bLiveCallOn = true;
+
+				BeginCall(Call);
+			}
+
+			break;
+		}
+
 		return;
 	}
 
@@ -3453,6 +3513,11 @@ bool ATownGameMode::DoSaleLine(int32 Code)
 
 bool ATownGameMode::TakeSomebody(int32 Index)
 {
+	return GoFor(Index, 0);
+}
+
+bool ATownGameMode::GoFor(int32 Index, int32 Kind)
+{
 	UGutGameInstance* GameInstance = GetGutGameInstance();
 	const AGutGameMode* Rules = GetCageRules();
 
@@ -3464,7 +3529,7 @@ bool ATownGameMode::TakeSomebody(int32 Index)
 	const FTownPerson& Person = PlaceData->People[Index];
 
 	// nobody is taken by somebody with nowhere to keep them
-	if (GetOwnerState().Fighters.Num() >= Rules->GetStableMostFighters())
+	if (Kind == 0 && GetOwnerState().Fighters.Num() >= Rules->GetStableMostFighters())
 	{
 		ShowNotice(FString::Printf(TEXT("Your yard holds %d and it is full. There is nowhere to keep anybody you took."), Rules->GetStableMostFighters()));
 		return false;
@@ -3495,6 +3560,18 @@ bool ATownGameMode::TakeSomebody(int32 Index)
 	// what the Block would ask for them: what selling them is reckoned from
 	Taking.Who.Price = Rules->GetBlockPrice(Taking.Who);
 
+	// What is fought over, if it is water. What they carry is theirs to lose: not much, and the same whenever they are
+	// looked at. What the player stands to lose is a third of what is held, and not less than six litres of it.
+	Taking.Kind = Kind;
+
+	if (Kind != 0)
+	{
+		const float Held = static_cast<float>(GetMark(FName("water")));
+
+		Taking.Carried = 4.0f + static_cast<float>(Drawn % 11u);
+		Taking.Risked = FMath::Min(Held, FMath::Max(6.0f, FMath::RoundToFloat(Held * 0.35f)));
+	}
+
 	GameInstance->Taking = Taking;
 
 	// the way back out of the dead end leads to where the player is standing now
@@ -3522,6 +3599,242 @@ bool ATownGameMode::TakeSomebody(int32 Index)
 	return true;
 }
 
+bool ATownGameMode::StartMugging(int32 Index)
+{
+	const AGutFighter* Walker = GetWalker();
+
+	if (!PlaceData || !Walker || MugStage != 0 || !PlaceData->People.IsValidIndex(Index) || !People.IsValidIndex(Index) || !People[Index]
+		|| PlaceData->People[Index].Taken.IsNone() || !PlaceData->People[Index].Beat.IsEmpty() || Led.ContainsByPredicate([Index](const FTownLed& One) { return One.Person == Index; })
+		|| !PlaceData->People[Index].Lines.ContainsByPredicate([](const FTownLine& Line) { return Line.Id == TEXT("mug"); }))
+	{
+		return false;
+	}
+
+	// straight to the player, an arm and a half short: and only if there is nothing in the way of walking it
+	const FVector From = People[Index]->GetActorLocation();
+	const FVector2D Start(From.X, From.Y);
+	const FVector2D Here(Walker->GetActorLocation().X, Walker->GetActorLocation().Y);
+	const float Apart = FVector2D::Distance(Start, Here);
+
+	if (Apart < 150.0f)
+	{
+		Mugger = Index;
+		MugStage = 2;
+		MugTime = 0.0f;
+
+		BeginTalk(Index, TEXT("mug"));
+
+		return true;
+	}
+
+	const FVector2D To = Here + ((Start - Here).GetSafeNormal() * 125.0f);
+
+	// (their own square of ground is where they start from: the way is looked at from a step out of it)
+	for (float Along = 60.0f; Along < FVector2D::Distance(Start, To); Along += 45.0f)
+	{
+		if (!IsOpenGround(Start + ((To - Start).GetSafeNormal() * Along), 30.0f))
+		{
+			return false;
+		}
+	}
+
+	FTownLed Walk;
+
+	Walk.Person = Index;
+	Walk.Way.Add(FVector(To.X, To.Y, From.Z));
+	Walk.Facing = FVector(Here.X - To.X, Here.Y - To.Y, 0.0f).Rotation().Yaw;
+	Walk.Haste = 1.7f;
+
+	Led.Add(MoveTemp(Walk));
+
+	Mugger = Index;
+	MugStage = 1;
+	MugTime = 0.0f;
+
+	UE_LOG(LogTown, Log, TEXT("Street: %s is coming for the player's water, from %.0f cm off"), *PlaceData->People[Index].Name, Apart);
+
+	return true;
+}
+
+void ATownGameMode::UpdateMugging(float DeltaTime)
+{
+	const AGutFighter* Walker = GetWalker();
+
+	if (!bSettled || !PlaceData || !Walker)
+	{
+		return;
+	}
+
+	const auto IsWalking = [this](int32 Index) { return Led.ContainsByPredicate([Index](const FTownLed& One) { return One.Person == Index; }); };
+
+	const auto SendBack = [this](int32 Index)
+	{
+		if (PlaceData->People.IsValidIndex(Index) && People.IsValidIndex(Index) && People[Index])
+		{
+			FTownLed Back;
+
+			Back.Person = Index;
+			Back.Way.Add(PlaceData->People[Index].Place);
+			Back.Facing = PlaceData->People[Index].Facing;
+			Back.Haste = 1.2f;
+
+			Led.RemoveAll([Index](const FTownLed& One) { return One.Person == Index; });
+			Led.Add(MoveTemp(Back));
+		}
+	};
+
+	MugTime += DeltaTime;
+
+	if (MugStage == 1 && UE_LOG_ACTIVE(LogTown, Verbose) && People.IsValidIndex(Mugger) && People[Mugger] && FMath::Fmod(MugTime, 2.0f) < DeltaTime)
+	{
+		const FTownLed* Walk = Led.FindByPredicate([this](const FTownLed& One) { return One.Person == Mugger; });
+
+		UE_LOG(LogTown, Verbose, TEXT("Street: whoever is coming for the water is at %s, turned %.0f, %s"), *People[Mugger]->GetActorLocation().ToCompactString(), People[Mugger]->GetActorRotation().Yaw,
+			Walk ? *FString::Printf(TEXT("with %d places to go, to face %.0f, waiting %.1f"), Walk->Way.Num(), Walk->Facing, Walk->Wait) : TEXT("not walking"));
+	}
+
+	if (MugStage == 1)
+	{
+		if (!People.IsValidIndex(Mugger) || !People[Mugger])
+		{
+			MugStage = 0;
+			Mugger = INDEX_NONE;
+		}
+		else if (!IsWalking(Mugger))
+		{
+			// there: says it, if the player is still within a few steps and has nothing else on; otherwise comes on, or gives it up
+			const float Apart = FVector::Dist2D(People[Mugger]->GetActorLocation(), Walker->GetActorLocation());
+
+			UE_LOG(LogTown, Verbose, TEXT("Street: whoever came for the water has stopped %.0f cm off, %.1f s in (talking %d, shopping %d)"), Apart, MugTime, IsTalking() ? 1 : 0, bShopping ? 1 : 0);
+
+			if (Apart < 300.0f && !IsTalking() && !bShopping && !bStoppedMenu)
+			{
+				MugStage = 2;
+				MugTime = 0.0f;
+
+				BeginTalk(Mugger, TEXT("mug"));
+			}
+			else if (MugTime > 22.0f || IsTalking() || bShopping)
+			{
+				if (MugTime > 22.0f)
+				{
+					MugStage = 3;
+
+					SendBack(Mugger);
+				}
+			}
+			else
+			{
+				// after the player, who has walked on
+				const int32 Who = Mugger;
+				const float Time = MugTime;
+
+				MugStage = 0;
+
+				if (StartMugging(Who))
+				{
+					MugTime = Time;
+				}
+				else
+				{
+					Mugger = Who;
+					MugStage = 3;
+
+					SendBack(Who);
+				}
+			}
+		}
+	}
+	else if (MugStage == 2)
+	{
+		// said, and answered: stood up to (and the place is on its way out), or walked away from
+		if (!IsTalking())
+		{
+			MugStage = 3;
+
+			SendBack(Mugger);
+
+			// Walked away from, however the talk was left (by the answer that says so, or by turning away from it): it costs
+			// no water, and a point of what the town fears in the player.
+			if (const UGutGameInstance* GameInstance = GetGutGameInstance(); GameInstance && !GameInstance->Taking.bOn)
+			{
+				const FString Came = Apply(TEXT("fear-1"));
+
+				WriteLog(TEXT("Somebody on the street wanted my water, and I walked away from it."));
+
+				Notice = FString::Printf(TEXT("You gave ground, and kept your water. It was seen.   %s"), *Came);
+				NoticeUntil = GetWorld()->GetTimeSeconds() + 8.0f;
+				NoticeLeave = 0.0f;
+			}
+
+			UE_LOG(LogTown, Log, TEXT("Street: whoever came for the water goes back to where they stood"));
+		}
+	}
+	else if (MugStage == 3)
+	{
+		if (!IsWalking(Mugger))
+		{
+			MugStage = 0;
+			Mugger = INDEX_NONE;
+
+			UE_LOG(LogTown, Log, TEXT("Street: and is back there"));
+		}
+	}
+
+	// Whether anybody comes for the player's water this visit: thrown for once, three quarters of a minute in. One time in
+	// three somebody will; and then it is whoever with no tag the player next comes within fourteen metres of, carrying
+	// enough to be worth it and with nobody in tow, if there is open ground between them. (-GutMug: every time, from the
+	// sixth second.)
+	static const bool bAlways = FParse::Param(FCommandLine::Get(), TEXT("GutMug"));
+
+	MugClock += DeltaTime;
+
+	if (MugClock < (bAlways ? 6.0f : 45.0f))
+	{
+		return;
+	}
+
+	if (!bMugThrown)
+	{
+		bMugThrown = true;
+		bMugComing = bAlways || FMath::RandRange(0, 2) == 0;
+
+		UE_LOG(LogTown, Log, TEXT("Street: %s"), bMugComing ? TEXT("somebody here has an eye on what the player carries") : TEXT("nobody here is after the player's water this visit"));
+	}
+
+	MugLook -= DeltaTime;
+
+	if (!bMugComing || MugStage != 0 || MugLook > 0.0f || IsTalking() || bShopping || bStoppedMenu || !Tow.IsEmpty() || GetMark(FName("water")) < 12)
+	{
+		return;
+	}
+
+	MugLook = 1.5f;
+
+	// whoever of those with no tag is nearest
+	int32 Nearest = INDEX_NONE;
+	float Apart = 1400.0f;
+
+	for (int32 i = 0; i < PlaceData->People.Num() && i < People.Num(); ++i)
+	{
+		// (not somebody who walks a beat: their round has them, and would walk them off again)
+		if (People[i] && !PlaceData->People[i].Taken.IsNone() && PlaceData->People[i].Beat.IsEmpty() && !IsWalking(i))
+		{
+			if (const float Distance = FVector::Dist2D(People[i]->GetActorLocation(), Walker->GetActorLocation()); Distance < Apart)
+			{
+				Apart = Distance;
+				Nearest = i;
+			}
+		}
+	}
+
+	// (with something in the way they wait for a better moment: nobody comes through a stall)
+	if (Nearest != INDEX_NONE && StartMugging(Nearest))
+	{
+		bMugComing = false;
+	}
+}
+
 void ATownGameMode::SettleTaking()
 {
 	UGutGameInstance* GameInstance = GetGutGameInstance();
@@ -3544,12 +3857,61 @@ void ATownGameMode::SettleTaking()
 	const FGutWho Who = UGutSoundSubsystem::WhoIs(this, Taking.Who.Body);
 	const FString Name = Taking.Who.FighterName.ToString();
 
+	FString Told;
+
+	// Fought over water, theirs or the player's: it is water that changes hands, and what is thought of the player. They
+	// stand where they stood, unless they are dead; and nobody is gone for twice for what they have already lost.
+	if (Taking.Kind != 0)
+	{
+		const FName Robbed(*Taking.Mark.ToString().Replace(TEXT("took."), TEXT("robbed.")));
+
+		SetMark(Robbed, 1);
+
+		if (Taking.Outcome == 2)
+		{
+			SetMark(Taking.Mark, 1);
+			SetMark(FName(*(Taking.Mark.ToString() + TEXT(".out"))), 2);
+		}
+
+		const int32 Got = FMath::RoundToInt32(Taking.Carried);
+		const int32 Lost = FMath::RoundToInt32(Taking.Risked);
+
+		if (Taking.Outcome == 3)
+		{
+			const FString Came = Apply(FString::Printf(TEXT("water-%d fear-%d"), Lost, Taking.Kind == 2 ? 1 : 2));
+
+			Told = FString::Printf(TEXT("%s put you down and went through what you carry.   %s"), *Name, *Came);
+		}
+		else if (Taking.Kind == 1)
+		{
+			const FString Came = Apply(Taking.Outcome == 2 ? FString::Printf(TEXT("water+%d fear+4 st.freetags-8 heat+1"), Got) : FString::Printf(TEXT("water+%d fear+2 st.freetags-3"), Got));
+
+			Told = Taking.Outcome == 2 ? FString::Printf(TEXT("%s is dead in the dead end, and what %s carried is yours.   %s"), *Name, Who.He(), *Came)
+				: FString::Printf(TEXT("%s is down, and what %s carried is yours.   %s"), *Name, Who.He(), *Came);
+		}
+		else
+		{
+			const FString Came = Apply(Taking.Outcome == 2 ? FString::Printf(TEXT("water+%d fear+3 st.freetags-3"), Got) : FString::Printf(TEXT("water+%d fear+2"), Got));
+
+			Told = Taking.Outcome == 2 ? FString::Printf(TEXT("%s came for your water and is dead in the dead end. What %s carried is yours.   %s"), *Name, Who.He(), *Came)
+				: FString::Printf(TEXT("%s came for your water and went home without %s own.   %s"), *Name, Who.His(), *Came);
+		}
+
+		GameInstance->SaveRun();
+
+		Notice = Told;
+		NoticeUntil = GetWorld()->GetTimeSeconds() + 14.0f;
+		NoticeLeave = 0.0f;
+
+		UE_LOG(LogTown, Log, TEXT("Street: %s"), *Told);
+
+		return;
+	}
+
 	// gone from where they stood, whichever way it went: and how it went is kept, for a piece of work that asked for them
 	// ("took.finch.out": 1 taken, 2 dead, 3 got away)
 	SetMark(Taking.Mark, 1);
 	SetMark(FName(*(Taking.Mark.ToString() + TEXT(".out"))), Taking.Outcome);
-
-	FString Told;
 
 	if (Taking.Outcome == 1)
 	{
@@ -4506,8 +4868,9 @@ void ATownGameMode::CloseShop()
 
 	if (bAtBook)
 	{
-		// a lot that is up is finished by the room: nothing is left half sold
-		while (Auction.bOn)
+		// a lot that is up is finished by the room: nothing is left half sold. (Where the sale goes on by itself the room
+		// goes on with it at its own pace, and the player has only left the table.)
+		while (Auction.bOn && !IsSaleLive())
 		{
 			Auction.Wait = 0.0f;
 			UpdateAuction(0.0f);
@@ -4760,6 +5123,56 @@ void ATownGameMode::GetBookOffers(TArray<FGutStableFighter>& OutOffers, TArray<i
 
 TArray<FTownShopLine> ATownGameMode::GetBookLines() const
 {
+	// while a lot is up, the lines are what can be bid
+	if (Auction.bOn)
+	{
+		return GetCageRules() ? GetAuctionLines() : TArray<FTownShopLine>();
+	}
+
+	if (!IsSaleLive())
+	{
+		return GetAllBookLines();
+	}
+
+	// Where the sale goes on by itself the page has whoever comes up next, to be looked at and not yet bid for, and
+	// whoever signs. Nobody is on it who is not standing there to be had: "the number of people on the platform and the
+	// number of people on the card must synch" (26 November).
+	const TArray<FTownShopLine> All = GetAllBookLines();
+
+	TArray<int32> Shown;
+	GetBookShown(Shown);
+
+	TArray<FGutStableFighter> Offers;
+	TArray<int32> Lots;
+	GetBookOffers(Offers, Lots);
+
+	TArray<FTownShopLine> Lines;
+
+	for (const int32 Offer : Shown)
+	{
+		if (!All.IsValidIndex(Offer) || !Offers.IsValidIndex(Offer))
+		{
+			continue;
+		}
+
+		FTownShopLine Line = All[Offer];
+
+		if (Offers[Offer].bOwned)
+		{
+			// (short enough to leave room for where it opens: the lot's number and the name, and the rest is beside it)
+			Line.Name = FString::Printf(TEXT("Next: Lot %d, %s"), Lots.IsValidIndex(Offer) ? Lots[Offer] : 0, *Offers[Offer].FighterName.ToString().ToUpper());
+			Line.bCanBuy = false;
+			Line.Why = SaleNextIn > 0.5f ? FString::Printf(TEXT("comes up in %d s: bid then"), FMath::CeilToInt32(SaleNextIn)) : FString(TEXT("comes up now"));
+		}
+
+		Lines.Add(MoveTemp(Line));
+	}
+
+	return Lines;
+}
+
+TArray<FTownShopLine> ATownGameMode::GetAllBookLines() const
+{
 	TArray<FTownShopLine> Lines;
 
 	const AGutGameMode* Rules = GetCageRules();
@@ -4767,12 +5180,6 @@ TArray<FTownShopLine> ATownGameMode::GetBookLines() const
 	if (!Rules)
 	{
 		return Lines;
-	}
-
-	// while a lot is up, the lines are what can be bid
-	if (Auction.bOn)
-	{
-		return GetAuctionLines();
 	}
 
 	TArray<FGutStableFighter> Offers;
@@ -4925,6 +5332,23 @@ void ATownGameMode::OpenBook(int32 Keeper)
 		}
 	}
 
+	// where the sale goes on by itself, the page says how it stands now
+	if (IsSaleLive() && GetCageRules())
+	{
+		if (Auction.bOn)
+		{
+			TellAuction();
+		}
+		else if (bSaleOver || FindNextLot() == INDEX_NONE)
+		{
+			ShopSaid = TEXT("That is the day's lots, all of them sold. There are more tomorrow.");
+		}
+		else
+		{
+			ShopSaid = TEXT("The sale goes lot by lot, with you or without you. Whoever is next is on this page: bid here when the caller has them up, for as long as they are up.");
+		}
+	}
+
 	BookShown = INDEX_NONE;
 
 	ShowBookLine();
@@ -4933,7 +5357,7 @@ void ATownGameMode::OpenBook(int32 Keeper)
 void ATownGameMode::ShowBookLine()
 {
 	// while a lot is up it is the one looked at, whichever bid the player is on
-	const int32 Turned = Auction.bOn ? Auction.Line : ShopChoice;
+	const int32 Turned = GetBookOfferAt(ShopChoice);
 
 	APlayerController* Eyes = UGameplayStatics::GetPlayerController(this, 0);
 
@@ -5251,10 +5675,7 @@ bool ATownGameMode::GetBookPerson(int32 Line, FGutStableFighter& OutPerson, int3
 	GetBookOffers(Offers, Lots);
 
 	// while a lot is up it is the one looked at, whichever bid the player is on
-	if (Auction.bOn)
-	{
-		Line = Auction.Line;
-	}
+	Line = GetBookOfferAt(Line);
 
 	if (!Offers.IsValidIndex(Line) || !Lots.IsValidIndex(Line))
 	{
@@ -5301,6 +5722,23 @@ bool ATownGameMode::BuyAtBook(int32 Line)
 	TArray<FGutStableFighter> Offers;
 	TArray<int32> Lots;
 	GetBookOffers(Offers, Lots);
+
+	// where the sale goes on by itself nobody is put up for the asking: whoever is next comes up when the caller has them up
+	if (IsSaleLive())
+	{
+		Line = GetBookOfferAt(Line);
+
+		if (Offers.IsValidIndex(Line) && Offers[Line].bOwned)
+		{
+			ShopSaid = FString::Printf(TEXT("%s is not up yet. The caller has %s up in %d seconds: bid then, here, for as long as %s is up."), *Offers[Line].FighterName.ToString(),
+				UGutSoundSubsystem::WhoIs(this, Offers[Line].Body).Him(), FMath::Max(1, FMath::CeilToInt32(SaleNextIn)), UGutSoundSubsystem::WhoIs(this, Offers[Line].Body).He());
+			ShopRefusedAt = GetWorld()->GetTimeSeconds();
+
+			return false;
+		}
+
+		return TakeAtBook(Line);
+	}
 
 	// a lot is put up and bid for; somebody with a tag signs for a wage, as before
 	if (bBids && Offers.IsValidIndex(Line) && Offers[Line].bOwned)
@@ -7546,9 +7984,9 @@ FString ATownGameMode::GetShopVerb() const
 		TArray<int32> Lots;
 		GetBookOffers(Offers, Lots);
 
-		if (Offers.IsValidIndex(ShopChoice))
+		if (const int32 Offer = GetBookOfferAt(ShopChoice); Offers.IsValidIndex(Offer))
 		{
-			return Offers[ShopChoice].bOwned ? TEXT("have the lot put up") : TEXT("sign");
+			return Offers[Offer].bOwned ? (IsSaleLive() ? TEXT("wait for the lot") : TEXT("have the lot put up")) : TEXT("sign");
 		}
 	}
 
@@ -7649,15 +8087,21 @@ FString ATownGameMode::GetShopPurse() const
 
 const FTownCall* ATownGameMode::GetCall() const
 {
-	if (Auction.bOn)
+	// somebody walked into, or somebody throwing a word in, has the floor for as long as it takes to say
+	if (const FTownCall* Bark = GetBark())
+	{
+		return Bark;
+	}
+
+	if (Auction.bOn || AuctionCallLeft > 0.0f)
 	{
 		return &AuctionCall;
 	}
 
-	// somebody walked into has the floor for as long as it takes to say
-	if (const FTownCall* Bark = GetBark())
+	// where the sale goes on by itself, only what the caller is saying between its lots, while he says it
+	if (IsSaleLive())
 	{
-		return Bark;
+		return (bSettled && bLiveCallOn && PlaceData->Calls.IsValidIndex(CallIndex)) ? &PlaceData->Calls[CallIndex] : nullptr;
 	}
 
 	return (bSettled && PlaceData && PlaceData->Calls.IsValidIndex(CallIndex)) ? &PlaceData->Calls[CallIndex] : nullptr;

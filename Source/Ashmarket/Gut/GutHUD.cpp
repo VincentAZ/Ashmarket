@@ -235,11 +235,29 @@ void AGutHUD::DrawHUD()
 		const FString Name = Enemy ? Enemy->GetDisplayName().ToString() : FString(TEXT("Somebody"));
 		const int32 Outcome = GameMode->GetTakingOutcome();
 
-		DrawLabel(Outcome == 1 ? FString::Printf(TEXT("%s IS DOWN"), *Name.ToUpper()) : (Outcome == 2 ? FString::Printf(TEXT("%s IS DEAD"), *Name.ToUpper()) : FString::Printf(TEXT("%s GOT AWAY"), *Name.ToUpper())),
-			CenterX, 170.0f, 54, Outcome == 1 ? GutHUDColors::Text : GutHUDColors::Warning, true);
-		DrawLabel(Outcome == 1 ? FString::Printf(TEXT("%s is yours. Tie %s wrists and walk %s out."), Who.HeCap(), Who.His(), Who.Him())
-			: (Outcome == 2 ? FString(TEXT("You hit too hard. Nobody pays for that.")) : FString::Printf(TEXT("%s left you on the ground, and went through what you carry."), Who.HeCap())),
-			CenterX, 255.0f, 24, GutHUDColors::Text, true);
+		const FGutTaking Taking = GameMode->GetTaking();
+
+		if (Taking.Kind == 0)
+		{
+			DrawLabel(Outcome == 1 ? FString::Printf(TEXT("%s IS DOWN"), *Name.ToUpper()) : (Outcome == 2 ? FString::Printf(TEXT("%s IS DEAD"), *Name.ToUpper()) : FString::Printf(TEXT("%s GOT AWAY"), *Name.ToUpper())),
+				CenterX, 170.0f, 54, Outcome == 1 ? GutHUDColors::Text : GutHUDColors::Warning, true);
+			DrawLabel(Outcome == 1 ? FString::Printf(TEXT("%s is yours. Tie %s wrists and walk %s out."), Who.HeCap(), Who.His(), Who.Him())
+				: (Outcome == 2 ? FString(TEXT("You hit too hard. Nobody pays for that.")) : FString::Printf(TEXT("%s left you on the ground, and went through what you carry."), Who.HeCap())),
+				CenterX, 255.0f, 24, GutHUDColors::Text, true);
+		}
+		else
+		{
+			// fought over water: theirs, which the player went for, or the player's, which they came for
+			DrawLabel(Outcome == 1 ? FString::Printf(TEXT("%s IS DOWN"), *Name.ToUpper()) : (Outcome == 2 ? FString::Printf(TEXT("%s IS DEAD"), *Name.ToUpper()) : FString::Printf(TEXT("%s PUT YOU DOWN"), *Name.ToUpper())),
+				CenterX, 170.0f, 54, Outcome == 1 ? GutHUDColors::Text : GutHUDColors::Warning, true);
+
+			const FString Told = Outcome == 3 ? FString::Printf(TEXT("%s went through what you carry: %.0f L gone."), Who.HeCap(), Taking.Risked)
+				: (Outcome == 2 ? FString::Printf(TEXT("What %s carried is yours: %.0f L. That will be talked about."), Who.He(), Taking.Carried)
+					: (Taking.Kind == 2 ? FString::Printf(TEXT("%s came for your water and leaves %s own: %.0f L."), Who.HeCap(), Who.His(), Taking.Carried)
+						: FString::Printf(TEXT("What %s carried is yours: %.0f L."), Who.He(), Taking.Carried)));
+
+			DrawLabel(Told, CenterX, 255.0f, 24, GutHUDColors::Text, true);
+		}
 
 		// and it is the player who sends it away, when it has been read
 		if (GameMode->CanRestart())
@@ -307,9 +325,25 @@ void AGutHUD::DrawHUD()
 		{
 			const FGutWho Who = GameMode->GetTakenWho();
 
+			const FGutTaking Taking = GameMode->GetTaking();
+
 			DrawLabel(TEXT("THE DEAD END"), CenterX, 170.0f, 54, GutHUDColors::Text, true);
-			DrawLabel(FString::Printf(TEXT("No tag, and nowhere left to run. Beat %s down."), Who.Him()), CenterX, 250.0f, 24, GutHUDColors::Text, true);
-			DrawLabel(FString::Printf(TEXT("Do not kill %s: nobody buys the dead. And %s will hurt you if %s can."), Who.Him(), Who.He(), Who.He()), CenterX, 284.0f, 20, GutHUDColors::DimText, true);
+
+			if (Taking.Kind == 0)
+			{
+				DrawLabel(FString::Printf(TEXT("No tag, and nowhere left to run. Beat %s down."), Who.Him()), CenterX, 250.0f, 24, GutHUDColors::Text, true);
+				DrawLabel(FString::Printf(TEXT("Do not kill %s: nobody buys the dead. And %s will hurt you if %s can."), Who.Him(), Who.He(), Who.He()), CenterX, 284.0f, 20, GutHUDColors::DimText, true);
+			}
+			else if (Taking.Kind == 1)
+			{
+				DrawLabel(FString::Printf(TEXT("%s has water on %s, and nobody is looking. Beat %s down."), Who.HeCap(), Who.Him(), Who.Him()), CenterX, 250.0f, 24, GutHUDColors::Text, true);
+				DrawLabel(FString::Printf(TEXT("If it is you who goes down, %s goes through what you carry: about %.0f L."), Who.He(), Taking.Risked), CenterX, 284.0f, 20, GutHUDColors::DimText, true);
+			}
+			else
+			{
+				DrawLabel(FString::Printf(TEXT("%s wants your water. Beat %s down and keep it."), Who.HeCap(), Who.Him()), CenterX, 250.0f, 24, GutHUDColors::Text, true);
+				DrawLabel(FString::Printf(TEXT("If it is you who goes down, %s takes about %.0f L."), Who.He(), Taking.Risked), CenterX, 284.0f, 20, GutHUDColors::DimText, true);
+			}
 			DrawLabel(FString::Printf(TEXT("%d"), FMath::CeilToInt32(GameMode->GetIntroTimeRemaining())), CenterX, 330.0f, 40, GutHUDColors::Warning, true);
 			break;
 		}

@@ -1053,6 +1053,9 @@ public:
 	UFUNCTION(BlueprintPure, Category="Gut|Taking")
 	bool IsTaking() const;
 
+	/** What the taking is fought over, what they carry and what the player stands to lose: see FGutTaking::Kind */
+	FGutTaking GetTaking() const;
+
 	/** How it came out, while its last picture is up: FGutTaking::Outcome */
 	int32 GetTakingOutcome() const;
 

@@ -787,7 +787,7 @@ void ATownHUD::DrawBook(const ATownGameMode* Town, float CenterX)
 
 		if (i == Lines.Num())
 		{
-			DrawLabel(FString(Mark) + (Town->IsBidding() ? TEXT("Let it go") : TEXT("Nothing more")), ListLeft, LineY + 8.0f, 21, bChosen ? GutHUDColors::Warning : GutHUDColors::Text);
+			DrawLabel(FString(Mark) + (Town->IsBidding() ? (Town->IsSaleLive() ? TEXT("Leave the table") : TEXT("Let it go")) : TEXT("Nothing more")), ListLeft, LineY + 8.0f, 21, bChosen ? GutHUDColors::Warning : GutHUDColors::Text);
 			break;
 		}
 
@@ -871,7 +871,7 @@ void ATownHUD::DrawBook(const ATownGameMode* Town, float CenterX)
 		}
 	}
 
-	DrawLabel(FString::Printf(TEXT("W / S or D-pad: choose          E, Enter or A button: %s          Backspace or B button: %s"), *Town->GetShopVerb(), Town->IsBidding() ? TEXT("let it go") : TEXT("leave")),
+	DrawLabel(FString::Printf(TEXT("W / S or D-pad: choose          E, Enter or A button: %s          Backspace or B button: %s"), *Town->GetShopVerb(), Town->IsBidding() ? (Town->IsSaleLive() ? TEXT("leave the table") : TEXT("let it go")) : TEXT("leave")),
 		CenterX, Top + Height - 34.0f, 17, GutHUDColors::Text, true);
 }
 

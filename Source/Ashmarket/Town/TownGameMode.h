@@ -96,6 +96,9 @@ struct FTownAuction
 	int32 Count = 0;
 	float Wait = 0.0f;
 
+	/** How often he has come down from where he opened, for want of anybody to open there */
+	int32 Drops = 0;
+
 	/** What he last called */
 	FString Called;
 };
@@ -756,6 +759,39 @@ public:
 	bool TakeSomebody(int32 Person);
 
 	/**
+	 *  Goes for somebody as a taking does, over one of three things (FGutTaking::Kind): nought themselves, 1 the water
+	 *  they carry, 2 the player's own water, which they came for. Fought out in the dead end and settled by SettleTaking.
+	 */
+	bool GoFor(int32 Person, int32 Kind);
+
+	/**
+	 *  Somebody with no tag comes for the player's water: walks up to wherever the player is and says so, and the player
+	 *  stands and fights or walks away from it ("someone can come up to me and try to steal my water - I can fight like
+	 *  when capturing for slave or I can walk away and lose 1 fear point", 26 November). False if they cannot get there:
+	 *  not there, already walking, or something in the way.
+	 */
+	bool StartMugging(int32 Person);
+
+	/** Who is coming for the player's water, or none; and how far it has got: 1 coming, 2 saying so, 3 going back */
+	int32 GetMugger() const { return Mugger; }
+	int32 GetMugStage() const { return MugStage; }
+
+	/** Has somebody come for the player's water when it is time, walks them up, and sends them back. See StartMugging. */
+	void UpdateMugging(float DeltaTime);
+
+	int32 Mugger = INDEX_NONE;
+	int32 MugStage = 0;
+	float MugTime = 0.0f;
+
+	/** How long the player has been in the place, and whether it has been thrown for once whether anybody comes for their water this visit */
+	float MugClock = 0.0f;
+	bool bMugThrown = false;
+
+	/** True if somebody will come for it this visit, when the player is next near enough to one of them; and how long before that is looked at again */
+	bool bMugComing = false;
+	float MugLook = 0.0f;
+
+	/**
 	 *  What a taking came to, done as the place opens again: taken, they are the player's and in tow, wrists tied; dead,
 	 *  there is nothing; got away, and some of the player's water went with them. The Free Tags hear of it every time,
 	 *  and the Chainmen think better of somebody who does their work. Whoever it was is gone from where they stood.
@@ -800,7 +836,7 @@ protected:
 	/** Works out who or what is in reach of the player */
 	void FindReach(const AGutFighter* Walker);
 
-	void BeginTalk(int32 Person);
+	void BeginTalk(int32 Person, const FString& AtLine = FString());
 	void EndTalk();
 
 	/** Moves the talk on from the line it is at: by the answer chosen, or to the line that follows */
@@ -827,6 +863,41 @@ protected:
 
 	TArray<FTownShopLine> GetBookLines() const;
 	bool BuyAtBook(int32 Line);
+
+	/** A line for everybody in the day's book, in its order: what the book showed before the sale went on by itself */
+	TArray<FTownShopLine> GetAllBookLines() const;
+
+	/**
+	 *  Which of the day's book each line shown at the table is, where the sale goes on by itself: whoever comes up next,
+	 *  and whoever signs. (While a lot is up the lines are bids, and are all about that lot.)
+	 */
+	void GetBookShown(TArray<int32>& OutOffers) const;
+
+	/** Which of the day's book a line shown at the table is about */
+	int32 GetBookOfferAt(int32 Line) const;
+
+	/** The caller puts a line of the book up, whoever is or is not at the table. See UpdateSale. */
+	bool PutUp(int32 Line);
+
+	/** What the clerk's page says of the lot that is up, to whoever is at the table: the call, how the bid stands, what is held */
+	void TellAuction();
+
+	/** Mother Ledger, from where she stands, of a bid that is more than the player holds */
+	void SayLedger();
+
+	UPROPERTY()
+	TArray<TObjectPtr<USoundBase>> LedgerAsides;
+
+	int32 LedgerSaid = 0;
+
+	/** How long before the next lot is put up, and whether there are none left today */
+	float SaleNextIn = 15.0f;
+	bool bSaleOver = false;
+
+	/** How long the caller's last call of a lot stays up after the lot is knocked down, and whether one of his between-lots calls is up */
+	float AuctionCallLeft = 0.0f;
+	bool bLiveCallOn = false;
+	float LiveCallRest = 0.0f;
 
 	/**
 	 *  Takes somebody on a line of the book for the player: paid for, made the player's, and brought down off the Block to
@@ -1062,6 +1133,28 @@ public:
 	 *  -GutNoBidding on the command line is the old way.
 	 */
 	bool bBids = true;
+
+	/**
+	 *  If true the Block's sale goes on by itself: a lot is put up a quarter of a minute after the player comes into the
+	 *  square, whoever wants it bids, it is knocked down and walked off, and the next is put up, until there are none,
+	 *  whether the player is at the table or not. At the table the page shows the lot that is up, and can be bid on at any
+	 *  time. ("The auction goes like a regular auction and you can bid anytime ... starts and finishes with or without
+	 *  you", 26 November: lots were walked off the platform by a sale written out beforehand while the page still listed
+	 *  them.) If false a lot is put up when the player asks for it at the table, as it was.
+	 */
+	bool bLiveSale = true;
+
+	bool IsSaleLive() const;
+	bool IsSaleOver() const { return bSaleOver; }
+
+	float GetSaleNextIn() const { return SaleNextIn; }
+	void SetSaleNextIn(float Seconds) { SaleNextIn = Seconds; }
+
+	/** Puts the next lot up when it is time, and says so when there are none left */
+	void UpdateSale(float DeltaTime);
+
+	/** The line of the day's book that is put up next, or none: not sold, not the player's, still standing on the Block */
+	int32 FindNextLot() const;
 
 	/** A test that walks at a place's edges until it is stopped is not taken out of the place by a way it walks into */
 	bool bWaysHeld = false;
